@@ -45,3 +45,20 @@ python -m ShadBotTrader.main
 
 The foundation runtime performs a clean start -> shutdown cycle and
 prints structured logs (`Starting`, `Shutdown complete`).
+
+## Project Intelligence (PIP)
+
+The platform can scan itself and generate canonical project-state
+artifacts under `project_state/generated/`:
+
+```bash
+# Linux / macOS
+PYTHONPATH=src python -m ShadBotTrader.intelligence
+
+# any OS, without installing the package
+python scripts/run_pip.py
+```
+
+Generated files: `ProjectSnapshot.md`, `ProjectSnapshot.json`,
+`ChatGPT_Context.md`, `Architecture.md`, `Statistics.json`. Previous
+state is archived under `project_state/archive/`.
