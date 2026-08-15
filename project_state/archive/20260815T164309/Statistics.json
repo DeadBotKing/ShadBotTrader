@@ -1,0 +1,16 @@
+{
+  "class_count": 105,
+  "config_file_count": 2,
+  "documentation_file_count": 43,
+  "external_dependency_count": 4,
+  "function_count": 477,
+  "internal_dependency_count": 58,
+  "legacy_file_count": 176,
+  "module_count": 122,
+  "source_file_count": 94,
+  "source_lines": 4637,
+  "test_file_count": 28,
+  "test_lines": 1412,
+  "total_file_count": 348,
+  "total_lines": 45009
+}

@@ -9,8 +9,8 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P2 — Feature Platform: indicator computation, feature store "
-    "and feature pipelines over the Data Platform."
+    "Sprint P3 — AI Platform: model registry, training runs and "
+    "prediction serving (Wavenet, roll-forward)."
 )
 
 KNOWN_ISSUES = [

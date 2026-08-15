@@ -81,3 +81,24 @@ The pipeline validates rows (schema/type/range/duplicates), normalises
 symbols and timestamps to UTC, runs the quality engine (gaps,
 duplicates, outliers) and stores raw + normalized data immutably as
 Parquet under `datasets/{raw,processed}/{SYMBOL}/{TIMEFRAME}/v{version}.parquet`.
+
+## Feature Platform (Sprint P2)
+
+Compute the standard FX feature set (SMA, EMA, RSI, ATR, MACD,
+Bollinger, Stochastic, Returns) over Data Platform candles:
+
+```bash
+# list the standard feature set
+PYTHONPATH=src python -m ShadBotTrader.feature_cli list
+
+# full demo (ingest + compute)
+python scripts/run_features.py
+
+# compute directly (requires ingested candles)
+PYTHONPATH=src python -m ShadBotTrader.feature_cli compute --symbol XAUUSD_i --timeframe 5M
+```
+
+Every feature is deterministic and causal (warmup respected), passes a
+quality engine (NaN/Inf/range/alignment) and a leakage check
+(availability-time <= decision-time). Results are stored immutably as
+Parquet under `datasets/features/{feature_id}/v{version}.parquet`.

@@ -37,6 +37,12 @@
       "size_bytes": 2787
     },
     {
+      "category": "other",
+      "path": "README.md",
+      "sha256": "4f10d83836a285d8998c6c0b137a568cb36b1468838ed841b4a5f81f3721db0c",
+      "size_bytes": 3426
+    },
+    {
       "category": "documentation",
       "path": "architecture/SHADBOTTRADER_ARCHITECTURE_FREEZE_v1.0.md",
       "sha256": "2f5aa854d53c8f05f731c8f9535a78e79158b2f1ac85381b2c727331967e7b3f",
@@ -74,15 +80,15 @@
     },
     {
       "category": "documentation",
-      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
-      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
-      "size_bytes": 108314
-    },
-    {
-      "category": "documentation",
       "path": "docs/DATABASE_SCHEMA_SPECIFICATION.md",
       "sha256": "221933dcc460a057b82e859cfdf8e94698fe140b401bfc80addf5aec14575b9c",
       "size_bytes": 78424
+    },
+    {
+      "category": "documentation",
+      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
+      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
+      "size_bytes": 108314
     },
     {
       "category": "documentation",
@@ -107,6 +113,12 @@
       "path": "docs/Handoff.md",
       "sha256": "57d020289916d5c50c0af546a034ce1f40ead91f62e4a354ee41fb03ffc708bd",
       "size_bytes": 57228
+    },
+    {
+      "category": "documentation",
+      "path": "docs/PROJECT_STATE.md",
+      "sha256": "bdc4b18565dbcb1f67db59185a6ffa3500e7476db533e32e44ca5073e0fb5fab",
+      "size_bytes": 50971
     },
     {
       "category": "documentation",
@@ -278,12 +290,6 @@
     },
     {
       "category": "documentation",
-      "path": "docs/PROJECT_STATE.md",
-      "sha256": "bdc4b18565dbcb1f67db59185a6ffa3500e7476db533e32e44ca5073e0fb5fab",
-      "size_bytes": 50971
-    },
-    {
-      "category": "documentation",
       "path": "docs/README.md",
       "sha256": "64e9cfe0b5ad507c93378f95a03e180dc256ea4dedd64f2ea1839bf0a5269e20",
       "size_bytes": 69430
@@ -302,36 +308,6 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/__init__.py",
-      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
-      "size_bytes": 82
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__main__.py",
-      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
-      "size_bytes": 265
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__mainbot__.py",
-      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
-      "size_bytes": 2499
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__MainTester__.py",
-      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
-      "size_bytes": 39647
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__Updater__.py",
-      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
-      "size_bytes": 413
-    },
-    {
-      "category": "legacy",
       "path": "legacy/BaseImageModelPredictTest.py",
       "sha256": "9e7190a9ebafd866cae5ed817dc3d15c0c135ad3d7cde6b723e4505192a96a71",
       "size_bytes": 4142
@@ -347,18 +323,6 @@
       "path": "legacy/ColabRunner.ipynb",
       "sha256": "0734a7de9d2dfa42fb560081c6b903e0b1fcc1a147385a46ea654c72a1d86c2c",
       "size_bytes": 185993
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -410,6 +374,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerBuyPrimary__.py",
       "sha256": "59211060d1dd03be7a2d5a6e8dff38c865fc0fefc591faf12b906500ee058826",
       "size_bytes": 343
@@ -431,12 +401,6 @@
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerSellSecondry__.py",
       "sha256": "3ee00b838724cd4aa4a94bccdb9e9b66f81152b9b3ead6b795706c409b6b5e38",
       "size_bytes": 5448
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -488,7 +452,7 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
       "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
       "size_bytes": 131
     },
@@ -539,6 +503,18 @@
       "path": "legacy/GeneticLearningRunner/StochAstic/Runner_SellSecondry.py",
       "sha256": "33fb8b6fd2e351298084277ea06f7b0a004be01b4953e7cd8b75050dc9bbe00e",
       "size_bytes": 5521
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -596,12 +572,6 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/OnlineBot/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
       "path": "legacy/OnlineBot/MACD/__init__.py",
       "sha256": "25febc7dd3829d80eeff6afb050d68b3a9b6a40d8109a3e9c09f5aef23129617",
       "size_bytes": 19
@@ -638,15 +608,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/PipWindowsInstaller.txt",
-      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
-      "size_bytes": 447
+      "path": "legacy/OnlineBot/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
-      "path": "legacy/requirements.txt",
-      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
-      "size_bytes": 847
+      "path": "legacy/PipWindowsInstaller.txt",
+      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
+      "size_bytes": 447
     },
     {
       "category": "legacy",
@@ -656,21 +626,93 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
+      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
+      "size_bytes": 80128
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TestPhotographer.py",
+      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
+      "size_bytes": 929
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction.py",
+      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
+      "size_bytes": 37033
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction2.py",
+      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
+      "size_bytes": 73610
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPredictionTrend.py",
+      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
+      "size_bytes": 36714
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesSignalPredictor.py",
+      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
+      "size_bytes": 21191
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/MainDatasetUpdater.py",
+      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
+      "size_bytes": 389
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__MainTester__.py",
+      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
+      "size_bytes": 39647
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__Updater__.py",
+      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
+      "size_bytes": 413
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__init__.py",
+      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
+      "size_bytes": 82
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__main__.py",
+      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
+      "size_bytes": 265
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__mainbot__.py",
+      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
+      "size_bytes": 2499
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/requirements.txt",
+      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
+      "size_bytes": 847
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/__init__.py",
       "sha256": "961c629354bb8a471a8d7e69f3a199bfd8950efc9d1b7ed3e0da926e975bb116",
       "size_bytes": 48
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/MACD/__init__.py",
-      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
-      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -740,9 +782,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/RSI/__init__.py",
-      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
-      "size_bytes": 144
+      "path": "legacy/src/indicators/MACD/__init__.py",
+      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
+      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -812,9 +854,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/StochAstic/__init__.py",
-      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
-      "size_bytes": 151
+      "path": "legacy/src/indicators/RSI/__init__.py",
+      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
+      "size_bytes": 144
     },
     {
       "category": "legacy",
@@ -884,9 +926,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/ZigZag/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/indicators/StochAstic/__init__.py",
+      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
+      "size_bytes": 151
     },
     {
       "category": "legacy",
@@ -896,27 +938,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/__init__.py",
-      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
-      "size_bytes": 130
+      "path": "legacy/src/indicators/ZigZag/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DataReader/__init__.py",
-      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
-      "size_bytes": 33
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
-      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
-      "size_bytes": 58
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/config.ini",
-      "sha256": "c94a6152fe65a441fbae8f8bec31ccf51b2a7691d09dc888be094677bb284a74",
-      "size_bytes": 185
+      "path": "legacy/src/indicators/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -938,15 +968,27 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
+      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
+      "size_bytes": 58
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Divergence/__init__.py",
-      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
-      "size_bytes": 105
+      "path": "legacy/src/utils/DataReader/MetaTraderReader5/config.ini",
+      "sha256": "c94a6152fe65a441fbae8f8bec31ccf51b2a7691d09dc888be094677bb284a74",
+      "size_bytes": 185
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/DataReader/__init__.py",
+      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
+      "size_bytes": 33
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -986,9 +1028,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Divergence/__init__.py",
+      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
+      "size_bytes": 105
     },
     {
       "category": "legacy",
@@ -1106,15 +1148,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
-      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
-      "size_bytes": 3601
-    },
-    {
-      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePCAMI.py",
       "sha256": "27794ac776807dc44557af269a48a6b63bc55291221cc93886fe94f1be82cced",
       "size_bytes": 2443
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
+      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
+      "size_bytes": 3601
     },
     {
       "category": "legacy",
@@ -1136,6 +1178,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
+      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
+      "size_bytes": 10258
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/ParameterReader.py",
       "sha256": "334edbe4978c9acf039c304d8df45ab3b40fa66aac4b254c0431f5254ec50a9f",
       "size_bytes": 7457
@@ -1148,9 +1196,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
-      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
-      "size_bytes": 10258
+      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1169,18 +1217,6 @@
       "path": "legacy/src/utils/ForexNews/forexnews.json",
       "sha256": "79613c93042c6b00f45b923644fb160da1797b23af4409c7f7e8c38818f62002",
       "size_bytes": 291
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1214,9 +1250,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Optimizers/__init__.py",
-      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
-      "size_bytes": 79
+      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1262,9 +1304,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Photographer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Optimizers/__init__.py",
+      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
+      "size_bytes": 79
     },
     {
       "category": "legacy",
@@ -1274,21 +1316,15 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Photographer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/ProtectResist/__init__.py",
       "sha256": "684233ac8c8dcd148cb9a793abdf35e1d9fbcea5a661be76925795d142a8ae2d",
       "size_bytes": 94
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/__init__.py",
-      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
-      "size_bytes": 93
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/carrier.py",
-      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
-      "size_bytes": 5180
     },
     {
       "category": "legacy",
@@ -1304,69 +1340,33 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Tools/__init__.py",
+      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
+      "size_bytes": 93
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/Tools/carrier.py",
+      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
+      "size_bytes": 5180
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/Tools/timer.py",
       "sha256": "aa49b8bd19f4b0cfe04667442f05e07a03d5c8944b51a586f7f2d3ea343428e5",
       "size_bytes": 344
     },
     {
       "category": "legacy",
-      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
-      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
-      "size_bytes": 80128
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TestPhotographer.py",
-      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
-      "size_bytes": 929
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction.py",
-      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
-      "size_bytes": 37033
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction2.py",
-      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
-      "size_bytes": 73610
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPredictionTrend.py",
-      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
-      "size_bytes": 36714
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesSignalPredictor.py",
-      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
-      "size_bytes": 21191
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/MainDatasetUpdater.py",
-      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
-      "size_bytes": 389
+      "path": "legacy/src/utils/__init__.py",
+      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
+      "size_bytes": 130
     },
     {
       "category": "config",
       "path": "pyproject.toml",
       "sha256": "503f56708774e4cbe99ad63837e75633994915ccc96ff8111ca754e69757a7e2",
       "size_bytes": 1035
-    },
-    {
-      "category": "other",
-      "path": "README.md",
-      "sha256": "4f10d83836a285d8998c6c0b137a568cb36b1468838ed841b4a5f81f3721db0c",
-      "size_bytes": 3426
     },
     {
       "category": "script",
@@ -2323,24 +2323,22 @@
       "size_bytes": 2168
     }
   ],
-  "generated_at": "2026-08-15T16:50:48.407869+00:00",
+  "generated_at": "2026-08-15T16:43:09.729258+00:00",
   "git": {
     "branch": "main",
-    "commit": "81751ceff9da069d6cbd6d4b7cd582117d66f0ae",
+    "commit": "28abd280926d6219b02019b2a07533dadc36d6ed",
     "dirty": true,
-    "dirty_files": 25,
+    "dirty_files": 185,
     "is_repo": true,
     "recent_commits": [
-      "81751ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P1: Data Platform)",
-      "80cbf5a Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P0: Project Intelligence)",
-      "e019203 Phase1",
       "28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md",
       "ac8c959 Upda",
       "0ddcbe9 Update Docs From Done To No Done",
       "a7c6b62 Docs",
       "97d8f00 Update .gitignore",
       "61be191 New",
-      "93bf423 gitignore"
+      "93bf423 gitignore",
+      "c6816ec Initial commit"
     ]
   },
   "modules": [
@@ -4149,7 +4147,7 @@
     }
   ],
   "project_name": "ShadBotTrader",
-  "python_version": "3.14.6",
+  "python_version": "3.13.14",
   "source_file_count": 122,
   "statistics": {
     "class_count": 141,

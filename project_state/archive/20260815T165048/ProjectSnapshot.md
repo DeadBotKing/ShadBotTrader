@@ -3,10 +3,10 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Current phase: Phase 28 — Implementation Foundation (Sprint P2: Feature Platform)
-- Generated at: 2026-08-15T16:50:48.407869+00:00
-- Python version: 3.14.6
+- Generated at: 2026-08-15T16:43:09.729258+00:00
+- Python version: 3.13.14
 - Git branch: main
-- Git commit: 81751ceff9da069d6cbd6d4b7cd582117d66f0ae
+- Git commit: 28abd280926d6219b02019b2a07533dadc36d6ed
 - Dirty: yes
 
 ## Statistics

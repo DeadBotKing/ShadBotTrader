@@ -1,18 +1,14 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 \u2014 Implementation Foundation (Sprint P2: Feature Platform)",
+  "current_phase": "Phase 28 \u2014 Implementation Foundation (Sprint P1: Data Platform)",
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 16
-    },
-    {
-      "name": "pandas",
-      "used_by": 2
+      "used_by": 13
     },
     {
       "name": "pyarrow",
-      "used_by": 2
+      "used_by": 1
     },
     {
       "name": "tomli",
@@ -35,6 +31,12 @@
       "path": ".gitignore",
       "sha256": "1533f7479e5cc824fe2d578c4352ee02564ed75cd85decb1701235dd5d9ebc3b",
       "size_bytes": 2787
+    },
+    {
+      "category": "other",
+      "path": "README.md",
+      "sha256": "b4b1eeab0964d7b8a59404b78897cc7d346f6400dd8cd4770e873be85fef12e2",
+      "size_bytes": 2695
     },
     {
       "category": "documentation",
@@ -74,15 +76,15 @@
     },
     {
       "category": "documentation",
-      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
-      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
-      "size_bytes": 108314
-    },
-    {
-      "category": "documentation",
       "path": "docs/DATABASE_SCHEMA_SPECIFICATION.md",
       "sha256": "221933dcc460a057b82e859cfdf8e94698fe140b401bfc80addf5aec14575b9c",
       "size_bytes": 78424
+    },
+    {
+      "category": "documentation",
+      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
+      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
+      "size_bytes": 108314
     },
     {
       "category": "documentation",
@@ -107,6 +109,12 @@
       "path": "docs/Handoff.md",
       "sha256": "57d020289916d5c50c0af546a034ce1f40ead91f62e4a354ee41fb03ffc708bd",
       "size_bytes": 57228
+    },
+    {
+      "category": "documentation",
+      "path": "docs/PROJECT_STATE.md",
+      "sha256": "bdc4b18565dbcb1f67db59185a6ffa3500e7476db533e32e44ca5073e0fb5fab",
+      "size_bytes": 50971
     },
     {
       "category": "documentation",
@@ -278,12 +286,6 @@
     },
     {
       "category": "documentation",
-      "path": "docs/PROJECT_STATE.md",
-      "sha256": "bdc4b18565dbcb1f67db59185a6ffa3500e7476db533e32e44ca5073e0fb5fab",
-      "size_bytes": 50971
-    },
-    {
-      "category": "documentation",
       "path": "docs/README.md",
       "sha256": "64e9cfe0b5ad507c93378f95a03e180dc256ea4dedd64f2ea1839bf0a5269e20",
       "size_bytes": 69430
@@ -302,36 +304,6 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/__init__.py",
-      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
-      "size_bytes": 82
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__main__.py",
-      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
-      "size_bytes": 265
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__mainbot__.py",
-      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
-      "size_bytes": 2499
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__MainTester__.py",
-      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
-      "size_bytes": 39647
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__Updater__.py",
-      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
-      "size_bytes": 413
-    },
-    {
-      "category": "legacy",
       "path": "legacy/BaseImageModelPredictTest.py",
       "sha256": "9e7190a9ebafd866cae5ed817dc3d15c0c135ad3d7cde6b723e4505192a96a71",
       "size_bytes": 4142
@@ -347,18 +319,6 @@
       "path": "legacy/ColabRunner.ipynb",
       "sha256": "0734a7de9d2dfa42fb560081c6b903e0b1fcc1a147385a46ea654c72a1d86c2c",
       "size_bytes": 185993
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -410,6 +370,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerBuyPrimary__.py",
       "sha256": "59211060d1dd03be7a2d5a6e8dff38c865fc0fefc591faf12b906500ee058826",
       "size_bytes": 343
@@ -431,12 +397,6 @@
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerSellSecondry__.py",
       "sha256": "3ee00b838724cd4aa4a94bccdb9e9b66f81152b9b3ead6b795706c409b6b5e38",
       "size_bytes": 5448
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -488,7 +448,7 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
       "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
       "size_bytes": 131
     },
@@ -539,6 +499,18 @@
       "path": "legacy/GeneticLearningRunner/StochAstic/Runner_SellSecondry.py",
       "sha256": "33fb8b6fd2e351298084277ea06f7b0a004be01b4953e7cd8b75050dc9bbe00e",
       "size_bytes": 5521
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -596,12 +568,6 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/OnlineBot/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
       "path": "legacy/OnlineBot/MACD/__init__.py",
       "sha256": "25febc7dd3829d80eeff6afb050d68b3a9b6a40d8109a3e9c09f5aef23129617",
       "size_bytes": 19
@@ -638,15 +604,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/PipWindowsInstaller.txt",
-      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
-      "size_bytes": 447
+      "path": "legacy/OnlineBot/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
-      "path": "legacy/requirements.txt",
-      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
-      "size_bytes": 847
+      "path": "legacy/PipWindowsInstaller.txt",
+      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
+      "size_bytes": 447
     },
     {
       "category": "legacy",
@@ -656,21 +622,93 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
+      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
+      "size_bytes": 80128
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TestPhotographer.py",
+      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
+      "size_bytes": 929
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction.py",
+      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
+      "size_bytes": 37033
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction2.py",
+      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
+      "size_bytes": 73610
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPredictionTrend.py",
+      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
+      "size_bytes": 36714
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesSignalPredictor.py",
+      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
+      "size_bytes": 21191
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/MainDatasetUpdater.py",
+      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
+      "size_bytes": 389
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__MainTester__.py",
+      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
+      "size_bytes": 39647
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__Updater__.py",
+      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
+      "size_bytes": 413
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__init__.py",
+      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
+      "size_bytes": 82
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__main__.py",
+      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
+      "size_bytes": 265
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__mainbot__.py",
+      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
+      "size_bytes": 2499
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/requirements.txt",
+      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
+      "size_bytes": 847
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/__init__.py",
       "sha256": "961c629354bb8a471a8d7e69f3a199bfd8950efc9d1b7ed3e0da926e975bb116",
       "size_bytes": 48
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/MACD/__init__.py",
-      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
-      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -740,9 +778,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/RSI/__init__.py",
-      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
-      "size_bytes": 144
+      "path": "legacy/src/indicators/MACD/__init__.py",
+      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
+      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -812,9 +850,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/StochAstic/__init__.py",
-      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
-      "size_bytes": 151
+      "path": "legacy/src/indicators/RSI/__init__.py",
+      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
+      "size_bytes": 144
     },
     {
       "category": "legacy",
@@ -884,9 +922,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/ZigZag/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/indicators/StochAstic/__init__.py",
+      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
+      "size_bytes": 151
     },
     {
       "category": "legacy",
@@ -896,27 +934,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/__init__.py",
-      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
-      "size_bytes": 130
+      "path": "legacy/src/indicators/ZigZag/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DataReader/__init__.py",
-      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
-      "size_bytes": 33
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
-      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
-      "size_bytes": 58
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/config.ini",
-      "sha256": "c94a6152fe65a441fbae8f8bec31ccf51b2a7691d09dc888be094677bb284a74",
-      "size_bytes": 185
+      "path": "legacy/src/indicators/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -938,15 +964,27 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
+      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
+      "size_bytes": 58
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Divergence/__init__.py",
-      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
-      "size_bytes": 105
+      "path": "legacy/src/utils/DataReader/MetaTraderReader5/config.ini",
+      "sha256": "c94a6152fe65a441fbae8f8bec31ccf51b2a7691d09dc888be094677bb284a74",
+      "size_bytes": 185
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/DataReader/__init__.py",
+      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
+      "size_bytes": 33
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -986,9 +1024,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Divergence/__init__.py",
+      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
+      "size_bytes": 105
     },
     {
       "category": "legacy",
@@ -1106,15 +1144,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
-      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
-      "size_bytes": 3601
-    },
-    {
-      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePCAMI.py",
       "sha256": "27794ac776807dc44557af269a48a6b63bc55291221cc93886fe94f1be82cced",
       "size_bytes": 2443
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
+      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
+      "size_bytes": 3601
     },
     {
       "category": "legacy",
@@ -1136,6 +1174,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
+      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
+      "size_bytes": 10258
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/ParameterReader.py",
       "sha256": "334edbe4978c9acf039c304d8df45ab3b40fa66aac4b254c0431f5254ec50a9f",
       "size_bytes": 7457
@@ -1148,9 +1192,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
-      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
-      "size_bytes": 10258
+      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1169,18 +1213,6 @@
       "path": "legacy/src/utils/ForexNews/forexnews.json",
       "sha256": "79613c93042c6b00f45b923644fb160da1797b23af4409c7f7e8c38818f62002",
       "size_bytes": 291
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1214,9 +1246,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Optimizers/__init__.py",
-      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
-      "size_bytes": 79
+      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1262,9 +1300,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Photographer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Optimizers/__init__.py",
+      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
+      "size_bytes": 79
     },
     {
       "category": "legacy",
@@ -1274,21 +1312,15 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Photographer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/ProtectResist/__init__.py",
       "sha256": "684233ac8c8dcd148cb9a793abdf35e1d9fbcea5a661be76925795d142a8ae2d",
       "size_bytes": 94
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/__init__.py",
-      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
-      "size_bytes": 93
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/carrier.py",
-      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
-      "size_bytes": 5180
     },
     {
       "category": "legacy",
@@ -1304,81 +1336,39 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Tools/__init__.py",
+      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
+      "size_bytes": 93
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/Tools/carrier.py",
+      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
+      "size_bytes": 5180
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/Tools/timer.py",
       "sha256": "aa49b8bd19f4b0cfe04667442f05e07a03d5c8944b51a586f7f2d3ea343428e5",
       "size_bytes": 344
     },
     {
       "category": "legacy",
-      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
-      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
-      "size_bytes": 80128
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TestPhotographer.py",
-      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
-      "size_bytes": 929
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction.py",
-      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
-      "size_bytes": 37033
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction2.py",
-      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
-      "size_bytes": 73610
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPredictionTrend.py",
-      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
-      "size_bytes": 36714
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesSignalPredictor.py",
-      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
-      "size_bytes": 21191
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/MainDatasetUpdater.py",
-      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
-      "size_bytes": 389
+      "path": "legacy/src/utils/__init__.py",
+      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
+      "size_bytes": 130
     },
     {
       "category": "config",
       "path": "pyproject.toml",
-      "sha256": "503f56708774e4cbe99ad63837e75633994915ccc96ff8111ca754e69757a7e2",
-      "size_bytes": 1035
-    },
-    {
-      "category": "other",
-      "path": "README.md",
-      "sha256": "4f10d83836a285d8998c6c0b137a568cb36b1468838ed841b4a5f81f3721db0c",
-      "size_bytes": 3426
+      "sha256": "13f770b02c8f849b571283065d07443c9e8777adaa4bd7594b666509e0a8025b",
+      "size_bytes": 997
     },
     {
       "category": "script",
       "path": "scripts/run_data.py",
       "sha256": "6ab9ba1b932d8f48f6d776f0ae2252090cbe5decdd2c7b17149780b9fb0ace23",
       "size_bytes": 2420
-    },
-    {
-      "category": "script",
-      "path": "scripts/run_features.py",
-      "sha256": "6fb81ccb093785da6acefd4819ce62ea41010e7ddf44d65253c2305e4b147c7a",
-      "size_bytes": 3968
     },
     {
       "category": "script",
@@ -1437,14 +1427,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/data_ingestion_service.py",
-      "sha256": "117de108228a3849cd9e4bf359fd1828c1bdb738fe91d9fe218d50fd4276829d",
-      "size_bytes": 6805
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/application/services/feature_computation_service.py",
-      "sha256": "9fcff3ce730b0d1bf19b3d17682f301e5956ef8cceab367da4804ba068341a9e",
-      "size_bytes": 7101
+      "sha256": "904d583cd5467e1fadb701ddc6a98107e17a90a0f02d819558d5bc9354874836",
+      "size_bytes": 6460
     },
     {
       "category": "source",
@@ -1635,8 +1619,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/dataset/ports.py",
-      "sha256": "c7716ba0ad834b4cfb8eebcf5eb0f555cb6b58bf500fb6e8508a7390d1ca976a",
-      "size_bytes": 3157
+      "sha256": "352eec71e2c7358037aff695b1433878ef6d1224d12e82403aebe8d26d64c7b7",
+      "size_bytes": 2845
     },
     {
       "category": "source",
@@ -1649,60 +1633,6 @@
       "path": "src/ShadBotTrader/domain/dataset/raw_record.py",
       "sha256": "ed685233a4d24b62509e5ef1957e13cc7252f096cc325a6a2eb0b6336ea8fd3a",
       "size_bytes": 2313
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/__init__.py",
-      "sha256": "90190650a3e252013537e779405850e87c995e4936c82e0c3309050ea59dd78e",
-      "size_bytes": 354
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/events.py",
-      "sha256": "59fac09e6686d82ac13dfbdb05abb3855bb2616068c8e3373ad309bd29cdf955",
-      "size_bytes": 190
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_definition.py",
-      "sha256": "9ba05de94474cdb97aa2726a13cd625d48136e1244fca1c883eb41cd787e25c2",
-      "size_bytes": 2472
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_provenance.py",
-      "sha256": "8a86e95344451c141c74093c6885c024ef835bdce1859d3248688531b53e40ef",
-      "size_bytes": 952
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_quality.py",
-      "sha256": "1e2e369c84777db4514c1464300ea1111aa5c7dd99ee3a286e990787c690cbaa",
-      "size_bytes": 4176
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_result.py",
-      "sha256": "b67454a98bd170a38065dcd3706ec0d4ed81b1789c429460b7a229a55591c97f",
-      "size_bytes": 1513
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_set.py",
-      "sha256": "c6ff829feee8802475e211021404e7e8eea80abb58159cdd737ef09e18f8afa8",
-      "size_bytes": 1822
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/feature_types.py",
-      "sha256": "c478d522b4c199953585dbcc6020945ffd3949ad7a37a7773dc5f5103366fb4b",
-      "size_bytes": 1171
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/feature/ports.py",
-      "sha256": "22088505d2b13cae5aa9bd47f8ef22fa295a5bd17bfab902f002f298141bb813",
-      "size_bytes": 2805
     },
     {
       "category": "source",
@@ -1814,12 +1744,6 @@
     },
     {
       "category": "source",
-      "path": "src/ShadBotTrader/feature_cli.py",
-      "sha256": "970eb641a4ed13559f7902304c48a0fe15a8305ea12f6e77060ca10448f26ac9",
-      "size_bytes": 4093
-    },
-    {
-      "category": "source",
       "path": "src/ShadBotTrader/infrastructure/__init__.py",
       "sha256": "f0e6f8356c81decb068df07306bd46a94b1adbba9d46f45b23e014680cf06a7e",
       "size_bytes": 72
@@ -1869,116 +1793,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/data/parquet_candle_store.py",
-      "sha256": "cce8cd6bda4fb750481d9af6148036dfc9c5bd26241d71c3741b5b350063158c",
-      "size_bytes": 6946
+      "sha256": "f9b1281340a674bbf86e72731fc5d9959ab1ffc2c24acf63792d68306f721faf",
+      "size_bytes": 5944
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/data/quality_analyzer.py",
       "sha256": "dc293bd4f8495df79bccd5e9f9a85d750688e6e96c61a36a5c7289eeaa75b35b",
       "size_bytes": 6508
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/__init__.py",
-      "sha256": "7f0f079252f5dc5c43177b518d1efde4ba15e0690129f4b48ff0b2e0ecfc4d2a",
-      "size_bytes": 529
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculator_registry.py",
-      "sha256": "4e345b675558c0910d09fe735f0a8d4365afd7f86302b3aa94af6585ff096472",
-      "size_bytes": 1973
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/__init__.py",
-      "sha256": "c348810647a9530ebf8cddf4eb31c6695a0a335fef44fbb931c8bb89aaee633c",
-      "size_bytes": 73
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/atr.py",
-      "sha256": "41d5bb6c6bafd8ad0b8fad1a44910b39d1f45fe271dda9003c16c0e667073b84",
-      "size_bytes": 1407
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/base.py",
-      "sha256": "f8bed37f72a48f11cea23cbcd55d70f800ea94bc833f0172e3377076f1899b6a",
-      "size_bytes": 1989
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/bollinger.py",
-      "sha256": "970bd4e9f18f94a6542233c6393f0978fa669d85a445b237b22f6434b39f568e",
-      "size_bytes": 1328
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/ema.py",
-      "sha256": "2646a1cd5779dd7e8f6906789e3c53e31dec90c74e0ec93caa3dd77417d27e56",
-      "size_bytes": 1005
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/macd.py",
-      "sha256": "844876b9cfaac15583279a5ca67388294d3109454ec834d66b974abbe4667caa",
-      "size_bytes": 2810
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/returns.py",
-      "sha256": "1e54c79c86af998807043d36a7419ccf9bc492cba58563435515f27a0216a0aa",
-      "size_bytes": 1004
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/rsi.py",
-      "sha256": "7de416ccf48cd901433b23420bf36f3358d6935f5e99d84156e7df0a8835267c",
-      "size_bytes": 1361
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/sma.py",
-      "sha256": "144fe2d6250c54f61d67ce6d89d46e4221a20d769bfb26c84baca3932303a1ac",
-      "size_bytes": 992
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/stochastic.py",
-      "sha256": "05717100abd7488b791e1947f85d33d4364141c0e03895d1cd29ca30e7180307",
-      "size_bytes": 1217
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/feature_quality_engine.py",
-      "sha256": "bf3e27a95ff16c9ce376026e23d2d2d08659152f8fd64c980cf762eb4b9c95be",
-      "size_bytes": 5640
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/in_memory_feature_registry.py",
-      "sha256": "57bb02710adfc89d4268dee64c6fa1f7d4d5210387a7510d26cbc2873c8d8f77",
-      "size_bytes": 1054
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/leakage_checker.py",
-      "sha256": "df69f775bbec83a79d7f13c740b4cf7ea33a2f677877bd9ff6927245d0939616",
-      "size_bytes": 1951
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/parquet_feature_store.py",
-      "sha256": "63096c8cc2dbf0838e5a660fbb431e66ff4aadd8f2fc3f752d1bae8bb034c891",
-      "size_bytes": 3088
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/infrastructure/feature/standard_catalog.py",
-      "sha256": "e1de69928514b36355ffbae1a573d0b6c40cef2f1f80ad03abc81e053834f0af",
-      "size_bytes": 4259
     },
     {
       "category": "source",
@@ -2019,8 +1841,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/context_builder.py",
-      "sha256": "d2a43efcbefb21b634799580ce15f87a280a4c103b5effaef0cb913d97f00665",
-      "size_bytes": 4463
+      "sha256": "50be4fcc57bdca770daa5a23e9b2b1cada2be7af88e05ed995c2c719ebeaded6",
+      "size_bytes": 4473
     },
     {
       "category": "source",
@@ -2031,8 +1853,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "e4dd9133f26517b2cae2cfb09f39693f337941ccaf1666d64d01eb56235f6299",
-      "size_bytes": 2802
+      "sha256": "623e86050970fea2ace635d5a3c97f67d72f382054410af72942211616a7c95e",
+      "size_bytes": 2799
     },
     {
       "category": "source",
@@ -2132,12 +1954,6 @@
     },
     {
       "category": "test",
-      "path": "tests/integration/test_feature_pipeline.py",
-      "sha256": "136c9f43d0102f9d4683b5f0c67a23e7bb955dbf60ab0f84f85647ce330dd70e",
-      "size_bytes": 5619
-    },
-    {
-      "category": "test",
       "path": "tests/unit/application/test_bootstrap_runtime.py",
       "sha256": "ded8cbedcaf166799121ba087a05d38b3be48ddebeaafaf075cf77a2412e6b66",
       "size_bytes": 1415
@@ -2211,8 +2027,8 @@
     {
       "category": "test",
       "path": "tests/unit/dataset/test_parquet_store.py",
-      "sha256": "c35940b9e73c209763635d0e2460813b48a4287df06db48a7432b0738a340b25",
-      "size_bytes": 3697
+      "sha256": "7d2d41fb9eb8cd506cdab2f30cc82055906b25d56e757c38f5c6a2429ff26bad",
+      "size_bytes": 2906
     },
     {
       "category": "test",
@@ -2258,36 +2074,6 @@
     },
     {
       "category": "test",
-      "path": "tests/unit/feature/__init__.py",
-      "sha256": "e8c6b30a2e2a3951fa323984323df9fbba89184038756a2b14359be97ad3357b",
-      "size_bytes": 35
-    },
-    {
-      "category": "test",
-      "path": "tests/unit/feature/test_calculators.py",
-      "sha256": "389c8f7c008158e9b7de0f15417cb2917736b64fdbbafc782e47532c4fc10362",
-      "size_bytes": 4921
-    },
-    {
-      "category": "test",
-      "path": "tests/unit/feature/test_feature_definition.py",
-      "sha256": "9b06428d9cbe43855a36eaef1078207bd9a8e452854804572e068c4a81374b1c",
-      "size_bytes": 1939
-    },
-    {
-      "category": "test",
-      "path": "tests/unit/feature/test_feature_store.py",
-      "sha256": "cb344534d02ebb48fca0edb3b6bf9df2d8e91a81e166cc3450808e15df761b5e",
-      "size_bytes": 1451
-    },
-    {
-      "category": "test",
-      "path": "tests/unit/feature/test_quality_and_leakage.py",
-      "sha256": "9b0bc5f291312fd2a12c502ac1e3a597132396b80f56503f61224177a15d3ce2",
-      "size_bytes": 4239
-    },
-    {
-      "category": "test",
       "path": "tests/unit/project/__init__.py",
       "sha256": "d0b32e5905f68bba18a17e15b9836c23ec91ba08741c1295aa9ecfe373b84fc3",
       "size_bytes": 34
@@ -2323,24 +2109,22 @@
       "size_bytes": 2168
     }
   ],
-  "generated_at": "2026-08-15T16:50:48.407869+00:00",
+  "generated_at": "2026-08-15T16:24:49.909862+00:00",
   "git": {
     "branch": "main",
-    "commit": "81751ceff9da069d6cbd6d4b7cd582117d66f0ae",
+    "commit": "28abd280926d6219b02019b2a07533dadc36d6ed",
     "dirty": true,
-    "dirty_files": 25,
+    "dirty_files": 185,
     "is_repo": true,
     "recent_commits": [
-      "81751ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P1: Data Platform)",
-      "80cbf5a Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P0: Project Intelligence)",
-      "e019203 Phase1",
       "28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md",
       "ac8c959 Upda",
       "0ddcbe9 Update Docs From Done To No Done",
       "a7c6b62 Docs",
       "97d8f00 Update .gitignore",
       "61be191 New",
-      "93bf423 gitignore"
+      "93bf423 gitignore",
+      "c6816ec Initial commit"
     ]
   },
   "modules": [
@@ -2450,29 +2234,6 @@
       ],
       "name": "ShadBotTrader.application.services.data_ingestion_service",
       "path": "src/ShadBotTrader/application/services/data_ingestion_service.py"
-    },
-    {
-      "classes": 3,
-      "external_imports": [],
-      "functions": 4,
-      "internal_imports": [
-        "ShadBotTrader.core.events.event",
-        "ShadBotTrader.core.events.event_bus",
-        "ShadBotTrader.domain.feature.events",
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_quality",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.feature_set",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.infrastructure.feature.feature_quality_engine",
-        "ShadBotTrader.infrastructure.feature.leakage_checker",
-        "ShadBotTrader.infrastructure.feature.standard_catalog"
-      ],
-      "name": "ShadBotTrader.application.services.feature_computation_service",
-      "path": "src/ShadBotTrader/application/services/feature_computation_service.py"
     },
     {
       "classes": 1,
@@ -2779,7 +2540,7 @@
     {
       "classes": 3,
       "external_imports": [],
-      "functions": 10,
+      "functions": 9,
       "internal_imports": [
         "ShadBotTrader.domain.dataset.dataset_descriptor",
         "ShadBotTrader.domain.dataset.dataset_identity",
@@ -2809,97 +2570,6 @@
       "internal_imports": [],
       "name": "ShadBotTrader.domain.dataset.raw_record",
       "path": "src/ShadBotTrader/domain/dataset/raw_record.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
-      "name": "ShadBotTrader.domain.feature",
-      "path": "src/ShadBotTrader/domain/feature/__init__.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
-      "name": "ShadBotTrader.domain.feature.events",
-      "path": "src/ShadBotTrader/domain/feature/events.py"
-    },
-    {
-      "classes": 2,
-      "external_imports": [],
-      "functions": 6,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.common.value_object",
-        "ShadBotTrader.domain.feature.feature_types"
-      ],
-      "name": "ShadBotTrader.domain.feature.feature_definition",
-      "path": "src/ShadBotTrader/domain/feature/feature_definition.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [],
-      "name": "ShadBotTrader.domain.feature.feature_provenance",
-      "path": "src/ShadBotTrader/domain/feature/feature_provenance.py"
-    },
-    {
-      "classes": 4,
-      "external_imports": [],
-      "functions": 13,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.common.value_object"
-      ],
-      "name": "ShadBotTrader.domain.feature.feature_quality",
-      "path": "src/ShadBotTrader/domain/feature/feature_quality.py"
-    },
-    {
-      "classes": 2,
-      "external_imports": [],
-      "functions": 3,
-      "internal_imports": [
-        "ShadBotTrader.domain.market.timestamp"
-      ],
-      "name": "ShadBotTrader.domain.feature.feature_result",
-      "path": "src/ShadBotTrader/domain/feature/feature_result.py"
-    },
-    {
-      "classes": 2,
-      "external_imports": [],
-      "functions": 6,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.common.value_object",
-        "ShadBotTrader.domain.feature.feature_definition"
-      ],
-      "name": "ShadBotTrader.domain.feature.feature_set",
-      "path": "src/ShadBotTrader/domain/feature/feature_set.py"
-    },
-    {
-      "classes": 4,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
-      "name": "ShadBotTrader.domain.feature.feature_types",
-      "path": "src/ShadBotTrader/domain/feature/feature_types.py"
-    },
-    {
-      "classes": 4,
-      "external_imports": [],
-      "functions": 12,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe"
-      ],
-      "name": "ShadBotTrader.domain.feature.ports",
-      "path": "src/ShadBotTrader/domain/feature/ports.py"
     },
     {
       "classes": 0,
@@ -3107,24 +2777,6 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 4,
-      "internal_imports": [
-        "ShadBotTrader.application.services.feature_computation_service",
-        "ShadBotTrader.core.events.event_bus",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store",
-        "ShadBotTrader.infrastructure.feature.calculator_registry",
-        "ShadBotTrader.infrastructure.feature.in_memory_feature_registry",
-        "ShadBotTrader.infrastructure.feature.parquet_feature_store",
-        "ShadBotTrader.infrastructure.feature.standard_catalog"
-      ],
-      "name": "ShadBotTrader.feature_cli",
-      "path": "src/ShadBotTrader/feature_cli.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
       "functions": 0,
       "internal_imports": [],
       "name": "ShadBotTrader.infrastructure",
@@ -3215,7 +2867,7 @@
       "external_imports": [
         "pyarrow"
       ],
-      "functions": 11,
+      "functions": 9,
       "internal_imports": [
         "ShadBotTrader.domain.dataset.data_layer",
         "ShadBotTrader.domain.dataset.dataset_identity",
@@ -3242,222 +2894,6 @@
       ],
       "name": "ShadBotTrader.infrastructure.data.quality_analyzer",
       "path": "src/ShadBotTrader/infrastructure/data/quality_analyzer.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
-      "name": "ShadBotTrader.infrastructure.feature",
-      "path": "src/ShadBotTrader/infrastructure/feature/__init__.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 3,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.atr",
-        "ShadBotTrader.infrastructure.feature.calculators.bollinger",
-        "ShadBotTrader.infrastructure.feature.calculators.ema",
-        "ShadBotTrader.infrastructure.feature.calculators.macd",
-        "ShadBotTrader.infrastructure.feature.calculators.returns",
-        "ShadBotTrader.infrastructure.feature.calculators.rsi",
-        "ShadBotTrader.infrastructure.feature.calculators.sma",
-        "ShadBotTrader.infrastructure.feature.calculators.stochastic"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculator_registry",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculator_registry.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
-      "name": "ShadBotTrader.infrastructure.feature.calculators",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/__init__.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.atr",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/atr.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [
-        "pandas"
-      ],
-      "functions": 2,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.timestamp"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.base",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/base.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.bollinger",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/bollinger.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.ema",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/ema.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [
-        "pandas"
-      ],
-      "functions": 2,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.macd",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/macd.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.returns",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/returns.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.rsi",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/rsi.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.sma",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/sma.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 1,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.infrastructure.feature.calculators.base"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.calculators.stochastic",
-      "path": "src/ShadBotTrader/infrastructure/feature/calculators/stochastic.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 3,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_quality",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.feature_quality_engine",
-      "path": "src/ShadBotTrader/infrastructure/feature/feature_quality_engine.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 4,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.ports"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.in_memory_feature_registry",
-      "path": "src/ShadBotTrader/infrastructure/feature/in_memory_feature_registry.py"
-    },
-    {
-      "classes": 2,
-      "external_imports": [],
-      "functions": 2,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.feature_types"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.leakage_checker",
-      "path": "src/ShadBotTrader/infrastructure/feature/leakage_checker.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [
-        "pyarrow"
-      ],
-      "functions": 7,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.timestamp"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.parquet_feature_store",
-      "path": "src/ShadBotTrader/infrastructure/feature/parquet_feature_store.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 2,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_set",
-        "ShadBotTrader.domain.feature.feature_types"
-      ],
-      "name": "ShadBotTrader.infrastructure.feature.standard_catalog",
-      "path": "src/ShadBotTrader/infrastructure/feature/standard_catalog.py"
     },
     {
       "classes": 0,
@@ -3711,31 +3147,6 @@
       "external_imports": [],
       "functions": 3,
       "internal_imports": [
-        "ShadBotTrader.application.services.data_ingestion_service",
-        "ShadBotTrader.application.services.feature_computation_service",
-        "ShadBotTrader.core.events.event_bus",
-        "ShadBotTrader.domain.feature.events",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.infrastructure.data.candle_normalizer",
-        "ShadBotTrader.infrastructure.data.candle_validator",
-        "ShadBotTrader.infrastructure.data.csv_market_data_provider",
-        "ShadBotTrader.infrastructure.data.in_memory_dataset_catalog",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store",
-        "ShadBotTrader.infrastructure.data.quality_analyzer",
-        "ShadBotTrader.infrastructure.feature.calculator_registry",
-        "ShadBotTrader.infrastructure.feature.in_memory_feature_registry",
-        "ShadBotTrader.infrastructure.feature.parquet_feature_store",
-        "ShadBotTrader.infrastructure.feature.standard_catalog"
-      ],
-      "name": "integration.test_feature_pipeline",
-      "path": "tests/integration/test_feature_pipeline.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 3,
-      "internal_imports": [
         "ShadBotTrader.application.application_state",
         "ShadBotTrader.application.bootstrap",
         "ShadBotTrader.application.runtime",
@@ -3889,7 +3300,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 10,
+      "functions": 8,
       "internal_imports": [
         "ShadBotTrader.domain.dataset.data_layer",
         "ShadBotTrader.domain.dataset.dataset_identity",
@@ -4009,90 +3420,6 @@
       "external_imports": [],
       "functions": 0,
       "internal_imports": [],
-      "name": "unit.feature",
-      "path": "tests/unit/feature/__init__.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 10,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_types",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.price",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.feature.calculators.atr",
-        "ShadBotTrader.infrastructure.feature.calculators.ema",
-        "ShadBotTrader.infrastructure.feature.calculators.macd",
-        "ShadBotTrader.infrastructure.feature.calculators.returns",
-        "ShadBotTrader.infrastructure.feature.calculators.rsi",
-        "ShadBotTrader.infrastructure.feature.calculators.sma",
-        "ShadBotTrader.infrastructure.feature.calculators.stochastic"
-      ],
-      "name": "unit.feature.test_calculators",
-      "path": "tests/unit/feature/test_calculators.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 7,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_set",
-        "ShadBotTrader.domain.feature.feature_types"
-      ],
-      "name": "unit.feature.test_feature_definition",
-      "path": "tests/unit/feature/test_feature_definition.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 4,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.feature.parquet_feature_store"
-      ],
-      "name": "unit.feature.test_feature_store",
-      "path": "tests/unit/feature/test_feature_store.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 9,
-      "internal_imports": [
-        "ShadBotTrader.domain.feature.feature_definition",
-        "ShadBotTrader.domain.feature.feature_quality",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.feature.feature_types",
-        "ShadBotTrader.domain.feature.ports",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.price",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.feature.feature_quality_engine",
-        "ShadBotTrader.infrastructure.feature.leakage_checker"
-      ],
-      "name": "unit.feature.test_quality_and_leakage",
-      "path": "tests/unit/feature/test_quality_and_leakage.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [],
       "name": "unit.project",
       "path": "tests/unit/project/__init__.py"
     },
@@ -4149,23 +3476,23 @@
     }
   ],
   "project_name": "ShadBotTrader",
-  "python_version": "3.14.6",
-  "source_file_count": 122,
+  "python_version": "3.13.14",
+  "source_file_count": 94,
   "statistics": {
-    "class_count": 141,
+    "class_count": 105,
     "config_file_count": 2,
     "documentation_file_count": 43,
-    "external_dependency_count": 5,
-    "function_count": 596,
-    "internal_dependency_count": 81,
+    "external_dependency_count": 4,
+    "function_count": 477,
+    "internal_dependency_count": 58,
     "legacy_file_count": 176,
-    "module_count": 156,
-    "source_file_count": 122,
-    "source_lines": 6300,
-    "test_file_count": 34,
-    "test_lines": 1924,
-    "total_file_count": 383,
-    "total_lines": 47291
+    "module_count": 122,
+    "source_file_count": 94,
+    "source_lines": 4637,
+    "test_file_count": 28,
+    "test_lines": 1412,
+    "total_file_count": 348,
+    "total_lines": 45009
   },
-  "test_file_count": 34
+  "test_file_count": 28
 }
