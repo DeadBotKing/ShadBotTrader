@@ -1,0 +1,7 @@
+# ShadBotTrader runtime configuration.
+app:
+  name: ShadBotTrader
+  version: "0.1.0"
+
+logging:
+  level: INFO
