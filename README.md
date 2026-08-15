@@ -62,3 +62,22 @@ python scripts/run_pip.py
 Generated files: `ProjectSnapshot.md`, `ProjectSnapshot.json`,
 `ChatGPT_Context.md`, `Architecture.md`, `Statistics.json`. Previous
 state is archived under `project_state/archive/`.
+
+## Data Platform (Sprint P1)
+
+Ingest market data through the L0 → L1 → L2 → L3 pipeline:
+
+```bash
+# generate a sample candle CSV (demos/tests)
+python scripts/run_data.py
+
+# or use the CLI directly
+PYTHONPATH=src python -m ShadBotTrader.data_cli sample --symbol XAUUSD_i --timeframe 5M --rows 200
+PYTHONPATH=src python -m ShadBotTrader.data_cli ingest  --csv datasets/samples/XAUUSD_i_5M.csv --symbol XAUUSD_i --timeframe 5M
+PYTHONPATH=src python -m ShadBotTrader.data_cli catalog
+```
+
+The pipeline validates rows (schema/type/range/duplicates), normalises
+symbols and timestamps to UTC, runs the quality engine (gaps,
+duplicates, outliers) and stores raw + normalized data immutably as
+Parquet under `datasets/{raw,processed}/{SYMBOL}/{TIMEFRAME}/v{version}.parquet`.

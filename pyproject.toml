@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "PyYAML>=6.0",
+    "pyarrow>=14.0",
 ]
 
 [project.optional-dependencies]

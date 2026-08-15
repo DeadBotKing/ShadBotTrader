@@ -5,20 +5,20 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Python version: 3.14.6
-- Snapshot generated at: 2026-08-15T16:34:39.191645+00:00
+- Python version: 3.13.14
+- Snapshot generated at: 2026-08-15T16:03:42.159458+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 94
-- Test modules: 28
+- Source modules: 73
+- Test modules: 18
 
 ## Current Phase
 
-Phase 28 — Implementation Foundation (Sprint P1: Data Platform)
+Phase 28 — Implementation Foundation (Sprint P0: Project Intelligence)
 
 ## Implemented Components
 
@@ -27,11 +27,9 @@ Phase 28 — Implementation Foundation (Sprint P1: Data Platform)
 ## Git Commit
 
 - Branch: main
-- Commit: 80cbf5a941ae9a618665da00cb8af0f4136c5382
-- Dirty: yes (20 files)
+- Commit: 28abd280926d6219b02019b2a07533dadc36d6ed
+- Dirty: yes (185 files)
 - Recent commits:
-  - 80cbf5a Phase 28 â€” Implementation Foundation (Sprint P0: Project Intelligence)
-  - e019203 Phase1
   - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
   - ac8c959 Upda
   - 0ddcbe9 Update Docs From Done To No Done
@@ -57,17 +55,17 @@ python -m pytest
 
 ## Next Phase
 
-Sprint P2 — Feature Platform: indicator computation, feature store and feature pipelines over the Data Platform.
+Sprint P1 — Data Platform: market-data ingestion, validation, normalisation and dataset storage (L0 → L3).
 
 ## Statistics
 
-- Total files: 348
-- Source files: 94
-- Test files: 28
+- Total files: 316
+- Source files: 73
+- Test files: 18
 - Documentation files: 43
 - Legacy files: 176
-- Total Python lines: 45068
-- Modules: 122
-- Classes: 105
-- Functions: 482
-- External dependencies: 4
+- Total Python lines: 42631
+- Modules: 91
+- Classes: 74
+- Functions: 319
+- External dependencies: 3
