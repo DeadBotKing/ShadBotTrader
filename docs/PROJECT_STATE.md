@@ -82,8 +82,6 @@ Do NOT rename the project to:
 
 
 
-&#x20;   ShadBotTrader
-
 &#x20;   ShadBotTrader2
 
 &#x20;   TradingBot
@@ -94,17 +92,9 @@ Do NOT rename the project to:
 
 
 
-Internal modules may use:
+The canonical package name (used in paths, imports, CLI commands
 
-
-
-&#x20;   shadbottrader
-
-
-
-only where dictated by the already-established package structure,
-
-but the product/project identity is:
+and code) is:
 
 
 
@@ -2684,7 +2674,7 @@ Dependency container foundation does NOT exist yet (planned):
 
 
 
-&#x20;   src/shadbottrader/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
 
 

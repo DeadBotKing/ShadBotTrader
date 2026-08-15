@@ -232,7 +232,7 @@ Phase 27 باید HOW را بدون تغییر WHAT مشخص کند.
 
 &#x20;   src/
 
-&#x20;   └── shadbottrader/
+&#x20;   └── ShadBotTrader/
 
 &#x20;       ├── core/
 

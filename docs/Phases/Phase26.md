@@ -3412,7 +3412,7 @@ Documentation نباید از:
 
 
 
-&#x20;   shadbottrader architecture validate
+&#x20;   ShadBotTrader architecture validate
 
 
 

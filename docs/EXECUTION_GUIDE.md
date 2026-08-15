@@ -1696,13 +1696,13 @@ Implementation
 
 
 
-src/shadbottrader/core/...
+src/ShadBotTrader/core/...
 
-src/shadbottrader/domain/...
+src/ShadBotTrader/domain/...
 
-src/shadbottrader/application/...
+src/ShadBotTrader/application/...
 
-src/shadbottrader/infrastructure/...
+src/ShadBotTrader/infrastructure/...
 
 
 
@@ -2474,7 +2474,7 @@ Project Intelligence         ✗
 
 
 
-src/shadbottrader/project/
+src/ShadBotTrader/project/
 
 &#x20;   core/
 

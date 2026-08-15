@@ -60,7 +60,7 @@ class ModelTrainer:
 		print(f'Model {model._name} LR Finding Strat ...')
 
 		print()
-		print("python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBot\\src\\utils\\MLModelGenerator\\Image\\Models\\TensorBoard\\LRFinder")
+		print("python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBotTrader\\src\\utils\\MLModelGenerator\\Image\\Models\\TensorBoard\\LRFinder")
 
 		print()
 		print()
@@ -124,7 +124,7 @@ class ModelTrainer:
 		print(f'Model {model._name} Fitting Strat ...')
 		print()
 
-		print("python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBot\\src\\utils\\MLModelGenerator\\Image\\Models\\TensorBoard\\Training")
+		print("python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBotTrader\\src\\utils\\MLModelGenerator\\Image\\Models\\TensorBoard\\Training")
 
 		print()
 		print()

@@ -1180,7 +1180,7 @@ Smoke Test باید بررسی کند:
 
 
 
-&#x20;   python -m src.shadbottrader.main
+&#x20;   python -m src.ShadBotTrader.main
 
 
 
@@ -4388,7 +4388,7 @@ CLI باید:
 
 
 
-&#x20;   python -m src.shadbottrader.main
+&#x20;   python -m src.ShadBotTrader.main
 
 
 

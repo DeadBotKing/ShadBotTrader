@@ -944,7 +944,7 @@ tensor_board = tf.keras.callbacks.TensorBoard(
 											log_dir = 'TensorBoard', 
 											histogram_freq = 1
 											)
-# python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBot\\TensorBoard
+# python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBotTrader\\TensorBoard
 
 # model.evaluate(x = dataset_valid, batch_size = 1)
 

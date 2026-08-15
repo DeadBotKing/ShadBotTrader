@@ -836,7 +836,7 @@ Conceptual:
 
 
 
-&#x20;   shadbottrader.plugins.example:ExamplePlugin
+&#x20;   ShadBotTrader.plugins.example:ExamplePlugin
 
 
 
@@ -1886,7 +1886,7 @@ Example:
 
 
 
-&#x20;   shadbottrader.plugin\_api
+&#x20;   ShadBotTrader.plugin\_api
 
 
 
@@ -1894,7 +1894,7 @@ Internal modules such as:
 
 
 
-&#x20;   shadbottrader.\_internal
+&#x20;   ShadBotTrader.\_internal
 
 
 
@@ -2520,7 +2520,7 @@ Example:
 
 
 
-&#x20;   shadbottrader.plugin.broker.mt5
+&#x20;   ShadBotTrader.plugin.broker.mt5
 
 
 
@@ -2556,7 +2556,7 @@ Example:
 
 
 
-&#x20;   shadbottrader\_plugin\_requests\_total
+&#x20;   ShadBotTrader\_plugin\_requests\_total
 
 
 
@@ -3778,7 +3778,7 @@ Conceptual external plugin:
 
 
 
-&#x20;   shadbottrader\_plugin\_example/
+&#x20;   ShadBotTrader\_plugin\_example/
 
 &#x20;       pyproject.toml
 
@@ -3790,7 +3790,7 @@ Conceptual external plugin:
 
 &#x20;       src/
 
-&#x20;           shadbottrader\_plugin\_example/
+&#x20;           ShadBotTrader\_plugin\_example/
 
 &#x20;               \_\_init\_\_.py
 
@@ -3870,7 +3870,7 @@ A stable plugin-facing API should eventually exist:
 
 
 
-&#x20;   shadbottrader.plugin\_api
+&#x20;   ShadBotTrader.plugin\_api
 
 
 

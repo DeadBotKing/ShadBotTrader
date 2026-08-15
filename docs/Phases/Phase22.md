@@ -886,17 +886,17 @@ Logger Name باید Hierarchical باشد.
 
 
 
-&#x20;   shadbottrader.application
+&#x20;   ShadBotTrader.application
 
-&#x20;   shadbottrader.domain
+&#x20;   ShadBotTrader.domain
 
-&#x20;   shadbottrader.infrastructure
+&#x20;   ShadBotTrader.infrastructure
 
-&#x20;   shadbottrader.engine.trading
+&#x20;   ShadBotTrader.engine.trading
 
-&#x20;   shadbottrader.engine.ai
+&#x20;   ShadBotTrader.engine.ai
 
-&#x20;   shadbottrader.project
+&#x20;   ShadBotTrader.project
 
 
 
@@ -1022,9 +1022,9 @@ Configuration System تعیین می‌کند:
 
 
 
-&#x20;   shadbottrader.trading → INFO
+&#x20;   ShadBotTrader.trading → INFO
 
-&#x20;   shadbottrader.ai      → DEBUG
+&#x20;   ShadBotTrader.ai      → DEBUG
 
 
 
@@ -1990,7 +1990,7 @@ Plugin Logger باید Namespace داشته باشد:
 
 
 
-&#x20;   shadbottrader.plugin.<plugin\_name>
+&#x20;   ShadBotTrader.plugin.<plugin\_name>
 
 
 

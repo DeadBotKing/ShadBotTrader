@@ -356,7 +356,7 @@ Project Name باید Validate شود.
 
 
 
-&#x20;   shadbottrader
+&#x20;   ShadBotTrader
 
 
 

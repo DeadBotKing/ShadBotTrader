@@ -104,8 +104,6 @@ IMPORTANT:
 
 
 
-&#x20;       ShadBotTrader
-
 &#x20;       ShadBotTrader AI
 
 &#x20;       ShadTrader

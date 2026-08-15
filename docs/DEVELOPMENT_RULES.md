@@ -772,8 +772,6 @@ ShadBotTrader
 
 
 
-shadbottrader
-
 projectintelligence
 
 tradingbot

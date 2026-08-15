@@ -286,7 +286,7 @@ PLANNED PROJECT INTELLIGENCE STRUCTURE (Phase 28):
 
 
 
-&#x20;   src/shadbottrader/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -2036,7 +2036,7 @@ Foundation باید عمدتاً Unit Test داشته باشد.
 
 
 
-&#x20;   python -m src.shadbottrader.main
+&#x20;   python -m src.ShadBotTrader.main
 
 
 

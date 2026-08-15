@@ -324,7 +324,7 @@ Recommended structure:
 
 &#x20;   src/
 
-&#x20;       shadbottrader/
+&#x20;       ShadBotTrader/
 
 &#x20;           \_\_init\_\_.py
 
@@ -2908,7 +2908,7 @@ Example:
 
 
 
-&#x20;   python -m shadbottrader simulate
+&#x20;   python -m ShadBotTrader simulate
 
 
 

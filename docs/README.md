@@ -544,7 +544,7 @@ The target structure is:
 
 &#x20;   src/
 
-&#x20;       shadbottrader/
+&#x20;       ShadBotTrader/
 
 &#x20;           \_\_init\_\_.py
 
@@ -3164,19 +3164,19 @@ Examples:
 
 
 
-&#x20;   python -m shadbottrader start
+&#x20;   python -m ShadBotTrader start
 
 
 
-&#x20;   python -m shadbottrader simulate
+&#x20;   python -m ShadBotTrader simulate
 
 
 
-&#x20;   python -m shadbottrader backtest
+&#x20;   python -m ShadBotTrader backtest
 
 
 
-&#x20;   python -m shadbottrader validate
+&#x20;   python -m ShadBotTrader validate
 
 
 
@@ -4930,7 +4930,7 @@ At completion, a developer should be able to run:
 
 
 
-&#x20;   python -m shadbottrader simulate
+&#x20;   python -m ShadBotTrader simulate
 
 
 
@@ -4942,7 +4942,7 @@ The developer should also be able to run:
 
 
 
-&#x20;   python -m shadbottrader backtest
+&#x20;   python -m ShadBotTrader backtest
 
 
 
@@ -4954,7 +4954,7 @@ The system should later support:
 
 
 
-&#x20;   python -m shadbottrader start
+&#x20;   python -m ShadBotTrader start
 
 
 
