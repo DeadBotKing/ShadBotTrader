@@ -1,0 +1,4 @@
+from src.utils.DatasetPreparer.Image.GeneralImageDatasetPreparer import GeneralImagePreparer
+
+general_image_dataset_pereparer = GeneralImagePreparer()
+general_image_dataset_pereparer()
