@@ -149,3 +149,4 @@ secrets.json
 *.png
 *.csv
 *.exe
+config.ini
