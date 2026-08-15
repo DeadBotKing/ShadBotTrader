@@ -104,9 +104,7 @@ IMPORTANT:
 
 
 
-&#x20;       ShadBot
-
-&#x20;       ShadBot AI
+&#x20;       ShadBotTrader AI
 
 &#x20;       ShadTrader
 
@@ -224,7 +222,7 @@ CURRENT MATURITY:
 
 
 
-&#x20;   ARCHITECTURE + FOUNDATION IMPLEMENTATION
+&#x20;   ARCHITECTURE DESIGN COMPLETE — IMPLEMENTATION NOT STARTED
 
 
 
@@ -802,11 +800,11 @@ Repository:
 
 
 
-Current development branch historically used:
+Current development branch:
 
 
 
-&#x20;   architecture-v1
+&#x20;   main
 
 
 
@@ -924,15 +922,15 @@ Do NOT create duplicate foundational abstractions without a reason.
 
 ====================================================================
 
-12\. CURRENT CORE INFRASTRUCTURE
+12\. CORE INFRASTRUCTURE — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-The following foundation components were implemented during
+The following foundation components are PLANNED for Phase 28
 
-Phase 28.x:
+(not yet implemented):
 
 
 
@@ -964,27 +962,27 @@ Conceptual locations:
 
 
 
-&#x20;   src/ShadBot/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
 
 
-&#x20;   src/ShadBot/core/events/event.py
+&#x20;   src/ShadBotTrader/core/events/event.py
 
 
 
-&#x20;   src/ShadBot/core/events/eventBus.py
+&#x20;   src/ShadBotTrader/core/events/eventBus.py
 
 
 
-&#x20;   src/ShadBot/core/lifecycle/lifecycleManager.py
+&#x20;   src/ShadBotTrader/core/lifecycle/lifecycleManager.py
 
 
 
-&#x20;   src/ShadBot/core/plugins/plugin.py
+&#x20;   src/ShadBotTrader/core/plugins/plugin.py
 
 
 
-&#x20;   src/ShadBot/core/services/baseService.py
+&#x20;   src/ShadBotTrader/core/services/baseService.py
 
 
 
@@ -994,13 +992,13 @@ These are part of the foundation.
 
 ====================================================================
 
-13\. CURRENT APPLICATION LAYER
+13\. APPLICATION LAYER — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-The Application Runtime Layer has been implemented.
+The Application Runtime Layer has NOT been implemented yet (planned in Phase 28).
 
 
 
@@ -1008,31 +1006,31 @@ Conceptual files:
 
 
 
-&#x20;   src/ShadBot/application/app.py
+&#x20;   src/ShadBotTrader/application/app.py
 
 
 
-&#x20;   src/ShadBot/application/applicationState.py
+&#x20;   src/ShadBotTrader/application/applicationState.py
 
 
 
-&#x20;   src/ShadBot/application/bootstrap.py
+&#x20;   src/ShadBotTrader/application/bootstrap.py
 
 
 
-&#x20;   src/ShadBot/application/runtime.py
+&#x20;   src/ShadBotTrader/application/runtime.py
 
 
 
-&#x20;   src/ShadBot/application/serviceRegistry.py
+&#x20;   src/ShadBotTrader/application/serviceRegistry.py
 
 
 
-&#x20;   src/ShadBot/application/shutdown.py
+&#x20;   src/ShadBotTrader/application/shutdown.py
 
 
 
-&#x20;   src/ShadBot/application/startup.py
+&#x20;   src/ShadBotTrader/application/startup.py
 
 
 
@@ -1060,13 +1058,13 @@ The Application layer MUST NOT become a replacement for Domain.
 
 ====================================================================
 
-14\. CURRENT DOMAIN IMPLEMENTATION
+14\. DOMAIN — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-The Domain Core has been implemented at a foundational level.
+The Domain Core has NOT been implemented yet (planned in Phase 28).
 
 
 
@@ -1322,7 +1320,7 @@ The intended Project Intelligence structure includes:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -2072,7 +2070,7 @@ Still required:
 
 
 
-Portfolio foundation exists.
+Portfolio foundation does NOT exist yet (planned).
 
 
 
@@ -2146,7 +2144,7 @@ Still required:
 
 
 
-News architecture exists conceptually.
+News architecture is defined conceptually in the docs only; implementation not started.
 
 
 
@@ -2582,23 +2580,13 @@ implemented.
 
 
 
-Known implementation milestones include commits corresponding to:
+No implementation milestones exist yet.
 
 
 
-&#x20;   Initial repository setup
+Current repository history contains only documentation and cleanup
 
-
-
-&#x20;   ShadBot Core Foundation
-
-
-
-&#x20;   ShadBot Domain Core
-
-
-
-&#x20;   Application Runtime Layer
+commits (Initial commit, New, gitignore, Docs).
 
 
 
@@ -2662,73 +2650,73 @@ The project is now ready for continued incremental implementation.
 
 ====================================================================
 
-46\. CURRENTLY IMPLEMENTED VS PLANNED
+46\. IMPLEMENTATION STATUS — NOT YET STARTED
 
 ====================================================================
 
 
 
-IMPLEMENTED / FOUNDATION:
+NOT YET IMPLEMENTED (PLANNED FOR PHASE 28):
 
 
 
-&#x20;   \[x] Git repository
+&#x20;   [ ] Git repository
 
-&#x20;   \[x] Python project foundation
+&#x20;   [ ] Python project foundation
 
-&#x20;   \[x] Core base abstractions
+&#x20;   [ ] Core base abstractions
 
-&#x20;   \[x] Dependency container foundation
+&#x20;   [ ] Dependency container foundation
 
-&#x20;   \[x] Event abstraction foundation
+&#x20;   [ ] Event abstraction foundation
 
-&#x20;   \[x] Event bus foundation
+&#x20;   [ ] Event bus foundation
 
-&#x20;   \[x] Lifecycle manager foundation
+&#x20;   [ ] Lifecycle manager foundation
 
-&#x20;   \[x] Plugin abstraction foundation
+&#x20;   [ ] Plugin abstraction foundation
 
-&#x20;   \[x] Base service abstraction
+&#x20;   [ ] Base service abstraction
 
-&#x20;   \[x] Application runtime foundation
+&#x20;   [ ] Application runtime foundation
 
-&#x20;   \[x] Application startup
+&#x20;   [ ] Application startup
 
-&#x20;   \[x] Application shutdown
+&#x20;   [ ] Application shutdown
 
-&#x20;   \[x] Application state
+&#x20;   [ ] Application state
 
-&#x20;   \[x] Service registry
+&#x20;   [ ] Service registry
 
-&#x20;   \[x] Domain entity foundation
+&#x20;   [ ] Domain entity foundation
 
-&#x20;   \[x] Domain value object foundation
+&#x20;   [ ] Domain value object foundation
 
-&#x20;   \[x] Symbol
+&#x20;   [ ] Symbol
 
-&#x20;   \[x] TimeFrame
+&#x20;   [ ] TimeFrame
 
-&#x20;   \[x] Candle
+&#x20;   [ ] Candle
 
-&#x20;   \[x] Account
+&#x20;   [ ] Account
 
-&#x20;   \[x] Balance
+&#x20;   [ ] Balance
 
-&#x20;   \[x] Prediction
+&#x20;   [ ] Prediction
 
-&#x20;   \[x] Signal
+&#x20;   [ ] Signal
 
-&#x20;   \[x] Risk model foundation
+&#x20;   [ ] Risk model foundation
 
-&#x20;   \[x] Order foundation
+&#x20;   [ ] Order foundation
 
-&#x20;   \[x] Position foundation
+&#x20;   [ ] Position foundation
 
-&#x20;   \[x] Trade foundation
+&#x20;   [ ] Trade foundation
 
-&#x20;   \[x] Project Intelligence directory skeleton
+&#x20;   [ ] Project Intelligence directory skeleton
 
-&#x20;   \[x] Project State directory skeleton
+&#x20;   [ ] Project State directory skeleton
 
 
 
@@ -3072,7 +3060,7 @@ Current document metadata should contain:
 
 &#x20;   IMPLEMENTATION\_BRANCH:
 
-&#x20;       architecture-v1
+&#x20;       main
 
 
 
@@ -3570,25 +3558,25 @@ ShadBotTrader currently has:
 
 &#x20;   core:
 
-&#x20;       foundation implemented
+&#x20;       not implemented
 
 
 
 &#x20;   domain:
 
-&#x20;       foundation implemented
+&#x20;       not implemented
 
 
 
 &#x20;   application:
 
-&#x20;       runtime foundation implemented
+&#x20;       not implemented
 
 
 
 &#x20;   infrastructure:
 
-&#x20;       foundational architecture only
+&#x20;       not implemented
 
 
 

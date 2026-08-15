@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -2656,7 +2656,7 @@ Conceptual Structure:
 
 
 
-src/ShadBot/
+src/ShadBotTrader/
 
 &#x20;   simulation/
 

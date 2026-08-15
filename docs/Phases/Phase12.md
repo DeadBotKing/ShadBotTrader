@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -52,7 +52,7 @@ PURPOSE:
 
 &#x20;   Validation، Storage، Serving، Monitoring و Reproducibility
 
-&#x20;   تمام Featureهای ShadBot.
+&#x20;   تمام Featureهای ShadBotTrader.
 
 
 

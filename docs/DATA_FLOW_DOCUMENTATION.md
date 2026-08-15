@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -28,7 +28,7 @@ DOCUMENT PURPOSE
 
 
 
-این سند مرجع رسمی جریان داده در ShadBot است.
+این سند مرجع رسمی جریان داده در ShadBotTrader است.
 
 
 
@@ -120,7 +120,7 @@ ABSOLUTE DATA FLOW RULE
 
 
 
-ShadBot دارای چند جریان داده اصلی است:
+ShadBotTrader دارای چند جریان داده اصلی است:
 
 
 
@@ -9430,7 +9430,7 @@ If a future developer asks:
 
 
 
-&#x20;   "Why did ShadBot make this trade?"
+&#x20;   "Why did ShadBotTrader make this trade?"
 
 
 

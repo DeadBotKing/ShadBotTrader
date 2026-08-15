@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -66,7 +66,7 @@ PRIMARY ARCHITECTURAL STYLE:
 
 
 
-Phase 7 defines the Engine Architecture of ShadBot.
+Phase 7 defines the Engine Architecture of ShadBotTrader.
 
 
 
@@ -232,7 +232,7 @@ injected into Services or Engines.
 
 
 
-ShadBot defines the following canonical Engines.
+ShadBotTrader defines the following canonical Engines.
 
 
 

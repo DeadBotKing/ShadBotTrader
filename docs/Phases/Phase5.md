@@ -1,4 +1,4 @@
-\# SHADBOT ENTERPRISE AI TRADING PLATFORM
+\# SHADBOTTRADER ENTERPRISE AI TRADING PLATFORM
 
 \# PHASE 05 — FRAMEWORK DESIGN
 
@@ -6,7 +6,7 @@
 
 Document ID:
 
-SHADBOT-ARCH-P05
+SHADBOTTRADER-ARCH-P05
 
 
 
@@ -46,7 +46,7 @@ Framework-Isolated Core
 
 
 
-این Phase تکنولوژی‌ها، Frameworkها، Libraryها، Runtimeها و Technology Boundaryهای رسمی ShadBot را تعیین می‌کند.
+این Phase تکنولوژی‌ها، Frameworkها، Libraryها، Runtimeها و Technology Boundaryهای رسمی ShadBotTrader را تعیین می‌کند.
 
 
 
@@ -92,7 +92,7 @@ Framework-Isolated Core
 
 
 
-ShadBot یک Python-based Enterprise Desktop Application است.
+ShadBotTrader یک Python-based Enterprise Desktop Application است.
 
 
 
@@ -1390,9 +1390,9 @@ Secretهای Runtime ترجیحاً از Environment Variables خوانده شو
 
 
 
-&#x20;   SHADBOT\_BROKER\_API\_KEY
+&#x20;   SHADBOTTRADER\_BROKER\_API\_KEY
 
-&#x20;   SHADBOT\_BROKER\_SECRET
+&#x20;   SHADBOTTRADER\_BROKER\_SECRET
 
 
 

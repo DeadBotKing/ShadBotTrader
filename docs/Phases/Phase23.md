@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -22,7 +22,7 @@ PURPOSE:
 
 &#x20;   طراحی یک Testing Architecture کامل، چندلایه، deterministic، قابل‌گسترش و
 
-&#x20;   Production-grade برای کل ShadBot.
+&#x20;   Production-grade برای کل ShadBotTrader.
 
 
 
@@ -1172,7 +1172,7 @@ Smoke Test باید بررسی کند:
 
 
 
-&#x20;   آیا ShadBot اساساً Start می‌شود؟
+&#x20;   آیا ShadBotTrader اساساً Start می‌شود؟
 
 
 
@@ -1180,7 +1180,7 @@ Smoke Test باید بررسی کند:
 
 
 
-&#x20;   python -m src.shadbot.main
+&#x20;   python -m src.ShadBotTrader.main
 
 
 
@@ -4328,7 +4328,7 @@ Critical state changes باید در:
 
 
 
-اگر ShadBot subprocess اجرا می‌کند:
+اگر ShadBotTrader subprocess اجرا می‌کند:
 
 
 
@@ -4388,7 +4388,7 @@ CLI باید:
 
 
 
-&#x20;   python -m src.shadbot.main
+&#x20;   python -m src.ShadBotTrader.main
 
 
 
@@ -4958,7 +4958,7 @@ Test Contractها نیز بخشی از:
 
 
 
-Testing در ShadBot یک لایه جانبی نیست.
+Testing در ShadBotTrader یک لایه جانبی نیست.
 
 
 

@@ -74,45 +74,35 @@ Project Type:
 
 
 
-&#x20;   Enterprise Trading Application / Reference Trading Runtime
-
-
-
-Relationship to ShadBot:
-
-
-
-&#x20;   ShadBotTrader is a separate project.
-
-
-
-ShadBot:
-
-
-
 &#x20;   Enterprise AI Trading Platform
 
 
 
-ShadBotTrader:
+Platform identity:
 
 
 
-&#x20;   Trading-focused application used to validate, execute and
+&#x20;   ShadBotTrader is a single, unified enterprise AI trading
 
-&#x20;   integrate the trading architecture and Project Intelligence
+&#x20;   platform. It is built from scratch as one project and one
 
-&#x20;   capabilities.
-
-
-
-ShadBotTrader must NOT become a second implementation of the
-
-entire ShadBot platform.
+&#x20;   codebase. There is no separate companion project.
 
 
 
-Its purpose is to provide a real, executable trading workspace.
+The platform includes these subsystems, all developed together:
+
+
+
+&#x20;   Data, Feature, AI, Trading, Portfolio, Simulation,
+
+&#x20;   Self-Learning, Project Intelligence, GUI, Infrastructure.
+
+
+
+Its purpose is to provide a real, executable, production-grade
+
+trading platform.
 
 
 
@@ -176,7 +166,7 @@ The final ShadBotTrader system must be able to:
 
 &#x20;   24. Run automated tests.
 
-&#x20;   25. Be inspectable by ShadBot Project Intelligence.
+&#x20;   25. Be inspectable by ShadBotTrader Project Intelligence.
 
 
 
@@ -208,7 +198,7 @@ ShadBotTrader must NOT initially attempt to implement:
 
 
 
-Those capabilities belong primarily to ShadBot.
+Those capabilities belong primarily to ShadBotTrader.
 
 
 
@@ -334,7 +324,7 @@ Recommended structure:
 
 &#x20;   src/
 
-&#x20;       shadbottrader/
+&#x20;       ShadBotTrader/
 
 &#x20;           \_\_init\_\_.py
 
@@ -2918,7 +2908,7 @@ Example:
 
 
 
-&#x20;   python -m shadbottrader simulate
+&#x20;   python -m ShadBotTrader simulate
 
 
 
@@ -3694,7 +3684,7 @@ Complete pipeline:
 
 
 
-ShadBotTrader must be inspectable by ShadBot Project Intelligence.
+ShadBotTrader must be inspectable by ShadBotTrader Project Intelligence.
 
 
 
@@ -5922,47 +5912,31 @@ application that can serve as:
 
 
 
-&#x20;   4. A reference implementation for ShadBot.
+&#x20;   4. A reference implementation for ShadBotTrader.
 
 
 
-&#x20;   5. A realistic target for ShadBot Project Intelligence.
+&#x20;   5. A realistic target for ShadBotTrader Project Intelligence.
 
 
 
-&#x20;   6. A future integration target for ShadBot AI capabilities.
+&#x20;   6. A future integration target for ShadBotTrader AI capabilities.
 
 
 
 ====================================================================
 
-133\. FINAL RELATIONSHIP WITH SHADBOT
+133\. FINAL RELATIONSHIP WITH SHADBOTTRADER
 
 ====================================================================
 
 
 
-ShadBot:
+ShadBotTrader is one unified platform with the following subsystems:
 
 
 
-&#x20;   Platform
-
-
-
-ShadBotTrader:
-
-
-
-&#x20;   Trading Application / Reference Runtime
-
-
-
-Relationship:
-
-
-
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 &#x20;       |
 
@@ -6000,15 +5974,11 @@ Relationship:
 
 &#x20;       +---- Infrastructure
 
-&#x20;       |
-
-&#x20;       +---- ShadBotTrader Integration Target
 
 
+All subsystems are part of the single ShadBotTrader project and are
 
-ShadBotTrader must remain independently understandable and
-
-executable.
+developed together from scratch.
 
 
 

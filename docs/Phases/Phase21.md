@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -22,7 +22,7 @@ PURPOSE:
 
 &#x20;   طراحی سیستم Configuration مرکزی، نسخه‌پذیر، محیط‌محور، امن، قابل اعتبارسنجی،
 
-&#x20;   قابل Override، قابل Audit و قابل استفاده توسط تمام بخش‌های ShadBot.
+&#x20;   قابل Override، قابل Audit و قابل استفاده توسط تمام بخش‌های ShadBotTrader.
 
 
 
@@ -82,7 +82,7 @@ Configuration System باید یک:
 
 
 
-برای کل ShadBot فراهم کند.
+برای کل ShadBotTrader فراهم کند.
 
 
 
@@ -1206,7 +1206,7 @@ Raw Sources:
 
 
 
-&#x20;   SHADBOT\_DATABASE\_HOST
+&#x20;   SHADBOTTRADER\_DATABASE\_HOST
 
 
 
@@ -1548,7 +1548,7 @@ Resolved Configuration می‌تواند:
 
 
 
-هر Run مهم ShadBot باید بتواند مشخص کند:
+هر Run مهم ShadBotTrader باید بتواند مشخص کند:
 
 
 

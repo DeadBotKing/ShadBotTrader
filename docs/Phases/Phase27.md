@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -232,7 +232,7 @@ Phase 27 باید HOW را بدون تغییر WHAT مشخص کند.
 
 &#x20;   src/
 
-&#x20;   └── shadbot/
+&#x20;   └── ShadBotTrader/
 
 &#x20;       ├── core/
 
@@ -634,7 +634,7 @@ Generated State:
 
 
 
-این State باید توسط خود ShadBot قابل تولید و به‌روزرسانی باشد.
+این State باید توسط خود ShadBotTrader قابل تولید و به‌روزرسانی باشد.
 
 
 
@@ -1762,7 +1762,7 @@ Documentation باید همراه Implementation حرکت کند.
 
 
 
-Generator باید بتواند ساختار پایه ShadBot را deterministic ایجاد کند.
+Generator باید بتواند ساختار پایه ShadBotTrader را deterministic ایجاد کند.
 
 
 
@@ -3068,7 +3068,7 @@ Phase 27:
 
 
 
-&#x20;   یک بخش واقعی از ShadBot را بسازد،
+&#x20;   یک بخش واقعی از ShadBotTrader را بسازد،
 
 &#x20;   تست کند،
 

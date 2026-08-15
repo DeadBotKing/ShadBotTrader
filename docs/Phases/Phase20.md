@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -20,7 +20,7 @@ STATUS:
 
 PURPOSE:
 
-&#x20;   طراحی معماری کامل لایه Database و SQL Server برای ShadBot به‌صورت
+&#x20;   طراحی معماری کامل لایه Database و SQL Server برای ShadBotTrader به‌صورت
 
 &#x20;   Enterprise-grade، قابل توسعه، قابل تست، قابل Migration، قابل Audit،
 
@@ -80,7 +80,7 @@ SQL Server باید به عنوان:
 
 
 
-برای ShadBot عمل کند.
+برای ShadBotTrader عمل کند.
 
 
 
@@ -4204,7 +4204,7 @@ Repository باید:
 
 
 
-&#x20;   src/ShadBot/infrastructure/
+&#x20;   src/ShadBotTrader/infrastructure/
 
 
 
@@ -5156,7 +5156,7 @@ Correction:
 
 
 
-&#x20;                        SHADBOT
+&#x20;                        SHADBOTTRADER
 
 &#x20;                           |
 

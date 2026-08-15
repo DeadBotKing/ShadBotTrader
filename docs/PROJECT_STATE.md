@@ -82,8 +82,6 @@ Do NOT rename the project to:
 
 
 
-&#x20;   ShadBot
-
 &#x20;   ShadBotTrader2
 
 &#x20;   TradingBot
@@ -94,17 +92,9 @@ Do NOT rename the project to:
 
 
 
-Internal modules may use:
+The canonical package name (used in paths, imports, CLI commands
 
-
-
-&#x20;   shadbot
-
-
-
-only where dictated by the already-established package structure,
-
-but the product/project identity is:
+and code) is:
 
 
 
@@ -604,7 +594,7 @@ Implementation branch currently observed:
 
 
 
-&#x20;   architecture-v1
+&#x20;   main
 
 
 
@@ -662,7 +652,7 @@ Commit:
 
 Message:
 
-&#x20;   Implement ShadBot Core Foundation
+&#x20;   Implement ShadBotTrader Core Foundation
 
 
 
@@ -670,17 +660,17 @@ Created:
 
 
 
-&#x20;   src/ShadBot/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
-&#x20;   src/ShadBot/core/events/event.py
+&#x20;   src/ShadBotTrader/core/events/event.py
 
-&#x20;   src/ShadBot/core/events/eventBus.py
+&#x20;   src/ShadBotTrader/core/events/eventBus.py
 
-&#x20;   src/ShadBot/core/lifecycle/lifecycleManager.py
+&#x20;   src/ShadBotTrader/core/lifecycle/lifecycleManager.py
 
-&#x20;   src/ShadBot/core/plugins/plugin.py
+&#x20;   src/ShadBotTrader/core/plugins/plugin.py
 
-&#x20;   src/ShadBot/core/services/baseService.py
+&#x20;   src/ShadBotTrader/core/services/baseService.py
 
 
 
@@ -694,7 +684,7 @@ Commit:
 
 Message:
 
-&#x20;   Implement ShadBot Domain Core
+&#x20;   Implement ShadBotTrader Domain Core
 
 
 
@@ -702,31 +692,31 @@ Created:
 
 
 
-&#x20;   src/ShadBot/domain/common/entity.py
+&#x20;   src/ShadBotTrader/domain/common/entity.py
 
-&#x20;   src/ShadBot/domain/common/valueObject.py
+&#x20;   src/ShadBotTrader/domain/common/valueObject.py
 
-&#x20;   src/ShadBot/domain/market/candle.py
+&#x20;   src/ShadBotTrader/domain/market/candle.py
 
-&#x20;   src/ShadBot/domain/market/symbol.py
+&#x20;   src/ShadBotTrader/domain/market/symbol.py
 
-&#x20;   src/ShadBot/domain/market/timefram.py
+&#x20;   src/ShadBotTrader/domain/market/timefram.py
 
-&#x20;   src/ShadBot/domain/portfolio/account.py
+&#x20;   src/ShadBotTrader/domain/portfolio/account.py
 
-&#x20;   src/ShadBot/domain/portfolio/balance.py
+&#x20;   src/ShadBotTrader/domain/portfolio/balance.py
 
-&#x20;   src/ShadBot/domain/prediction/prediction.py
+&#x20;   src/ShadBotTrader/domain/prediction/prediction.py
 
-&#x20;   src/ShadBot/domain/prediction/signal.py
+&#x20;   src/ShadBotTrader/domain/prediction/signal.py
 
-&#x20;   src/ShadBot/domain/risk/riskModel.py
+&#x20;   src/ShadBotTrader/domain/risk/riskModel.py
 
-&#x20;   src/ShadBot/domain/trading/oerder.py
+&#x20;   src/ShadBotTrader/domain/trading/oerder.py
 
-&#x20;   src/ShadBot/domain/trading/position.py
+&#x20;   src/ShadBotTrader/domain/trading/position.py
 
-&#x20;   src/ShadBot/domain/trading/trade.py
+&#x20;   src/ShadBotTrader/domain/trading/trade.py
 
 
 
@@ -748,19 +738,19 @@ Created:
 
 
 
-&#x20;   src/ShadBot/application/app.py
+&#x20;   src/ShadBotTrader/application/app.py
 
-&#x20;   src/ShadBot/application/applicationState.py
+&#x20;   src/ShadBotTrader/application/applicationState.py
 
-&#x20;   src/ShadBot/application/bootstrap.py
+&#x20;   src/ShadBotTrader/application/bootstrap.py
 
-&#x20;   src/ShadBot/application/runtime.py
+&#x20;   src/ShadBotTrader/application/runtime.py
 
-&#x20;   src/ShadBot/application/serviceRegistry.py
+&#x20;   src/ShadBotTrader/application/serviceRegistry.py
 
-&#x20;   src/ShadBot/application/shutdown.py
+&#x20;   src/ShadBotTrader/application/shutdown.py
 
-&#x20;   src/ShadBot/application/startup.py
+&#x20;   src/ShadBotTrader/application/startup.py
 
 
 
@@ -772,43 +762,13 @@ Created:
 
 
 
-The project has already been executed successfully during
+The project has NOT been executed yet — no new-platform code exists
 
-development.
-
-
-
-Known successful command:
+to run.
 
 
 
-&#x20;   python -m src.shadbot.main
-
-
-
-Known outputs during different implementation phases included:
-
-
-
-&#x20;   ShadBot Core Started
-
-
-
-&#x20;   Infrastructure Ready
-
-
-
-&#x20;   EURUSD 1.15
-
-
-
-&#x20;   Starting
-
-
-
-This confirms that the application bootstrap/runtime path has
-
-already been exercised.
+There is no runtime output yet.
 
 
 
@@ -816,15 +776,9 @@ IMPORTANT:
 
 
 
-&#x20;   Do not assume these messages represent final production
+&#x20;   The first successful runtime will be produced during Phase 28
 
-&#x20;   behavior.
-
-
-
-They only confirm that the corresponding implementation stage
-
-executed successfully.
+&#x20;   implementation, not before.
 
 
 
@@ -836,7 +790,7 @@ executed successfully.
 
 
 
-The following conceptual core components exist:
+The following conceptual core components are PLANNED (not yet implemented):
 
 
 
@@ -1006,7 +960,7 @@ Platform.
 
 
 
-Its purpose is to allow ShadBotTrader/ShadBot development tooling
+Its purpose is to allow ShadBotTrader/ShadBotTrader development tooling
 
 to understand its own project.
 
@@ -1112,11 +1066,11 @@ The Project Intelligence system is intended to automatically:
 
 
 
-The following structure has been created:
+The following structure is PLANNED (not yet created):
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -1898,11 +1852,11 @@ Domain Core:
 
 
 
-&#x20;   PARTIALLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED (PLANNED)
 
 
 
-Existing initial objects:
+Planned objects:
 
 
 
@@ -2032,11 +1986,11 @@ Application Runtime:
 
 
 
-&#x20;   INITIAL IMPLEMENTATION COMPLETE
+&#x20;   NOT IMPLEMENTED (PLANNED)
 
 
 
-Existing concepts:
+Planned concepts:
 
 
 
@@ -2082,15 +2036,11 @@ implementation roadmap.
 
 
 
-Infrastructure has been partially exercised.
+Infrastructure has NOT been implemented.
 
 
 
-Known runtime output:
-
-
-
-&#x20;   Infrastructure Ready
+No runtime output exists yet.
 
 
 
@@ -2158,7 +2108,7 @@ Trading platform is:
 
 
 
-&#x20;   PARTIALLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2230,7 +2180,7 @@ AI Platform is:
 
 
 
-&#x20;   NOT FULLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2290,7 +2240,7 @@ Backtesting is:
 
 
 
-&#x20;   NOT FULLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2362,7 +2312,7 @@ Simulation is:
 
 
 
-&#x20;   NOT FULLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2410,7 +2360,7 @@ Self-learning is:
 
 
 
-&#x20;   NOT FULLY IMPLEMENTED
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2460,7 +2410,7 @@ Portfolio management is:
 
 
 
-&#x20;   INITIAL DOMAIN OBJECTS EXIST
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2520,7 +2470,7 @@ Risk management is:
 
 
 
-&#x20;   INITIAL RiskModel EXISTS
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -2572,11 +2522,11 @@ Must eventually support:
 
 
 
-Core Event Bus foundation exists.
+Core Event Bus foundation does NOT exist yet.
 
 
 
-Existing:
+Planned:
 
 
 
@@ -2636,11 +2586,11 @@ Future requirements:
 
 
 
-Plugin foundation exists.
+Plugin foundation does NOT exist yet.
 
 
 
-Existing:
+Planned:
 
 
 
@@ -2720,11 +2670,11 @@ Potential plugin areas:
 
 
 
-Dependency container foundation exists:
+Dependency container foundation does NOT exist yet (planned):
 
 
 
-&#x20;   src/ShadBot/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
 
 
@@ -2764,11 +2714,11 @@ The final DI system must support:
 
 
 
-Lifecycle foundation exists:
+Lifecycle foundation does NOT exist yet (planned):
 
 
 
-&#x20;   lifecycleManager.py
+&#x20;   lifecycle_manager.py
 
 
 
@@ -3168,27 +3118,27 @@ Directories already created:
 
 
 
-&#x20;   src/ShadBot/project
+&#x20;   src/ShadBotTrader/project
 
 
 
-&#x20;   src/ShadBot/project/core
+&#x20;   src/ShadBotTrader/project/core
 
 
 
-&#x20;   src/ShadBot/project/models
+&#x20;   src/ShadBotTrader/project/models
 
 
 
-&#x20;   src/ShadBot/project/builders
+&#x20;   src/ShadBotTrader/project/builders
 
 
 
-&#x20;   src/ShadBot/project/exporters
+&#x20;   src/ShadBotTrader/project/exporters
 
 
 
-&#x20;   src/ShadBot/project/runtime
+&#x20;   src/ShadBotTrader/project/runtime
 
 
 
@@ -3236,11 +3186,11 @@ Current status:
 
 
 
-&#x20;   STRUCTURE CREATED
+&#x20;   NOT IMPLEMENTED
 
 
 
-&#x20;   IMPLEMENTATION IN PROGRESS
+&#x20;   PLANNED (Phase 28 / Sprint P0)
 
 
 
@@ -3504,7 +3454,7 @@ Implementation begun:
 
 
 
-&#x20;   Phase 28
+&#x20;   NO — not started
 
 
 
@@ -3512,15 +3462,7 @@ Known implementation work completed:
 
 
 
-&#x20;   Core Foundation
-
-
-
-&#x20;   Domain Core initial layer
-
-
-
-&#x20;   Application Runtime initial layer
+&#x20;   NONE
 
 
 
@@ -3528,7 +3470,7 @@ Project Intelligence scaffold created:
 
 
 
-&#x20;   YES
+&#x20;   NO
 
 
 
@@ -3622,31 +3564,31 @@ CURRENT HIGH-LEVEL STATE:
 
 &#x20;   Implementation:
 
-&#x20;       PHASE 28 IN PROGRESS
+&#x20;       NOT STARTED
 
 
 
 &#x20;   Core Foundation:
 
-&#x20;       INITIAL IMPLEMENTATION EXISTS
+&#x20;       NOT IMPLEMENTED
 
 
 
 &#x20;   Domain:
 
-&#x20;       INITIAL IMPLEMENTATION EXISTS
+&#x20;       NOT IMPLEMENTED
 
 
 
 &#x20;   Application:
 
-&#x20;       INITIAL RUNTIME EXISTS
+&#x20;       NOT IMPLEMENTED
 
 
 
 &#x20;   Project Intelligence:
 
-&#x20;       SCAFFOLD CREATED
+&#x20;       NOT IMPLEMENTED
 
 
 
@@ -4000,11 +3942,11 @@ Examples:
 
 
 
-&#x20;   Implement ShadBot Core Foundation
+&#x20;   Implement ShadBotTrader Core Foundation
 
 
 
-&#x20;   Implement ShadBot Domain Core
+&#x20;   Implement ShadBotTrader Domain Core
 
 
 
@@ -4458,7 +4400,7 @@ Core:
 
 
 
-&#x20;   src/ShadBot/core/
+&#x20;   src/ShadBotTrader/core/
 
 
 
@@ -4466,7 +4408,7 @@ Domain:
 
 
 
-&#x20;   src/ShadBot/domain/
+&#x20;   src/ShadBotTrader/domain/
 
 
 
@@ -4474,7 +4416,7 @@ Application:
 
 
 
-&#x20;   src/ShadBot/application/
+&#x20;   src/ShadBotTrader/application/
 
 
 
@@ -4482,7 +4424,7 @@ Project Intelligence:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -4636,55 +4578,55 @@ Architecture:
 
 Core Foundation:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Domain Core:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Application Runtime:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Event Bus:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Plugin Foundation:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Dependency Injection:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Lifecycle:
 
-&#x20;   IMPLEMENTED / INITIAL
+&#x20;   NOT IMPLEMENTED
 
 
 
 Trading Platform:
 
-&#x20;   DESIGNED / PARTIAL
+&#x20;   DESIGNED
 
 
 
 Portfolio Platform:
 
-&#x20;   DESIGNED / PARTIAL
+&#x20;   DESIGNED
 
 
 
@@ -4732,7 +4674,7 @@ Self Learning:
 
 Project Intelligence:
 
-&#x20;   SCAFFOLDED / IN PROGRESS
+&#x20;   NOT IMPLEMENTED
 
 
 
@@ -5006,7 +4948,7 @@ IMPLEMENTATION:
 
 
 
-&#x20;   Phase 28 in progress
+&#x20;   Not started
 
 
 
@@ -5014,7 +4956,7 @@ CORE:
 
 
 
-&#x20;   Initial implementation exists
+&#x20;   Not implemented
 
 
 
@@ -5022,7 +4964,7 @@ DOMAIN:
 
 
 
-&#x20;   Initial implementation exists
+&#x20;   Not implemented
 
 
 
@@ -5030,7 +4972,7 @@ APPLICATION:
 
 
 
-&#x20;   Initial runtime exists
+&#x20;   Not implemented
 
 
 
@@ -5038,7 +4980,7 @@ PROJECT INTELLIGENCE:
 
 
 
-&#x20;   Scaffold exists, implementation continues
+&#x20;   Not implemented
 
 
 
@@ -5046,7 +4988,7 @@ TRADING:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 
@@ -5054,7 +4996,7 @@ AI:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 
@@ -5062,7 +5004,7 @@ PORTFOLIO:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 
@@ -5070,7 +5012,7 @@ BACKTESTING:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 
@@ -5078,7 +5020,7 @@ SIMULATION:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 
@@ -5086,7 +5028,7 @@ SELF LEARNING:
 
 
 
-&#x20;   Architecture exists, implementation continues
+&#x20;   Architecture designed; not implemented
 
 
 

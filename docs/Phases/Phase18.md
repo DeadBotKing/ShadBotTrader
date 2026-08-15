@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -22,7 +22,7 @@ PURPOSE:
 
 &#x20;   ایجاد یک سیستم داخلی برای مشاهده، تحلیل، درک، ثبت، نسخه‌بندی و توضیح
 
-&#x20;   وضعیت کامل پروژه ShadBot؛ به‌گونه‌ای که خود سیستم بتواند در هر لحظه
+&#x20;   وضعیت کامل پروژه ShadBotTrader؛ به‌گونه‌ای که خود سیستم بتواند در هر لحظه
 
 &#x20;   بداند:
 
@@ -58,7 +58,7 @@ PURPOSE:
 
 &#x20;   Project Intelligence باید Source of Truth داخلی برای وضعیت مهندسی
 
-&#x20;   ShadBot باشد.
+&#x20;   ShadBotTrader باشد.
 
 
 
@@ -442,7 +442,7 @@ Project Intelligence باید Project Root را به‌صورت explicit دری�
 
 
 
-&#x20;   C:\\Users\\...\\ShadBot
+&#x20;   C:\\Users\\...\\ShadBotTrader
 
 
 
@@ -3478,7 +3478,7 @@ Generated:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 &#x20;   |
 
@@ -5432,7 +5432,7 @@ Project Intelligence نباید:
 
 
 
-&#x20;                        SHADBOT
+&#x20;                        SHADBOTTRADER
 
 &#x20;                           |
 
@@ -5638,7 +5638,7 @@ Project Intelligence باید کاری کند که:
 
 
 
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 
 

@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -60,7 +60,7 @@ PRIMARY ARCHITECTURAL STYLE:
 
 
 
-Phase 8 defines the Service Architecture of ShadBot.
+Phase 8 defines the Service Architecture of ShadBotTrader.
 
 
 
@@ -214,7 +214,7 @@ If a Service becomes too large:
 
 
 
-ShadBot defines several Service categories.
+ShadBotTrader defines several Service categories.
 
 
 
@@ -3800,7 +3800,7 @@ Runtime says:
 
 ================================================================================
 
-85\. FINAL SHADBOT FLOW
+85\. FINAL SHADBOTTRADER FLOW
 
 ================================================================================
 

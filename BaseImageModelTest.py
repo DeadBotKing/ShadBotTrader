@@ -104,7 +104,7 @@ tf.keras.utils.plot_model(model, show_shapes = True, to_file = 'buy_sell.png')
 #TensorBoard Model: ***************************************
 tensor_board = tf.keras.callbacks.TensorBoard(log_dir = 'buy_sell', histogram_freq = 1)
 #http://localhost:6006/
-#python.exe C:\Users\Mehrshad\AppData\Roaming\Python\Python38\site-packages\tensorboard\main.py --logdir=C:\Users\Mehrshad\Desktop\ShadBot\buy_sell
+#python.exe C:\Users\Mehrshad\AppData\Roaming\Python\Python38\site-packages\tensorboard\main.py --logdir=C:\Users\Mehrshad\Desktop\ShadBotTrader\buy_sell
 #////////////////////////////////////////////////////////
 
 #LR Schedule: **************************************

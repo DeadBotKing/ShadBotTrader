@@ -644,7 +644,7 @@ tensor_board = tf.keras.callbacks.TensorBoard(
 											log_dir = 'TensorBoard', 
 											histogram_freq = 1
 											)
-#python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBot\\TensorBoard
+#python.exe C:\\Users\\Mehrshad\\AppData\\Roaming\\Python\\Python38\\site-packages\\tensorboard\\main.py --logdir=C:\\Users\\Mehrshad\\Desktop\\ShadBotTrader\\TensorBoard
 
 # lr_schedule = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-9 * 10**(epoch / 10))
 # optimizer = tf.keras.optimizers.Adam(learning_rate = 1e-9)
