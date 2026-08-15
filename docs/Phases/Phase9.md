@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -68,13 +68,13 @@ PRIMARY GOALS:
 
 Plugin Architecture defines how external or optional capabilities become
 
-part of ShadBot without modifying the Core architecture.
+part of ShadBotTrader without modifying the Core architecture.
 
 
 
 A Plugin is an independently deployable/extensible capability that conforms
 
-to a ShadBot-defined contract.
+to a ShadBotTrader-defined contract.
 
 
 
@@ -226,7 +226,7 @@ Instead:
 
 
 
-&#x20;                       SHADBOT CORE
+&#x20;                       SHADBOTTRADER CORE
 
 &#x20;                            |
 
@@ -264,7 +264,7 @@ Instead:
 
 
 
-ShadBot supports multiple plugin categories.
+ShadBotTrader supports multiple plugin categories.
 
 
 
@@ -550,7 +550,7 @@ Example:
 
 
 
-&#x20;   ShadBot Plugin API:
+&#x20;   ShadBotTrader Plugin API:
 
 &#x20;       version = 2
 
@@ -558,7 +558,7 @@ Example:
 
 A plugin can evolve internally while remaining compatible with the same
 
-ShadBot Plugin API.
+ShadBotTrader Plugin API.
 
 
 
@@ -836,7 +836,7 @@ Conceptual:
 
 
 
-&#x20;   shadbot.plugins.example:ExamplePlugin
+&#x20;   shadbottrader.plugins.example:ExamplePlugin
 
 
 
@@ -1324,7 +1324,7 @@ Dependency graph always wins.
 
 
 
-ShadBot may have multiple implementations of one contract.
+ShadBotTrader may have multiple implementations of one contract.
 
 
 
@@ -1626,7 +1626,7 @@ Do not execute an actual trade merely to test broker health.
 
 
 
-A plugin failure must not automatically crash the entire ShadBot process.
+A plugin failure must not automatically crash the entire ShadBotTrader process.
 
 
 
@@ -1724,7 +1724,7 @@ When critical dependencies fail:
 
 
 
-&#x20;   ShadBot may enter SAFE\_MODE.
+&#x20;   ShadBotTrader may enter SAFE\_MODE.
 
 
 
@@ -1886,7 +1886,7 @@ Example:
 
 
 
-&#x20;   shadbot.plugin\_api
+&#x20;   shadbottrader.plugin\_api
 
 
 
@@ -1894,7 +1894,7 @@ Internal modules such as:
 
 
 
-&#x20;   shadbot.\_internal
+&#x20;   shadbottrader.\_internal
 
 
 
@@ -1916,7 +1916,7 @@ Compatibility must verify:
 
 &#x20;   Python compatibility
 
-&#x20;   ShadBot Plugin API compatibility
+&#x20;   ShadBotTrader Plugin API compatibility
 
 &#x20;   capability compatibility
 
@@ -2520,7 +2520,7 @@ Example:
 
 
 
-&#x20;   shadbot.plugin.broker.mt5
+&#x20;   shadbottrader.plugin.broker.mt5
 
 
 
@@ -2556,7 +2556,7 @@ Example:
 
 
 
-&#x20;   shadbot\_plugin\_requests\_total
+&#x20;   shadbottrader\_plugin\_requests\_total
 
 
 
@@ -3778,7 +3778,7 @@ Conceptual external plugin:
 
 
 
-&#x20;   shadbot\_plugin\_example/
+&#x20;   shadbottrader\_plugin\_example/
 
 &#x20;       pyproject.toml
 
@@ -3790,7 +3790,7 @@ Conceptual external plugin:
 
 &#x20;       src/
 
-&#x20;           shadbot\_plugin\_example/
+&#x20;           shadbottrader\_plugin\_example/
 
 &#x20;               \_\_init\_\_.py
 
@@ -3826,7 +3826,7 @@ Built-in plugins may live under:
 
 
 
-&#x20;   src/ShadBot/plugins/
+&#x20;   src/ShadBotTrader/plugins/
 
 
 
@@ -3870,7 +3870,7 @@ A stable plugin-facing API should eventually exist:
 
 
 
-&#x20;   shadbot.plugin\_api
+&#x20;   shadbottrader.plugin\_api
 
 
 
@@ -4094,13 +4094,13 @@ PLUGIN DISCOVERY
 
 ================================================================================
 
-100\. COMPLETE SHADBOT PLUGIN ARCHITECTURE
+100\. COMPLETE SHADBOTTRADER PLUGIN ARCHITECTURE
 
 ================================================================================
 
 
 
-&#x20;                        SHADBOT CORE
+&#x20;                        SHADBOTTRADER CORE
 
 &#x20;                             |
 

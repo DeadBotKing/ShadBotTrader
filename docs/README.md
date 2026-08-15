@@ -16,7 +16,7 @@ PROJECT:
 
 TYPE:
 
-&#x20;   Enterprise Trading Application / Reference Trading Runtime
+&#x20;   Enterprise AI Trading Platform
 
 
 
@@ -60,7 +60,7 @@ PRIMARY PURPOSE:
 
 &#x20;   live-trading environments while remaining independently
 
-&#x20;   testable and compatible with the ShadBot ecosystem.
+&#x20;   testable and compatible with the ShadBotTrader ecosystem.
 
 
 
@@ -148,27 +148,25 @@ can evolve independently.
 
 ====================================================================
 
-2\. RELATIONSHIP TO SHADBOT
+2\. PLATFORM COMPONENTS
 
 ====================================================================
 
 
 
-ShadBot is the main enterprise AI trading platform.
+ShadBotTrader is a single, unified enterprise AI trading platform.
+
+It is built from scratch as one project, one repository and one
+
+codebase.
 
 
 
-ShadBotTrader is a separate trading application and reference
-
-runtime.
+The platform is composed of the following subsystems:
 
 
 
-The relationship is:
-
-
-
-&#x20;   SHADBOT
+&#x20;   SHADBOTTRADER
 
 &#x20;      |
 
@@ -206,27 +204,11 @@ The relationship is:
 
 &#x20;      +-- Infrastructure
 
-&#x20;      |
-
-&#x20;      +-- ShadBotTrader Integration Target
 
 
+All of the above subsystems belong to the one ShadBotTrader platform
 
-ShadBotTrader must remain independently executable.
-
-
-
-Do NOT merge the two repositories into one architecture.
-
-
-
-Do NOT copy the entire ShadBot architecture into ShadBotTrader.
-
-
-
-ShadBotTrader exists to provide a realistic trading workspace and
-
-runtime that can later integrate with ShadBot.
+and are developed together in this repository.
 
 
 
@@ -294,7 +276,7 @@ The final system must be able to:
 
 &#x20;   26. Support future broker integrations.
 
-&#x20;   27. Remain inspectable by ShadBot Project Intelligence.
+&#x20;   27. Remain inspectable by ShadBotTrader Project Intelligence.
 
 
 
@@ -322,7 +304,7 @@ The initial ShadBotTrader implementation must NOT attempt to become:
 
 &#x20;   - An autonomous coding agent.
 
-&#x20;   - A replacement for ShadBot.
+&#x20;   - A replacement for ShadBotTrader.
 
 
 
@@ -3428,7 +3410,7 @@ Production mode must be explicitly selected.
 
 
 
-ShadBotTrader must remain easy for ShadBot Project Intelligence
+ShadBotTrader must remain easy for ShadBotTrader Project Intelligence
 
 to inspect.
 
@@ -5006,7 +4988,7 @@ Project Intelligence test target.
 
 
 
-ShadBot Project Intelligence should be able to discover:
+ShadBotTrader Project Intelligence should be able to discover:
 
 
 
@@ -5618,7 +5600,7 @@ The final system must be understandable by:
 
 &#x20;   Coding Agents
 
-&#x20;   ShadBot Project Intelligence
+&#x20;   ShadBotTrader Project Intelligence
 
 &#x20;   Future AI Agents
 

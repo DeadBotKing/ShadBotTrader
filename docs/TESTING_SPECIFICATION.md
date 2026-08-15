@@ -6350,7 +6350,7 @@ Example concept:
 
 
 
-&#x20;   SHADBOT\_ENV=test
+&#x20;   SHADBOTTRADER\_ENV=test
 
 
 

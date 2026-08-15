@@ -5954,7 +5954,7 @@ Recommended logical structure:
 
 &#x20;   src/
 
-&#x20;       ShadBot/
+&#x20;       ShadBotTrader/
 
 &#x20;           domain/
 

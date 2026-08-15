@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -20,7 +20,7 @@ STATUS:
 
 PURPOSE:
 
-&#x20;   طراحی معماری کامل Deployment برای ShadBot به‌گونه‌ای که سیستم بتواند از
+&#x20;   طراحی معماری کامل Deployment برای ShadBotTrader به‌گونه‌ای که سیستم بتواند از
 
 &#x20;   محیط Development تا Production به‌صورت reproducible، قابل‌اعتماد،
 
@@ -148,7 +148,7 @@ Deployment Architecture باید موارد زیر را پوشش دهد:
 
 
 
-ShadBot باید حداقل این Environmentها را داشته باشد:
+ShadBotTrader باید حداقل این Environmentها را داشته باشد:
 
 
 
@@ -388,7 +388,7 @@ Release باید یک Identity مشخص داشته باشد.
 
 
 
-&#x20;   ShadBot Release
+&#x20;   ShadBotTrader Release
 
 &#x20;       |
 
@@ -2836,7 +2836,7 @@ Canary باید قبل از Promotion:
 
 
 
-در ShadBot فقط Infrastructure Metrics کافی نیست.
+در ShadBotTrader فقط Infrastructure Metrics کافی نیست.
 
 
 
@@ -3738,7 +3738,7 @@ Deployment Architecture شامل:
 
 
 
-Deployment در ShadBot فقط:
+Deployment در ShadBotTrader فقط:
 
 
 

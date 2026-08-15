@@ -1,6 +1,6 @@
 EXECUTION\_GUIDE
 
-ShadBot Enterprise AI Trading Platform
+ShadBotTrader Enterprise AI Trading Platform
 
 Execution Guide
 
@@ -14,7 +14,7 @@ Purpose: اجرای کامل پروژه از صفر تا محصول نهایی
 
 
 
-این سند مشخص می‌کند که یک تیم توسعه یا Agent Coding باید چگونه ShadBot را از صفر تا محصول Enterprise نهایی پیاده‌سازی کند.
+این سند مشخص می‌کند که یک تیم توسعه یا Agent Coding باید چگونه ShadBotTrader را از صفر تا محصول Enterprise نهایی پیاده‌سازی کند.
 
 
 
@@ -160,31 +160,25 @@ Freeze
 
 
 
-نسخه اولیه پروژه ایجاد شده است.
+هیچ پیاده‌سازی جدیدی هنوز انجام نشده است.
 
 
 
-Git repository فعال است.
+Git repository فعال است و شامل مستندات معماری (docs/) و کد مرجع
+
+قدیمی (Legacy) می‌باشد.
 
 
 
-Branch اصلی معماری:
+Branch اصلی:
 
 
 
-architecture-v1
+main
 
 
 
-پروژه باید از این نقطه به بعد به‌صورت Controlled Development ادامه پیدا کند.
-
-
-
-ساختار فعلی باید در صورت نیاز قابل اصلاح باشد.
-
-
-
-هدف، حفظ ساختار فعلی به هر قیمتی نیست.
+پروژه باید از این نقطه به بعد از صفر ساخته شود.
 
 
 
@@ -1008,7 +1002,7 @@ Promotion
 
 
 
-این بخش یکی از مهم‌ترین اجزای ShadBot است.
+این بخش یکی از مهم‌ترین اجزای ShadBotTrader است.
 
 
 
@@ -1016,7 +1010,7 @@ Promotion
 
 
 
-ShadBot باید بتواند خودش ساختار، کد، معماری، dependency و وضعیت پروژه را بفهمد.
+ShadBotTrader باید بتواند خودش ساختار، کد، معماری، dependency و وضعیت پروژه را بفهمد.
 
 
 
@@ -1652,7 +1646,7 @@ Documentation Audit
 
 
 
-ShadBot Architecture v1.0
+ShadBotTrader Architecture v1.0
 
 
 
@@ -1692,87 +1686,55 @@ Implementation
 
 
 
-در وضعیت فعلی پروژه، implementation واقعی از Foundation آغاز شده است.
+در وضعیت فعلی پروژه، هیچ implementation واقعی هنوز انجام نشده
+
+است و Foundation قرار است از صفر ساخته شود.
 
 
 
-Core Foundation
+ساختار هدف (Planned — هنوز موجود نیست):
 
 
 
-ایجاد شده:
+src/shadbottrader/core/...
+
+src/shadbottrader/domain/...
+
+src/shadbottrader/application/...
+
+src/shadbottrader/infrastructure/...
 
 
-
-src/ShadBot/core/dependency/container.py
-
-src/ShadBot/core/events/event.py
-
-src/ShadBot/core/events/eventBus.py
-
-src/ShadBot/core/lifecycle/lifecycleManager.py
-
-src/ShadBot/core/plugins/plugin.py
-
-src/ShadBot/core/services/baseService.py
-
-
-
-Commit:
-
-
-
-Implement ShadBot Core Foundation
 
 40\. Domain Core
 
 
 
-ایجاد شده:
+ساختار هدف (Planned — هنوز موجود نیست):
 
 
 
 domain/common/entity.py
 
-domain/common/valueObject.py
-
-
-
-
+domain/common/value_object.py
 
 domain/market/candle.py
 
 domain/market/symbol.py
 
-domain/market/timefram.py
-
-
-
-
+domain/market/timeframe.py
 
 domain/portfolio/account.py
 
 domain/portfolio/balance.py
 
-
-
-
-
 domain/prediction/prediction.py
 
 domain/prediction/signal.py
 
+domain/risk/risk_model.py
 
-
-
-
-domain/risk/riskModel.py
-
-
-
-
-
-domain/trading/oerder.py
+domain/trading/order.py
 
 domain/trading/position.py
 
@@ -1780,29 +1742,23 @@ domain/trading/trade.py
 
 
 
-Commit:
-
-
-
-Implement ShadBot Domain Core
-
 41\. Application Runtime
 
 
 
-ایجاد شده:
+ساختار هدف (Planned — هنوز موجود نیست):
 
 
 
 application/app.py
 
-application/applicationState.py
+application/application_state.py
 
 application/bootstrap.py
 
 application/runtime.py
 
-application/serviceRegistry.py
+application/service_registry.py
 
 application/shutdown.py
 
@@ -1810,27 +1766,9 @@ application/startup.py
 
 
 
-Commit:
+این فایل‌ها هنوز وجود ندارند و باید در Phase 28 پیاده‌سازی شوند.
 
 
-
-Implement application runtime layer
-
-
-
-Runtime test:
-
-
-
-python -m src.shadbot.main
-
-
-
-خروجی موفق:
-
-
-
-Starting
 
 42\. Infrastructure
 
@@ -1932,9 +1870,9 @@ PascalCase filenames
 
 
 
-Implement ShadBot Core Foundation
+Implement ShadBotTrader Core Foundation
 
-Implement ShadBot Domain Core
+Implement ShadBotTrader Domain Core
 
 Implement Application Runtime Layer
 
@@ -2080,7 +2018,7 @@ Decisions
 
 
 
-ShadBot باید در طول development وضعیت خودش را به‌روزرسانی کند.
+ShadBotTrader باید در طول development وضعیت خودش را به‌روزرسانی کند.
 
 
 
@@ -2180,7 +2118,7 @@ ProjectSnapshot.json
 
 
 
-ShadBot زمانی نهایی محسوب می‌شود که:
+ShadBotTrader زمانی نهایی محسوب می‌شود که:
 
 
 
@@ -2512,27 +2450,31 @@ Move To Next Phase
 
 
 
-در زمان ایجاد این سند، پروژه در مرحله‌ی Foundation / Architecture-v1 implementation قرار دارد و این موارد قبلاً پیاده‌سازی شده‌اند:
+در زمان ایجاد این سند، هیچ پیاده‌سازی جدیدی انجام نشده است:
 
 
 
-Core Foundation              ✓
+Core Foundation              ✗
 
-Domain Core                  ✓
+Domain Core                  ✗
 
-Application Runtime          ✓
+Application Runtime          ✗
 
-Project Intelligence Skeleton
-
-&#x20;                            ✓
+Project Intelligence         ✗
 
 
 
-Project Intelligence skeleton شامل ساختار اولیه:
+ریپو فعلی فقط شامل مستندات معماری (docs/) و کد مرجع قدیمی (Legacy)
+
+است.
 
 
 
-src/ShadBot/project/
+ساختار هدف Project Intelligence (Planned — هنوز موجود نیست):
+
+
+
+src/shadbottrader/project/
 
 &#x20;   core/
 
@@ -2546,9 +2488,7 @@ src/ShadBot/project/
 
 
 
-
-
-project\_state/
+project_state/
 
 &#x20;   generated/
 
@@ -2556,15 +2496,7 @@ project\_state/
 
 
 
-است.
-
-
-
-اما وجود فایل‌های skeleton به معنی complete بودن Project Intelligence نیست.
-
-
-
-Implementation باید مرحله‌به‌مرحله کامل شود.
+همه چیز باید از صفر پیاده‌سازی شود.
 
 
 

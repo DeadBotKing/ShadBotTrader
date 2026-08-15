@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -42,7 +42,7 @@ CURRENT:
 
 
 
-هدف Phase 28 ساخت Foundation واقعی و قابل استفاده ShadBot بر اساس
+هدف Phase 28 ساخت Foundation واقعی و قابل استفاده ShadBotTrader بر اساس
 
 Architecture V1.0 است.
 
@@ -118,7 +118,7 @@ CURRENT CORE:
 
 
 
-&#x20;   src/ShadBot/core/
+&#x20;   src/ShadBotTrader/core/
 
 
 
@@ -160,7 +160,7 @@ CURRENT APPLICATION:
 
 
 
-&#x20;   src/ShadBot/application/
+&#x20;   src/ShadBotTrader/application/
 
 
 
@@ -186,7 +186,7 @@ CURRENT DOMAIN:
 
 
 
-&#x20;   src/ShadBot/domain/
+&#x20;   src/ShadBotTrader/domain/
 
 
 
@@ -246,7 +246,7 @@ CURRENT ENGINES:
 
 
 
-&#x20;   src/ShadBot/engines/
+&#x20;   src/ShadBotTrader/engines/
 
 
 
@@ -282,11 +282,11 @@ CURRENT ENGINES:
 
 
 
-CURRENT PROJECT INTELLIGENCE SCAFFOLD:
+PLANNED PROJECT INTELLIGENCE STRUCTURE (Phase 28):
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/shadbottrader/project/
 
 
 
@@ -316,7 +316,9 @@ IMPORTANT:
 
 
 
-&#x20;   Phase 28 باید این ساختار موجود را تکمیل و Production-grade کند.
+&#x20;   این ساختار هنوز وجود ندارد؛ Phase 28 باید آن را از صفر
+
+&#x20;   پیاده‌سازی و Production-grade کند.
 
 
 
@@ -1594,7 +1596,7 @@ Logging باید:
 
 
 
-&#x20;   ShadBotError
+&#x20;   ShadBotTraderError
 
 &#x20;       |
 
@@ -2034,7 +2036,7 @@ Foundation باید عمدتاً Unit Test داشته باشد.
 
 
 
-&#x20;   python -m src.shadbot.main
+&#x20;   python -m src.shadbottrader.main
 
 
 
@@ -2072,7 +2074,7 @@ Foundation باید عمدتاً Unit Test داشته باشد.
 
 
 
-&#x20;   ShadBot Starting
+&#x20;   ShadBotTrader Starting
 
 &#x20;   Configuration Loaded
 
@@ -2088,9 +2090,9 @@ Foundation باید عمدتاً Unit Test داشته باشد.
 
 &#x20;   Application Ready
 
-&#x20;   ShadBot Running
+&#x20;   ShadBotTrader Running
 
-&#x20;   ShadBot Shutdown
+&#x20;   ShadBotTrader Shutdown
 
 
 
@@ -2362,7 +2364,7 @@ Source of Truth:
 
 src/
 
-└── ShadBot/
+└── ShadBotTrader/
 
 &#x20;   │
 
@@ -2902,7 +2904,7 @@ Quality Gate:
 
 
 
-&#x20;   ShadBot دارای Runtime Foundation واقعی است.
+&#x20;   ShadBotTrader دارای Runtime Foundation واقعی است.
 
 
 

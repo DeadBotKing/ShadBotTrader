@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -132,7 +132,7 @@ Phase 26 نقطه‌ای است که در آن Architecture از حالت:
 
 
 
-&#x20;   ShadBot Architecture V1.0
+&#x20;   ShadBotTrader Architecture V1.0
 
 
 
@@ -1252,7 +1252,7 @@ Documentation باید شامل:
 
 
 
-&#x20;                        SHADBOT
+&#x20;                        SHADBOTTRADER
 
 &#x20;                           |
 
@@ -3412,7 +3412,7 @@ Documentation نباید از:
 
 
 
-&#x20;   shadbot architecture validate
+&#x20;   shadbottrader architecture validate
 
 
 
@@ -3676,7 +3676,7 @@ Phase 26:
 
 ================================================================================
 
-114\. FINAL SHADBOT ARCHITECTURE LIFECYCLE
+114\. FINAL SHADBOTTRADER ARCHITECTURE LIFECYCLE
 
 ================================================================================
 

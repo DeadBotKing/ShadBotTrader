@@ -1,6 +1,6 @@
 ====================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -36,7 +36,7 @@ Purpose:
 
 Project:
 
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 
 
@@ -140,7 +140,7 @@ Primary Goal:
 
 Project Name:
 
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 
 
@@ -222,7 +222,7 @@ Secondary Objective:
 
 
 
-&#x20;   ShadBot باید بتواند خودش ساختار، کد، dependency،
+&#x20;   ShadBotTrader باید بتواند خودش ساختار، کد، dependency،
 
 &#x20;   architecture، roadmap، تصمیمات و وضعیت توسعه پروژه را
 
@@ -238,7 +238,7 @@ Secondary Objective:
 
 
 
-ShadBot قرار نیست فقط یک Trading Bot ساده باشد.
+ShadBotTrader قرار نیست فقط یک Trading Bot ساده باشد.
 
 
 
@@ -752,7 +752,7 @@ Important:
 
 Repository:
 
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 
 
@@ -772,13 +772,13 @@ Important implementation commits:
 
 &#x20;   d085a92
 
-&#x20;   Implement ShadBot Core Foundation
+&#x20;   Implement ShadBotTrader Core Foundation
 
 
 
 &#x20;   5fed9b8
 
-&#x20;   Implement ShadBot Domain Core
+&#x20;   Implement ShadBotTrader Domain Core
 
 
 
@@ -788,11 +788,11 @@ Important implementation commits:
 
 
 
-Current development branch used during architecture implementation:
+Current development branch:
 
 
 
-&#x20;   architecture-v1
+&#x20;   main
 
 
 
@@ -806,13 +806,13 @@ Every completed implementation milestone must have a dedicated commit.
 
 ====================================================================
 
-8\. CURRENT IMPLEMENTED CORE
+8\. CORE FOUNDATION — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-Core Foundation has been implemented.
+Core Foundation has NOT been implemented yet. The structure below is the planned target for Phase 28.
 
 
 
@@ -820,27 +820,27 @@ Files:
 
 
 
-&#x20;   src/ShadBot/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
 
 
-&#x20;   src/ShadBot/core/events/event.py
+&#x20;   src/ShadBotTrader/core/events/event.py
 
 
 
-&#x20;   src/ShadBot/core/events/eventBus.py
+&#x20;   src/ShadBotTrader/core/events/eventBus.py
 
 
 
-&#x20;   src/ShadBot/core/lifecycle/lifecycleManager.py
+&#x20;   src/ShadBotTrader/core/lifecycle/lifecycleManager.py
 
 
 
-&#x20;   src/ShadBot/core/plugins/plugin.py
+&#x20;   src/ShadBotTrader/core/plugins/plugin.py
 
 
 
-&#x20;   src/ShadBot/core/services/baseService.py
+&#x20;   src/ShadBotTrader/core/services/baseService.py
 
 
 
@@ -872,13 +872,13 @@ Do not place trading business logic here.
 
 ====================================================================
 
-9\. CURRENT DOMAIN IMPLEMENTATION
+9\. DOMAIN — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-Domain Core has been implemented.
+Domain Core has NOT been implemented yet (planned for Phase 28).
 
 
 
@@ -886,9 +886,9 @@ Common:
 
 
 
-&#x20;   src/ShadBot/domain/common/entity.py
+&#x20;   src/ShadBotTrader/domain/common/entity.py
 
-&#x20;   src/ShadBot/domain/common/valueObject.py
+&#x20;   src/ShadBotTrader/domain/common/valueObject.py
 
 
 
@@ -896,11 +896,11 @@ Market:
 
 
 
-&#x20;   src/ShadBot/domain/market/candle.py
+&#x20;   src/ShadBotTrader/domain/market/candle.py
 
-&#x20;   src/ShadBot/domain/market/symbol.py
+&#x20;   src/ShadBotTrader/domain/market/symbol.py
 
-&#x20;   src/ShadBot/domain/market/timefram.py
+&#x20;   src/ShadBotTrader/domain/market/timefram.py
 
 
 
@@ -908,9 +908,9 @@ Portfolio:
 
 
 
-&#x20;   src/ShadBot/domain/portfolio/account.py
+&#x20;   src/ShadBotTrader/domain/portfolio/account.py
 
-&#x20;   src/ShadBot/domain/portfolio/balance.py
+&#x20;   src/ShadBotTrader/domain/portfolio/balance.py
 
 
 
@@ -918,9 +918,9 @@ Prediction:
 
 
 
-&#x20;   src/ShadBot/domain/prediction/prediction.py
+&#x20;   src/ShadBotTrader/domain/prediction/prediction.py
 
-&#x20;   src/ShadBot/domain/prediction/signal.py
+&#x20;   src/ShadBotTrader/domain/prediction/signal.py
 
 
 
@@ -928,7 +928,7 @@ Risk:
 
 
 
-&#x20;   src/ShadBot/domain/risk/riskModel.py
+&#x20;   src/ShadBotTrader/domain/risk/riskModel.py
 
 
 
@@ -936,11 +936,11 @@ Trading:
 
 
 
-&#x20;   src/ShadBot/domain/trading/oerder.py
+&#x20;   src/ShadBotTrader/domain/trading/oerder.py
 
-&#x20;   src/ShadBot/domain/trading/position.py
+&#x20;   src/ShadBotTrader/domain/trading/position.py
 
-&#x20;   src/ShadBot/domain/trading/trade.py
+&#x20;   src/ShadBotTrader/domain/trading/trade.py
 
 
 
@@ -1048,13 +1048,13 @@ directly into Domain.
 
 ====================================================================
 
-11\. APPLICATION RUNTIME
+11\. APPLICATION RUNTIME — PLANNED (NOT YET IMPLEMENTED)
 
 ====================================================================
 
 
 
-Application Runtime has been implemented.
+Application Runtime has NOT been implemented yet (planned for Phase 28).
 
 
 
@@ -1062,19 +1062,19 @@ Files:
 
 
 
-&#x20;   src/ShadBot/application/app.py
+&#x20;   src/ShadBotTrader/application/app.py
 
-&#x20;   src/ShadBot/application/applicationState.py
+&#x20;   src/ShadBotTrader/application/applicationState.py
 
-&#x20;   src/ShadBot/application/bootstrap.py
+&#x20;   src/ShadBotTrader/application/bootstrap.py
 
-&#x20;   src/ShadBot/application/runtime.py
+&#x20;   src/ShadBotTrader/application/runtime.py
 
-&#x20;   src/ShadBot/application/serviceRegistry.py
+&#x20;   src/ShadBotTrader/application/serviceRegistry.py
 
-&#x20;   src/ShadBot/application/shutdown.py
+&#x20;   src/ShadBotTrader/application/shutdown.py
 
-&#x20;   src/ShadBot/application/startup.py
+&#x20;   src/ShadBotTrader/application/startup.py
 
 
 
@@ -1110,31 +1110,19 @@ logic is stored.
 
 
 
-The project has been executed successfully through:
+The project has NOT been executed yet.
 
 
 
-&#x20;   python -m src.shadbot.main
+The planned entrypoint is:
 
 
 
-Previously verified output included:
+&#x20;   python -m src.shadbottrader.main
 
 
 
-&#x20;   ShadBot Core Started
-
-
-
-and later:
-
-
-
-&#x20;   Starting
-
-
-
-and infrastructure/domain verification output.
+No verified output exists yet.
 
 
 
@@ -1896,7 +1884,7 @@ Goal:
 
 
 
-&#x20;   ShadBot must understand itself.
+&#x20;   ShadBotTrader must understand itself.
 
 
 
@@ -1978,7 +1966,7 @@ Current skeleton:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -3960,7 +3948,7 @@ The current source root is:
 
 
 
-&#x20;   src/ShadBot/
+&#x20;   src/ShadBotTrader/
 
 
 
@@ -3992,7 +3980,7 @@ and the Project Intelligence package:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 &#x20;       core/
 
@@ -4448,7 +4436,7 @@ Architecture documents are the source of truth for intended design.
 
 
 
-The final ShadBot platform should provide:
+The final ShadBotTrader platform should provide:
 
 
 
@@ -4792,7 +4780,7 @@ understanding is:
 
 
 
-&#x20;   ShadBot is an Enterprise AI Trading Platform.
+&#x20;   ShadBotTrader is an Enterprise AI Trading Platform.
 
 
 
@@ -4818,7 +4806,7 @@ understanding is:
 
 
 
-&#x20;   Project Intelligence is responsible for making ShadBot aware of
+&#x20;   Project Intelligence is responsible for making ShadBotTrader aware of
 
 &#x20;   its own source code, architecture, dependencies, roadmap,
 
@@ -4826,27 +4814,27 @@ understanding is:
 
 
 
-&#x20;   The implementation has already started.
+&#x20;   Implementation has NOT started yet.
 
 
 
-&#x20;   Core Foundation exists.
+&#x20;   Core Foundation does NOT exist yet.
 
 
 
-&#x20;   Domain Core exists.
+&#x20;   Domain Core does NOT exist yet.
 
 
 
-&#x20;   Application Runtime exists.
+&#x20;   Application Runtime does NOT exist yet.
 
 
 
-&#x20;   Project Intelligence skeleton exists.
+&#x20;   Project Intelligence does NOT exist yet.
 
 
 
-&#x20;   Continue implementation incrementally.
+&#x20;   Everything will be built from scratch, phase by phase.
 
 
 
@@ -4900,7 +4888,7 @@ understanding is:
 
 
 
-&#x20;   The final goal is a production-grade ShadBot Enterprise AI
+&#x20;   The final goal is a production-grade ShadBotTrader Enterprise AI
 
 &#x20;   Trading Platform, not a prototype or demonstration project.
 

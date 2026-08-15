@@ -1,6 +1,6 @@
 PHASE 01 — ARCHITECTURE PRINCIPLES
 
-SHADBOT ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER ENTERPRISE AI TRADING PLATFORM
 
 PHASE 01 — ARCHITECTURE PRINCIPLES
 
@@ -10,7 +10,7 @@ PHASE 01 — ARCHITECTURE PRINCIPLES
 
 Document ID:
 
-SHADBOT-ARCH-P01
+SHADBOTTRADER-ARCH-P01
 
 
 
@@ -82,7 +82,7 @@ NOT REQUIRED
 
 
 
-این سند، قوانین بنیادی معماری ShadBot را تعریف می‌کند.
+این سند، قوانین بنیادی معماری ShadBotTrader را تعریف می‌کند.
 
 
 
@@ -142,7 +142,7 @@ Deployment
 
 
 
-این سند قانون اساسی معماری ShadBot است.
+این سند قانون اساسی معماری ShadBotTrader است.
 
 
 
@@ -150,7 +150,7 @@ Deployment
 
 
 
-ShadBot یک:
+ShadBotTrader یک:
 
 
 
@@ -162,7 +162,7 @@ Enterprise AI Trading Platform
 
 
 
-ShadBot نباید به شکل یک Trading Bot ساده طراحی شود.
+ShadBotTrader نباید به شکل یک Trading Bot ساده طراحی شود.
 
 
 
@@ -226,7 +226,7 @@ Learning
 
 
 
-هدف اصلی ShadBot:
+هدف اصلی ShadBotTrader:
 
 
 
@@ -282,7 +282,7 @@ Replay انجام دهد.
 
 
 
-ShadBot یک نرم‌افزار Desktop است.
+ShadBotTrader یک نرم‌افزار Desktop است.
 
 
 
@@ -330,7 +330,7 @@ Cloud-Only Execution
 
 
 
-مهم‌ترین اصل ShadBot:
+مهم‌ترین اصل ShadBotTrader:
 
 
 
@@ -386,7 +386,7 @@ AI فقط یکی از اجزای این زنجیره است.
 
 
 
-ShadBot باید بتواند حجم زیادی از داده تاریخی را دریافت و نگهداری کند.
+ShadBotTrader باید بتواند حجم زیادی از داده تاریخی را دریافت و نگهداری کند.
 
 
 
@@ -586,7 +586,7 @@ Live Buffer:
 
 
 
-یکی از قوانین مهم ShadBot:
+یکی از قوانین مهم ShadBotTrader:
 
 
 
@@ -1768,7 +1768,7 @@ Visualization یک Infrastructure/Framework concern است.
 
 
 
-Project Intelligence بخشی از معماری توسعه ShadBot است.
+Project Intelligence بخشی از معماری توسعه ShadBotTrader است.
 
 
 
@@ -1820,7 +1820,7 @@ Next Development Point
 
 
 
-ShadBot باید یک Snapshot/Handoff قابل انتقال تولید کند.
+ShadBotTrader باید یک Snapshot/Handoff قابل انتقال تولید کند.
 
 
 
@@ -2124,7 +2124,7 @@ Scalability فقط به معنی Cloud نیست.
 
 
 
-ShadBot باید از نظر:
+ShadBotTrader باید از نظر:
 
 
 
@@ -2276,7 +2276,7 @@ Hard-Code شوند.
 
 
 
-ShadBot باید در نهایت شبیه این رفتار کند:
+ShadBotTrader باید در نهایت شبیه این رفتار کند:
 
 
 

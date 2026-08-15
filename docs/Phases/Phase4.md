@@ -1,4 +1,4 @@
-\# SHADBOT ENTERPRISE AI TRADING PLATFORM
+\# SHADBOTTRADER ENTERPRISE AI TRADING PLATFORM
 
 \# PHASE 04 — PROJECT TREE / PHYSICAL ARCHITECTURE
 
@@ -6,7 +6,7 @@
 
 Document ID:
 
-SHADBOT-ARCH-P04
+SHADBOTTRADER-ARCH-P04
 
 
 
@@ -86,7 +86,7 @@ Framework Independent Core
 
 
 
-ShadBot یک:
+ShadBotTrader یک:
 
 
 
@@ -130,7 +130,7 @@ ShadBot یک:
 
 
 
-ShadBot یک Desktop Application است.
+ShadBotTrader یک Desktop Application است.
 
 
 
@@ -180,7 +180,7 @@ Application باید بتواند بدون Browser و Mobile Client اجرا ش�
 
 
 
-&#x20;   ShadBot/
+&#x20;   ShadBotTrader/
 
 &#x20;   │
 
@@ -414,7 +414,7 @@ Package اصلی:
 
 
 
-&#x20;   src/ShadBot/
+&#x20;   src/ShadBotTrader/
 
 
 
@@ -426,7 +426,7 @@ Package اصلی:
 
 &#x20;   src/
 
-&#x20;   └── ShadBot/
+&#x20;   └── ShadBotTrader/
 
 &#x20;       ├── \_\_init\_\_.py
 
@@ -532,7 +532,7 @@ Package اصلی:
 
 
 
-&#x20;   src/ShadBot/Domain/
+&#x20;   src/ShadBotTrader/Domain/
 
 
 
@@ -640,7 +640,7 @@ Package اصلی:
 
 
 
-&#x20;   src/ShadBot/Domain/Common/
+&#x20;   src/ShadBotTrader/Domain/Common/
 
 
 
@@ -684,7 +684,7 @@ Package اصلی:
 
 
 
-&#x20;   src/ShadBot/Domain/Market/
+&#x20;   src/ShadBotTrader/Domain/Market/
 
 
 
@@ -722,7 +722,7 @@ Package اصلی:
 
 
 
-&#x20;   src/ShadBot/Domain/Dataset/
+&#x20;   src/ShadBotTrader/Domain/Dataset/
 
 
 
@@ -762,7 +762,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Feature/
+&#x20;   src/ShadBotTrader/Domain/Feature/
 
 
 
@@ -800,7 +800,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/News/
+&#x20;   src/ShadBotTrader/Domain/News/
 
 
 
@@ -830,7 +830,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Prediction/
+&#x20;   src/ShadBotTrader/Domain/Prediction/
 
 
 
@@ -862,7 +862,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Trading/
+&#x20;   src/ShadBotTrader/Domain/Trading/
 
 
 
@@ -900,7 +900,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Portfolio/
+&#x20;   src/ShadBotTrader/Domain/Portfolio/
 
 
 
@@ -934,7 +934,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Simulation/
+&#x20;   src/ShadBotTrader/Domain/Simulation/
 
 
 
@@ -968,7 +968,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/AI/
+&#x20;   src/ShadBotTrader/Domain/AI/
 
 
 
@@ -1008,7 +1008,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/Optimization/
+&#x20;   src/ShadBotTrader/Domain/Optimization/
 
 
 
@@ -1040,7 +1040,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/SelfLearning/
+&#x20;   src/ShadBotTrader/Domain/SelfLearning/
 
 
 
@@ -1072,7 +1072,7 @@ Dataset Domain مسئول Storage implementation نیست.
 
 
 
-&#x20;   src/ShadBot/Domain/ProjectIntelligence/
+&#x20;   src/ShadBotTrader/Domain/ProjectIntelligence/
 
 
 
@@ -1110,7 +1110,7 @@ Project Intelligence یک Domain Capability مستقل است.
 
 
 
-&#x20;   src/ShadBot/Application/
+&#x20;   src/ShadBotTrader/Application/
 
 
 
@@ -1232,7 +1232,7 @@ Domain مسئول:
 
 
 
-&#x20;   src/ShadBot/Core/
+&#x20;   src/ShadBotTrader/Core/
 
 
 
@@ -1274,7 +1274,7 @@ Core نباید محل Business Logic باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/
+&#x20;   src/ShadBotTrader/Engines/
 
 
 
@@ -1332,7 +1332,7 @@ Engineها Runtime Processing Components هستند.
 
 
 
-&#x20;   src/ShadBot/Engines/AIEngine/
+&#x20;   src/ShadBotTrader/Engines/AIEngine/
 
 
 
@@ -1386,7 +1386,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/ContextEngine/
+&#x20;   src/ShadBotTrader/Engines/ContextEngine/
 
 
 
@@ -1416,7 +1416,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/DataEngine/
+&#x20;   src/ShadBotTrader/Engines/DataEngine/
 
 
 
@@ -1450,7 +1450,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/FeatureEngineeringEngine/
+&#x20;   src/ShadBotTrader/Engines/FeatureEngineeringEngine/
 
 
 
@@ -1526,7 +1526,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/MarketEngine/
+&#x20;   src/ShadBotTrader/Engines/MarketEngine/
 
 
 
@@ -1556,7 +1556,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/NewsEngine/
+&#x20;   src/ShadBotTrader/Engines/NewsEngine/
 
 
 
@@ -1586,7 +1586,7 @@ Domain AI نباید به آنها وابسته باشد.
 
 
 
-&#x20;   src/ShadBot/Engines/DecisionEngine/
+&#x20;   src/ShadBotTrader/Engines/DecisionEngine/
 
 
 
@@ -1624,7 +1624,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/ExecutionEngine/
+&#x20;   src/ShadBotTrader/Engines/ExecutionEngine/
 
 
 
@@ -1654,7 +1654,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/PortfolioEngine/
+&#x20;   src/ShadBotTrader/Engines/PortfolioEngine/
 
 
 
@@ -1688,7 +1688,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/SimulationEngine/
+&#x20;   src/ShadBotTrader/Engines/SimulationEngine/
 
 
 
@@ -1718,7 +1718,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/OptimizationEngine/
+&#x20;   src/ShadBotTrader/Engines/OptimizationEngine/
 
 
 
@@ -1748,7 +1748,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/IntelligenceEngine/
+&#x20;   src/ShadBotTrader/Engines/IntelligenceEngine/
 
 
 
@@ -1778,7 +1778,7 @@ DecisionEngine نباید مستقیماً Broker API را صدا بزند.
 
 
 
-&#x20;   src/ShadBot/Engines/GuiEngine/
+&#x20;   src/ShadBotTrader/Engines/GuiEngine/
 
 
 
@@ -1810,7 +1810,7 @@ Business Logic نباید داخل GUI Engine قرار گیرد.
 
 
 
-&#x20;   src/ShadBot/Engines/StorageEngine/
+&#x20;   src/ShadBotTrader/Engines/StorageEngine/
 
 
 
@@ -1848,7 +1848,7 @@ StorageEngine نباید Domain Rules را تعریف کند.
 
 
 
-&#x20;   src/ShadBot/Services/
+&#x20;   src/ShadBotTrader/Services/
 
 
 
@@ -1884,7 +1884,7 @@ Services برای سرویس‌های Application/Runtime سطح بالاتر ا
 
 
 
-&#x20;   src/ShadBot/Interfaces/
+&#x20;   src/ShadBotTrader/Interfaces/
 
 
 
@@ -1924,7 +1924,7 @@ Interfaces محل Interfaceهای External/System Boundary است.
 
 
 
-&#x20;   src/ShadBot/Infrastructure/
+&#x20;   src/ShadBotTrader/Infrastructure/
 
 
 
@@ -2294,7 +2294,7 @@ Domain فقط Configurationهای تبدیل‌شده به Policy/Value Object �
 
 
 
-&#x20;   src/ShadBot/Exceptions/
+&#x20;   src/ShadBotTrader/Exceptions/
 
 
 
@@ -2322,7 +2322,7 @@ Exceptionهای Infrastructure-specific نباید به Domain leak شوند.
 
 
 
-&#x20;   src/ShadBot/Shared/
+&#x20;   src/ShadBotTrader/Shared/
 
 
 
@@ -3166,7 +3166,7 @@ Training نیز مستقل از Dataset Update است.
 
 
 
-ShadBot باید بتواند وضعیت Architecture و Project را به شکل قابل انتقال ذخیره کند.
+ShadBotTrader باید بتواند وضعیت Architecture و Project را به شکل قابل انتقال ذخیره کند.
 
 
 
@@ -3244,7 +3244,7 @@ Phaseهای معماری:
 
 &#x20;   src/domain/
 
-&#x20;   src/ShadBot/Domain/
+&#x20;   src/ShadBotTrader/Domain/
 
 
 
@@ -3258,7 +3258,7 @@ Phaseهای معماری:
 
 &#x20;   src/application/
 
-&#x20;   src/ShadBot/Application/
+&#x20;   src/ShadBotTrader/Application/
 
 
 
@@ -3288,7 +3288,7 @@ Domain واقعی:
 
 
 
-&#x20;   src/ShadBot/Domain/
+&#x20;   src/ShadBotTrader/Domain/
 
 
 
@@ -3348,7 +3348,7 @@ Current source structure:
 
 
 
-&#x20;   src/ShadBot/
+&#x20;   src/ShadBotTrader/
 
 &#x20;   ├── Application/
 
@@ -3476,7 +3476,7 @@ Domain نهایی:
 
 
 
-&#x20;   ShadBot/
+&#x20;   ShadBotTrader/
 
 &#x20;   │
 
@@ -3512,7 +3512,7 @@ Domain نهایی:
 
 &#x20;   ├── src/
 
-&#x20;   │   └── ShadBot/
+&#x20;   │   └── ShadBotTrader/
 
 &#x20;   │       │
 
@@ -3886,7 +3886,7 @@ Internal implementation نباید بدون دلیل توسط Moduleهای دی�
 
 
 
-&#x20;   from ShadBot.Domain.Market import ...
+&#x20;   from ShadBotTrader.Domain.Market import ...
 
 
 

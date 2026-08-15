@@ -1,4 +1,4 @@
-\# SHADBOT ENTERPRISE AI TRADING PLATFORM
+\# SHADBOTTRADER ENTERPRISE AI TRADING PLATFORM
 
 \# PHASE 03 — DOMAIN MODEL
 
@@ -6,7 +6,7 @@
 
 Document ID:
 
-SHADBOT-ARCH-P03
+SHADBOTTRADER-ARCH-P03
 
 
 
@@ -60,11 +60,11 @@ NOT REQUIRED
 
 
 
-Phase 03 مدل دامنه رسمی ShadBot را تعریف می‌کند.
+Phase 03 مدل دامنه رسمی ShadBotTrader را تعریف می‌کند.
 
 
 
-این Phase مشخص می‌کند ShadBot از نظر Business چه مفاهیمی دارد، هر مفهوم چه مسئولیتی دارد، چه چیزهایی Entity هستند، چه چیزهایی Value Object هستند، چه چیزهایی Aggregate هستند، چه Domain Serviceهایی لازم هستند و ارتباط بین Bounded Contextها چگونه است.
+این Phase مشخص می‌کند ShadBotTrader از نظر Business چه مفاهیمی دارد، هر مفهوم چه مسئولیتی دارد، چه چیزهایی Entity هستند، چه چیزهایی Value Object هستند، چه چیزهایی Aggregate هستند، چه Domain Serviceهایی لازم هستند و ارتباط بین Bounded Contextها چگونه است.
 
 
 
@@ -110,7 +110,7 @@ Domain باید Business-first باشد.
 
 
 
-مدل اصلی ShadBot بر اساس این زنجیره مفهومی ساخته می‌شود:
+مدل اصلی ShadBotTrader بر اساس این زنجیره مفهومی ساخته می‌شود:
 
 
 
@@ -184,7 +184,7 @@ Domain باید Business-first باشد.
 
 
 
-Domain ShadBot به Bounded Contextهای زیر تقسیم می‌شود:
+Domain ShadBotTrader به Bounded Contextهای زیر تقسیم می‌شود:
 
 
 
@@ -236,7 +236,7 @@ Domain ShadBot به Bounded Contextهای زیر تقسیم می‌شود:
 
 &#x20;   src/
 
-&#x20;   └── ShadBot/
+&#x20;   └── ShadBotTrader/
 
 &#x20;       └── Domain/
 
@@ -1046,7 +1046,7 @@ Window Size باید Configuration/Policy باشد.
 
 
 
-ShadBot دو مفهوم متفاوت دارد:
+ShadBotTrader دو مفهوم متفاوت دارد:
 
 
 
@@ -3502,7 +3502,7 @@ Domain نباید آن را بشناسد.
 
 
 
-ShadBot Desktop Application است.
+ShadBotTrader Desktop Application است.
 
 
 

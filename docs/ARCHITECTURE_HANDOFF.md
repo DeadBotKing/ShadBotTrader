@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -32,7 +32,7 @@ DOCUMENT PURPOSE
 
 این سند مرجع اصلی برای هر Developer / AI Agent / Coding Agent است که قرار است
 
-روی ShadBot کار کند.
+روی ShadBotTrader کار کند.
 
 
 
@@ -280,7 +280,7 @@ PROJECT NAME:
 
 
 
-&#x20;   ShadBot
+&#x20;   ShadBotTrader
 
 
 
@@ -344,7 +344,7 @@ PRIMARY OBJECTIVES:
 
 
 
-ShadBot از چند Platform مستقل ولی متصل تشکیل می‌شود:
+ShadBotTrader از چند Platform مستقل ولی متصل تشکیل می‌شود:
 
 
 
@@ -496,7 +496,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/core/
+&#x20;   src/ShadBotTrader/core/
 
 
 
@@ -606,7 +606,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/domain/
+&#x20;   src/ShadBotTrader/domain/
 
 
 
@@ -1166,7 +1166,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/application/
+&#x20;   src/ShadBotTrader/application/
 
 
 
@@ -1580,7 +1580,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/infrastructure/
+&#x20;   src/ShadBotTrader/infrastructure/
 
 
 
@@ -1734,7 +1734,7 @@ BASE:
 
 
 
-&#x20;   ShadBotError
+&#x20;   ShadBotTraderError
 
 
 
@@ -1838,7 +1838,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/engines/
+&#x20;   src/ShadBotTrader/engines/
 
 
 
@@ -2726,7 +2726,7 @@ PURPOSE:
 
 
 
-&#x20;   ShadBot must understand itself.
+&#x20;   ShadBotTrader must understand itself.
 
 
 
@@ -2736,7 +2736,7 @@ LOCATION:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -3240,7 +3240,7 @@ It must answer:
 
 
 
-&#x20;   What is ShadBot?
+&#x20;   What is ShadBotTrader?
 
 &#x20;   What Architecture does it use?
 
@@ -4630,7 +4630,7 @@ MARKET:
 
 
 
-&#x20;                          SHADBOT
+&#x20;                          SHADBOTTRADER
 
 &#x20;                             |
 
@@ -5288,7 +5288,7 @@ Required:
 
 
 
-ShadBot should eventually be capable of answering:
+ShadBotTrader should eventually be capable of answering:
 
 
 
@@ -5470,31 +5470,31 @@ At the beginning of implementation:
 
 &#x20;   Main Branch:
 
-&#x20;       architecture-v1 work is being implemented
+&#x20;       main — implementation not started
 
 
 
 &#x20;   Core Foundation:
 
-&#x20;       implemented
+&#x20;       not implemented
 
 
 
 &#x20;   Domain Foundation:
 
-&#x20;       implemented
+&#x20;       not implemented
 
 
 
 &#x20;   Application Runtime:
 
-&#x20;       implemented
+&#x20;       not implemented
 
 
 
 &#x20;   Project Intelligence:
 
-&#x20;       scaffolded and under active implementation
+&#x20;       not implemented
 
 
 
@@ -5506,17 +5506,17 @@ Known existing commits include:
 
 &#x20;   Initial commit
 
-&#x20;   Implement ShadBot Core Foundation
+&#x20;   New
 
-&#x20;   Implement ShadBot Domain Core
+&#x20;   gitignore
 
-&#x20;   Implement application runtime layer
-
-
+&#x20;   Docs
 
 
 
-Do not assume these commits represent the final implementation state.
+
+
+No implementation commits exist yet. Development starts from scratch.
 
 
 
@@ -5538,61 +5538,61 @@ Existing important files include:
 
 
 
-&#x20;   src/ShadBot/core/dependency/container.py
+&#x20;   src/ShadBotTrader/core/dependency/container.py
 
-&#x20;   src/ShadBot/core/events/event.py
+&#x20;   src/ShadBotTrader/core/events/event.py
 
-&#x20;   src/ShadBot/core/events/eventBus.py
+&#x20;   src/ShadBotTrader/core/events/eventBus.py
 
-&#x20;   src/ShadBot/core/lifecycle/lifecycleManager.py
+&#x20;   src/ShadBotTrader/core/lifecycle/lifecycleManager.py
 
-&#x20;   src/ShadBot/core/plugins/plugin.py
+&#x20;   src/ShadBotTrader/core/plugins/plugin.py
 
-&#x20;   src/ShadBot/core/services/baseService.py
-
-
-
-&#x20;   src/ShadBot/application/app.py
-
-&#x20;   src/ShadBot/application/applicationState.py
-
-&#x20;   src/ShadBot/application/bootstrap.py
-
-&#x20;   src/ShadBot/application/runtime.py
-
-&#x20;   src/ShadBot/application/serviceRegistry.py
-
-&#x20;   src/ShadBot/application/startup.py
-
-&#x20;   src/ShadBot/application/shutdown.py
+&#x20;   src/ShadBotTrader/core/services/baseService.py
 
 
 
-&#x20;   src/ShadBot/domain/common/entity.py
+&#x20;   src/ShadBotTrader/application/app.py
 
-&#x20;   src/ShadBot/domain/common/valueObject.py
+&#x20;   src/ShadBotTrader/application/applicationState.py
 
-&#x20;   src/ShadBot/domain/market/candle.py
+&#x20;   src/ShadBotTrader/application/bootstrap.py
 
-&#x20;   src/ShadBot/domain/market/symbol.py
+&#x20;   src/ShadBotTrader/application/runtime.py
 
-&#x20;   src/ShadBot/domain/market/timefram.py
+&#x20;   src/ShadBotTrader/application/serviceRegistry.py
 
-&#x20;   src/ShadBot/domain/portfolio/account.py
+&#x20;   src/ShadBotTrader/application/startup.py
 
-&#x20;   src/ShadBot/domain/portfolio/balance.py
+&#x20;   src/ShadBotTrader/application/shutdown.py
 
-&#x20;   src/ShadBot/domain/prediction/prediction.py
 
-&#x20;   src/ShadBot/domain/prediction/signal.py
 
-&#x20;   src/ShadBot/domain/risk/riskModel.py
+&#x20;   src/ShadBotTrader/domain/common/entity.py
 
-&#x20;   src/ShadBot/domain/trading/oerder.py
+&#x20;   src/ShadBotTrader/domain/common/valueObject.py
 
-&#x20;   src/ShadBot/domain/trading/position.py
+&#x20;   src/ShadBotTrader/domain/market/candle.py
 
-&#x20;   src/ShadBot/domain/trading/trade.py
+&#x20;   src/ShadBotTrader/domain/market/symbol.py
+
+&#x20;   src/ShadBotTrader/domain/market/timefram.py
+
+&#x20;   src/ShadBotTrader/domain/portfolio/account.py
+
+&#x20;   src/ShadBotTrader/domain/portfolio/balance.py
+
+&#x20;   src/ShadBotTrader/domain/prediction/prediction.py
+
+&#x20;   src/ShadBotTrader/domain/prediction/signal.py
+
+&#x20;   src/ShadBotTrader/domain/risk/riskModel.py
+
+&#x20;   src/ShadBotTrader/domain/trading/oerder.py
+
+&#x20;   src/ShadBotTrader/domain/trading/position.py
+
+&#x20;   src/ShadBotTrader/domain/trading/trade.py
 
 
 
@@ -5610,7 +5610,7 @@ Existing structure:
 
 
 
-&#x20;   src/ShadBot/project/
+&#x20;   src/ShadBotTrader/project/
 
 
 
@@ -6242,7 +6242,7 @@ After successful Phase:
 
 
 
-Final ShadBot must provide:
+Final ShadBotTrader must provide:
 
 
 
@@ -6618,7 +6618,7 @@ For Requirements:
 
 
 
-هدف نهایی ShadBot ساخت یک Enterprise AI Trading Platform است که:
+هدف نهایی ShadBotTrader ساخت یک Enterprise AI Trading Platform است که:
 
 
 
@@ -6852,7 +6852,7 @@ For Requirements:
 
 
 
-ShadBot is NOT merely:
+ShadBotTrader is NOT merely:
 
 
 
@@ -6860,7 +6860,7 @@ ShadBot is NOT merely:
 
 
 
-ShadBot is:
+ShadBotTrader is:
 
 
 

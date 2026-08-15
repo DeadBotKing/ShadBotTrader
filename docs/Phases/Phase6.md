@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -66,7 +66,7 @@ PRIMARY ARCHITECTURAL STYLE:
 
 
 
-Phase 6 defines the Pipeline Architecture of ShadBot.
+Phase 6 defines the Pipeline Architecture of ShadBotTrader.
 
 
 
@@ -238,11 +238,11 @@ The Model Registry stores model artifacts.
 
 
 
-ShadBot global hierarchy:
+ShadBotTrader global hierarchy:
 
 
 
-&#x20;   SHADBOT
+&#x20;   SHADBOTTRADER
 
 &#x20;      |
 
@@ -3076,7 +3076,7 @@ RESPONSIBILITIES:
 
 ================================================================================
 
-40\. GLOBAL SHADBOT DATA FLOW
+40\. GLOBAL SHADBOTTRADER DATA FLOW
 
 ================================================================================
 

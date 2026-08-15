@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -22,7 +22,7 @@ PURPOSE:
 
 &#x20;   طراحی یک Logging System مرکزی، ساختاریافته، قابل‌گسترش، امن، قابل‌ردگیری،
 
-&#x20;   قابل‌مانیتور و مناسب Production برای کل ShadBot.
+&#x20;   قابل‌مانیتور و مناسب Production برای کل ShadBotTrader.
 
 
 
@@ -56,7 +56,7 @@ Logging System باید یک:
 
 
 
-برای ShadBot فراهم کند.
+برای ShadBotTrader فراهم کند.
 
 
 
@@ -804,7 +804,7 @@ Context می‌تواند شامل:
 
 
 
-برای عملیات ShadBot:
+برای عملیات ShadBotTrader:
 
 
 
@@ -886,17 +886,17 @@ Logger Name باید Hierarchical باشد.
 
 
 
-&#x20;   shadbot.application
+&#x20;   shadbottrader.application
 
-&#x20;   shadbot.domain
+&#x20;   shadbottrader.domain
 
-&#x20;   shadbot.infrastructure
+&#x20;   shadbottrader.infrastructure
 
-&#x20;   shadbot.engine.trading
+&#x20;   shadbottrader.engine.trading
 
-&#x20;   shadbot.engine.ai
+&#x20;   shadbottrader.engine.ai
 
-&#x20;   shadbot.project
+&#x20;   shadbottrader.project
 
 
 
@@ -1022,9 +1022,9 @@ Configuration System تعیین می‌کند:
 
 
 
-&#x20;   shadbot.trading → INFO
+&#x20;   shadbottrader.trading → INFO
 
-&#x20;   shadbot.ai      → DEBUG
+&#x20;   shadbottrader.ai      → DEBUG
 
 
 
@@ -1990,7 +1990,7 @@ Plugin Logger باید Namespace داشته باشد:
 
 
 
-&#x20;   shadbot.plugin.<plugin\_name>
+&#x20;   shadbottrader.plugin.<plugin\_name>
 
 
 
@@ -4024,7 +4024,7 @@ Recommended future structure:
 
 
 
-&#x20;   src/ShadBot/logging/
+&#x20;   src/ShadBotTrader/logging/
 
 
 

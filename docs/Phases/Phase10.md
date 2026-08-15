@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -22,7 +22,7 @@ STATUS:
 
 PURPOSE:
 
-&#x20;   طراحی سیستم مرکزی Event-Driven برای ارتباط Loose-Coupled بین اجزای ShadBot
+&#x20;   طراحی سیستم مرکزی Event-Driven برای ارتباط Loose-Coupled بین اجزای ShadBotTrader
 
 
 
@@ -110,7 +110,7 @@ CONSUMER MUST NOT KNOW PUBLISHER.
 
 
 
-&#x20;                       SHADBOT
+&#x20;                       SHADBOTTRADER
 
 &#x20;                          |
 
@@ -152,7 +152,7 @@ CONSUMER MUST NOT KNOW PUBLISHER.
 
 
 
-ShadBot دارای چند نوع Event خواهد بود:
+ShadBotTrader دارای چند نوع Event خواهد بود:
 
 
 
@@ -1396,7 +1396,7 @@ Topic abstraction باید از Event Contract جدا باشد.
 
 
 
-ShadBot باید architecture-ready برای:
+ShadBotTrader باید architecture-ready برای:
 
 
 
@@ -2248,7 +2248,7 @@ Project Intelligence Events:
 
 
 
-این Eventها بعداً برای سیستم حافظه و Context خودکار ShadBot حیاتی هستند.
+این Eventها بعداً برای سیستم حافظه و Context خودکار ShadBotTrader حیاتی هستند.
 
 
 
@@ -2946,7 +2946,7 @@ EVENT SOURCING:
 
 
 
-ShadBot نباید این دو را با هم یکی فرض کند.
+ShadBotTrader نباید این دو را با هم یکی فرض کند.
 
 
 
@@ -3020,7 +3020,7 @@ Conceptual future structure:
 
 
 
-&#x20;   src/ShadBot/
+&#x20;   src/ShadBotTrader/
 
 &#x20;       core/
 

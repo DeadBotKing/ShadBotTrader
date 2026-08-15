@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT
+SHADBOTTRADER
 
 ENTERPRISE AI TRADING PLATFORM
 
@@ -24,7 +24,7 @@ PURPOSE:
 
 &#x20;   طراحی پلتفرم مرکزی Data برای دریافت، اعتبارسنجی، نرمال‌سازی، ذخیره‌سازی،
 
-&#x20;   پردازش، Versioning، Replay و ارائه داده به تمام Subsystemهای ShadBot.
+&#x20;   پردازش، Versioning، Replay و ارائه داده به تمام Subsystemهای ShadBotTrader.
 
 
 
@@ -42,7 +42,7 @@ IMPLEMENTATION:
 
 
 
-Data Platform باید تنها مرجع رسمی مدیریت Data در ShadBot باشد.
+Data Platform باید تنها مرجع رسمی مدیریت Data در ShadBotTrader باشد.
 
 
 
@@ -234,7 +234,7 @@ Data Platform مسئول:
 
 
 
-ShadBot Data Platform دارای Layerهای زیر است:
+ShadBotTrader Data Platform دارای Layerهای زیر است:
 
 
 

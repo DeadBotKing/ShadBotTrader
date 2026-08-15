@@ -1,4 +1,4 @@
-\# SHADBOT — DEVELOPMENT RULES
+\# SHADBOTTRADER — DEVELOPMENT RULES
 
 
 
@@ -6,7 +6,7 @@ Version: 1.0
 
 Status: AUTHORITATIVE
 
-Project: ShadBot
+Project: ShadBotTrader
 
 Platform: Enterprise AI Trading Platform
 
@@ -30,13 +30,13 @@ Quality Standard: Enterprise / Production Grade
 
 
 
-این سند قوانین قطعی توسعه ShadBot است.
+این سند قوانین قطعی توسعه ShadBotTrader است.
 
 
 
 هر Developer، AI Agent، Coding Agent، Engineer یا Automation System که روی
 
-ShadBot کار می‌کند باید این قوانین را رعایت کند.
+ShadBotTrader کار می‌کند باید این قوانین را رعایت کند.
 
 
 
@@ -142,7 +142,7 @@ Developer نباید:
 
 
 
-ShadBot یک Enterprise AI Trading Platform است.
+ShadBotTrader یک Enterprise AI Trading Platform است.
 
 
 
@@ -274,7 +274,7 @@ Architecture باید به صورت Layered + Modular + Event Driven پیاده�
 
 
 
-ShadBot دارای roadmap معماری 28 مرحله‌ای است.
+ShadBotTrader دارای roadmap معماری 28 مرحله‌ای است.
 
 
 
@@ -472,17 +472,23 @@ Developer must not treat Phase 28 as permission to redesign Phases 1-27.
 
 ===============================================================================
 
-5\. CURRENT IMPLEMENTATION FOUNDATION
+5\. PLANNED IMPLEMENTATION STRUCTURE (NOT YET IMPLEMENTED)
 
 ===============================================================================
 
 
 
-Current repository started from a minimal project skeleton.
+The repository currently contains only architecture documentation
+
+(docs/) and legacy reference code. No new-platform implementation
+
+exists yet.
 
 
 
-The following implementation work has already been introduced:
+The following structure is the PLANNED target for Phase 28 (not yet
+
+implemented):
 
 
 
@@ -490,7 +496,7 @@ Core Foundation:
 
 
 
-src/ShadBot/core/
+src/ShadBotTrader/core/
 
 &#x20;   dependency/
 
@@ -528,7 +534,7 @@ Application Runtime:
 
 
 
-src/ShadBot/application/
+src/ShadBotTrader/application/
 
 &#x20;   app.py
 
@@ -550,7 +556,7 @@ Domain Core:
 
 
 
-src/ShadBot/domain/
+src/ShadBotTrader/domain/
 
 &#x20;   common/
 
@@ -606,7 +612,7 @@ Project Intelligence foundation:
 
 
 
-src/ShadBot/project/
+src/ShadBotTrader/project/
 
 
 
@@ -716,11 +722,21 @@ IMPORTANT:
 
 
 
-وجود این فایل‌ها به معنی تکمیل بودن functionality آنها نیست.
+این ساختار هنوز پیاده‌سازی نشده است و هیچ یک از این فایل‌ها
+
+وجود ندارد.
 
 
 
 Empty file ≠ implemented feature.
+
+
+
+Scaffold ≠ implementation.
+
+
+
+Placeholder ≠ production code.Empty file ≠ implemented feature.
 
 
 
@@ -748,7 +764,7 @@ Canonical package:
 
 
 
-ShadBot
+ShadBotTrader
 
 
 
@@ -756,7 +772,7 @@ ShadBot
 
 
 
-shadbot
+shadbottrader
 
 projectintelligence
 
@@ -2056,7 +2072,7 @@ Self Learning نباید مستقیماً production strategy را تغییر د
 
 
 
-Project Intelligence وظیفه دارد خود پروژه ShadBot را بفهمد.
+Project Intelligence وظیفه دارد خود پروژه ShadBotTrader را بفهمد.
 
 
 
@@ -3312,11 +3328,11 @@ Commit باید semantic باشد.
 
 
 
-Implement ShadBot Core Foundation
+Implement ShadBotTrader Core Foundation
 
 
 
-Implement ShadBot Domain Core
+Implement ShadBotTrader Domain Core
 
 
 
@@ -3384,7 +3400,7 @@ Branchها باید بر اساس feature / architecture stage باشند.
 
 
 
-architecture-v1
+main
 
 
 
@@ -4572,7 +4588,7 @@ Phase 28 دارای sub-phaseها است.
 
 
 
-ShadBot از صفر ساخته می‌شود.
+ShadBotTrader از صفر ساخته می‌شود.
 
 
 
@@ -6910,11 +6926,11 @@ Task هنوز complete نیست.
 
 
 
-ShadBot نباید به یک collection of scripts تبدیل شود.
+ShadBotTrader نباید به یک collection of scripts تبدیل شود.
 
 
 
-ShadBot باید یک:
+ShadBotTrader باید یک:
 
 
 

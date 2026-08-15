@@ -1,6 +1,6 @@
 ================================================================================
 
-SHADBOT — ENTERPRISE AI TRADING PLATFORM
+SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 ================================================================================
 
@@ -20,7 +20,7 @@ STATUS:
 
 PURPOSE:
 
-&#x20;   طراحی معماری کامل لایه GUI برای ShadBot به‌صورت Enterprise-grade،
+&#x20;   طراحی معماری کامل لایه GUI برای ShadBotTrader به‌صورت Enterprise-grade،
 
 &#x20;   Modular، قابل توسعه، قابل تست و کاملاً جدا از Domain و Business Logic.
 
@@ -1852,7 +1852,7 @@ Business/Application Layer نباید به GUI Framework وابسته باشد.
 
 
 
-در ShadBot:
+در ShadBotTrader:
 
 
 
@@ -3776,7 +3776,7 @@ GUI Configuration:
 
 
 
-&#x20;   src/ShadBot/
+&#x20;   src/ShadBotTrader/
 
 &#x20;   |
 

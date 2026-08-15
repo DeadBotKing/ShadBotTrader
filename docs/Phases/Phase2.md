@@ -1,4 +1,4 @@
-\# SHADBOT ENTERPRISE AI TRADING PLATFORM
+\# SHADBOTTRADER ENTERPRISE AI TRADING PLATFORM
 
 \# PHASE 02 — DEPENDENCY RULES
 
@@ -6,7 +6,7 @@
 
 Document ID:
 
-SHADBOT-ARCH-P02
+SHADBOTTRADER-ARCH-P02
 
 
 
@@ -68,11 +68,11 @@ NOT REQUIRED
 
 
 
-این سند قوانین وابستگی ShadBot را تعریف می‌کند.
+این سند قوانین وابستگی ShadBotTrader را تعریف می‌کند.
 
 
 
-Phase 01 مشخص کرد ShadBot چه سیستمی است و چه اصولی باید رعایت شوند.
+Phase 01 مشخص کرد ShadBotTrader چه سیستمی است و چه اصولی باید رعایت شوند.
 
 
 
@@ -116,7 +116,7 @@ Phase 02 مشخص می‌کند:
 
 
 
-قانون اصلی ShadBot:
+قانون اصلی ShadBotTrader:
 
 
 
@@ -182,7 +182,7 @@ Phase 02 مشخص می‌کند:
 
 
 
-Dependency Direction استاندارد ShadBot:
+Dependency Direction استاندارد ShadBotTrader:
 
 
 
@@ -232,7 +232,7 @@ Dependency Direction استاندارد ShadBot:
 
 
 
-ShadBot از نظر Dependency دارای این حوزه‌های اصلی است:
+ShadBotTrader از نظر Dependency دارای این حوزه‌های اصلی است:
 
 
 
@@ -414,15 +414,15 @@ Domain نباید به:
 
 
 
-&#x20;   from shadbot.infrastructure import ...
+&#x20;   from shadbottrader.infrastructure import ...
 
-&#x20;   from shadbot.application import ...
+&#x20;   from shadbottrader.application import ...
 
-&#x20;   from shadbot.engines import ...
+&#x20;   from shadbottrader.engines import ...
 
-&#x20;   from shadbot.services import ...
+&#x20;   from shadbottrader.services import ...
 
-&#x20;   from shadbot.gui import ...
+&#x20;   from shadbottrader.gui import ...
 
 &#x20;   from tensorflow import ...
 
@@ -860,7 +860,7 @@ Service نباید مستقیماً به:
 
 
 
-Infrastructure مسئول اتصال ShadBot به دنیای بیرون است.
+Infrastructure مسئول اتصال ShadBotTrader به دنیای بیرون است.
 
 
 
@@ -988,7 +988,7 @@ External Systems همیشه در بیرونی‌ترین مرز قرار می‌
 
 
 
-ShadBot باید از طریق Adapter به آنها متصل شود.
+ShadBotTrader باید از طریق Adapter به آنها متصل شود.
 
 
 
@@ -998,7 +998,7 @@ ShadBot باید از طریق Adapter به آنها متصل شود.
 
 
 
-هیچ بخش داخلی ShadBot نباید مستقیماً به SDK یک Broker خاص وابسته شود.
+هیچ بخش داخلی ShadBotTrader نباید مستقیماً به SDK یک Broker خاص وابسته شود.
 
 
 
@@ -3400,7 +3400,7 @@ Importها باید حداقل Surface لازم را داشته باشند.
 
 
 
-&#x20;   from shadbot.infrastructure import \*
+&#x20;   from shadbottrader.infrastructure import \*
 
 
 
