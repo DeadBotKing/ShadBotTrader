@@ -23,6 +23,9 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.4",
 ]
+ai = [
+    "tensorflow>=2.16",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

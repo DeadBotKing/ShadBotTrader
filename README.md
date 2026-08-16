@@ -109,3 +109,28 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## AI Platform (Sprint P3)
+
+Model registry, artifacts (with SHA-256 integrity), reproducible
+training runs and prediction serving — with a WaveNet direction
+classifier trained using genuine roll-forward (walk-forward) training:
+
+```bash
+# optional: install the ML framework
+# Windows note: native TensorFlow ended at 2.10 — use
+#   pip install tensorflow==2.10.1   (Python 3.9/3.10 only)
+# or install inside WSL2. Linux/macOS: pip install tensorflow
+
+# full demo (ingest -> features -> train Wavenet -> evaluate)
+python scripts/run_ai.py
+
+# CLI
+PYTHONPATH=src python -m ShadBotTrader.ai_cli train   --model gold_direction
+PYTHONPATH=src python -m ShadBotTrader.ai_cli predict --model gold_direction
+```
+
+The Wavenet uses causal convolutions (explicit left-padding, Keras 3
+compatible) with gated activations and skip connections, so it is
+roll-forward safe by construction. TensorFlow tests are skipped by
+default; run them with `RUN_TF=1 python -m pytest`.
