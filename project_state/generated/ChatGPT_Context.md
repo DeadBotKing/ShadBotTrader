@@ -6,19 +6,19 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.12.10
-- Snapshot generated at: 2026-08-16T12:40:06.741861+00:00
+- Snapshot generated at: 2026-08-16T15:04:40.780752+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 194
-- Test modules: 55
+- Source modules: 227
+- Test modules: 64
 
 ## Current Phase
 
-Phase 28 — Implementation Foundation (Sprint P5: Execution & Portfolio — fill-based accounting)
+Phase 28 — Implementation Foundation (Sprint P7: Self-Learning — walk-forward optimisation with a promotion gate)
 
 ## Implemented Components
 
@@ -27,9 +27,10 @@ Phase 28 — Implementation Foundation (Sprint P5: Execution & Portfolio — fil
 ## Git Commit
 
 - Branch: main
-- Commit: 422b7dcdd01876b113b043c0af35c1917e8fbab6
-- Dirty: yes (242 files)
+- Commit: be2bcf9679cfea9b515c3367139b4ce0f8b41aa6
+- Dirty: yes (476 files)
 - Recent commits:
+  - be2bcf9 Phase 28 â€” Implementation Foundation (Sprint P5: Execution & Portfolio â€” fill-based accounting)
   - 422b7dc Phase 28 â€” Implementation Foundation (Sprint P4: Trading Platform â€” risk-gated decision pipeline)
   - dcd31ce Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
   - b5df12b Create venv.txt
@@ -39,7 +40,6 @@ Phase 28 — Implementation Foundation (Sprint P5: Execution & Portfolio — fil
   - 81751ce Phase 28 â€” Implementation Foundation (Sprint P1: Data Platform)
   - 80cbf5a Phase 28 â€” Implementation Foundation (Sprint P0: Project Intelligence)
   - e019203 Phase1
-  - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Sprint P6 — Simulation & Backtesting (Phase 16): drive the data -> feature -> prediction -> decision -> execution chain over historical candles on a deterministic clock, and report performance metrics (equity curve, drawdown, hit rate, profit factor).
+Sprint P8 — Project Intelligence & Persistence (Phases 18, 20): durable storage for datasets, models, journals and learning experiments (currently in-memory), plus a richer self-describing project state. Alternatively Sprint P9 — real market data: a MetaTrader/broker provider behind the existing MarketDataProvider port, so backtests run on genuine price history.
 
 ## Statistics
 
-- Total files: 497
-- Source files: 194
-- Test files: 55
+- Total files: 543
+- Source files: 227
+- Test files: 64
 - Documentation files: 43
 - Legacy files: 176
-- Total Python lines: 59433
-- Modules: 249
-- Classes: 284
-- Functions: 1343
-- External dependencies: 10
+- Total Python lines: 65751
+- Modules: 291
+- Classes: 365
+- Functions: 1868
+- External dependencies: 11

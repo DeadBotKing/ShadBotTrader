@@ -1,0 +1,11 @@
+{
+  "checksum": "62c87e8e355615998ffbe0742a414ac10ae8d268c8937bc8ec5335462362d7fd",
+  "created_at": "2026-08-16T16:24:47.423314+03:30",
+  "format": "keras",
+  "framework": "tensorflow",
+  "framework_version": "2.21.0",
+  "model_id": "gold_direction",
+  "size_bytes": 1642901,
+  "training_run_id": "75cee6c2-6048-46d3-9910-f8950e048fc7",
+  "version": 2
+}

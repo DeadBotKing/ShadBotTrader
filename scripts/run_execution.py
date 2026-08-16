@@ -61,8 +61,8 @@ from ShadBotTrader.infrastructure.trading import (  # noqa: E402
 START = datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc)
 SYMBOL = Symbol("XAUUSD_i")
 TIMEFRAME = Timeframe("5M")
-SPREAD = Decimal("2")
-STARTING_CASH = Decimal("100000")
+SPREAD = Decimal("4")
+STARTING_CASH = Decimal("100")
 
 # (minutes, mid price, model value, model confidence)
 PATH = [

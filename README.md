@@ -86,6 +86,8 @@ Installing the package also exposes these console commands:
 | `shadbot-ai` | `python -m ShadBotTrader.ai_cli` |
 | `shadbot-trading` | `python -m ShadBotTrader.trading_cli` |
 | `shadbot-exec` | `python -m ShadBotTrader.execution_cli` |
+| `shadbot-backtest` | `python -m ShadBotTrader.backtest_cli` |
+| `shadbot-learn` | `python -m ShadBotTrader.learning_cli` |
 | `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
@@ -154,6 +156,84 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## Self-Learning & Optimisation (Sprint P7)
+
+Searches parameters, validates on data the search never saw, and gates
+promotion:
+
+```bash
+python scripts/run_optimisation.py
+python scripts/run_optimisation.py --demo-overfit
+shadbot-learn objectives
+shadbot-learn policy
+shadbot-learn optimise --folds 3 --objective sharpe
+```
+
+```
+ParameterSpace -> Candidates
+                      |
+               in-sample search      <- parameters are CHOSEN here
+                      |
+               walk-forward folds    <- they are JUDGED here
+                      |
+                PromotionGate        <- out-of-sample evidence only
+                      |
+        promote / reject -> LearningMemory
+```
+
+**The anti-overfitting design is the point.** In-sample scores decide
+only *which* candidates are worth validating; the winner is ranked
+purely on out-of-sample folds. A configuration that memorises the
+training window shows up as a large `overfit_gap` and is refused.
+
+The promotion gate refuses a candidate that: fails to beat the baseline
+out-of-sample, has too few validation folds or trades to be meaningful,
+breaches the drawdown limit, is profitable in only one lucky fold, or
+shows a suspicious in-sample/out-of-sample divergence. Every rejection
+carries a machine-readable reason, stored in the learning memory so the
+same dead end is not re-explored.
+
+Objectives are explicit because "better" is a policy decision:
+`risk_adjusted` (default), `sharpe`, `total_return`, `max_drawdown`.
+
+> Self-learning produces a **recommendation**. It has no execution
+> surface and cannot change what runs in production — that boundary is
+> enforced by tests.
+
+## Simulation & Backtesting (Sprint P6)
+
+Replays historical candles through the **production** trading chain on a
+controlled clock:
+
+```bash
+python scripts/run_backtest.py                     # full report
+python scripts/run_backtest.py --compare           # costs vs no costs
+shadbot-backtest sweep --param spread --values 0,2,4,10,20
+```
+
+```
+MarketEvent -> PredictionSource -> Strategy -> RiskGate -> Intent
+            -> SimulatedVenue -> Fills -> Portfolio -> EquityPoint
+```
+
+The Simulation Platform **orchestrates**, it never reimplements: the same
+`TradingDecisionService`, `PolicyRiskGate`, `ExecutionService` and
+`PortfolioLedger` used live are wired to a historical data source. If a
+backtest passes, it exercised production logic.
+
+Determinism is enforced structurally: simulated code never calls
+`datetime.now()` (the `SimulationClock` is the only source of time), the
+clock cannot move backwards, and events are drained from a totally
+ordered queue — same data + config + seed always reproduce the run.
+
+Reported metrics: equity curve, drawdown curve, max drawdown, Sharpe,
+volatility, hit rate, profit factor, expectancy and recovery factor.
+Metrics that are mathematically undefined (Sharpe without dispersion,
+profit factor without losses) report `n/a` rather than a misleading zero.
+
+`step()` processes exactly one bar for debugging, and the clock supports
+snapshot/restore for checkpointing.
 
 ## Execution & Portfolio (Sprint P5)
 

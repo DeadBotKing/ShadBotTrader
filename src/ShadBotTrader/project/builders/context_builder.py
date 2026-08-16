@@ -9,10 +9,12 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P6 — Simulation & Backtesting (Phase 16): drive the "
-    "data -> feature -> prediction -> decision -> execution chain over "
-    "historical candles on a deterministic clock, and report performance "
-    "metrics (equity curve, drawdown, hit rate, profit factor)."
+    "Sprint P8 — Project Intelligence & Persistence (Phases 18, 20): "
+    "durable storage for datasets, models, journals and learning "
+    "experiments (currently in-memory), plus a richer self-describing "
+    "project state. Alternatively Sprint P9 — real market data: a "
+    "MetaTrader/broker provider behind the existing MarketDataProvider "
+    "port, so backtests run on genuine price history."
 )
 
 KNOWN_ISSUES = [

@@ -1,0 +1,12 @@
+"""Self-Learning domain event names (past tense, Phase 17)."""
+
+EXPERIMENT_STARTED = "ExperimentStarted"
+EXPERIMENT_COMPLETED = "ExperimentCompleted"
+EXPERIMENT_FAILED = "ExperimentFailed"
+CANDIDATE_PROPOSED = "CandidateProposed"
+CANDIDATE_EVALUATED = "CandidateEvaluated"
+CANDIDATE_VALIDATED = "CandidateValidated"
+CANDIDATE_REJECTED = "CandidateRejected"
+CANDIDATE_PROMOTED = "CandidatePromoted"
+CANDIDATE_ROLLED_BACK = "CandidateRolledBack"
+BASELINE_RETAINED = "BaselineRetained"

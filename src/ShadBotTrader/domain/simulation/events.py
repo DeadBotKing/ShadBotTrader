@@ -1,0 +1,10 @@
+"""Simulation domain event names (past tense, Phase 16 section 20)."""
+
+SIMULATION_STARTED = "SimulationStarted"
+SIMULATION_STEP_COMPLETED = "SimulationStepCompleted"
+SIMULATION_PAUSED = "SimulationPaused"
+SIMULATION_RESUMED = "SimulationResumed"
+SIMULATION_COMPLETED = "SimulationCompleted"
+SIMULATION_FAILED = "SimulationFailed"
+PORTFOLIO_UPDATED = "PortfolioUpdated"
+EQUITY_RECORDED = "EquityRecorded"

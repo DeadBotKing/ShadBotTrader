@@ -38,6 +38,8 @@ shadbot-feature = "ShadBotTrader.feature_cli:main"
 shadbot-ai = "ShadBotTrader.ai_cli:main"
 shadbot-trading = "ShadBotTrader.trading_cli:main"
 shadbot-exec = "ShadBotTrader.execution_cli:main"
+shadbot-backtest = "ShadBotTrader.backtest_cli:main"
+shadbot-learn = "ShadBotTrader.learning_cli:main"
 shadbot-pip = "ShadBotTrader.intelligence:main"
 
 [tool.setuptools.packages.find]
@@ -69,5 +71,5 @@ check_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-q"
