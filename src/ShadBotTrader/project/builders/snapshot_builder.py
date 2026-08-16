@@ -21,7 +21,7 @@ from ShadBotTrader.project.models.project_snapshot import (
 ARCHITECTURE_VERSION = "1.0"
 CURRENT_PHASE = (
     "Phase 28 - Implementation Foundation "
-    "(Sprint P8: Persistence - SQLite-backed state that survives restarts)"
+    "(Phase 19: read-only dashboard over persisted state)"
 )
 
 

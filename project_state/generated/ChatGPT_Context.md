@@ -6,19 +6,19 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.12.10
-- Snapshot generated at: 2026-08-16T15:47:28.746224+00:00
+- Snapshot generated at: 2026-08-16T16:04:21.201987+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 235
-- Test modules: 70
+- Source modules: 244
+- Test modules: 73
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)
+Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
 
 ## Implemented Components
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed sta
 ## Git Commit
 
 - Branch: main
-- Commit: 4951f42d521c70ba32091be06ed1040cf47280b6
+- Commit: 715cfceb22cad43a52d55148e72f04e3cdea7c7d
 - Dirty: yes (241 files)
 - Recent commits:
+  - 715cfce Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)
   - 4951f42 Real Data
   - 9dbcec3 Phase 28 â€” Implementation Foundation (Sprint P7: Self-Learning â€” walk-forward optimisation with a promotion gate)
   - be2bcf9 Phase 28 â€” Implementation Foundation (Sprint P5: Execution & Portfolio â€” fill-based accounting)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed sta
   - 22e6743 NewFixSprint02
   - 74c72cf Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
   - e9eb8fe Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform)
-  - 81751ce Phase 28 â€” Implementation Foundation (Sprint P1: Data Platform)
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Sprint P9 - wire persistence into the demos and CLIs by default, then Phase 19 (GUI/API): a read-only dashboard over the stored positions, equity curve, audit trail and learning history - the data is now durable, so it can finally be displayed.
+Wire persistence into the remaining demos and CLIs with a --persist flag, so backtests and optimisations land in the database and show up on the dashboard without extra wiring. After that: Phase 24 (deployment) or richer charts once per-bar equity is stored.
 
 ## Statistics
 
-- Total files: 563
-- Source files: 235
-- Test files: 70
+- Total files: 579
+- Source files: 244
+- Test files: 73
 - Documentation files: 43
 - Legacy files: 176
-- Total Python lines: 70331
-- Modules: 305
-- Classes: 396
-- Functions: 2145
+- Total Python lines: 72531
+- Modules: 317
+- Classes: 416
+- Functions: 2255
 - External dependencies: 12

@@ -90,6 +90,7 @@ Installing the package also exposes these console commands:
 | `shadbot-backtest` | `python -m ShadBotTrader.backtest_cli` |
 | `shadbot-learn` | `python -m ShadBotTrader.learning_cli` |
 | `shadbot-db` | `python -m ShadBotTrader.db_cli` |
+| `shadbot-dashboard` | `python -m ShadBotTrader.dashboard_cli` |
 | `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
@@ -158,6 +159,43 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## Dashboard (Phase 19)
+
+A read-only web view over the persisted state:
+
+```bash
+python scripts/run_dashboard.py                    # seed + serve on :8080
+python scripts/run_dashboard.py --export out.html  # standalone HTML file
+
+shadbot-dashboard serve --db shadbot.db --port 8080
+shadbot-dashboard show                              # same data as text
+shadbot-dashboard state                             # same data as JSON
+```
+
+```
+View  ->  ViewModel  ->  Gateway  ->  Application / Infrastructure
+```
+
+Panels: portfolio and positions, realised cash-flow chart, decision audit
+trail, execution history, learning memory, refusal reasons, session list
+and database health.
+
+**The GUI cannot act.** Phase 19 forbids the presentation layer from
+executing orders, training models or modifying state, and that is
+enforced structurally rather than by convention:
+
+* `DashboardGateway` exposes no mutating method — a test asserts that no
+  public method name suggests one
+* every ViewModel is a frozen dataclass
+* ViewModels import neither `domain` nor `infrastructure` (asserted by
+  parsing their imports)
+* the server answers `GET` only; `POST`/`PUT`/`DELETE`/`PATCH` return
+  **405** with an explanation
+
+Everything is inlined — CSS, SVG charts, no scripts, no fonts, no CDN —
+so the page renders identically in a sandboxed preview, an emailed file
+or a browser with no network.
 
 ## Persistence (Sprint P8)
 

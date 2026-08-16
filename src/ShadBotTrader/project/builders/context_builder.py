@@ -9,10 +9,10 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P9 - wire persistence into the demos and CLIs by default, then "
-    "Phase 19 (GUI/API): a read-only dashboard over the stored positions, "
-    "equity curve, audit trail and learning history - the data is now "
-    "durable, so it can finally be displayed."
+    "Wire persistence into the remaining demos and CLIs with a --persist "
+    "flag, so backtests and optimisations land in the database and show up "
+    "on the dashboard without extra wiring. After that: Phase 24 "
+    "(deployment) or richer charts once per-bar equity is stored."
 )
 
 KNOWN_ISSUES = [
