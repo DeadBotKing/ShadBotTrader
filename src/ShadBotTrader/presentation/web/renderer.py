@@ -13,6 +13,11 @@ from __future__ import annotations
 import html
 from typing import Dict, List, Optional, Sequence
 
+from ShadBotTrader.presentation.commands.commands import (
+    CommandDescriptor,
+    CommandKind,
+    CommandResult,
+)
 from ShadBotTrader.presentation.viewmodels.models import (
     CandidateView,
     CashPoint,
@@ -75,6 +80,30 @@ tr:last-child td { border-bottom: none; }
 footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border);
          color: var(--muted); font-size: 11px; }
 code { background: var(--bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+.actions { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.action { background: var(--bg); border: 1px solid var(--border);
+          border-radius: 6px; padding: 14px; display: flex; flex-direction: column; }
+.action h3 { margin: 0 0 6px; font-size: 13px; }
+.action p { margin: 0 0 10px; color: var(--muted); font-size: 11px; flex: 1; }
+.action .inputs { display: grid; gap: 6px; margin-bottom: 10px; }
+.action label { display: grid; grid-template-columns: 92px 1fr; align-items: center;
+                gap: 6px; font-size: 11px; color: var(--muted); }
+.action input { background: var(--panel); border: 1px solid var(--border);
+                color: var(--text); border-radius: 4px; padding: 5px 7px;
+                font-family: inherit; font-size: 11px; width: 100%; }
+button { background: var(--accent); color: #04101f; border: 0; border-radius: 5px;
+         padding: 8px 12px; font-family: inherit; font-size: 12px; font-weight: 600;
+         cursor: pointer; width: 100%; }
+button:hover { filter: brightness(1.1); }
+button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.slow { color: var(--warning); font-size: 10px; margin-top: 6px; }
+.banner { border-radius: 6px; padding: 12px 14px; margin-bottom: 16px;
+          border: 1px solid currentColor; }
+.banner .head { font-weight: 600; margin-bottom: 4px; }
+.banner pre { margin: 8px 0 0; padding: 8px; background: var(--bg);
+              border-radius: 4px; color: var(--text); font-size: 11px;
+              white-space: pre-wrap; overflow-x: auto; }
+.busy { background: rgba(210,153,34,.12); }
 """
 
 
@@ -318,10 +347,100 @@ def render_equity_chart(points: Sequence[CashPoint]) -> str:
 </section>"""
 
 
+# ------------------------------------------------------------------ actions --
+def render_actions(
+    descriptors: Sequence[CommandDescriptor],
+    busy: Optional[CommandKind] = None,
+    busy_seconds: float = 0.0,
+) -> str:
+    """The command panel: one form per operation (Phase 19 §3, §12).
+
+    Each form POSTs to /run. The browser sends the user's intent; the
+    server turns it into a Command and hands it to the bus. No logic
+    runs here — this is markup.
+    """
+    cards = []
+    for descriptor in descriptors:
+        inputs = "".join(
+            f"<label>{_e(field.label)}"
+            f'<input type="{"number" if field.kind == "number" else "text"}" '
+            f'name="{_e(field.name)}" value="{_e(field.default)}" '
+            f'{"step=any" if field.kind == "number" else ""}></label>'
+            for field in descriptor.fields
+        )
+        disabled = " disabled" if busy is not None else ""
+        note = (
+            '<div class="slow">takes a while — the page stays responsive</div>'
+            if descriptor.slow
+            else ""
+        )
+        cards.append(f"""<form class="action" method="post" action="/run">
+  <input type="hidden" name="command" value="{_e(descriptor.action)}">
+  <h3>{_e(descriptor.label)}</h3>
+  <p>{_e(descriptor.description)}</p>
+  {f'<div class="inputs">{inputs}</div>' if inputs else ""}
+  <button type="submit"{disabled}>Run</button>
+  {note}
+</form>""")
+
+    banner = ""
+    if busy is not None:
+        banner = (
+            f'<div class="banner busy warning"><div class="head">'
+            f"Running: {_e(busy.value)}</div>"
+            f"<div>{busy_seconds:.0f}s elapsed — reload the page to check progress. "
+            f"Buttons are disabled until it finishes.</div></div>"
+        )
+
+    return f"""<section class="panel wide">
+  <h2>Actions</h2>
+  {banner}
+  <div class="actions">{"".join(cards)}</div>
+</section>"""
+
+
+def render_result(result: Optional[CommandResult]) -> str:
+    """Show the outcome of the command that was just dispatched."""
+    if result is None:
+        return ""
+    detail = f"<pre>{_e(result.detail)}</pre>" if result.detail else ""
+    lines = f"<pre>{_e(chr(10).join(result.lines))}</pre>" if result.lines else ""
+    took = f" · {result.duration_seconds:.1f}s" if result.duration_seconds else ""
+    return f"""<div class="banner {result.tone}">
+  <div class="head">{_e(result.status.value.upper())}: {_e(result.kind.value)}{took}</div>
+  <div>{_e(result.message)}</div>
+  {lines}{detail}
+</div>"""
+
+
+def render_history(results: Sequence[CommandResult]) -> str:
+    """Recent command outcomes."""
+    if not results:
+        return ""
+    rows = [
+        [
+            _e(item.kind.value),
+            f'<span class="{item.tone}">{_e(item.status.value)}</span>',
+            _e(item.message[:70]),
+            f"{item.duration_seconds:.1f}s",
+        ]
+        for item in results
+    ]
+    return f"""<section class="panel">
+  <h2>Recent actions</h2>
+  {_table(["Command", "Status", "Result", "Took"], rows, "Nothing run yet.")}
+</section>"""
+
+
 # ------------------------------------------------------------------- page --
 def render_dashboard(
     view: DashboardView,
     equity_points: Sequence[CashPoint] = (),
+    commands: Sequence[CommandDescriptor] = (),
+    result: Optional[CommandResult] = None,
+    history: Sequence[CommandResult] = (),
+    busy: Optional[CommandKind] = None,
+    busy_seconds: float = 0.0,
 ) -> str:
     """Render the complete dashboard page."""
     session_note = (
@@ -330,21 +449,27 @@ def render_dashboard(
         else "no session selected"
     )
 
+    actions = render_actions(commands, busy, busy_seconds) if commands else ""
+    outcome = render_result(result)
+
     if view.is_empty:
-        body = """<section class="panel wide">
+        body = actions + outcome + """<section class="panel wide">
   <h2>Nothing recorded yet</h2>
-  <p class="empty">Run something that persists state, then reload:</p>
+  <p class="empty">Use an action above, or run a script:</p>
   <p><code>python scripts/run_persistence.py --keep --db shadbot.db</code></p>
-</section>"""
+</section>""" + render_history(history)
     else:
         body = "".join(
             [
+                actions,
+                outcome,
                 render_portfolio(view.portfolio),
                 render_equity_chart(equity_points),
                 render_decisions(view.decisions),
                 render_executions(view.executions),
                 render_candidates(view.candidates),
                 '<div class="grid">',
+                render_history(history),
                 render_sessions(view.sessions),
                 render_rejections(view.rejection_counts),
                 render_system(view),

@@ -170,28 +170,58 @@ python scripts/run_dashboard.py --export out.html  # standalone HTML file
 
 shadbot-dashboard serve --db shadbot.db --port 8080
 shadbot-dashboard show                              # same data as text
+shadbot-dashboard commands                          # list the actions
+shadbot-dashboard run run_backtest --param symbol=XAUUSD_i
 shadbot-dashboard state                             # same data as JSON
 ```
 
 ```
-View  ->  ViewModel  ->  Gateway  ->  Application / Infrastructure
+View  ->  ViewModel  ->  Gateway        ->  Application (reads)
+View  ->  Command    ->  Command Bus    ->  Handler -> Application (actions)
 ```
+
+### Action buttons
+
+The dashboard has buttons for the operations you would otherwise run
+from a terminal:
+
+| button | what it does |
+|---|---|
+| Fetch market data | pulls real candles from MetaTrader 5 and ingests them |
+| Update features | recomputes the feature set and registers it in the database |
+| Retrain the model | roll-forward WaveNet training |
+| Run a backtest | replays stored candles through the trading chain |
+| Run optimisation | walk-forward parameter search with the promotion gate |
+| Run a trading cycle | one decision + execution against the latest bar |
+| Refresh project state | rescans the repository |
+
+Phase 19 §3 lists **Command Dispatch** as a GUI responsibility and §12-13
+define the path, so the buttons are architecture-compliant: the page
+sends an *intent*, and an application service does the work. The command
+set is closed (`CommandKind`), unknown commands are rejected with 400,
+only one runs at a time, and long jobs run in a background thread so the
+page never blocks.
+
+Prefer a strict viewer? `shadbot-dashboard serve --read-only` removes
+every button and makes `POST /run` return 405.
 
 Panels: portfolio and positions, realised cash-flow chart, decision audit
 trail, execution history, learning memory, refusal reasons, session list
 and database health.
 
-**The GUI cannot act.** Phase 19 forbids the presentation layer from
-executing orders, training models or modifying state, and that is
-enforced structurally rather than by convention:
+**The GUI still holds no business logic.** §4 forbids the presentation
+layer from *calculating* signals or risk, executing orders itself, or
+touching the database directly — enforced structurally:
 
-* `DashboardGateway` exposes no mutating method — a test asserts that no
-  public method name suggests one
+* `DashboardGateway` (the read path) exposes no mutating method — a test
+  asserts that no public method name suggests one
 * every ViewModel is a frozen dataclass
 * ViewModels import neither `domain` nor `infrastructure` (asserted by
   parsing their imports)
-* the server answers `GET` only; `POST`/`PUT`/`DELETE`/`PATCH` return
-  **405** with an explanation
+* handlers delegate to application services; a test rejects maths-heavy
+  helpers inside the command layer
+* the only action endpoint is `POST /run`, restricted to the closed
+  `CommandKind` set; `PUT`/`DELETE`/`PATCH` return **405**
 
 Everything is inlined — CSS, SVG charts, no scripts, no fonts, no CDN —
 so the page renders identically in a sandboxed preview, an emailed file

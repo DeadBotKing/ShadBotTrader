@@ -24,6 +24,7 @@ from ShadBotTrader.domain.learning.parameter_space import (
 )
 from ShadBotTrader.domain.learning.ports import (
     CandidateGenerator,
+    LearningMemory,
     OptimisationReporter,
 )
 from ShadBotTrader.domain.learning.promotion import PromotionGate, PromotionPolicy
@@ -65,7 +66,9 @@ class OptimisationService:
         self._generator = generator or GridSearchGenerator()
         self._validate_top_n = validate_top_n
 
-        self.memory = InMemoryLearningMemory()
+        # Typed as the port so a durable implementation can be swapped in
+        # (Sprint P8 added SqliteLearningMemory behind the same contract).
+        self.memory: LearningMemory = InMemoryLearningMemory()
         self.experiments = InMemoryExperimentRepository()
 
     @property

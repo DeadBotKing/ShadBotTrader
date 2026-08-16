@@ -155,6 +155,79 @@ shadbot-dashboard export --out report.html
 
 ---
 
+## به‌روزرسانی: دکمه‌های اجرا اضافه شدند
+
+### چرا معماری اجازه می‌دهد
+
+فاز ۱۹ §۳ صراحتاً **Command Dispatch** را جزو مسئولیت‌های GUI آورده، و
+§۱۲-۱۳ مسیرش را تعریف کرده‌اند:
+
+```
+Controller -> Command Bus -> Command Handler -> Application Service
+```
+
+حتی نمونه‌هایش را نام برده: `TrainModelCommand`، `RefreshMarketCommand`.
+
+پس دکمه‌ها نقض §۴ نیستند — به شرطی که GUI فقط **قصد** بفرستد و کار را
+سرویس‌های اپلیکیشن انجام دهند. دقیقاً همین پیاده شد.
+
+### هفت دکمه
+
+| دکمه | کاری که می‌کند |
+|---|---|
+| Fetch market data | داده‌ی واقعی از متاتریدر ۵ |
+| Update features | محاسبه‌ی مجدد فیچرها + ثبت در دیتابیس |
+| Retrain the model | آموزش مجدد WaveNet |
+| Run a backtest | بک‌تست روی کندل‌های ذخیره‌شده |
+| Run optimisation | جستجوی پارامتر با دروازه‌ی ارتقا |
+| Run a trading cycle | یک تصمیم + اجرا روی آخرین کندل |
+| Refresh project state | اسکن مجدد پروژه |
+
+### `presentation/commands/`
+
+| فایل | نقش |
+|---|---|
+| `commands.py` | `Command`، `CommandResult`، `CommandKind` (مجموعه‌ی بسته) |
+| `handlers.py` | ۷ handler نازک که به سرویس‌ها وصل می‌شوند |
+| `bus.py` | صف، اجرای پس‌زمینه، تاریخچه |
+
+### محافظت‌ها
+
+| مسئله | راه‌حل |
+|---|---|
+| کار طولانی UI را قفل می‌کند | اجرا در thread پس‌زمینه؛ پاسخ ۲۰۲ فوری |
+| دو ingest هم‌زمان روی یک دیتاست | فقط یک دستور در لحظه؛ بقیه `REJECTED` |
+| handler خطا بدهد و سرور بمیرد | هر استثنا به `CommandResult.failure` تبدیل می‌شود |
+| refresh دستور را دوباره اجرا کند | الگوی Post/Redirect/Get (303) |
+| GUI عملیات جدید اختراع کند | `CommandKind` بسته؛ ناشناخته → ۴۰۰ |
+| کسی viewer محض بخواهد | `serve --read-only` همه‌ی دکمه‌ها را برمی‌دارد |
+
+### مرزی که هنوز برقرار است
+
+- `DashboardGateway` (مسیر خواندن) هیچ متد تغییردهنده ندارد
+- ViewModelها `frozen` و بدون ایمپورت domain/infrastructure
+- handlerها فقط delegate می‌کنند — تستی helperهای محاسباتی را رد می‌کند
+- تنها endpoint عملیاتی `POST /run` است؛ `PUT`/`DELETE`/`PATCH` → ۴۰۵
+
+### نتیجه‌ی واقعی
+
+```
+POST /run  command=run_trading_cycle
+  prediction : 0.2448
+  signal     : sell
+  decision   : enter
+  filled     : 0.01 @ 2001.6
+  position   : XAUUSD_i SHORT 0.01 @ 2001.6
+```
+
+پوزیشن در دیتابیس نوشته شد و بلافاصله روی داشبورد ظاهر شد.
+
+### تست‌ها
+
+۵۹۴ → **۶۳۴** (۴۰ تست جدید: ۱۸ تست command layer، ۱۸ تست HTTP، بقیه رگرسیون)
+
+---
+
 ## مرحله‌ی بعدی
 
 **اتصال persistence به بقیه‌ی دموها** — بک‌تست و بهینه‌سازی هنوز پیش‌فرض

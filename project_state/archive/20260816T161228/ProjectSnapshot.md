@@ -3,7 +3,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Current phase: Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
-- Generated at: 2026-08-16T16:12:28.107902+00:00
+- Generated at: 2026-08-16T16:12:06.599105+00:00
 - Python version: 3.13.14
 - Git branch: main
 - Git commit: 22e6743c8c948a0916fc4183319e6b123bd6db72

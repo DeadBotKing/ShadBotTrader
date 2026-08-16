@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-16T16:12:28.107902+00:00
+- Snapshot generated at: 2026-08-16T16:12:06.599105+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persist
 
 - Branch: main
 - Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (1982 files)
+- Dirty: yes (1981 files)
 - Recent commits:
   - 22e6743 NewFixSprint02
   - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)

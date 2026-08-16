@@ -20,8 +20,7 @@ from ShadBotTrader.project.models.project_snapshot import (
 
 ARCHITECTURE_VERSION = "1.0"
 CURRENT_PHASE = (
-    "Phase 28 - Implementation Foundation "
-    "(Phase 19: read-only dashboard over persisted state)"
+    "Phase 28 - Implementation Foundation " "(Phase 19: read-only dashboard over persisted state)"
 )
 
 

@@ -126,33 +126,111 @@ def test_page_is_self_contained(server):
     assert "cdn" not in body.lower()
 
 
-# ---------------------------------------------- the read-only boundary -----
-class TestReadOnlyOverHttp:
-    def _send(self, url: str, method: str):
-        request = urllib.request.Request(url, method=method, data=b"{}")
+def test_action_buttons_are_rendered(server):
+    """The user asked for buttons; they must actually be on the page."""
+    _, _, body = get(f"{server}/")
+    assert "Fetch market data" in body
+    assert "Update features" in body
+    assert "Retrain the model" in body
+    assert 'action="/run"' in body
+    assert "<button" in body
+
+
+# ------------------------------------------------ the command boundary -----
+class TestCommandSurface:
+    """Phase 19 §3 lists Command Dispatch as a GUI responsibility, and
+    §12-13 define the path. The GUI may ask for work; it may not do the
+    work, and the set of things it can ask for is closed."""
+
+    def _send(self, url: str, method: str, body: bytes = b"{}"):
+        request = urllib.request.Request(
+            url,
+            method=method,
+            data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
         return urllib.request.urlopen(request, timeout=10)
 
-    @pytest.mark.parametrize("method", ["POST", "PUT", "DELETE", "PATCH"])
-    def test_mutating_methods_are_refused(self, server, method):
-        """Phase 19 §4: the GUI cannot execute, train or modify."""
+    @pytest.mark.parametrize("method", ["PUT", "DELETE", "PATCH"])
+    def test_other_mutating_methods_are_refused(self, server, method):
         with pytest.raises(urllib.error.HTTPError) as error:
             self._send(f"{server}/", method)
         assert error.value.code == 405
 
-    def test_refusal_explains_why(self, server):
-        try:
+    def test_post_is_only_accepted_on_run(self, server):
+        with pytest.raises(urllib.error.HTTPError) as error:
             self._send(f"{server}/", "POST")
-        except urllib.error.HTTPError as error:
-            payload = json.loads(error.read().decode("utf-8"))
-            assert "read-only" in payload["error"].lower()
-            assert "Phase 19" in payload["detail"]
+        assert error.value.code == 404
 
-    def test_no_endpoint_accepts_a_trade(self, server):
-        """There is simply no route that could place an order."""
+    def test_unknown_command_is_rejected(self, server):
+        """The GUI cannot invent an operation."""
+        with pytest.raises(urllib.error.HTTPError) as error:
+            self._send(f"{server}/run", "POST", json.dumps({"command": "drop_tables"}).encode())
+        assert error.value.code == 400
+        payload = json.loads(error.value.read().decode("utf-8"))
+        assert "Unknown command" in payload["error"]
+        assert "known" in payload
+
+    def test_no_endpoint_accepts_a_raw_trade(self, server):
+        """There is no route that could place an order directly."""
         for path in ("/trade", "/order", "/execute", "/api/trade"):
             with pytest.raises(urllib.error.HTTPError) as error:
                 get(f"{server}{path}")
             assert error.value.code == 404
+
+    def test_status_lists_the_available_commands(self, server):
+        _, _, body = get(f"{server}/api/status")
+        payload = json.loads(body)
+        assert payload["enabled"] is True
+        assert "run_backtest" in payload["available"]
+        assert "train_model" in payload["available"]
+
+    def test_a_valid_command_is_accepted_and_runs_async(self, server):
+        response = self._send(
+            f"{server}/run",
+            "POST",
+            json.dumps({"command": "refresh_project_state"}).encode(),
+        )
+        assert response.status == 202
+        payload = json.loads(response.read().decode("utf-8"))
+        assert payload["status"] == "running"
+
+
+class TestReadOnlyMode:
+    """The dashboard can still be started as a strict viewer."""
+
+    def test_actions_can_be_disabled(self, tmp_path):
+        from ShadBotTrader.presentation.web.server import create_server
+
+        path = tmp_path / "ro.db"
+        Database(path).close()
+
+        httpd = create_server(path, host="127.0.0.1", port=0, allow_commands=False)
+        port = httpd.server_address[1]
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+        try:
+            _, _, body = get(f"http://127.0.0.1:{port}/api/status")
+            assert json.loads(body)["enabled"] is False
+
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{port}/run",
+                method="POST",
+                data=json.dumps({"command": "run_backtest"}).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            with pytest.raises(urllib.error.HTTPError) as error:
+                urllib.request.urlopen(request, timeout=10)
+            assert error.value.code == 405
+            payload = json.loads(error.value.read().decode("utf-8"))
+            assert "read-only" in payload["error"].lower()
+
+            # and no buttons are rendered
+            _, _, page = get(f"http://127.0.0.1:{port}/")
+            assert "<button" not in page
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
 
 
 # ----------------------------------------------------------- empty state ---

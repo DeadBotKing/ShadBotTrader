@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 39
+      "used_by": 38
     },
     {
       "name": "tests",
@@ -23,11 +23,11 @@
       "used_by": 4
     },
     {
-      "name": "tensorflow",
-      "used_by": 3
+      "name": "pyarrow",
+      "used_by": 2
     },
     {
-      "name": "pyarrow",
+      "name": "tensorflow",
       "used_by": 2
     },
     {
@@ -90,15 +90,9 @@
     },
     {
       "category": "other",
-      "path": "PHASE19_REPORT.md",
-      "sha256": "33ceaf992e0f61f3604a6326fa710b7ad185f5ac4e1ed80ed081e757e350bf55",
-      "size_bytes": 6982
-    },
-    {
-      "category": "other",
       "path": "README.md",
-      "sha256": "00fce6ded1ff8a640dd432177939e3174217a52e69134bb448ce20428e8fda66",
-      "size_bytes": 18083
+      "sha256": "c36efea52d57bccd6c86d06466ebf4de1971d449cdeaae860aacd71bd1a555a7",
+      "size_bytes": 16630
     },
     {
       "category": "other",
@@ -147,6 +141,12 @@
       "path": "configs/app.yaml",
       "sha256": "a60c70f145bcdaa123b416901c45b72486ec72146628888eb76e3938e9c61606",
       "size_bytes": 109
+    },
+    {
+      "category": "other",
+      "path": "dashboard_demo.db",
+      "sha256": "7cc8c87d66b907afcf66b3ca3dede3664d737ac60a6f547095fb3753db8cbfa5",
+      "size_bytes": 139264
     },
     {
       "category": "documentation",
@@ -1651,8 +1651,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/optimisation_service.py",
-      "sha256": "74026cc477e08e9edbf2789de2296aae33539fa394c12ffb122e7668576b2892",
-      "size_bytes": 4990
+      "sha256": "a82aad2d3ae9abeddce8635a747a5e84c3b295bc246b4201140fd18c7643d068",
+      "size_bytes": 4805
     },
     {
       "category": "source",
@@ -1771,8 +1771,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/dashboard_cli.py",
-      "sha256": "73e1e7b054d369be3cd37840d191e17aca1a05743ffc13bcb3b39eb22d8716ab",
-      "size_bytes": 8197
+      "sha256": "04f9e093a2e3bacc5512f39e4a443faefd96dc4b25612bd0717ec2d6d379a0d8",
+      "size_bytes": 5659
     },
     {
       "category": "source",
@@ -2868,30 +2868,6 @@
     },
     {
       "category": "source",
-      "path": "src/ShadBotTrader/presentation/commands/__init__.py",
-      "sha256": "5941e4842c1c34247cf9b0b4a019b629b37f93b4156e95bed044f90d28e828c6",
-      "size_bytes": 946
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/presentation/commands/bus.py",
-      "sha256": "109290871b5dabe30db9668e5be18b440aade32b696856f6a481b0c457341796",
-      "size_bytes": 5290
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "bc55ffc0021b6e0bc43693eb4695a8f0399db1c700376ae500e1dbe7309728f8",
-      "size_bytes": 5054
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "c57c15d278080803428042ea994a1a18ad36ebbd5547fbeda60d9f3f8ad10747",
-      "size_bytes": 25318
-    },
-    {
-      "category": "source",
       "path": "src/ShadBotTrader/presentation/gateway/__init__.py",
       "sha256": "f4481efe12a3f0b681cf1f605cbb2645268d75ba1f5d0d716f85f299c52449fe",
       "size_bytes": 193
@@ -2923,14 +2899,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/renderer.py",
-      "sha256": "96c88f8d42eabfff3e15e2633ca4e2cfa7bf9943c9ee234f0d0831a7d5c07724",
-      "size_bytes": 18718
+      "sha256": "f809643dc2ac23b7b112815b8ebee736de66ac84a7e6579319b81b506b4c1849",
+      "size_bytes": 13448
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "7807db1b8a5e3067be78ad2f98b0b7b7e8f6bed8a8c140a59333af5591e1ef3c",
-      "size_bytes": 10339
+      "sha256": "9625bd2eedf2dd3db460829588b8b82998a1c321d474683b35345ed5071d1e3a",
+      "size_bytes": 5625
     },
     {
       "category": "source",
@@ -2959,8 +2935,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "848d6d33674be4e82134988d3787ebddec4952aea38a262e4fed0bafb8ff79b9",
-      "size_bytes": 2834
+      "sha256": "d88392f0ba3ffcf5de0e7793f8e8f810efa14a9af2eb6bb67f6036edc5a0c0eb",
+      "size_bytes": 2838
     },
     {
       "category": "source",
@@ -3055,14 +3031,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader.egg-info/PKG-INFO",
-      "sha256": "555085110a768c703b8e4bfafc89686e0e482c996c5e8b10ee358a2b77445926",
-      "size_bytes": 18819
+      "sha256": "8c8d13e21cad282f51311c1a8bfe734fec87136ac009cc1915d1c198a9887e80",
+      "size_bytes": 17366
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader.egg-info/SOURCES.txt",
-      "sha256": "85d40d9783d49ebba867eec1534cdc28281d53973d46dd7c8c46c20b5ddd2608",
-      "size_bytes": 12978
+      "sha256": "7d89a9f998f102145a480cff3eb4f113a6ea909a3f20ec548f25c3c7922d0f65",
+      "size_bytes": 12775
     },
     {
       "category": "source",
@@ -3109,8 +3085,8 @@
     {
       "category": "test",
       "path": "tests/integration/test_dashboard_server.py",
-      "sha256": "19f5876723c90155644203414f8427a618b0c81b89e5e0dcae25bb8ed302af2e",
-      "size_bytes": 8933
+      "sha256": "83ca4cc364811049780fecacbf803d5b6e4abe8201c5b7d39a9143409f63a1aa",
+      "size_bytes": 5863
     },
     {
       "category": "test",
@@ -3444,12 +3420,6 @@
     },
     {
       "category": "test",
-      "path": "tests/unit/presentation/test_commands.py",
-      "sha256": "95e096d4f715b0747563d3a449ee4fbd2b2b4dd71147f2026bc2534eb00a6677",
-      "size_bytes": 8965
-    },
-    {
-      "category": "test",
       "path": "tests/unit/presentation/test_dashboard.py",
       "sha256": "6049f0f1e65efb90023babed654f8dbab32ba92c3f5130e94190451f16729cfd",
       "size_bytes": 14750
@@ -3533,12 +3503,12 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-16T16:12:28.107902+00:00",
+  "generated_at": "2026-08-16T15:56:18.400729+00:00",
   "git": {
     "branch": "main",
     "commit": "22e6743c8c948a0916fc4183319e6b123bd6db72",
     "dirty": true,
-    "dirty_files": 1982,
+    "dirty_files": 1979,
     "is_repo": true,
     "recent_commits": [
       "22e6743 NewFixSprint02",
@@ -3986,9 +3956,8 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 7,
+      "functions": 5,
       "internal_imports": [
-        "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.gateway.dashboard_gateway",
         "ShadBotTrader.presentation.web.renderer",
         "ShadBotTrader.presentation.web.server"
@@ -6282,68 +6251,6 @@
       "external_imports": [],
       "functions": 0,
       "internal_imports": [
-        "ShadBotTrader.presentation.commands.bus",
-        "ShadBotTrader.presentation.commands.commands",
-        "ShadBotTrader.presentation.commands.handlers"
-      ],
-      "name": "ShadBotTrader.presentation.commands",
-      "path": "src/ShadBotTrader/presentation/commands/__init__.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [],
-      "functions": 12,
-      "internal_imports": [
-        "ShadBotTrader.presentation.commands.commands",
-        "ShadBotTrader.presentation.commands.handlers"
-      ],
-      "name": "ShadBotTrader.presentation.commands.bus",
-      "path": "src/ShadBotTrader/presentation/commands/bus.py"
-    },
-    {
-      "classes": 6,
-      "external_imports": [],
-      "functions": 12,
-      "internal_imports": [],
-      "name": "ShadBotTrader.presentation.commands.commands",
-      "path": "src/ShadBotTrader/presentation/commands/commands.py"
-    },
-    {
-      "classes": 1,
-      "external_imports": [
-        "tensorflow"
-      ],
-      "functions": 11,
-      "internal_imports": [
-        "ShadBotTrader.application.services.backtest_service",
-        "ShadBotTrader.application.services.execution_service",
-        "ShadBotTrader.application.services.optimisation_service",
-        "ShadBotTrader.application.services.trading_decision_service",
-        "ShadBotTrader.data_cli",
-        "ShadBotTrader.domain.execution.market_view",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.simulation.session",
-        "ShadBotTrader.domain.strategy.risk_policy",
-        "ShadBotTrader.domain.strategy.strategy_context",
-        "ShadBotTrader.feature_cli",
-        "ShadBotTrader.infrastructure.data",
-        "ShadBotTrader.infrastructure.execution",
-        "ShadBotTrader.infrastructure.persistence",
-        "ShadBotTrader.infrastructure.simulation",
-        "ShadBotTrader.infrastructure.simulation.candle_data_provider",
-        "ShadBotTrader.infrastructure.trading",
-        "ShadBotTrader.intelligence",
-        "ShadBotTrader.presentation.commands.commands"
-      ],
-      "name": "ShadBotTrader.presentation.commands.handlers",
-      "path": "src/ShadBotTrader/presentation/commands/handlers.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
-      "functions": 0,
-      "internal_imports": [
         "ShadBotTrader.presentation.gateway.dashboard_gateway"
       ],
       "name": "ShadBotTrader.presentation.gateway",
@@ -6395,9 +6302,8 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 16,
+      "functions": 13,
       "internal_imports": [
-        "ShadBotTrader.presentation.commands.commands",
         "ShadBotTrader.presentation.viewmodels.models"
       ],
       "name": "ShadBotTrader.presentation.web.renderer",
@@ -6406,11 +6312,8 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 18,
+      "functions": 10,
       "internal_imports": [
-        "ShadBotTrader.presentation.commands.bus",
-        "ShadBotTrader.presentation.commands.commands",
-        "ShadBotTrader.presentation.commands.handlers",
         "ShadBotTrader.presentation.gateway.dashboard_gateway",
         "ShadBotTrader.presentation.web.renderer"
       ],
@@ -6669,12 +6572,12 @@
       "path": "tests/integration/test_backtest_engine.py"
     },
     {
-      "classes": 2,
+      "classes": 1,
       "external_imports": [
         "pytest",
         "tests"
       ],
-      "functions": 20,
+      "functions": 15,
       "internal_imports": [
         "ShadBotTrader.domain.execution.execution_types",
         "ShadBotTrader.domain.execution.fill",
@@ -7551,19 +7454,6 @@
       "path": "tests/unit/presentation/__init__.py"
     },
     {
-      "classes": 4,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 23,
-      "internal_imports": [
-        "ShadBotTrader.presentation.commands",
-        "ShadBotTrader.presentation.commands.handlers"
-      ],
-      "name": "unit.presentation.test_commands",
-      "path": "tests/unit/presentation/test_commands.py"
-    },
-    {
       "classes": 6,
       "external_imports": [
         "pytest",
@@ -7762,22 +7652,22 @@
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.13.14",
-  "source_file_count": 248,
+  "source_file_count": 244,
   "statistics": {
-    "class_count": 429,
+    "class_count": 416,
     "config_file_count": 2,
     "documentation_file_count": 43,
     "external_dependency_count": 12,
-    "function_count": 2331,
-    "internal_dependency_count": 190,
+    "function_count": 2255,
+    "internal_dependency_count": 184,
     "legacy_file_count": 175,
-    "module_count": 322,
-    "source_file_count": 248,
-    "source_lines": 23953,
-    "test_file_count": 74,
-    "test_lines": 9117,
-    "total_file_count": 580,
-    "total_lines": 74179
+    "module_count": 317,
+    "source_file_count": 244,
+    "source_lines": 22627,
+    "test_file_count": 73,
+    "test_lines": 8795,
+    "total_file_count": 575,
+    "total_lines": 72531
   },
-  "test_file_count": 74
+  "test_file_count": 73
 }
