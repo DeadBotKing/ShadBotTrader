@@ -123,6 +123,10 @@ tmp/
 *.sqlite
 *.sqlite3
 *.db
+*.db-wal
+*.db-shm
+shadbot.db*
+demo_state.db*
 
 # ============================================================
 # Build / generated artifacts

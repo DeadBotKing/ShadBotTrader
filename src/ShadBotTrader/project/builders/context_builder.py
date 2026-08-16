@@ -9,10 +9,10 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P8 — Persistence (Phase 20): datasets are on disk as Parquet, "
-    "but model registries, journals, learning memory and experiments are "
-    "still in-memory and vanish between runs. Durable storage is the "
-    "prerequisite for tracking real results over time."
+    "Sprint P9 - wire persistence into the demos and CLIs by default, then "
+    "Phase 19 (GUI/API): a read-only dashboard over the stored positions, "
+    "equity curve, audit trail and learning history - the data is now "
+    "durable, so it can finally be displayed."
 )
 
 KNOWN_ISSUES = [

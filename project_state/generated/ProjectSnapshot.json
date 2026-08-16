@@ -1,22 +1,22 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 \u2014 Implementation Foundation (Sprint P7: Self-Learning \u2014 walk-forward optimisation with a promotion gate)",
+  "current_phase": "Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)",
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 33
+      "used_by": 36
     },
     {
       "name": "numpy",
       "used_by": 8
     },
     {
-      "name": "pandas",
-      "used_by": 7
+      "name": "tests",
+      "used_by": 8
     },
     {
-      "name": "tests",
-      "used_by": 6
+      "name": "pandas",
+      "used_by": 7
     },
     {
       "name": "conftest",
@@ -61,8 +61,8 @@
     {
       "category": "other",
       "path": ".gitignore",
-      "sha256": "1533f7479e5cc824fe2d578c4352ee02564ed75cd85decb1701235dd5d9ebc3b",
-      "size_bytes": 2787
+      "sha256": "9473ebc471c11902fce3f698668dc7109fd4037fabc48492cddaf3305b3eb9d4",
+      "size_bytes": 2832
     },
     {
       "category": "documentation",
@@ -1417,14 +1417,14 @@
     {
       "category": "config",
       "path": "pyproject.toml",
-      "sha256": "31e785a3f45182dc49b076bb7a780d8899fe728dc196e69edb77c8060b9d41dd",
-      "size_bytes": 1979
+      "sha256": "56ffad7ef68f8abe165194de5b73c174552eeddf3d4d6339e7c1aae8f0146f87",
+      "size_bytes": 2020
     },
     {
       "category": "other",
       "path": "README.md",
-      "sha256": "cd7e89b397d43821468c24a770933cb5fbf3a875fc4fdc13ba809aae82dd10e4",
-      "size_bytes": 14652
+      "sha256": "c36efea52d57bccd6c86d06466ebf4de1971d449cdeaae860aacd71bd1a555a7",
+      "size_bytes": 16630
     },
     {
       "category": "other",
@@ -1500,6 +1500,12 @@
     },
     {
       "category": "script",
+      "path": "scripts/run_persistence.py",
+      "sha256": "bfe29515a57f2bb8696f3365aa23724ea8ba24511ec79298cb71bcae9918dfac",
+      "size_bytes": 9080
+    },
+    {
+      "category": "script",
       "path": "scripts/run_pip.py",
       "sha256": "ee2f4b39d2ead6653a3139e5b7dfb41b9a2b384549185c0bfa28bfd980267953",
       "size_bytes": 533
@@ -1545,6 +1551,12 @@
       "path": "SPRINT_P7_REPORT.md",
       "sha256": "e358bc03f324eb7cd92939bdf1f58bb73eadb6a5236d1418bae6d688cc0e833e",
       "size_bytes": 9530
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P8_REPORT.md",
+      "sha256": "8a00fd2e9260a87570770a6e6bf0bca6d77bde9cc20c229f8d1c45dd5cf32005",
+      "size_bytes": 10129
     },
     {
       "category": "source",
@@ -1755,6 +1767,12 @@
       "path": "src/ShadBotTrader/data_cli.py",
       "sha256": "21c23486395053e1f350e49d02c74ecba95e4eae05e8ceb74d83e31ed8f8588b",
       "size_bytes": 11998
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/db_cli.py",
+      "sha256": "e7ebe3882c52774aa17bdf1238de5583b14bc951d88409bf43ea75f8e7b3fb0d",
+      "size_bytes": 11095
     },
     {
       "category": "source",
@@ -2700,6 +2718,42 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/__init__.py",
+      "sha256": "da7f7e6122b039be00f410617e801ad76db0abdbb7e97ba3fde8c2274743826b",
+      "size_bytes": 2359
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/database.py",
+      "sha256": "416e2b1e4c69cb734e9f8c8ea1056f29ff4ec6d02f0dd4dcfc372338991e086c",
+      "size_bytes": 15985
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_journals.py",
+      "sha256": "5f1aa76b4226a3d3ea6dda4e8fea9410b1a26fe2935a98875b8e2635f09d9acb",
+      "size_bytes": 11356
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_learning.py",
+      "sha256": "cf0a9ff93a3bd0ddc149bd646bf619a32ad136e85cb08fe954fdb76864ea5c9e",
+      "size_bytes": 11932
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_ledger.py",
+      "sha256": "28f295ff7fb01e4ed6f852577a5dc3936c93aa17ab0b1359265f73c5c2dc8924",
+      "size_bytes": 12346
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_registries.py",
+      "sha256": "536d6ad33c0a04cf17becebadcf347396ccb7c29127b2b572a34a9ddc153b422",
+      "size_bytes": 11321
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/__init__.py",
       "sha256": "af960b600cae5782ce162422293675a0d6b82227c360941e3bc62ea1d96780d4",
       "size_bytes": 1137
@@ -2809,8 +2863,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/context_builder.py",
-      "sha256": "c4275117714b88e4e0ce057683dea6e08c70251530ef28783a7c4098ce3addbe",
-      "size_bytes": 4625
+      "sha256": "4c4398dc11b5e319c021d2860fa99455f132e12893020ab3ad60f4e8d952eb4f",
+      "size_bytes": 4617
     },
     {
       "category": "source",
@@ -2821,8 +2875,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "89bfe66abab3e4ebfffdb6050a8a05cd795d5fd8c71309cbaa69170b3a525034",
-      "size_bytes": 2866
+      "sha256": "065c59259159a5a2fcdd7ee2f2328a6bafa3593b357e7b3feaa09df81899a525",
+      "size_bytes": 2855
     },
     {
       "category": "source",
@@ -2997,6 +3051,12 @@
       "path": "tests/integration/test_optimisation_pipeline.py",
       "sha256": "f3e2fa45b0ed64999a85b15ed910c73bbe4d41183a64406438962d3e6a61c586",
       "size_bytes": 15217
+    },
+    {
+      "category": "test",
+      "path": "tests/integration/test_persistence_pipeline.py",
+      "sha256": "f5d54eec87a11294e8c37f834b9aaec1204cc246469e01667a3b530e93f2d48e",
+      "size_bytes": 11245
     },
     {
       "category": "test",
@@ -3270,6 +3330,24 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/persistence/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/persistence/test_database.py",
+      "sha256": "6c20f4140c91ab251daf8545998c3921bbb77d0554f6cf156bd43f616d8a66b6",
+      "size_bytes": 7683
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/persistence/test_sqlite_repositories.py",
+      "sha256": "ec36ddc60860b75e4cfeb26accb91c1e823360cbe2a2f74476680a8059af161d",
+      "size_bytes": 16075
+    },
+    {
+      "category": "test",
       "path": "tests/unit/project/__init__.py",
       "sha256": "d0b32e5905f68bba18a17e15b9836c23ec91ba08741c1295aa9ecfe373b84fc3",
       "size_bytes": 34
@@ -3353,14 +3431,15 @@
       "size_bytes": 7211
     }
   ],
-  "generated_at": "2026-08-16T15:38:02.526395+00:00",
+  "generated_at": "2026-08-16T15:47:28.746224+00:00",
   "git": {
     "branch": "main",
-    "commit": "9dbcec3364bdee503ad97dace4a2f6e9fe9fdcee",
+    "commit": "4951f42d521c70ba32091be06ed1040cf47280b6",
     "dirty": true,
-    "dirty_files": 357,
+    "dirty_files": 241,
     "is_repo": true,
     "recent_commits": [
+      "4951f42 Real Data",
       "9dbcec3 Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P7: Self-Learning \u00e2\u20ac\u201d walk-forward optimisation with a promotion gate)",
       "be2bcf9 Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P5: Execution & Portfolio \u00e2\u20ac\u201d fill-based accounting)",
       "422b7dc Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P4: Trading Platform \u00e2\u20ac\u201d risk-gated decision pipeline)",
@@ -3369,8 +3448,7 @@
       "22e6743 NewFixSprint02",
       "74c72cf Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P2: Feature Platform \u00e2\u20ac\u201d full 85-feature catalog)",
       "e9eb8fe Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P2: Feature Platform)",
-      "81751ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P1: Data Platform)",
-      "80cbf5a Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P0: Project Intelligence)"
+      "81751ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P1: Data Platform)"
     ]
   },
   "modules": [
@@ -3822,6 +3900,16 @@
       ],
       "name": "ShadBotTrader.data_cli",
       "path": "src/ShadBotTrader/data_cli.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 12,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.persistence"
+      ],
+      "name": "ShadBotTrader.db_cli",
+      "path": "src/ShadBotTrader/db_cli.py"
     },
     {
       "classes": 0,
@@ -5741,6 +5829,100 @@
       "external_imports": [],
       "functions": 0,
       "internal_imports": [
+        "ShadBotTrader.infrastructure.persistence.database",
+        "ShadBotTrader.infrastructure.persistence.sqlite_journals",
+        "ShadBotTrader.infrastructure.persistence.sqlite_learning",
+        "ShadBotTrader.infrastructure.persistence.sqlite_ledger",
+        "ShadBotTrader.infrastructure.persistence.sqlite_registries"
+      ],
+      "name": "ShadBotTrader.infrastructure.persistence",
+      "path": "src/ShadBotTrader/infrastructure/persistence/__init__.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 21,
+      "internal_imports": [],
+      "name": "ShadBotTrader.infrastructure.persistence.database",
+      "path": "src/ShadBotTrader/infrastructure/persistence/database.py"
+    },
+    {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 21,
+      "internal_imports": [
+        "ShadBotTrader.domain.execution.fill",
+        "ShadBotTrader.domain.execution.ports",
+        "ShadBotTrader.domain.execution.resolved_order",
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.trading_intent",
+        "ShadBotTrader.infrastructure.persistence.database"
+      ],
+      "name": "ShadBotTrader.infrastructure.persistence.sqlite_journals",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_journals.py"
+    },
+    {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 25,
+      "internal_imports": [
+        "ShadBotTrader.domain.learning.candidate",
+        "ShadBotTrader.domain.learning.experiment",
+        "ShadBotTrader.domain.learning.learning_types",
+        "ShadBotTrader.domain.learning.parameter_space",
+        "ShadBotTrader.domain.learning.ports",
+        "ShadBotTrader.domain.simulation.performance",
+        "ShadBotTrader.infrastructure.persistence.database"
+      ],
+      "name": "ShadBotTrader.infrastructure.persistence.sqlite_learning",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_learning.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 25,
+      "internal_imports": [
+        "ShadBotTrader.domain.execution.execution_types",
+        "ShadBotTrader.domain.execution.fill",
+        "ShadBotTrader.domain.execution.money",
+        "ShadBotTrader.domain.execution.ports",
+        "ShadBotTrader.domain.execution.position_state",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.trading.order",
+        "ShadBotTrader.infrastructure.persistence.database"
+      ],
+      "name": "ShadBotTrader.infrastructure.persistence.sqlite_ledger",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_ledger.py"
+    },
+    {
+      "classes": 4,
+      "external_imports": [],
+      "functions": 25,
+      "internal_imports": [
+        "ShadBotTrader.domain.ai.model_definition",
+        "ShadBotTrader.domain.ai.model_identity",
+        "ShadBotTrader.domain.ai.model_types",
+        "ShadBotTrader.domain.ai.ports",
+        "ShadBotTrader.domain.ai.training_run",
+        "ShadBotTrader.domain.dataset.dataset_descriptor",
+        "ShadBotTrader.domain.dataset.dataset_identity",
+        "ShadBotTrader.domain.dataset.ports",
+        "ShadBotTrader.domain.feature.feature_definition",
+        "ShadBotTrader.domain.feature.ports",
+        "ShadBotTrader.infrastructure.persistence.database"
+      ],
+      "name": "ShadBotTrader.infrastructure.persistence.sqlite_registries",
+      "path": "src/ShadBotTrader/infrastructure/persistence/sqlite_registries.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [
         "ShadBotTrader.infrastructure.simulation.backtest_engine",
         "ShadBotTrader.infrastructure.simulation.candle_data_provider",
         "ShadBotTrader.infrastructure.simulation.console_reporter",
@@ -6328,6 +6510,33 @@
       ],
       "name": "integration.test_optimisation_pipeline",
       "path": "tests/integration/test_optimisation_pipeline.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [
+        "pytest",
+        "tests"
+      ],
+      "functions": 15,
+      "internal_imports": [
+        "ShadBotTrader.application.services.execution_service",
+        "ShadBotTrader.application.services.optimisation_service",
+        "ShadBotTrader.application.services.trading_decision_service",
+        "ShadBotTrader.domain.execution.market_view",
+        "ShadBotTrader.domain.execution.position_state",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.simulation.session",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.infrastructure.execution",
+        "ShadBotTrader.infrastructure.persistence",
+        "ShadBotTrader.infrastructure.trading"
+      ],
+      "name": "integration.test_persistence_pipeline",
+      "path": "tests/integration/test_persistence_pipeline.py"
     },
     {
       "classes": 1,
@@ -6995,6 +7204,60 @@
       "external_imports": [],
       "functions": 0,
       "internal_imports": [],
+      "name": "unit.persistence",
+      "path": "tests/unit/persistence/__init__.py"
+    },
+    {
+      "classes": 5,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 23,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.persistence.database"
+      ],
+      "name": "unit.persistence.test_database",
+      "path": "tests/unit/persistence/test_database.py"
+    },
+    {
+      "classes": 5,
+      "external_imports": [
+        "pytest",
+        "tests"
+      ],
+      "functions": 35,
+      "internal_imports": [
+        "ShadBotTrader.domain.ai.model_definition",
+        "ShadBotTrader.domain.ai.model_identity",
+        "ShadBotTrader.domain.ai.model_types",
+        "ShadBotTrader.domain.ai.ports",
+        "ShadBotTrader.domain.ai.training_run",
+        "ShadBotTrader.domain.execution.execution_types",
+        "ShadBotTrader.domain.execution.fill",
+        "ShadBotTrader.domain.execution.money",
+        "ShadBotTrader.domain.execution.ports",
+        "ShadBotTrader.domain.learning.experiment",
+        "ShadBotTrader.domain.learning.learning_types",
+        "ShadBotTrader.domain.learning.ports",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.trading.order",
+        "ShadBotTrader.infrastructure.persistence",
+        "ShadBotTrader.infrastructure.trading"
+      ],
+      "name": "unit.persistence.test_sqlite_repositories",
+      "path": "tests/unit/persistence/test_sqlite_repositories.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [],
       "name": "unit.project",
       "path": "tests/unit/project/__init__.py"
     },
@@ -7160,22 +7423,22 @@
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.12.10",
-  "source_file_count": 228,
+  "source_file_count": 235,
   "statistics": {
-    "class_count": 376,
+    "class_count": 396,
     "config_file_count": 2,
     "documentation_file_count": 43,
     "external_dependency_count": 12,
-    "function_count": 1943,
-    "internal_dependency_count": 174,
+    "function_count": 2145,
+    "internal_dependency_count": 180,
     "legacy_file_count": 176,
-    "module_count": 294,
-    "source_file_count": 228,
-    "source_lines": 19190,
-    "test_file_count": 66,
-    "test_lines": 7357,
-    "total_file_count": 550,
-    "total_lines": 67190
+    "module_count": 305,
+    "source_file_count": 235,
+    "source_lines": 21199,
+    "test_file_count": 70,
+    "test_lines": 8235,
+    "total_file_count": 563,
+    "total_lines": 70331
   },
-  "test_file_count": 66
+  "test_file_count": 70
 }

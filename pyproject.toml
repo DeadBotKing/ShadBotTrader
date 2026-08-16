@@ -45,6 +45,7 @@ shadbot-trading = "ShadBotTrader.trading_cli:main"
 shadbot-exec = "ShadBotTrader.execution_cli:main"
 shadbot-backtest = "ShadBotTrader.backtest_cli:main"
 shadbot-learn = "ShadBotTrader.learning_cli:main"
+shadbot-db = "ShadBotTrader.db_cli:main"
 shadbot-pip = "ShadBotTrader.intelligence:main"
 
 [tool.setuptools.packages.find]

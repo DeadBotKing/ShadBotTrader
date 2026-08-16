@@ -89,6 +89,7 @@ Installing the package also exposes these console commands:
 | `shadbot-exec` | `python -m ShadBotTrader.execution_cli` |
 | `shadbot-backtest` | `python -m ShadBotTrader.backtest_cli` |
 | `shadbot-learn` | `python -m ShadBotTrader.learning_cli` |
+| `shadbot-db` | `python -m ShadBotTrader.db_cli` |
 | `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
@@ -157,6 +158,46 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## Persistence (Sprint P8)
+
+Positions, PnL, audit trails and learning history are stored in
+**SQLite** and survive a restart:
+
+```bash
+python scripts/run_persistence.py       # trade, "restart", find it all intact
+
+shadbot-db init                          # create/migrate the database
+shadbot-db status                        # schema version + row counts
+shadbot-db sessions                      # every recorded trading session
+shadbot-db positions --session live-1
+shadbot-db decisions --session live-1
+shadbot-db candidates                    # remembered optimisation results
+shadbot-db query "SELECT * FROM portfolio_fill LIMIT 5"
+```
+
+Every in-memory component now has a durable twin behind the **same
+domain port**, so switching is one line at the composition root:
+
+| port | in-memory | durable |
+|---|---|---|
+| `PortfolioLedger` | `InMemoryPortfolioLedger` | `SqlitePortfolioLedger` |
+| `DecisionJournal` | `InMemoryDecisionJournal` | `SqliteDecisionJournal` |
+| `ExecutionJournal` | `InMemoryExecutionJournal` | `SqliteExecutionJournal` |
+| `LearningMemory` | `InMemoryLearningMemory` | `SqliteLearningMemory` |
+| `ModelRegistry` | `InMemoryModelRegistry` | `SqliteModelRegistry` |
+| `TrainingRunRepository` | `InMemoryTrainingRunRepository` | `SqliteTrainingRunRepository` |
+
+Phase 20 names SQL Server as the eventual engine. SQLite was chosen for
+this sprint because it ships inside Python — no server, no driver, no
+connection string — while still satisfying every rule the phase actually
+mandates: numbered migrations, transactions, referential integrity,
+audit history, and a Domain that never sees the database. A SQL Server
+adapter can be added later as a sibling class, not a rewrite.
+
+The books are **reconstructible**: `rebuild_from_fills()` recomputes
+every position by replaying the stored fills, so the current state is a
+consequence of recorded events rather than a number that was remembered.
 
 ## Real market data (MetaTrader 5)
 
