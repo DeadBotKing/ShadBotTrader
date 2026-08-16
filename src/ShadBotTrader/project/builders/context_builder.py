@@ -9,12 +9,10 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P8 — Project Intelligence & Persistence (Phases 18, 20): "
-    "durable storage for datasets, models, journals and learning "
-    "experiments (currently in-memory), plus a richer self-describing "
-    "project state. Alternatively Sprint P9 — real market data: a "
-    "MetaTrader/broker provider behind the existing MarketDataProvider "
-    "port, so backtests run on genuine price history."
+    "Sprint P8 — Persistence (Phase 20): datasets are on disk as Parquet, "
+    "but model registries, journals, learning memory and experiments are "
+    "still in-memory and vanish between runs. Durable storage is the "
+    "prerequisite for tracking real results over time."
 )
 
 KNOWN_ISSUES = [

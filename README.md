@@ -46,6 +46,7 @@ pip install -e .                     # the package itself (editable)
 | `requirements.txt` | core runtime only (Data + Feature platforms) |
 | `requirements-dev.txt` | core + ruff, black, mypy, pytest |
 | `requirements-ai.txt` | core + TensorFlow (WaveNet trainer/predictor) |
+| `requirements-mt5.txt` | core + MetaTrader 5 (real broker data, Windows) |
 | `requirements-lock.txt` | exact pinned versions of the verified environment |
 
 > **Windows:** TensorFlow installs normally on Python 3.10–3.13, but native
@@ -156,6 +157,46 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## Real market data (MetaTrader 5)
+
+The platform ships with a CSV provider and an **MT5 provider** behind the
+same `MarketDataProvider` port, so switching to live broker history
+changes nothing downstream:
+
+```powershell
+pip install -r requirements-mt5.txt      # Windows only
+
+shadbot-data mt5-check                    # verify the terminal connection
+shadbot-data mt5-symbols --pattern XAU    # find the broker's exact symbol
+shadbot-data mt5-ingest --symbol XAUUSD --timeframe 5M --bars 5000
+
+# everything downstream is unchanged
+shadbot-feature compute  --symbol XAUUSD --timeframe 5M
+shadbot-backtest run     --symbol XAUUSD --timeframe 5M
+shadbot-learn optimise   --symbol XAUUSD --timeframe 5M
+```
+
+The MT5 package is Windows-only (it talks to a running terminal over
+local IPC) and is an optional dependency — the rest of the platform works
+without it. Broker extras (`spread`, `real_volume`) are preserved in the
+raw layer rather than discarded.
+
+See [`PARQUET_AND_MT5.md`](PARQUET_AND_MT5.md) for the full walkthrough.
+
+## Reading the Parquet files
+
+Datasets are stored as **Parquet** — a compressed binary columnar format,
+so a text editor shows only noise. To see the numbers:
+
+```powershell
+python scripts\parquet_view.py list
+python scripts\parquet_view.py show datasets\raw\XAUUSD_I\5M\v1.parquet
+python scripts\parquet_view.py info datasets\features\sma_20\v1.parquet
+python scripts\parquet_view.py csv  <file> --out prices.csv
+```
+
+Or in Python: `pd.read_parquet(path)`.
 
 ## Self-Learning & Optimisation (Sprint P7)
 

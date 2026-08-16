@@ -6,15 +6,15 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.12.10
-- Snapshot generated at: 2026-08-16T15:04:40.780752+00:00
+- Snapshot generated at: 2026-08-16T15:38:02.526395+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 227
-- Test modules: 64
+- Source modules: 228
+- Test modules: 66
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 — Implementation Foundation (Sprint P7: Self-Learning — walk-forwar
 ## Git Commit
 
 - Branch: main
-- Commit: be2bcf9679cfea9b515c3367139b4ce0f8b41aa6
-- Dirty: yes (476 files)
+- Commit: 9dbcec3364bdee503ad97dace4a2f6e9fe9fdcee
+- Dirty: yes (357 files)
 - Recent commits:
+  - 9dbcec3 Phase 28 â€” Implementation Foundation (Sprint P7: Self-Learning â€” walk-forward optimisation with a promotion gate)
   - be2bcf9 Phase 28 â€” Implementation Foundation (Sprint P5: Execution & Portfolio â€” fill-based accounting)
   - 422b7dc Phase 28 â€” Implementation Foundation (Sprint P4: Trading Platform â€” risk-gated decision pipeline)
   - dcd31ce Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
@@ -39,7 +40,6 @@ Phase 28 — Implementation Foundation (Sprint P7: Self-Learning — walk-forwar
   - e9eb8fe Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform)
   - 81751ce Phase 28 â€” Implementation Foundation (Sprint P1: Data Platform)
   - 80cbf5a Phase 28 â€” Implementation Foundation (Sprint P0: Project Intelligence)
-  - e019203 Phase1
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Sprint P8 — Project Intelligence & Persistence (Phases 18, 20): durable storage for datasets, models, journals and learning experiments (currently in-memory), plus a richer self-describing project state. Alternatively Sprint P9 — real market data: a MetaTrader/broker provider behind the existing MarketDataProvider port, so backtests run on genuine price history.
+Sprint P8 — Persistence (Phase 20): datasets are on disk as Parquet, but model registries, journals, learning memory and experiments are still in-memory and vanish between runs. Durable storage is the prerequisite for tracking real results over time.
 
 ## Statistics
 
-- Total files: 543
-- Source files: 227
-- Test files: 64
+- Total files: 550
+- Source files: 228
+- Test files: 66
 - Documentation files: 43
 - Legacy files: 176
-- Total Python lines: 65751
-- Modules: 291
-- Classes: 365
-- Functions: 1868
-- External dependencies: 11
+- Total Python lines: 67190
+- Modules: 294
+- Classes: 376
+- Functions: 1943
+- External dependencies: 12

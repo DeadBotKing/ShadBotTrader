@@ -1,0 +1,16 @@
+# ShadBotTrader - real market data via MetaTrader 5
+# ---------------------------------------------------------------------------
+# Install with:
+#     pip install -r requirements-mt5.txt
+#
+# WINDOWS ONLY. The MetaTrader5 package communicates with a locally
+# running MT5 terminal through IPC, so it has no Linux/macOS build.
+# The terminal must be installed, running and logged in.
+#
+# Everything else in the platform works without it: use the CSV
+# provider (shadbot-data ingest --csv ...) on other platforms.
+# ---------------------------------------------------------------------------
+
+-r requirements.txt
+
+MetaTrader5>=5.0.45; sys_platform == "win32"

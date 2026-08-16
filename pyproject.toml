@@ -30,6 +30,11 @@ dev = [
 ai = [
     "tensorflow-cpu>=2.16",
 ]
+# Real broker data. Windows-only: the package talks to a running
+# MetaTrader 5 terminal over local IPC.
+mt5 = [
+    "MetaTrader5>=5.0.45; sys_platform == 'win32'",
+]
 
 [project.scripts]
 shadbot = "ShadBotTrader.main:main"
