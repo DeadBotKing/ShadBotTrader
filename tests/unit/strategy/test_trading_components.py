@@ -3,6 +3,8 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from ShadBotTrader.domain.market.symbol import Symbol as _Symbol
+from ShadBotTrader.domain.market.timeframe import Timeframe as _Timeframe
 from ShadBotTrader.domain.market.timestamp import Timestamp
 from ShadBotTrader.domain.strategy.risk_policy import RiskPolicy
 from ShadBotTrader.domain.strategy.strategy_types import (
@@ -35,6 +37,9 @@ from .conftest import (
     make_signal,
     short_portfolio,
 )
+
+XAU_SYMBOL = _Symbol("XAUUSD_i")
+TF = _Timeframe("5M")
 
 
 # =============================================================== strategy ===
@@ -425,3 +430,59 @@ class TestInMemoryDecisionJournal:
 
         journal.clear()
         assert journal.entries() == []
+
+
+class TestDecisionIdentity:
+    """Regression guards for decision/intent identity collisions."""
+
+    def test_enter_and_exit_from_the_same_bar_get_distinct_ids(self):
+        """An ENTER and an EXIT must never share a decision id.
+
+        They previously did, because the id was derived from the signal
+        alone. The resulting intents collided, and the executor's
+        idempotency guard silently refused to close the position —
+        leaving it stuck open. The decision type is now part of the id.
+        """
+        engine = PositionAwareDecisionEngine()
+        enter = engine.decide(
+            make_signal(XAU_SYMBOL, TF, SignalType.BUY),
+            make_context(XAU_SYMBOL, TF, portfolio=flat_portfolio()),
+        )
+        exit_ = engine.decide(
+            make_signal(XAU_SYMBOL, TF, SignalType.SELL),
+            make_context(XAU_SYMBOL, TF, portfolio=long_portfolio()),
+        )
+
+        assert enter.decision_type is DecisionType.ENTER
+        assert exit_.decision_type is DecisionType.EXIT
+        assert enter.decision_id != exit_.decision_id
+
+    def test_distinct_decisions_yield_distinct_intents(self):
+        factory = DefaultIntentFactory()
+        engine = PositionAwareDecisionEngine()
+
+        enter = engine.decide(
+            make_signal(XAU_SYMBOL, TF, SignalType.BUY),
+            make_context(XAU_SYMBOL, TF, portfolio=flat_portfolio()),
+        )
+        exit_ = engine.decide(
+            make_signal(XAU_SYMBOL, TF, SignalType.SELL),
+            make_context(XAU_SYMBOL, TF, portfolio=long_portfolio()),
+        )
+
+        enter_intent = factory.build(
+            enter, make_context(XAU_SYMBOL, TF, portfolio=flat_portfolio())
+        )
+        exit_intent = factory.build(exit_, make_context(XAU_SYMBOL, TF, portfolio=long_portfolio()))
+
+        assert enter_intent is not None and exit_intent is not None
+        assert enter_intent.intent_id != exit_intent.intent_id
+
+    def test_same_decision_is_stable(self):
+        """Determinism: identical input must still give an identical id."""
+        engine = PositionAwareDecisionEngine()
+        signal = make_signal(XAU_SYMBOL, TF, SignalType.BUY)
+        context = make_context(XAU_SYMBOL, TF, portfolio=flat_portfolio())
+        assert engine.decide(signal, context).decision_id == (
+            engine.decide(signal, context).decision_id
+        )

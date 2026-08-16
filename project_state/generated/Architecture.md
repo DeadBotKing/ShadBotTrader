@@ -1,11 +1,11 @@
 # ShadBotTrader — Architecture (generated)
 
-> Generated 2026-08-16T12:13:37.754941+00:00
+> Generated 2026-08-16T12:40:06.741861+00:00
 > Architecture version: 1.0
 
 ## Layers
 
-- ShadBotTrader: 178 modules
+- ShadBotTrader: 194 modules
 
 ## Dependency rules
 

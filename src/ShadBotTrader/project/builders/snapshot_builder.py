@@ -21,7 +21,7 @@ from ShadBotTrader.project.models.project_snapshot import (
 ARCHITECTURE_VERSION = "1.0"
 CURRENT_PHASE = (
     "Phase 28 — Implementation Foundation "
-    "(Sprint P4: Trading Platform — risk-gated decision pipeline)"
+    "(Sprint P5: Execution & Portfolio — fill-based accounting)"
 )
 
 

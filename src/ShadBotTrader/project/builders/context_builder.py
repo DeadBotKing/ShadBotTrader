@@ -9,9 +9,10 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P5 — Execution Platform: resolve TradingIntent policies into "
-    "broker orders behind an ExecutionPort (simulated first, broker-agnostic), "
-    "then Portfolio accounting for realised positions."
+    "Sprint P6 — Simulation & Backtesting (Phase 16): drive the "
+    "data -> feature -> prediction -> decision -> execution chain over "
+    "historical candles on a deterministic clock, and report performance "
+    "metrics (equity curve, drawdown, hit rate, profit factor)."
 )
 
 KNOWN_ISSUES = [

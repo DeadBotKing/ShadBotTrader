@@ -1,0 +1,13 @@
+"""Execution / Portfolio domain event names (past tense, Phase 14-15)."""
+
+ORDER_RESOLVED = "OrderResolved"
+ORDER_SUBMITTED = "OrderSubmitted"
+ORDER_FILLED = "OrderFilled"
+ORDER_PARTIALLY_FILLED = "OrderPartiallyFilled"
+ORDER_REJECTED = "OrderRejected"
+INTENT_EXPIRED = "TradingIntentExpired"
+POSITION_OPENED = "PositionOpened"
+POSITION_INCREASED = "PositionIncreased"
+POSITION_REDUCED = "PositionReduced"
+POSITION_CLOSED = "PositionClosed"
+PNL_REALIZED = "PnlRealized"

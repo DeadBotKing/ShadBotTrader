@@ -85,6 +85,7 @@ Installing the package also exposes these console commands:
 | `shadbot-feature` | `python -m ShadBotTrader.feature_cli` |
 | `shadbot-ai` | `python -m ShadBotTrader.ai_cli` |
 | `shadbot-trading` | `python -m ShadBotTrader.trading_cli` |
+| `shadbot-exec` | `python -m ShadBotTrader.execution_cli` |
 | `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
@@ -153,6 +154,41 @@ respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+
+## Execution & Portfolio (Sprint P5)
+
+Turns risk-approved intents into real fills and keeps the books:
+
+```bash
+python scripts/run_execution.py                    # full chain demo
+
+shadbot-exec quote --mid 2000 --spread 2
+shadbot-exec pnl --entry 2000 --exit 2100 --quantity 2 --fee 4
+shadbot-exec execute --side buy --quantity 5 --liquidity 2
+```
+
+```
+TradingIntent (risk-approved)
+      |
+IntentResolver    -> ResolvedOrder     policies become numbers
+      |
+ExecutionVenue    -> ExecutionResult   real fills, possibly partial
+      |
+PortfolioLedger   -> PositionState     fill-based PnL accounting
+```
+
+The simulated venue models spread (buys lift the ask, sells hit the bid),
+slippage, commission and partial fills — deterministically, so backtests
+are reproducible.
+
+Accounting follows Phase 15: average entry price comes from **real fills**
+(never from an intent), realized PnL is booked when a position shrinks,
+unrealized PnL is marked to market, and fees are tracked separately from
+gross PnL. Every amount is `Decimal`; floats are never used for money.
+
+Protections enforced by tests: an **expired** intent is never executed, the
+**same intent never fills twice**, and the ledger only ever reflects
+quantities that actually traded.
 
 ## Trading Platform (Sprint P4)
 

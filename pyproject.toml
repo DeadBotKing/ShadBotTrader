@@ -37,6 +37,7 @@ shadbot-data = "ShadBotTrader.data_cli:main"
 shadbot-feature = "ShadBotTrader.feature_cli:main"
 shadbot-ai = "ShadBotTrader.ai_cli:main"
 shadbot-trading = "ShadBotTrader.trading_cli:main"
+shadbot-exec = "ShadBotTrader.execution_cli:main"
 shadbot-pip = "ShadBotTrader.intelligence:main"
 
 [tool.setuptools.packages.find]

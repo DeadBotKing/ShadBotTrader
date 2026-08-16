@@ -40,12 +40,10 @@ class PositionAwareDecisionEngine(DecisionEngine):
         self._allow_reversal = allow_reversal
 
     def decide(self, signal: TradingSignal, context: StrategyContext) -> TradingDecision:
-        decision_id = f"decision:{signal.signal_id}"
         portfolio = context.portfolio
 
         if signal.signal_type is SignalType.HOLD:
-            return TradingDecision.hold(
-                decision_id,
+            return self._hold(
                 signal,
                 reason=signal.reason or "strategy signalled HOLD",
                 rejection_reason=RejectionReason.NO_SIGNAL,
@@ -57,43 +55,56 @@ class PositionAwareDecisionEngine(DecisionEngine):
 
         if signal.signal_type is SignalType.EXIT:
             if is_flat:
-                return TradingDecision.hold(
-                    decision_id, signal, reason="exit signal while already flat"
-                )
-            return self._decision(decision_id, signal, DecisionType.EXIT, "exit signal")
+                return self._hold(signal, reason="exit signal while already flat")
+            return self._decision(signal, DecisionType.EXIT, "exit signal")
 
         if signal.signal_type is SignalType.BUY:
             if is_flat:
-                return self._decision(
-                    decision_id, signal, DecisionType.ENTER, "buy signal while flat"
-                )
+                return self._decision(signal, DecisionType.ENTER, "buy signal while flat")
             if is_long:
-                return TradingDecision.hold(
-                    decision_id, signal, reason="already long; buy signal adds nothing"
-                )
+                return self._hold(signal, reason="already long; buy signal adds nothing")
             # short + buy -> reversal
-            return self._reversal(decision_id, signal, "buy signal while short")
+            return self._reversal(signal, "buy signal while short")
 
         # SELL
         if is_flat:
-            return self._decision(decision_id, signal, DecisionType.ENTER, "sell signal while flat")
+            return self._decision(signal, DecisionType.ENTER, "sell signal while flat")
         if is_short:
-            return TradingDecision.hold(
-                decision_id, signal, reason="already short; sell signal adds nothing"
-            )
-        return self._reversal(decision_id, signal, "sell signal while long")
+            return self._hold(signal, reason="already short; sell signal adds nothing")
+        return self._reversal(signal, "sell signal while long")
 
     # -- helpers ----------------------------------------------------------
-    def _reversal(self, decision_id: str, signal: TradingSignal, reason: str) -> TradingDecision:
-        if self._allow_reversal:
-            return self._decision(decision_id, signal, DecisionType.ENTER, f"{reason} (reverse)")
-        return self._decision(
-            decision_id, signal, DecisionType.EXIT, f"{reason} (flatten before reversing)"
+    @staticmethod
+    def _decision_id(signal: TradingSignal, decision_type: DecisionType) -> str:
+        """Build an id unique per (signal, decision type).
+
+        The decision type MUST be part of the id. An ENTER and a later
+        EXIT derived from the same bar would otherwise share an id, the
+        intent built from them would too, and the executor's idempotency
+        guard would refuse to close the position — leaving it stuck open.
+        """
+        return f"decision:{decision_type.value}:{signal.signal_id}"
+
+    def _hold(
+        self,
+        signal: TradingSignal,
+        reason: str,
+        rejection_reason: RejectionReason | None = None,
+    ) -> TradingDecision:
+        return TradingDecision.hold(
+            self._decision_id(signal, DecisionType.HOLD),
+            signal,
+            reason=reason,
+            rejection_reason=rejection_reason,
         )
+
+    def _reversal(self, signal: TradingSignal, reason: str) -> TradingDecision:
+        if self._allow_reversal:
+            return self._decision(signal, DecisionType.ENTER, f"{reason} (reverse)")
+        return self._decision(signal, DecisionType.EXIT, f"{reason} (flatten before reversing)")
 
     def _decision(
         self,
-        decision_id: str,
         signal: TradingSignal,
         decision_type: DecisionType,
         reason: str,
@@ -104,7 +115,7 @@ class PositionAwareDecisionEngine(DecisionEngine):
         context["signal_type"] = signal.signal_type.value
         context["signal_strength"] = signal.strength.value
         return TradingDecision(
-            decision_id=decision_id,
+            decision_id=self._decision_id(signal, decision_type),
             strategy_id=signal.strategy_id,
             strategy_version=signal.strategy_version,
             symbol=signal.symbol,

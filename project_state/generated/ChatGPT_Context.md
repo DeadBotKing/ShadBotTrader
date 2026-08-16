@@ -6,19 +6,19 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.12.10
-- Snapshot generated at: 2026-08-16T12:13:37.754941+00:00
+- Snapshot generated at: 2026-08-16T12:40:06.741861+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 178
-- Test modules: 50
+- Source modules: 194
+- Test modules: 55
 
 ## Current Phase
 
-Phase 28 — Implementation Foundation (Sprint P4: Trading Platform — risk-gated decision pipeline)
+Phase 28 — Implementation Foundation (Sprint P5: Execution & Portfolio — fill-based accounting)
 
 ## Implemented Components
 
@@ -27,9 +27,10 @@ Phase 28 — Implementation Foundation (Sprint P4: Trading Platform — risk-gat
 ## Git Commit
 
 - Branch: main
-- Commit: dcd31ce3c8c0b486bb566c80c7d0316e1e1b8db0
-- Dirty: yes (200 files)
+- Commit: 422b7dcdd01876b113b043c0af35c1917e8fbab6
+- Dirty: yes (242 files)
 - Recent commits:
+  - 422b7dc Phase 28 â€” Implementation Foundation (Sprint P4: Trading Platform â€” risk-gated decision pipeline)
   - dcd31ce Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
   - b5df12b Create venv.txt
   - 22e6743 NewFixSprint02
@@ -39,7 +40,6 @@ Phase 28 — Implementation Foundation (Sprint P4: Trading Platform — risk-gat
   - 80cbf5a Phase 28 â€” Implementation Foundation (Sprint P0: Project Intelligence)
   - e019203 Phase1
   - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
-  - ac8c959 Upda
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Sprint P5 — Execution Platform: resolve TradingIntent policies into broker orders behind an ExecutionPort (simulated first, broker-agnostic), then Portfolio accounting for realised positions.
+Sprint P6 — Simulation & Backtesting (Phase 16): drive the data -> feature -> prediction -> decision -> execution chain over historical candles on a deterministic clock, and report performance metrics (equity curve, drawdown, hit rate, profit factor).
 
 ## Statistics
 
-- Total files: 474
-- Source files: 178
-- Test files: 50
+- Total files: 497
+- Source files: 194
+- Test files: 55
 - Documentation files: 43
 - Legacy files: 176
-- Total Python lines: 56047
-- Modules: 228
-- Classes: 246
-- Functions: 1093
+- Total Python lines: 59433
+- Modules: 249
+- Classes: 284
+- Functions: 1343
 - External dependencies: 10
