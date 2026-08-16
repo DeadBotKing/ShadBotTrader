@@ -1,0 +1,16 @@
+# ShadBotTrader - development / QA tooling
+# ---------------------------------------------------------------------------
+# Install with:
+#     pip install -r requirements-dev.txt
+#
+# Includes the core runtime requirements, then adds the lint / type / test
+# stack used by the repo (ruff, black, mypy and pytest configs all live in
+# pyproject.toml).
+# ---------------------------------------------------------------------------
+
+-r requirements.txt
+
+black>=24.0
+mypy>=1.8
+pytest>=8.0
+ruff>=0.4

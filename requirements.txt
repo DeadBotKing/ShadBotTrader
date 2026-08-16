@@ -1,0 +1,22 @@
+# ShadBotTrader - core runtime dependencies
+# ---------------------------------------------------------------------------
+# Install with:
+#     pip install -r requirements.txt
+#
+# This installs ONLY what the Data Platform and Feature Platform need.
+# For development tooling  -> requirements-dev.txt
+# For the AI / WaveNet path -> requirements-ai.txt
+#
+# Verified on Python 3.10 - 3.13 (Windows / Linux / macOS).
+# Mirrors [project.dependencies] in pyproject.toml.
+# ---------------------------------------------------------------------------
+
+PyYAML>=6.0,<7
+numpy>=1.24,<3
+pandas>=2.0,<4
+pyarrow>=14.0
+PyWavelets>=1.5
+
+# TOML parsing for the Project Intelligence config scanner.
+# Python 3.11+ ships tomllib in the stdlib, so this is only needed on 3.10.
+tomli>=2.0; python_version < "3.11"

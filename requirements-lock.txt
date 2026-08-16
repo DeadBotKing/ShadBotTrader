@@ -1,0 +1,31 @@
+# ShadBotTrader - fully pinned reference environment
+# ---------------------------------------------------------------------------
+# These are the EXACT versions the project was verified against
+# (174/174 tests passing, ruff + black + mypy clean).
+#
+# Use this only if you want a byte-for-byte reproducible environment:
+#     pip install -r requirements-lock.txt
+#
+# For normal use prefer the flexible files:
+#     requirements.txt / requirements-dev.txt / requirements-ai.txt
+#
+# Verified: 2026-08-16, Python 3.13 (also valid for 3.12).
+# ---------------------------------------------------------------------------
+
+# --- core runtime ---
+numpy==2.5.2
+pandas==3.0.5
+pyarrow==25.0.1
+PyWavelets==1.9.0
+PyYAML==6.0.3
+tomli==2.2.1; python_version < "3.11"
+
+# --- dev tooling ---
+black==26.5.1
+mypy==2.3.1
+pytest==9.1.1
+ruff==0.16.3
+
+# --- AI platform ---
+tensorflow-cpu==2.21.0
+keras==3.15.1

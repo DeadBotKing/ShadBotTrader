@@ -75,6 +75,9 @@ class RollForwardEvaluator(ModelEvaluator):
             window_size=self._window_size,
             target_column=self._target_column,
             scale=False,
+            # Must mirror the trainer: the target column is not an input
+            # feature, otherwise the model would be fed the answer.
+            drop_target_column=True,
         )
         plan = expanding_split(
             total_length=len(samples),

@@ -17,33 +17,59 @@ from typing import Any, Dict, List
 def _require_tensorflow() -> Any:
     """Import TensorFlow or fail with an actionable message.
 
-    TensorFlow dropped native Windows support after 2.10, so the exact
-    fix depends on the platform (see README). This keeps the failure
-    clear instead of a bare ``ModuleNotFoundError``.
+    On native Windows TensorFlow is CPU-only from 2.11 onwards (GPU
+    requires WSL2), but installation itself works fine on Python
+    3.10-3.13. This keeps the failure clear instead of a bare
+    ``ModuleNotFoundError``.
     """
     try:
         import tensorflow as tf  # noqa: F401
     except ImportError as exc:
         raise ImportError(
             "TensorFlow is required for the Wavenet model but is not "
-            "installed. On Windows install tensorflow==2.10.1 with "
-            "Python 3.9/3.10 (or use WSL2). On Linux/macOS: "
-            "pip install tensorflow. Every other AI Platform feature "
-            "works without TensorFlow."
+            "installed. Install it with 'pip install tensorflow-cpu' on "
+            "Windows (CPU-only; use WSL2 if you need GPU) or "
+            "'pip install tensorflow' on Linux/macOS. Every other AI "
+            "Platform feature works without TensorFlow."
         ) from exc
     return tf
 
 
-def gated_activation_layer(activation: str = "tanh") -> Any:
-    """Return a gated-activation Keras layer (lazy TF import).
+# --------------------------------------------------------------------------
+# Gated activation unit
+#
+# NOTE: this layer MUST be defined at module scope (not inside a factory
+# function) and registered with Keras' serialization registry. A class
+# created inside a function gets a fresh identity on every call, so Keras
+# cannot resolve it when deserializing a saved model, which made
+# ``keras.models.load_model`` fail with:
+#     Could not locate class '_GatedActivationUnit'
+# --------------------------------------------------------------------------
 
-    Splits the input along the last axis into two halves; the first half
-    passes through ``activation`` and the second half through sigmoid,
-    and the two are multiplied (WaveNet gated activation).
-    """
+_GATED_ACTIVATION_UNIT: Any = None
+
+
+def _gated_activation_unit_class() -> Any:
+    """Build (once) and return the registered gated-activation layer class."""
+    global _GATED_ACTIVATION_UNIT
+    if _GATED_ACTIVATION_UNIT is not None:
+        return _GATED_ACTIVATION_UNIT
+
     tf: Any = _require_tensorflow()
 
-    class _GatedActivationUnit(tf.keras.layers.Layer):  # type: ignore[name-defined]
+    # Use the top-level ``keras`` package when available: the ``tf.keras``
+    # shim in TF >= 2.16 does not expose ``keras.saving``.
+    try:
+        import keras as _keras  # type: ignore[import-not-found]
+
+        _register = _keras.saving.register_keras_serializable
+    except (ImportError, AttributeError):  # pragma: no cover - legacy TF
+        _register = tf.keras.utils.register_keras_serializable
+
+    @_register(package="ShadBotTrader")
+    class GatedActivationUnit(tf.keras.layers.Layer):  # type: ignore[name-defined,misc]
+        """WaveNet gated activation: ``activation(x[:h]) * sigmoid(x[h:])``."""
+
         def __init__(self, activation_name: str = "tanh", **kwargs: Any) -> None:
             super().__init__(**kwargs)
             self.activation_name = activation_name
@@ -54,12 +80,45 @@ def gated_activation_layer(activation: str = "tanh") -> Any:
             gate = tf.keras.activations.sigmoid(inputs[..., n_filters:])
             return linear_output * gate
 
+        def compute_output_shape(self, input_shape: Any) -> Any:
+            shape = list(input_shape)
+            if shape[-1] is not None:
+                shape[-1] = shape[-1] // 2
+            return tuple(shape)
+
         def get_config(self) -> Dict[str, Any]:
             config = super().get_config()
             config.update({"activation_name": self.activation_name})
             return config
 
-    return _GatedActivationUnit(activation_name=activation)
+    _GATED_ACTIVATION_UNIT = GatedActivationUnit
+    return GatedActivationUnit
+
+
+def gated_activation_layer(activation: str = "tanh") -> Any:
+    """Return a gated-activation Keras layer instance (lazy TF import).
+
+    Splits the input along the last axis into two halves; the first half
+    passes through ``activation`` and the second half through sigmoid,
+    and the two are multiplied (WaveNet gated activation).
+    """
+    return _gated_activation_unit_class()(activation_name=activation)
+
+
+def custom_objects() -> Dict[str, Any]:
+    """Custom Keras objects required to deserialize a saved WaveNet.
+
+    Pass to ``keras.models.load_model(..., custom_objects=...)`` as a
+    belt-and-braces measure alongside the serialization registry.
+    """
+    cls = _gated_activation_unit_class()
+    return {
+        "GatedActivationUnit": cls,
+        "ShadBotTrader>GatedActivationUnit": cls,
+        # Backwards compatibility with models saved before the layer was
+        # moved to module scope and renamed.
+        "_GatedActivationUnit": cls,
+    }
 
 
 def causal_conv1d(

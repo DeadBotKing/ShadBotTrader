@@ -25,6 +25,33 @@ legacy/                     # the pre-platform code, kept as domain reference
 project_state/              # generated project state (PIP)
 ```
 
+## Installation
+
+Requires **Python 3.10 – 3.13** (64-bit).
+
+```bash
+# 1. create and activate a virtual environment
+python -m venv .venv                 # Windows: py -3.12 -m venv .venv
+source .venv/bin/activate            # Windows: .\.venv\Scripts\Activate.ps1
+
+# 2. install
+pip install --upgrade pip setuptools wheel
+pip install -r requirements-dev.txt  # core + lint/type/test tooling
+pip install -r requirements-ai.txt   # optional: TensorFlow for the WaveNet
+pip install -e .                     # the package itself (editable)
+```
+
+| File | Contents |
+|---|---|
+| `requirements.txt` | core runtime only (Data + Feature platforms) |
+| `requirements-dev.txt` | core + ruff, black, mypy, pytest |
+| `requirements-ai.txt` | core + TensorFlow (WaveNet trainer/predictor) |
+| `requirements-lock.txt` | exact pinned versions of the verified environment |
+
+> **Windows:** TensorFlow installs normally on Python 3.10–3.13, but native
+> Windows has been **CPU-only since TF 2.11**. Use WSL2 if you need GPU.
+> See [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md) for a full walkthrough.
+
 ## Quality gate
 
 Every change must pass, from the repository root:
@@ -36,12 +63,28 @@ python -m mypy src
 python -m pytest
 ```
 
+TensorFlow-dependent tests are skipped unless `RUN_TF=1` is set:
+
+```bash
+RUN_TF=1 python -m pytest          # Windows: $env:RUN_TF=1; python -m pytest
+```
+
 ## Running
 
 ```bash
 pip install -e .
 python -m ShadBotTrader.main
 ```
+
+Installing the package also exposes these console commands:
+
+| Command | Equivalent module |
+|---|---|
+| `shadbot` | `python -m ShadBotTrader.main` |
+| `shadbot-data` | `python -m ShadBotTrader.data_cli` |
+| `shadbot-feature` | `python -m ShadBotTrader.feature_cli` |
+| `shadbot-ai` | `python -m ShadBotTrader.ai_cli` |
+| `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
 prints structured logs (`Starting`, `Shutdown complete`).
@@ -118,9 +161,10 @@ classifier trained using genuine roll-forward (walk-forward) training:
 
 ```bash
 # optional: install the ML framework
-# Windows note: native TensorFlow ended at 2.10 — use
-#   pip install tensorflow==2.10.1   (Python 3.9/3.10 only)
-# or install inside WSL2. Linux/macOS: pip install tensorflow
+# optional: install the ML framework (Python 3.10-3.13)
+#   pip install -r requirements-ai.txt
+# Windows note: TensorFlow installs fine, but native Windows is CPU-only
+# since TF 2.11 — use WSL2 if you need GPU acceleration.
 
 # full demo (ingest -> features -> train Wavenet -> evaluate)
 python scripts/run_ai.py

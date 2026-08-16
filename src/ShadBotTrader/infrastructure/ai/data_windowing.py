@@ -28,6 +28,7 @@ def make_windows(
     window_size: int,
     target_column: int,
     horizon: int = 0,
+    drop_target_column: bool = False,
 ) -> List[WindowedSample]:
     """Build causal windows over ``series``.
 
@@ -36,6 +37,14 @@ def make_windows(
     ``t + horizon`` (``horizon=0`` → the last row of the window). Only
     windows whose label lies inside the series are produced, so no
     lookahead happens for ``horizon=0``.
+
+    Args:
+        drop_target_column: when True the target column is removed from
+            the feature rows. This is required for ``horizon=0``: the
+            label would otherwise sit inside the last row of its own
+            window, letting the model read the answer off its input
+            (target leakage). Defaults to False to preserve the raw
+            windowing semantics for callers that need every column.
     """
     if window_size < 1:
         raise ValidationError("window_size must be >= 1")
@@ -46,6 +55,8 @@ def make_windows(
     n = len(series)
     for end in range(window_size - 1, n - horizon):
         window = [list(row) for row in series[end - window_size + 1 : end + 1]]
+        if drop_target_column:
+            window = [row[:target_column] + row[target_column + 1 :] for row in window]
         target = series[end + horizon][target_column]
         samples.append(WindowedSample(features=window, target=target, target_index=target_column))
     return samples
@@ -84,9 +95,16 @@ def build_samples(
     target_column: int,
     scale: bool = True,
     horizon: int = 0,
+    drop_target_column: bool = False,
 ) -> List[WindowedSample]:
     """Build windows and optionally min-max scale the feature columns."""
-    samples = make_windows(series, window_size, target_column, horizon=horizon)
+    samples = make_windows(
+        series,
+        window_size,
+        target_column,
+        horizon=horizon,
+        drop_target_column=drop_target_column,
+    )
     if not scale:
         return samples
     return [

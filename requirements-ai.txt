@@ -1,0 +1,24 @@
+# ShadBotTrader - AI Platform (WaveNet / TensorFlow)
+# ---------------------------------------------------------------------------
+# Install with:
+#     pip install -r requirements-ai.txt
+#
+# NOTE ON WINDOWS
+#   * TensorFlow installs fine on Windows with Python 3.10 - 3.13.
+#   * Since TF 2.11 native Windows is CPU-ONLY. For GPU you need WSL2.
+#   * 'tensorflow-cpu' is therefore the right package on native Windows:
+#     same functionality, smaller download.
+#
+# NOTE ON LINUX / macOS
+#   * 'tensorflow-cpu' also works everywhere.
+#   * For NVIDIA GPU on Linux, replace the line below with:
+#         tensorflow[and-cuda]>=2.16
+#
+# The AI Platform's registry, artifact store, metrics, roll-forward
+# evaluation and baseline model all work WITHOUT TensorFlow. Only the
+# WaveNet trainer / predictor requires it.
+# ---------------------------------------------------------------------------
+
+-r requirements.txt
+
+tensorflow-cpu>=2.16

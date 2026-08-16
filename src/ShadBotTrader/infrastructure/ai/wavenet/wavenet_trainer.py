@@ -34,15 +34,22 @@ def _serialize_model(model) -> bytes:
 
 
 def _deserialize_model(payload: bytes):
-    """Load a Keras model from bytes."""
-    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
+    """Load a Keras model from bytes.
+
+    The WaveNet uses a custom gated-activation layer, so the custom
+    objects must be supplied for deserialization to resolve the class.
+    """
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import (
+        _require_tensorflow,
+        custom_objects,
+    )
 
     tf = _require_tensorflow()
 
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "model.keras"
         path.write_bytes(payload)
-        return tf.keras.models.load_model(path)
+        return tf.keras.models.load_model(path, custom_objects=custom_objects())
 
 
 class WavenetTrainer(ModelTrainer):
@@ -111,6 +118,7 @@ class WavenetTrainer(ModelTrainer):
             window_size=self._window_size,
             target_column=self._target_column,
             scale=True,
+            drop_target_column=True,
         )
         plan = expanding_split(
             total_length=len(samples),
@@ -121,7 +129,9 @@ class WavenetTrainer(ModelTrainer):
 
         self.fold_history = []
         last_model = None
-        n_features = len(self._series[0])
+        # The target column is removed from the feature windows, so the
+        # model sees one column fewer than the raw series has.
+        n_features = len(self._series[0]) - 1
 
         for fold in plan.folds:
             train_x, train_y = self._arrays(samples[fold.train_start : fold.train_end])
@@ -243,8 +253,27 @@ class WavenetPredictor(ModelPredictor):
         window = request.features
         if not window:
             raise ValueError("InferenceRequest has no features")
+
         scaled = minmax_scale_window(window)
-        x = np.array([scaled[0]], dtype=np.float32)
+        # The model consumes a full (window_size, n_features) window, so
+        # the batch axis wraps the whole window - not just its first row.
+        x = np.array([scaled], dtype=np.float32)
+
+        expected = model.input_shape  # (None, window_size, n_features)
+        if len(expected) == 3:
+            exp_window, exp_features = expected[1], expected[2]
+            if exp_window is not None and x.shape[1] != exp_window:
+                raise ValueError(
+                    f"InferenceRequest window has {x.shape[1]} time steps but the "
+                    f"model expects {exp_window}."
+                )
+            if exp_features is not None and x.shape[2] != exp_features:
+                raise ValueError(
+                    f"InferenceRequest window has {x.shape[2]} features but the "
+                    f"model expects {exp_features}. The target column must be "
+                    f"excluded from inference features."
+                )
+
         probabilities = model.predict(x, verbose=0)[0]
         predicted_class = int(np.argmax(probabilities))
         confidence = float(probabilities[predicted_class])
