@@ -43,6 +43,7 @@ class RollForwardEvaluator(ModelEvaluator):
         step: int = 2,
         min_train_size: int = 8,
         num_classes: int = 2,
+        max_folds: int | None = None,
     ) -> None:
         self._predictor = predictor
         self._series = [list(row) for row in series]
@@ -52,6 +53,7 @@ class RollForwardEvaluator(ModelEvaluator):
         self._step = step
         self._min_train_size = min_train_size
         self._num_classes = num_classes
+        self._max_folds = max_folds
 
     def evaluate(
         self,
@@ -86,8 +88,13 @@ class RollForwardEvaluator(ModelEvaluator):
             min_train_size=self._min_train_size,
         )
 
+        folds = plan.folds
+        if self._max_folds is not None and self._max_folds > 0:
+            # Mirror the trainer: evaluate the same most-recent folds.
+            folds = folds[-self._max_folds :]
+
         fold_metrics: List[EvaluationMetrics] = []
-        for fold in plan.folds:
+        for fold in folds:
             actual: List[int] = []
             predicted: List[int] = []
             for index in range(fold.val_start, fold.val_end):

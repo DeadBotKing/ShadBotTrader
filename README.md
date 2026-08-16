@@ -84,6 +84,7 @@ Installing the package also exposes these console commands:
 | `shadbot-data` | `python -m ShadBotTrader.data_cli` |
 | `shadbot-feature` | `python -m ShadBotTrader.feature_cli` |
 | `shadbot-ai` | `python -m ShadBotTrader.ai_cli` |
+| `shadbot-trading` | `python -m ShadBotTrader.trading_cli` |
 | `shadbot-pip` | `python -m ShadBotTrader.intelligence` |
 
 The foundation runtime performs a clean start -> shutdown cycle and
@@ -153,6 +154,46 @@ quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
 
+## Trading Platform (Sprint P4)
+
+Turns predictions into risk-approved trading intents:
+
+```bash
+# full demo of the decision pipeline
+python scripts/run_trading.py
+
+# CLI
+PYTHONPATH=src python -m ShadBotTrader.trading_cli policy
+PYTHONPATH=src python -m ShadBotTrader.trading_cli evaluate --value 0.9 --confidence 0.85
+```
+
+The pipeline is:
+
+```
+StrategyContext -> Strategy -> TradingSignal
+                                   |
+                              SignalValidator      (schema, freshness)
+                                   |
+                              DecisionEngine  -> TradingDecision
+                                   |
+                                RISK GATE          (mandatory)
+                                   |
+                              IntentFactory   -> TradingIntent
+                                   |
+                          Execution Platform (Sprint P5)
+```
+
+Three invariants are enforced by tests, not convention:
+
+* a strategy emits **signals, never orders**
+* a `TradingDecision` **is not an `Order`**
+* **no `TradingIntent` exists without an approving risk verdict**
+
+A `TradingIntent` carries *policies* (`quantity_policy`, `price_policy`),
+not resolved broker values — the Execution Platform resolves them. Every
+decision, including each rejection and its machine-readable reason, is
+recorded in a `DecisionJournal` for audit.
+
 ## AI Platform (Sprint P3)
 
 Model registry, artifacts (with SHA-256 integrity), reproducible
@@ -172,6 +213,24 @@ python scripts/run_ai.py
 # CLI
 PYTHONPATH=src python -m ShadBotTrader.ai_cli train   --model gold_direction
 PYTHONPATH=src python -m ShadBotTrader.ai_cli predict --model gold_direction
+```
+
+### Live training report
+
+Roll-forward training trains one model per fold, so a run can be long.
+`run_ai.py` prints a live report — learning rate, epochs, per-epoch
+loss/accuracy, the current fold and a progress bar with ETA:
+
+```bash
+python scripts/run_ai.py --quick        # fast smoke run (~30s)
+python scripts/run_ai.py --folds 10     # cap the number of folds
+python scripts/run_ai.py --no-epoch-lines   # only the per-fold bar
+```
+
+```
+fold   3/5 | train[0:192] (192 samples) -> val[192:200] (8 samples)
+  epoch 1/2 | loss 0.7169 | val_loss 0.7126 | acc 0.4896 | lr 1.50e-04
+[#################-----------]  60.0% | fold 3/5 | 3.0s/fold | eta 6s
 ```
 
 The Wavenet uses causal convolutions (explicit left-padding, Keras 3

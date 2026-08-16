@@ -71,7 +71,7 @@ python -c "import tensorflow as tf; print('TF', tf.__version__)"
 ```powershell
 python -m pytest
 ```
-انتظار: **۱۷۵ passed, 3 skipped** (سه تای skip شده تست‌های TF هستند)
+انتظار: **۱۷۳ passed, 5 skipped** (پنج تای skip شده تست‌های TensorFlow هستند)
 
 ### تست کامل (با TensorFlow) — حدود ۱ تا ۲ دقیقه
 

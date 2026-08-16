@@ -22,6 +22,13 @@ from ShadBotTrader.domain.ai.prediction import Confidence, Prediction
 from ShadBotTrader.domain.ai.training_run import TrainingRun
 from ShadBotTrader.infrastructure.ai.data_windowing import build_samples
 from ShadBotTrader.infrastructure.ai.roll_forward import expanding_split
+from ShadBotTrader.infrastructure.ai.training_progress import (
+    FoldInfo,
+    NullProgressReporter,
+    TrainingPlanInfo,
+    TrainingProgressReporter,
+    keras_progress_callback,
+)
 
 
 def _serialize_model(model) -> bytes:
@@ -80,6 +87,8 @@ class WavenetTrainer(ModelTrainer):
         n_layers_per_block: int = 4,
         n_blocks: int = 2,
         depth_multiplier: int = 20,
+        progress: TrainingProgressReporter | None = None,
+        max_folds: int | None = None,
     ) -> None:
         self._series = [list(row) for row in series]
         self._target_column = target_column
@@ -98,6 +107,8 @@ class WavenetTrainer(ModelTrainer):
         self._n_layers_per_block = n_layers_per_block
         self._n_blocks = n_blocks
         self._depth_multiplier = depth_multiplier
+        self._progress: TrainingProgressReporter = progress or NullProgressReporter()
+        self._max_folds = max_folds
         self.fold_history: List[float] = []
 
     @property
@@ -127,22 +138,59 @@ class WavenetTrainer(ModelTrainer):
             min_train_size=self._min_train_size,
         )
 
+        folds = plan.folds
+        if self._max_folds is not None and self._max_folds > 0:
+            # Keep the LAST folds: they train on the most recent data, and
+            # the final fold's model is the one promoted to the artifact.
+            folds = folds[-self._max_folds :]
+
         self.fold_history = []
         last_model = None
         # The target column is removed from the feature windows, so the
         # model sees one column fewer than the raw series has.
         n_features = len(self._series[0]) - 1
+        learning_rate = float(definition.hyperparameters.get("learning_rate", 1.5e-4))
+        total_folds = len(folds)
 
-        for fold in plan.folds:
+        self._progress.on_train_begin(
+            TrainingPlanInfo(
+                model_id=definition.model_id.value,
+                model_version=definition.version.number,
+                total_folds=total_folds,
+                epochs_per_fold=self._epochs,
+                learning_rate=learning_rate,
+                batch_size=self._batch_size,
+                window_size=self._window_size,
+                n_features=n_features,
+                total_samples=len(samples),
+                seed=self._seed,
+                framework=self.framework,
+                framework_version=self._tf_version(),
+            )
+        )
+
+        for display_index, fold in enumerate(folds):
             train_x, train_y = self._arrays(samples[fold.train_start : fold.train_end])
             val_x, val_y = self._arrays(samples[fold.val_start : fold.val_end])
+
+            fold_info = FoldInfo(
+                fold_index=display_index,
+                total_folds=total_folds,
+                train_samples=len(train_x),
+                val_samples=len(val_x),
+                train_start=fold.train_start,
+                train_end=fold.train_end,
+                val_start=fold.val_start,
+                val_end=fold.val_end,
+            )
+            self._progress.on_fold_begin(fold_info)
 
             model = _build_compiled(
                 window_size=self._window_size,
                 n_features=n_features,
                 output_units=self._output_units,
                 output_activation=self._output_activation,
-                learning_rate=float(definition.hyperparameters.get("learning_rate", 1.5e-4)),
+                learning_rate=learning_rate,
                 seed=self._seed,
                 n_filters=self._n_filters,
                 kernel_size=self._kernel_size,
@@ -151,6 +199,10 @@ class WavenetTrainer(ModelTrainer):
                 depth_multiplier=self._depth_multiplier,
             )
 
+            callbacks = []
+            if not isinstance(self._progress, NullProgressReporter):
+                callbacks.append(keras_progress_callback(self._progress, fold_info, self._epochs))
+
             history = model.fit(
                 train_x,
                 train_y,
@@ -158,10 +210,14 @@ class WavenetTrainer(ModelTrainer):
                 epochs=self._epochs,
                 batch_size=self._batch_size,
                 verbose=self._verbose,
+                callbacks=callbacks,
             )
             val_loss = float(history.history["val_loss"][-1])
             self.fold_history.append(val_loss)
             last_model = model
+            self._progress.on_fold_end(fold_info, val_loss)
+
+        self._progress.on_train_end(list(self.fold_history))
 
         if last_model is None:
             raise RuntimeError(

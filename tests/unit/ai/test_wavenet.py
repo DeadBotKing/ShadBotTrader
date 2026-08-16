@@ -229,3 +229,80 @@ def test_wavenet_predictor_rejects_wrong_feature_count():
     )
     with pytest.raises(ValueError, match="features but the model expects"):
         WavenetPredictor().predict(_definition(), artifact, bad)
+
+
+def test_wavenet_trainer_reports_progress_and_respects_max_folds():
+    """The trainer must drive the progress contract and honour --folds."""
+    from ShadBotTrader.infrastructure.ai.training_progress import (
+        EpochMetrics,
+        FoldInfo,
+        TrainingPlanInfo,
+    )
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import WavenetTrainer
+
+    class RecordingReporter:
+        def __init__(self) -> None:
+            self.plan = None
+            self.folds: list[FoldInfo] = []
+            self.epochs: list[EpochMetrics] = []
+            self.fold_losses: list[float] = []
+            self.finished: list[float] | None = None
+
+        def on_train_begin(self, plan: TrainingPlanInfo) -> None:
+            self.plan = plan
+
+        def on_fold_begin(self, fold: FoldInfo) -> None:
+            self.folds.append(fold)
+
+        def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
+            self.epochs.append(metrics)
+
+        def on_fold_end(self, fold: FoldInfo, val_loss: float) -> None:
+            self.fold_losses.append(val_loss)
+
+        def on_train_end(self, fold_losses: list[float]) -> None:
+            self.finished = fold_losses
+
+    reporter = RecordingReporter()
+    trainer = WavenetTrainer(
+        series=_series(40),
+        target_column=4,
+        window_size=4,
+        val_size=2,
+        step=2,
+        min_train_size=6,
+        epochs=2,
+        batch_size=4,
+        output_units=2,
+        seed=42,
+        verbose=0,
+        n_filters=4,
+        kernel_size=3,
+        n_layers_per_block=1,
+        n_blocks=1,
+        depth_multiplier=1,
+        progress=reporter,
+        max_folds=2,
+    )
+    trainer.train(_definition(), _run())
+
+    # max_folds caps the work
+    assert len(trainer.fold_history) == 2
+    assert len(reporter.folds) == 2
+    assert reporter.fold_losses == trainer.fold_history
+    assert reporter.finished == trainer.fold_history
+
+    # the plan describes the run accurately
+    assert reporter.plan is not None
+    assert reporter.plan.total_folds == 2
+    assert reporter.plan.epochs_per_fold == 2
+    assert reporter.plan.learning_rate == 1e-3
+    assert reporter.plan.n_features == 4  # target column excluded
+
+    # epoch metrics arrive for every epoch of every fold
+    assert len(reporter.epochs) == 4
+    assert all(metric.loss is not None for metric in reporter.epochs)
+    assert all(metric.val_loss is not None for metric in reporter.epochs)
+
+    # folds are numbered 1..N for display
+    assert [fold.human_index for fold in reporter.folds] == [1, 2]

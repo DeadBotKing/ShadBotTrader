@@ -9,8 +9,9 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Sprint P4 — Trading Platform: strategies, signals, decision and "
-    "execution abstractions (risk-gated, broker-agnostic)."
+    "Sprint P5 — Execution Platform: resolve TradingIntent policies into "
+    "broker orders behind an ExecutionPort (simulated first, broker-agnostic), "
+    "then Portfolio accounting for realised positions."
 )
 
 KNOWN_ISSUES = [

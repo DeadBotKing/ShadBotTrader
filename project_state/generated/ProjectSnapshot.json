@@ -1,10 +1,10 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 \u2014 Implementation Foundation (Sprint P2: Feature Platform \u2014 full 85-feature catalog)",
+  "current_phase": "Phase 28 \u2014 Implementation Foundation (Sprint P4: Trading Platform \u2014 risk-gated decision pipeline)",
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 20
+      "used_by": 23
     },
     {
       "name": "numpy",
@@ -13,6 +13,10 @@
     {
       "name": "pandas",
       "used_by": 6
+    },
+    {
+      "name": "conftest",
+      "used_by": 2
     },
     {
       "name": "pyarrow",
@@ -61,7 +65,7 @@
     {
       "category": "other",
       "path": "CHANGELOG_REVIEW.md",
-      "sha256": "c4271c5824ca3f3bb9c53b585f3f9026ce8d07ff78fcc8585919cd65c119af33",
+      "sha256": "ce383eb79fbd5fd5f341cec5621f068ef2d70697708ad29ac6784140b699fd20",
       "size_bytes": 9140
     },
     {
@@ -325,8 +329,8 @@
     {
       "category": "other",
       "path": "HOW_TO_RUN.md",
-      "sha256": "38d8f4ca53a2b82ca5c38748e7925f6059762ff998605af1f52676b3b99c05b7",
-      "size_bytes": 8238
+      "sha256": "65b876b0defd83f49de54854a1949cccdebf30829f0503ecfbdf0f4bc79daf34",
+      "size_bytes": 8248
     },
     {
       "category": "legacy",
@@ -1399,14 +1403,14 @@
     {
       "category": "config",
       "path": "pyproject.toml",
-      "sha256": "d6a3a96aa977bd6ec59875a6070afa2996a7807a43f1d1c82cfecb59cde941e4",
-      "size_bytes": 1603
+      "sha256": "9bfc1f8e52126ab58b60806cd74c26748e8d2c14320c553ff5f97c45d35ce91b",
+      "size_bytes": 1654
     },
     {
       "category": "other",
       "path": "README.md",
-      "sha256": "18b801969e6c69f3534ae344bedb23a1f30934382903697ecd91d12c8946d4e3",
-      "size_bytes": 6483
+      "sha256": "c634b74a16a96b2933ac4bd96bc207fe2b2765ac1fe4c3e7594f0e15b97a2b74",
+      "size_bytes": 8579
     },
     {
       "category": "other",
@@ -1435,8 +1439,8 @@
     {
       "category": "script",
       "path": "scripts/run_ai.py",
-      "sha256": "8638795385beed181e4822e25d5f503c834a8e7cff61f237b9c566d27e643260",
-      "size_bytes": 5204
+      "sha256": "f324723a39c36e759363f41feda0c8a62baa6ac0e3111abd73142ce3ab7c8b99",
+      "size_bytes": 10479
     },
     {
       "category": "script",
@@ -1457,10 +1461,22 @@
       "size_bytes": 533
     },
     {
+      "category": "script",
+      "path": "scripts/run_trading.py",
+      "sha256": "5c4b3998050f014222d6e44137243973735d5d31fa616469138717a88d15172c",
+      "size_bytes": 6898
+    },
+    {
       "category": "other",
       "path": "setup_windows.ps1",
       "sha256": "5da1bba463cd2071b60b3b7f5ccedf382fa38a1837da3515ea5ac68af4c80084",
       "size_bytes": 5167
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P4_REPORT.md",
+      "sha256": "a44e16132fc0b3dcc7c18dbdf5bc5facbf4cce24b3a935436b21840c68a57a91",
+      "size_bytes": 9360
     },
     {
       "category": "source",
@@ -1539,6 +1555,12 @@
       "path": "src/ShadBotTrader/application/services/prediction_service.py",
       "sha256": "14a2ec17a9e1f49ca19239a1fbba2fbab705a9503c1d21b7bebccdbc9a849a3d",
       "size_bytes": 1656
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/application/services/trading_decision_service.py",
+      "sha256": "db4c48c19b5a22f876b11225962858a40cf637d668bb21626feff528b3fc74d5",
+      "size_bytes": 8558
     },
     {
       "category": "source",
@@ -1944,6 +1966,66 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/__init__.py",
+      "sha256": "d493c04a3905df17fc145476779e5ab73f1be8b6f893062cecc0de39f6a980be",
+      "size_bytes": 2361
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/decision.py",
+      "sha256": "057e8b237d71a37601fad588d7aae1e8c0d4de7585214752bedfa07dd3d693f7",
+      "size_bytes": 4315
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/events.py",
+      "sha256": "c6f1b5a0763b0a9dadf4c0c266bd93513c650ba1159c9016425074d84121267e",
+      "size_bytes": 304
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/ports.py",
+      "sha256": "0fae6fb9fbb851ce9d95756549e09f5e41af9163c95ddd0aca9ca45a321a3cc9",
+      "size_bytes": 5177
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/risk_policy.py",
+      "sha256": "ee070959307fea14aa724d2c9df0c5ceabf6a636350a9b125b2978302fe1ef66",
+      "size_bytes": 4079
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/signal.py",
+      "sha256": "3df54f05e0c5f6bb0b12ece8cb7a693b87a0384185bb58f1ef4e188be903e1ca",
+      "size_bytes": 3695
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_context.py",
+      "sha256": "c62df800213c8292aaa6f25a91c688d1755454a9c809d12fa6076bf0b7ebe274",
+      "size_bytes": 5865
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_identity.py",
+      "sha256": "7ff0ab53340d90c8a2774f4431bb97267c5f218f64bb0ad12080edc8b8f06ec4",
+      "size_bytes": 1568
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_types.py",
+      "sha256": "5ec1b0f0fa8751ccb8681d29b1a51827cea2784c0e41e4fbb3baec726e60d331",
+      "size_bytes": 2906
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/strategy/trading_intent.py",
+      "sha256": "fc3b25ceff84e2b9b19ecd161bff47e4a89c790b38ce805e371203716de37157",
+      "size_bytes": 6948
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader/domain/trading/__init__.py",
       "sha256": "c21e0d6428a0610b4e9f58d7a406c2722fb38909ce5713a13dcca209a359ac3f",
       "size_bytes": 52
@@ -2035,8 +2117,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/roll_forward_evaluator.py",
-      "sha256": "6337e323432dc821b66edf1e494d20ed24fb17c8ddf38cdb529ca7dfaeb8412f",
-      "size_bytes": 5079
+      "sha256": "0710550a5c717a0fb655f9767af935c9e1c75e1ff9b58174e8032c54dab49f7c",
+      "size_bytes": 5357
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/ai/training_progress.py",
+      "sha256": "128aee68c099ba9e0b093e0543901024c87b9a2089cb2a007b4487fdc7b50f95",
+      "size_bytes": 11645
     },
     {
       "category": "source",
@@ -2059,8 +2147,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "ccc749fd51d76cf628291ba474b5a8a9483961203457e567d26824813a04e6d9",
-      "size_bytes": 10112
+      "sha256": "4bc848146e1577b54e71f8953261605ffa405e30d48404f1696b00562475c988",
+      "size_bytes": 12326
     },
     {
       "category": "source",
@@ -2280,6 +2368,54 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/__init__.py",
+      "sha256": "53749090f81a323bc77efc025fffdaf5185a173565ea452d5bc03b287893e309",
+      "size_bytes": 1460
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/ai_directional_strategy.py",
+      "sha256": "dfeaed4fd5050435c3d5565d67394484f8292cf82cb3e3340313582272f19051",
+      "size_bytes": 6360
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/decision_engine.py",
+      "sha256": "f0906eaaeb9e47bdb313502476ae50dee8a2b884fef16d4da5815f9daa015573",
+      "size_bytes": 4797
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/decision_journal.py",
+      "sha256": "9620a5405c58c1073286b16a2485c2f3c1dd55a0b069bbdb09cd63c0ffc14a5f",
+      "size_bytes": 2453
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/intent_factory.py",
+      "sha256": "e05955a8e3dfedabbfc4a7a7cb010ba7c3a511fc2d13832c628ed763ee3c2bdc",
+      "size_bytes": 5241
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/risk_gate.py",
+      "sha256": "8d524722ca297fa6d42229457709516bb9f319bbde563bbb26f8d2f1480c4691",
+      "size_bytes": 3687
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/signal_aggregator.py",
+      "sha256": "4a26f6a7664a940121dce1af54dd7589828dae94d224c7016f15be45b444aa8d",
+      "size_bytes": 4101
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/trading/signal_validator.py",
+      "sha256": "ca61c9a896ff2750ad28a1de7425ec254008faa28ba4253ee210f6176b294527",
+      "size_bytes": 2585
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader/intelligence.py",
       "sha256": "aea0e4f8252f04930f57f42ab2fc51cf81ae71507057fa894bf058488fb73d4d",
       "size_bytes": 1431
@@ -2305,8 +2441,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/context_builder.py",
-      "sha256": "775bc3b1d5fcf21b038b008cafb611179973e8c34a4b9e3dcafcc22dcff339fa",
-      "size_bytes": 4478
+      "sha256": "d005a67c1bf5b8243a905c1a4d24ee2d29cf74827e13b5fd9c039fa93d31a657",
+      "size_bytes": 4559
     },
     {
       "category": "source",
@@ -2317,8 +2453,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "3e85448ddff4d8baafeff28e79986f765277a15656c850aa5d87a718828c5b55",
-      "size_bytes": 2838
+      "sha256": "8db384e2d236b2e63d47889f0357feee5ddaafaf3df6a36085cf92bac3d6fed0",
+      "size_bytes": 2850
     },
     {
       "category": "source",
@@ -2406,6 +2542,12 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/trading_cli.py",
+      "sha256": "68686de75aac8c866c6c1c12f24fb7d29e70c30fc654f9e9717f98a5d2994c42",
+      "size_bytes": 8006
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader.egg-info/dependency_links.txt",
       "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
       "size_bytes": 1
@@ -2466,6 +2608,12 @@
     },
     {
       "category": "test",
+      "path": "tests/integration/test_trading_pipeline.py",
+      "sha256": "afc8838453f5e14947df41879302f9c2dcbb9a595b88c2df538e175e88db2bec",
+      "size_bytes": 11176
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/__init__.py",
       "sha256": "f0c40cd403c8d344e39a9c53e133df5df71c4fca895eb2cadf20e25945aba231",
       "size_bytes": 30
@@ -2508,9 +2656,15 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_training_progress.py",
+      "sha256": "a33e461574f1ba5f93cbdfeb603feabcda31bcce2479c4675244107ee81a2836",
+      "size_bytes": 4393
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_wavenet.py",
-      "sha256": "77cb15a6014ab4cce465de8d8b2ad227214134a156f291bf4ae4c25321347b42",
-      "size_bytes": 6579
+      "sha256": "58185115eb4b851a7f12b5e0c5324037c942b7bc4826c6b4ffdce0e3631ba268",
+      "size_bytes": 9147
     },
     {
       "category": "test",
@@ -2705,20 +2859,45 @@
       "size_bytes": 2168
     },
     {
+      "category": "test",
+      "path": "tests/unit/strategy/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/strategy/conftest.py",
+      "sha256": "368f67035d377b041058261d63862f1a45319b4ead62f18caf0aff3d41663b18",
+      "size_bytes": 3600
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/strategy/test_strategy_domain.py",
+      "sha256": "227943a640523c2708d739bf7f631de85691030a7e3d62f71414337d602cd1e7",
+      "size_bytes": 6854
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/strategy/test_trading_components.py",
+      "sha256": "bb957b615d335222a6d2cf5a13c996bb0fbe91bc62b7045e4430dd3cb3a48618",
+      "size_bytes": 19100
+    },
+    {
       "category": "other",
       "path": "WINDOWS_SETUP.md",
       "sha256": "e5bd2ff2c8b636994263ceda92d1d7abea7581aa28cade46e621258acfc48421",
       "size_bytes": 7211
     }
   ],
-  "generated_at": "2026-08-16T10:59:00.959123+00:00",
+  "generated_at": "2026-08-16T12:13:37.754941+00:00",
   "git": {
     "branch": "main",
-    "commit": "b5df12b99b2931d9f3733509fb120cf4fdc3fd4c",
+    "commit": "dcd31ce3c8c0b486bb566c80c7d0316e1e1b8db0",
     "dirty": true,
-    "dirty_files": 349,
+    "dirty_files": 200,
     "is_repo": true,
     "recent_commits": [
+      "dcd31ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P2: Feature Platform \u00e2\u20ac\u201d full 85-feature catalog)",
       "b5df12b Create venv.txt",
       "22e6743 NewFixSprint02",
       "74c72cf Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P2: Feature Platform \u00e2\u20ac\u201d full 85-feature catalog)",
@@ -2727,8 +2906,7 @@
       "80cbf5a Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P0: Project Intelligence)",
       "e019203 Phase1",
       "28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md",
-      "ac8c959 Upda",
-      "0ddcbe9 Update Docs From Done To No Done"
+      "ac8c959 Upda"
     ]
   },
   "modules": [
@@ -2913,6 +3091,24 @@
       ],
       "name": "ShadBotTrader.application.services.prediction_service",
       "path": "src/ShadBotTrader/application/services/prediction_service.py"
+    },
+    {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 10,
+      "internal_imports": [
+        "ShadBotTrader.core.events.event",
+        "ShadBotTrader.core.events.event_bus",
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.events",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.trading_intent"
+      ],
+      "name": "ShadBotTrader.application.services.trading_decision_service",
+      "path": "src/ShadBotTrader/application/services/trading_decision_service.py"
     },
     {
       "classes": 1,
@@ -3601,6 +3797,142 @@
       "classes": 0,
       "external_imports": [],
       "functions": 0,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.strategy.trading_intent"
+      ],
+      "name": "ShadBotTrader.domain.strategy",
+      "path": "src/ShadBotTrader/domain/strategy/__init__.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 15,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.common.value_object",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.domain.strategy.decision",
+      "path": "src/ShadBotTrader/domain/strategy/decision.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [],
+      "name": "ShadBotTrader.domain.strategy.events",
+      "path": "src/ShadBotTrader/domain/strategy/events.py"
+    },
+    {
+      "classes": 8,
+      "external_imports": [],
+      "functions": 16,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.strategy.trading_intent"
+      ],
+      "name": "ShadBotTrader.domain.strategy.ports",
+      "path": "src/ShadBotTrader/domain/strategy/ports.py"
+    },
+    {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 15,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.common.value_object",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.domain.strategy.risk_policy",
+      "path": "src/ShadBotTrader/domain/strategy/risk_policy.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 14,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.common.value_object",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.domain.strategy.signal",
+      "path": "src/ShadBotTrader/domain/strategy/signal.py"
+    },
+    {
+      "classes": 3,
+      "external_imports": [],
+      "functions": 29,
+      "internal_imports": [
+        "ShadBotTrader.domain.market.candle",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.risk.risk_state",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.domain.strategy.strategy_context",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_context.py"
+    },
+    {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 9,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.common.value_object"
+      ],
+      "name": "ShadBotTrader.domain.strategy.strategy_identity",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_identity.py"
+    },
+    {
+      "classes": 9,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [],
+      "name": "ShadBotTrader.domain.strategy.strategy_types",
+      "path": "src/ShadBotTrader/domain/strategy/strategy_types.py"
+    },
+    {
+      "classes": 3,
+      "external_imports": [],
+      "functions": 29,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.common.value_object",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.trading.order"
+      ],
+      "name": "ShadBotTrader.domain.strategy.trading_intent",
+      "path": "src/ShadBotTrader/domain/strategy/trading_intent.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
       "internal_imports": [],
       "name": "ShadBotTrader.domain.trading",
       "path": "src/ShadBotTrader/domain/trading/__init__.py"
@@ -3789,6 +4121,16 @@
       "path": "src/ShadBotTrader/infrastructure/ai/roll_forward_evaluator.py"
     },
     {
+      "classes": 7,
+      "external_imports": [],
+      "functions": 26,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.wavenet.wavenet"
+      ],
+      "name": "ShadBotTrader.infrastructure.ai.training_progress",
+      "path": "src/ShadBotTrader/infrastructure/ai/training_progress.py"
+    },
+    {
       "classes": 1,
       "external_imports": [],
       "functions": 4,
@@ -3835,6 +4177,7 @@
         "ShadBotTrader.domain.ai.training_run",
         "ShadBotTrader.infrastructure.ai.data_windowing",
         "ShadBotTrader.infrastructure.ai.roll_forward",
+        "ShadBotTrader.infrastructure.ai.training_progress",
         "ShadBotTrader.infrastructure.ai.wavenet.wavenet"
       ],
       "name": "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer",
@@ -4316,6 +4659,123 @@
     {
       "classes": 0,
       "external_imports": [],
+      "functions": 0,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.trading.ai_directional_strategy",
+        "ShadBotTrader.infrastructure.trading.decision_engine",
+        "ShadBotTrader.infrastructure.trading.decision_journal",
+        "ShadBotTrader.infrastructure.trading.intent_factory",
+        "ShadBotTrader.infrastructure.trading.risk_gate",
+        "ShadBotTrader.infrastructure.trading.signal_aggregator",
+        "ShadBotTrader.infrastructure.trading.signal_validator"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading",
+      "path": "src/ShadBotTrader/infrastructure/trading/__init__.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 9,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.ai_directional_strategy",
+      "path": "src/ShadBotTrader/infrastructure/trading/ai_directional_strategy.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 4,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.decision_engine",
+      "path": "src/ShadBotTrader/infrastructure/trading/decision_engine.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 7,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.trading_intent"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.decision_journal",
+      "path": "src/ShadBotTrader/infrastructure/trading/decision_journal.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 5,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.strategy.trading_intent",
+        "ShadBotTrader.domain.trading.order"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.intent_factory",
+      "path": "src/ShadBotTrader/infrastructure/trading/intent_factory.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 3,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.risk_gate",
+      "path": "src/ShadBotTrader/infrastructure/trading/risk_gate.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 4,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.signal_aggregator",
+      "path": "src/ShadBotTrader/infrastructure/trading/signal_aggregator.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [],
+      "functions": 2,
+      "internal_imports": [
+        "ShadBotTrader.domain.strategy.ports",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "ShadBotTrader.infrastructure.trading.signal_validator",
+      "path": "src/ShadBotTrader/infrastructure/trading/signal_validator.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
       "functions": 1,
       "internal_imports": [
         "ShadBotTrader.project.runtime.intelligence_runtime"
@@ -4520,6 +4980,23 @@
       "classes": 0,
       "external_imports": [],
       "functions": 5,
+      "internal_imports": [
+        "ShadBotTrader.application.services.trading_decision_service",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.risk.risk_state",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.infrastructure.trading"
+      ],
+      "name": "ShadBotTrader.trading_cli",
+      "path": "src/ShadBotTrader/trading_cli.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 5,
       "internal_imports": [],
       "name": "architecture.test_dependency_direction",
       "path": "tests/architecture/test_dependency_direction.py"
@@ -4593,6 +5070,29 @@
       ],
       "name": "integration.test_feature_pipeline",
       "path": "tests/integration/test_feature_pipeline.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 20,
+      "internal_imports": [
+        "ShadBotTrader.application.services.trading_decision_service",
+        "ShadBotTrader.core.events.event_bus",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.risk.risk_state",
+        "ShadBotTrader.domain.strategy.events",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.trading.order",
+        "ShadBotTrader.infrastructure.trading"
+      ],
+      "name": "integration.test_trading_pipeline",
+      "path": "tests/integration/test_trading_pipeline.py"
     },
     {
       "classes": 0,
@@ -4685,18 +5185,29 @@
     },
     {
       "classes": 0,
+      "external_imports": [],
+      "functions": 9,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.training_progress"
+      ],
+      "name": "unit.ai.test_training_progress",
+      "path": "tests/unit/ai/test_training_progress.py"
+    },
+    {
+      "classes": 1,
       "external_imports": [
         "numpy",
         "pytest",
         "tensorflow"
       ],
-      "functions": 9,
+      "functions": 16,
       "internal_imports": [
         "ShadBotTrader.domain.ai.inference",
         "ShadBotTrader.domain.ai.model_definition",
         "ShadBotTrader.domain.ai.model_identity",
         "ShadBotTrader.domain.ai.model_types",
         "ShadBotTrader.domain.ai.training_run",
+        "ShadBotTrader.infrastructure.ai.training_progress",
         "ShadBotTrader.infrastructure.ai.wavenet.wavenet",
         "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer"
       ],
@@ -5144,26 +5655,92 @@
       ],
       "name": "unit.project.test_project_scanner",
       "path": "tests/unit/project/test_project_scanner.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [],
+      "name": "unit.strategy",
+      "path": "tests/unit/strategy/__init__.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 11,
+      "internal_imports": [
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.risk.risk_state",
+        "ShadBotTrader.domain.strategy.signal",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types"
+      ],
+      "name": "unit.strategy.conftest",
+      "path": "tests/unit/strategy/conftest.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [
+        "conftest",
+        "pytest"
+      ],
+      "functions": 18,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.decision",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_identity",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.strategy.trading_intent",
+        "ShadBotTrader.domain.trading.order"
+      ],
+      "name": "unit.strategy.test_strategy_domain",
+      "path": "tests/unit/strategy/test_strategy_domain.py"
+    },
+    {
+      "classes": 7,
+      "external_imports": [
+        "conftest"
+      ],
+      "functions": 42,
+      "internal_imports": [
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.strategy.risk_policy",
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.strategy.strategy_types",
+        "ShadBotTrader.domain.trading.order",
+        "ShadBotTrader.infrastructure.trading"
+      ],
+      "name": "unit.strategy.test_trading_components",
+      "path": "tests/unit/strategy/test_trading_components.py"
     }
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.12.10",
-  "source_file_count": 157,
+  "source_file_count": 178,
   "statistics": {
-    "class_count": 192,
+    "class_count": 246,
     "config_file_count": 2,
     "documentation_file_count": 43,
-    "external_dependency_count": 9,
-    "function_count": 784,
-    "internal_dependency_count": 110,
+    "external_dependency_count": 10,
+    "function_count": 1093,
+    "internal_dependency_count": 130,
     "legacy_file_count": 176,
-    "module_count": 201,
-    "source_file_count": 157,
-    "source_lines": 9483,
-    "test_file_count": 44,
-    "test_lines": 2915,
-    "total_file_count": 445,
-    "total_lines": 51620
+    "module_count": 228,
+    "source_file_count": 178,
+    "source_lines": 12315,
+    "test_file_count": 50,
+    "test_lines": 4187,
+    "total_file_count": 474,
+    "total_lines": 56047
   },
-  "test_file_count": 44
+  "test_file_count": 50
 }

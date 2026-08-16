@@ -12,7 +12,7 @@
 | `ruff check .` | ✅ پاس | ✅ پاس |
 | `black --check .` | ✅ پاس | ✅ پاس |
 | `mypy src` | ✅ پاس | ✅ پاس |
-| `pytest` (بدون TF) | ✅ ۱۷۱ پاس، ۳ skip | ✅ ۱۷۵ پاس، ۳ skip |
+| `pytest` (بدون TF) | ✅ ۱۷۱ پاس، ۳ skip | ✅ ۱۷۳ پاس، ۵ skip |
 | `RUN_TF=1 pytest` | ❌ **۱ شکست** | ✅ **۱۷۸ پاس** |
 | `scripts/run_data.py` | ✅ کار می‌کند | ✅ کار می‌کند |
 | `scripts/run_features.py` | ✅ کار می‌کند | ✅ کار می‌کند |
