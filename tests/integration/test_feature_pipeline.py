@@ -97,18 +97,18 @@ def test_full_feature_pipeline(tmp_path):
         dataset_version=ingestion.version,
     )
 
-    assert len(result.outcomes) == 8
+    assert len(result.outcomes) == 109
     assert len(result.quarantined_ids) == 0
-    assert len(computed_events) == 8
+    assert len(computed_events) == 109
     assert len(set_events) == 1
-    assert set_events[0].payload["computed"] == 8
+    assert set_events[0].payload["computed"] == 109
 
     # features stored and loadable
     for outcome in result.outcomes:
         assert feature_store.exists(outcome.feature_id, outcome.version)
 
     # registry has all definitions
-    assert len(registry.list_all()) == 8
+    assert len(registry.list_all()) == 109
 
 
 def test_feature_quality_flags_bad_range(tmp_path):

@@ -57,6 +57,7 @@ class FeatureDefinition:
     computation_version: str
     causality: Causality = Causality.CAUSAL
     description: str = ""
+    family: str = ""
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -73,3 +74,12 @@ class FeatureDefinition:
     def is_live_compatible(self) -> bool:
         """False for non-causal features, which must not enter live trading."""
         return self.causality is Causality.CAUSAL
+
+    @property
+    def calculator_family(self) -> str:
+        """The calculator family that computes this feature.
+
+        Explicit ``family`` wins; otherwise the leading part of the
+        feature id is used (e.g. ``sma`` for ``sma_20``).
+        """
+        return self.family or self.feature_id.value.split("_", 1)[0]

@@ -19,7 +19,9 @@ from ShadBotTrader.project.models.project_snapshot import (
 )
 
 ARCHITECTURE_VERSION = "1.0"
-CURRENT_PHASE = "Phase 28 — Implementation Foundation (Sprint P2: Feature Platform)"
+CURRENT_PHASE = (
+    "Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)"
+)
 
 
 class SnapshotBuilder:

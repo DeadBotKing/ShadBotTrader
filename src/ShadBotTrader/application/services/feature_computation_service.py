@@ -89,7 +89,7 @@ class FeatureComputationService:
     ) -> FeatureComputationOutcome:
         """Compute, validate and store one feature."""
         calculator: Optional[FeatureCalculator] = self._resolver.resolve(
-            definition.feature_id.value
+            definition.calculator_family
         )
         if calculator is None:
             raise LookupError(f"No calculator registered for {definition.feature_id.value}")

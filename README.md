@@ -84,8 +84,8 @@ Parquet under `datasets/{raw,processed}/{SYMBOL}/{TIMEFRAME}/v{version}.parquet`
 
 ## Feature Platform (Sprint P2)
 
-Compute the standard FX feature set (SMA, EMA, RSI, ATR, MACD,
-Bollinger, Stochastic, Returns) over Data Platform candles:
+Compute the full standard FX feature set (109 features) over Data
+Platform candles:
 
 ```bash
 # list the standard feature set
@@ -98,7 +98,14 @@ python scripts/run_features.py
 PYTHONPATH=src python -m ShadBotTrader.feature_cli compute --symbol XAUUSD_i --timeframe 5M
 ```
 
-Every feature is deterministic and causal (warmup respected), passes a
+The set mirrors the legacy feature catalog: wavelet-filtered prices,
+SMA/EMA (5-35), ATR (Wilder + TR), Bollinger bands, Ichimoku, RSI,
+MACD, Stochastic, per-column returns, target lags (past + future),
+Fourier resonance sin/cos, candle balance (color/extension/power),
+7 PCA components and 12 classic price/oscillator divergence features. Future-looking features (targets +1,
+Fourier) are flagged research-only (non-causal) and never enter live
+trading. Every feature is deterministic and causal where marked (warmup
+respected), passes a
 quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
