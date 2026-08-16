@@ -1,0 +1,11 @@
+python -m venv .venv :Create Venv
+
+.\.venv\Scripts\Activate.ps1  :Active Venv
+
+python -m pip install --upgrade pip   :Update Pip
+
+python -m pip install pytest   :install Pytest
+
+python -m pytest tests\projectintelligence\infrastructure\filesystem\test_ignore_manager.py -v   :Test Python Code
+
+python -m pytest  :Test All Tests
