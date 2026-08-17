@@ -242,3 +242,109 @@ class TestHandlerBoundary:
         )
         assert isinstance(result, CommandResult)
         assert result.status in (CommandStatus.REJECTED, CommandStatus.FAILED)
+
+
+# ------------------------------------------------------- replay command ----
+class TestRecordReplayCommand:
+    """The button that produces the bar-by-bar player."""
+
+    def test_it_is_offered_with_a_form(self):
+        descriptor = descriptor_for(CommandKind.RECORD_REPLAY)
+        names = {field.name for field in descriptor.fields}
+        assert {"symbol", "timeframe", "capital", "spread"} <= names
+
+    def test_it_refuses_politely_when_there_are_no_candles(self, tmp_path):
+        from ShadBotTrader.presentation.commands.handlers import CommandHandlers
+
+        handlers = CommandHandlers(tmp_path / "x.db", tmp_path / "empty", tmp_path / "replay.html")
+        result = handlers.record_replay(
+            Command(CommandKind.RECORD_REPLAY, {"symbol": "NOPE", "timeframe": "5M"})
+        )
+
+        assert result.status is CommandStatus.REJECTED
+        assert "Fetch data first" in result.message
+        assert not (tmp_path / "replay.html").exists()
+
+    def test_it_writes_a_player_for_stored_candles(self, tmp_path):
+        from ShadBotTrader.data_cli import build_service, generate_sample
+        from ShadBotTrader.presentation.commands.handlers import CommandHandlers
+
+        storage = tmp_path / "datasets"
+        sample = storage / "samples" / "XAUUSD_i_5M.csv"
+        generate_sample("XAUUSD_i", "5M", 120, sample)
+        service, _, _ = build_service(storage)
+        service.ingest("XAUUSD_i", "5M", str(sample))
+
+        out = tmp_path / "player.html"
+        handlers = CommandHandlers(tmp_path / "x.db", storage, out)
+        result = handlers.record_replay(
+            Command(CommandKind.RECORD_REPLAY, {"symbol": "XAUUSD_i", "timeframe": "5M"})
+        )
+
+        assert result.status is CommandStatus.SUCCEEDED, result.detail
+        assert out.exists()
+        markup = out.read_text(encoding="utf-8")
+        assert "Backtest replay" in markup
+        assert "const TAPE" in markup
+
+
+# ------------------------------------------------ compute-features button ---
+class TestComputeFeaturesCommand:
+    """Regression: the button called a method that never existed.
+
+    ``FeatureComputationService`` exposes ``compute_set(...)``, not
+    ``compute(symbol, timeframe)``. The handler called the latter, so
+    "Update features" failed for every user who pressed it. The original
+    tests only exercised the "no candles stored" branch, which returns
+    before reaching the broken call — that is why it stayed hidden.
+    """
+
+    def _dataset(self, tmp_path):
+        from ShadBotTrader.data_cli import build_service, generate_sample
+
+        storage = tmp_path / "datasets"
+        sample = storage / "samples" / "XAUUSD_i_5M.csv"
+        generate_sample("XAUUSD_i", "5M", 150, sample)
+        service, _, _ = build_service(storage)
+        service.ingest("XAUUSD_i", "5M", str(sample))
+        return storage
+
+    def test_it_actually_computes_the_standard_feature_set(self, tmp_path):
+        from ShadBotTrader.presentation.commands.handlers import CommandHandlers
+
+        storage = self._dataset(tmp_path)
+        handlers = CommandHandlers(tmp_path / "f.db", storage, tmp_path / "r.html")
+
+        result = handlers.compute_features(
+            Command(CommandKind.COMPUTE_FEATURES, {"symbol": "XAUUSD_i", "timeframe": "5M"})
+        )
+
+        assert result.status is CommandStatus.SUCCEEDED, result.detail
+        assert "109" in result.message
+        assert any("feature set" in line for line in result.lines)
+
+    def test_the_definitions_reach_the_database(self, tmp_path):
+        from ShadBotTrader.infrastructure.persistence import Database
+        from ShadBotTrader.presentation.commands.handlers import CommandHandlers
+
+        storage = self._dataset(tmp_path)
+        database_path = tmp_path / "f.db"
+        handlers = CommandHandlers(database_path, storage, tmp_path / "r.html")
+
+        handlers.compute_features(
+            Command(CommandKind.COMPUTE_FEATURES, {"symbol": "XAUUSD_i", "timeframe": "5M"})
+        )
+
+        database = Database(database_path)
+        stored = database.row_count("feature_definition")
+        database.close()
+        assert stored == 109
+
+    def test_the_service_contract_the_handler_relies_on_exists(self):
+        """Guards the exact mismatch that caused the bug."""
+        from ShadBotTrader.application.services.feature_computation_service import (
+            FeatureComputationService,
+        )
+
+        assert hasattr(FeatureComputationService, "compute_set")
+        assert not hasattr(FeatureComputationService, "compute")

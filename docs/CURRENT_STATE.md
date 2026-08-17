@@ -1,3 +1,19 @@
+> ⚠️ **LIVE STATUS POINTER — added 2026-08-16**
+>
+> This document is a **frozen architecture document** (Phase 26 freeze).
+> It describes the *intended* design and is deliberately left unchanged.
+>
+> For the **actual implementation status** — which phases are built, which
+> are partial, and which are not started — see:
+>
+> - **`docs/IMPLEMENTATION_STATUS.md`** — phase-by-phase audit against real code
+> - **`docs/WORKLOG.md`** — chronological log of every change made
+>
+> Per `AGENTOPERATINGRULE.md`: the source code is the authoritative
+> implementation reality; this file is the authoritative design intent.
+
+---
+
 ====================================================================
 
 SHADBOTTRADER

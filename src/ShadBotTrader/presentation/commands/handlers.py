@@ -89,6 +89,21 @@ def descriptors() -> List[CommandDescriptor]:
             ],
         ),
         CommandDescriptor(
+            kind=CommandKind.RECORD_REPLAY,
+            label="Record a replay",
+            description=(
+                "Run the same backtest with recording on, then write a "
+                "player you can watch bar by bar: where it entered, where "
+                "it exited and what each trade produced. Opens at /replay."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("timeframe", "Timeframe", "5M"),
+                CommandField("capital", "Capital", "100", kind="number"),
+                CommandField("spread", "Spread", "4", kind="number"),
+            ],
+        ),
+        CommandDescriptor(
             kind=CommandKind.RUN_OPTIMISATION,
             label="Run optimisation",
             description=(
@@ -134,9 +149,21 @@ def descriptor_for(kind: CommandKind) -> CommandDescriptor:
 class CommandHandlers:
     """Binds commands to the application services that do the work."""
 
-    def __init__(self, database_path: str | Path, storage_root: str | Path = "datasets"):
+    def __init__(
+        self,
+        database_path: str | Path,
+        storage_root: str | Path = "datasets",
+        replay_path: str | Path = "replay.html",
+    ):
         self._database_path = Path(database_path)
         self._storage_root = Path(storage_root)
+        # Where "Record a replay" writes its player. The server serves this
+        # file at /replay, so the two must agree on one location.
+        self._replay_path = Path(replay_path)
+
+    @property
+    def replay_path(self) -> Path:
+        return self._replay_path
 
     def registry(self) -> Dict[CommandKind, Handler]:
         return {
@@ -144,6 +171,7 @@ class CommandHandlers:
             CommandKind.COMPUTE_FEATURES: self.compute_features,
             CommandKind.TRAIN_MODEL: self.train_model,
             CommandKind.RUN_BACKTEST: self.run_backtest,
+            CommandKind.RECORD_REPLAY: self.record_replay,
             CommandKind.RUN_OPTIMISATION: self.run_optimisation,
             CommandKind.RUN_TRADING_CYCLE: self.run_trading_cycle,
             CommandKind.REFRESH_PROJECT_STATE: self.refresh_project_state,
@@ -208,6 +236,9 @@ class CommandHandlers:
         from ShadBotTrader.domain.market.symbol import Symbol
         from ShadBotTrader.domain.market.timeframe import Timeframe
         from ShadBotTrader.feature_cli import _build_service as build_feature_service
+        from ShadBotTrader.infrastructure.feature.standard_catalog import (
+            standard_feature_set_v1,
+        )
         from ShadBotTrader.infrastructure.persistence import (
             Database,
             SqliteFeatureRegistry,
@@ -225,9 +256,17 @@ class CommandHandlers:
                 f"No stored candles for {symbol} {timeframe}. Fetch data first.",
             )
 
+        feature_set = standard_feature_set_v1()
         try:
             service, _, _ = build_feature_service(self._storage_root)
-            outcome = service.compute(symbol, timeframe)
+            outcome = service.compute_set(
+                feature_set=feature_set,
+                symbol=Symbol(symbol),
+                timeframe=Timeframe(timeframe),
+                candles=candles,
+                source_dataset_id=(f"csv.market_candle.{symbol}.{timeframe}.L3_normalized"),
+                dataset_version=1,
+            )
         except Exception as error:
             return CommandResult.failure(
                 command.kind,
@@ -239,19 +278,21 @@ class CommandHandlers:
         # record the catalogue in the database so the dashboard can show it
         database = Database(self._database_path)
         registry = SqliteFeatureRegistry(database)
-        for result in outcome.results:
-            registry.register(result.definition)
+        for definition in feature_set.definitions:
+            registry.register(definition)
         database.close()
 
-        quarantined = sum(1 for item in outcome.results if item.quarantined)
+        quarantined = sum(1 for item in outcome.outcomes if item.quarantined)
+        research_only = sum(1 for item in outcome.outcomes if not item.live_compatible)
         return CommandResult.success(
             command.kind,
-            f"Computed {len(outcome.results)} features over {len(candles)} candles",
+            f"Computed {len(outcome.outcomes)} features over {len(candles)} candles",
             [
-                f"feature set : {outcome.feature_set.name}",
-                f"computed    : {len(outcome.results)}",
+                f"feature set : {outcome.set_name}",
+                f"computed    : {len(outcome.outcomes) - quarantined}",
                 f"quarantined : {quarantined}",
-                "definitions registered in the database",
+                f"research    : {research_only} (not live-compatible)",
+                f"{len(feature_set.definitions)} definitions registered in the database",
             ],
             time.monotonic() - started,
         )
@@ -374,6 +415,76 @@ class CommandHandlers:
                 f"max drawdown: {metrics.max_drawdown_percent:.2f}%",
                 f"hit rate    : {f'{hit:.3f}' if hit is not None else 'n/a'}",
                 f"fees        : {metrics.total_fees:.4f}",
+            ],
+            time.monotonic() - started,
+        )
+
+    def record_replay(self, command: Command) -> CommandResult:
+        """Run a recorded backtest and write the player to disk."""
+        from ShadBotTrader.application.services.backtest_service import BacktestService
+        from ShadBotTrader.data_cli import build_service
+        from ShadBotTrader.domain.market.symbol import Symbol
+        from ShadBotTrader.domain.market.timeframe import Timeframe
+        from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+        from ShadBotTrader.infrastructure.simulation import MomentumPredictionSource
+        from ShadBotTrader.presentation.web.replay_renderer import render_replay
+
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD_i")
+        timeframe = command.text("timeframe", "5M")
+
+        _, store, _ = build_service(self._storage_root)
+        candles = store.query(Symbol(symbol), Timeframe(timeframe))
+        if not candles:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored candles for {symbol} {timeframe}. Fetch data first.",
+            )
+
+        try:
+            service = BacktestService(
+                configuration=SimulationConfiguration(
+                    initial_capital=Decimal(str(command.number("capital", 100.0))),
+                    spread=Decimal(str(command.number("spread", 4.0))),
+                    commission_rate=Decimal("0.0001"),
+                    warmup_bars=20,
+                ),
+                base_quantity=Decimal("0.01"),
+            )
+            result = service.run(
+                f"replay-{symbol}",
+                Symbol(symbol),
+                Timeframe(timeframe),
+                candles,
+                prediction_source=MomentumPredictionSource(lookback=6),
+                record_replay=True,
+            )
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind, "Replay run failed", str(error), time.monotonic() - started
+            )
+
+        tape = result.tape
+        if tape is None:  # pragma: no cover - recording was requested
+            return CommandResult.failure(
+                command.kind, "The run produced no replay", "", time.monotonic() - started
+            )
+
+        markup = render_replay(tape, result.metrics)
+        self._replay_path.parent.mkdir(parents=True, exist_ok=True)
+        self._replay_path.write_text(markup, encoding="utf-8")
+
+        trips = tape.round_trips()
+        wins = sum(1 for trip in trips if trip["result"] == "win")
+        return CommandResult.success(
+            command.kind,
+            f"Recorded {len(tape.bars)} bars — open /replay to watch it",
+            [
+                f"fills         : {len(tape.markers)}",
+                f"closed trades : {len(trips)} ({wins} win / {len(trips) - wins} loss)",
+                f"return        : {result.metrics.total_return:.4f} "
+                f"({result.metrics.total_return_percent:.2f}%)",
+                f"written to    : {self._replay_path}",
             ],
             time.monotonic() - started,
         )

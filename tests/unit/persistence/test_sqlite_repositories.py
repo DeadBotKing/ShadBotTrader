@@ -149,7 +149,7 @@ class TestSqlitePortfolioLedger:
         ledger.apply(make_result(make_fill(OrderSide.SELL, "2", "2100", fee="4.2", fill_id="f2")))
 
         assert len(ledger.stored_fills()) == 2
-        kinds = [entry["transaction_type"] for entry in ledger.transactions()]
+        kinds = [entry["transaction_type"] for entry in ledger.transactions]
         assert kinds.count("fee") == 2
         assert kinds.count("trade") == 1  # only the close realised PnL
 
@@ -373,3 +373,50 @@ class TestSqliteRegistries:
                 )
             )
         assert len(repository.list_for_model(ModelId("gold_direction"))) == 3
+
+
+class TestLedgerApiParity:
+    """Both ledgers implement one port, so their API must match.
+
+    ``transactions`` was a property on the in-memory ledger and a method
+    on the SQLite one. Any code written against one broke against the
+    other — exactly the bug that swapping implementations is meant to
+    make impossible.
+    """
+
+    def test_transactions_is_a_property_on_both(self, database):
+        from ShadBotTrader.infrastructure.execution import InMemoryPortfolioLedger
+
+        memory = InMemoryPortfolioLedger()
+        durable = SqlitePortfolioLedger(database, session_id="parity")
+
+        # neither may require a call
+        assert isinstance(memory.transactions, list)
+        assert isinstance(durable.transactions, list)
+
+    def test_reporting_surface_matches(self, database):
+        from ShadBotTrader.infrastructure.execution import InMemoryPortfolioLedger
+
+        memory = InMemoryPortfolioLedger()
+        durable = SqlitePortfolioLedger(database, session_id="parity")
+
+        for name in (
+            "cash",
+            "realized_pnl",
+            "total_fees",
+            "net_realized_pnl",
+            "transactions",
+        ):
+            assert hasattr(memory, name), name
+            assert hasattr(durable, name), name
+            # a property on one must be a property on the other
+            assert isinstance(getattr(type(memory), name, None), property) == isinstance(
+                getattr(type(durable), name, None), property
+            ), f"{name} differs between the two ledgers"
+
+    def test_both_satisfy_the_reporting_port(self, database):
+        from ShadBotTrader.domain.execution.ports import ReportingLedger
+        from ShadBotTrader.infrastructure.execution import InMemoryPortfolioLedger
+
+        assert isinstance(InMemoryPortfolioLedger(), ReportingLedger)
+        assert isinstance(SqlitePortfolioLedger(database, session_id="p"), ReportingLedger)

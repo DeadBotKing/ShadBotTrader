@@ -46,9 +46,10 @@ class CommandBus:
         cls,
         database_path: str,
         storage_root: str = "datasets",
+        replay_path: str = "replay.html",
     ) -> "CommandBus":
         """A bus wired to the standard handlers."""
-        return cls(CommandHandlers(database_path, storage_root).registry())
+        return cls(CommandHandlers(database_path, storage_root, replay_path).registry())
 
     # -- state ----------------------------------------------------------------
     @property

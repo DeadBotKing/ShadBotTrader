@@ -28,6 +28,15 @@ from ShadBotTrader.domain.simulation.ports import (
     SimulationMarketDataProvider,
     SimulationReporter,
 )
+from ShadBotTrader.domain.simulation.replay import (
+    MARKER_ADJUST,
+    MARKER_ENTRY,
+    MARKER_EXIT,
+    ReplayBar,
+    ReplayRecorder,
+    ReplayTape,
+    TradeMarker,
+)
 from ShadBotTrader.domain.simulation.session import (
     SimulationConfiguration,
     SimulationSession,
@@ -40,6 +49,9 @@ from ShadBotTrader.domain.simulation.simulation_types import (
 )
 
 __all__ = [
+    "MARKER_ADJUST",
+    "MARKER_ENTRY",
+    "MARKER_EXIT",
     "ClockSnapshot",
     "EquityCurve",
     "EquityPoint",
@@ -49,6 +61,9 @@ __all__ = [
     "NullSimulationReporter",
     "PerformanceMetrics",
     "PredictionSource",
+    "ReplayBar",
+    "ReplayRecorder",
+    "ReplayTape",
     "SessionStatus",
     "SimulationClock",
     "SimulationConfiguration",
@@ -57,6 +72,7 @@ __all__ = [
     "SimulationMode",
     "SimulationReporter",
     "SimulationSession",
+    "TradeMarker",
     "TradeRecord",
     "sharpe_ratio",
     "standard_deviation",

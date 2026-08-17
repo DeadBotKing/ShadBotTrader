@@ -20,7 +20,11 @@ from ShadBotTrader.project.models.project_snapshot import (
 
 ARCHITECTURE_VERSION = "1.0"
 CURRENT_PHASE = (
-    "Phase 28 - Implementation Foundation " "(Phase 19: read-only dashboard over persisted state)"
+    "Phase 28 - Implementation Foundation "
+    "+ Phases 29-31 (dual models, 100k dataset, live loop) "
+    "+ Phase 24 Deployment + Phases 9/21/22 completed "
+    "(plugin registry, layered config with secret redaction, "
+    "structured contextual logging)"
 )
 
 

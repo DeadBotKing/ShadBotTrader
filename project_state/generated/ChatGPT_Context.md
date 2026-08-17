@@ -5,20 +5,20 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Python version: 3.13.14
-- Snapshot generated at: 2026-08-16T16:12:28.107902+00:00
+- Python version: 3.12.10
+- Snapshot generated at: 2026-08-17T05:35:10.315050+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 248
-- Test modules: 74
+- Source modules: 279
+- Test modules: 94
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed (plugin registry, layered config with secret redaction, structured contextual logging)
 
 ## Implemented Components
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persist
 ## Git Commit
 
 - Branch: main
-- Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (1982 files)
+- Commit: 8fbd24ede30c3459c660e724766cd16d50e5aa41
+- Dirty: yes (384 files)
 - Recent commits:
+  - 8fbd24e Update Dashboard
+  - 98df9b6 Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
+  - 715cfce Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)
+  - 4951f42 Real Data
+  - 9dbcec3 Phase 28 â€” Implementation Foundation (Sprint P7: Self-Learning â€” walk-forward optimisation with a promotion gate)
+  - be2bcf9 Phase 28 â€” Implementation Foundation (Sprint P5: Execution & Portfolio â€” fill-based accounting)
+  - 422b7dc Phase 28 â€” Implementation Foundation (Sprint P4: Trading Platform â€” risk-gated decision pipeline)
+  - dcd31ce Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
+  - b5df12b Create venv.txt
   - 22e6743 NewFixSprint02
-  - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
-  - e9eb8fe Phase 28 — Implementation Foundation (Sprint P2: Feature Platform)
-  - 81751ce Phase 28 — Implementation Foundation (Sprint P1: Data Platform)
-  - 80cbf5a Phase 28 — Implementation Foundation (Sprint P0: Project Intelligence)
-  - e019203 Phase1
-  - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
-  - ac8c959 Upda
-  - 0ddcbe9 Update Docs From Done To No Done
-  - a7c6b62 Docs
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Wire persistence into the remaining demos and CLIs with a --persist flag, so backtests and optimisations land in the database and show up on the dashboard without extra wiring. After that: Phase 24 (deployment) or richer charts once per-bar equity is stored.
+Model quality: the backtester still uses MomentumPredictionSource, a deliberate baseline — the replay now makes every one of its trades visible, and on random data they all lose. Feeding the trained WaveNet and the 109-feature catalogue into the simulation is the remaining path to a strategy that could be profitable, on real MT5 data rather than noise. Alternatively Phase 24 (deployment) to run continuously.
 
 ## Statistics
 
-- Total files: 580
-- Source files: 248
-- Test files: 74
-- Documentation files: 43
-- Legacy files: 175
-- Total Python lines: 74179
-- Modules: 322
-- Classes: 429
-- Functions: 2331
+- Total files: 655
+- Source files: 279
+- Test files: 94
+- Documentation files: 48
+- Legacy files: 176
+- Total Python lines: 88931
+- Modules: 373
+- Classes: 565
+- Functions: 3283
 - External dependencies: 12

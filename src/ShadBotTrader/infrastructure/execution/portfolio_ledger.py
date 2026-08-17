@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from ShadBotTrader.domain.execution.execution_types import TransactionType
 from ShadBotTrader.domain.execution.fill import ExecutionResult, Fill
 from ShadBotTrader.domain.execution.money import Money
-from ShadBotTrader.domain.execution.ports import PortfolioLedger
+from ShadBotTrader.domain.execution.ports import ReportingLedger
 from ShadBotTrader.domain.execution.position_state import PositionState
 from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.symbol import Symbol
@@ -67,7 +67,7 @@ class Transaction:
         return f"{self._transaction_type.value} {self._amount} ({self._reference})"
 
 
-class InMemoryPortfolioLedger(PortfolioLedger):
+class InMemoryPortfolioLedger(ReportingLedger):
     """Tracks positions and PnL by folding fills, one symbol at a time."""
 
     def __init__(self, currency: str = "USD", starting_cash: Decimal = Decimal("0")) -> None:

@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 from ShadBotTrader.domain.execution.execution_types import TransactionType
 from ShadBotTrader.domain.execution.fill import ExecutionResult, Fill
 from ShadBotTrader.domain.execution.money import Money
-from ShadBotTrader.domain.execution.ports import PortfolioLedger
+from ShadBotTrader.domain.execution.ports import ReportingLedger
 from ShadBotTrader.domain.execution.position_state import PositionState
 from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.symbol import Symbol
@@ -32,7 +32,7 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-class SqlitePortfolioLedger(PortfolioLedger):
+class SqlitePortfolioLedger(ReportingLedger):
     """A portfolio ledger backed by SQLite.
 
     ``load()`` restores a previous session; ``rebuild_from_fills()``
@@ -190,6 +190,7 @@ class SqlitePortfolioLedger(PortfolioLedger):
         )
         return [dict(row) for row in rows]
 
+    @property
     def transactions(self) -> List[Dict[str, object]]:
         rows = self._database.query(
             "SELECT * FROM portfolio_transaction WHERE session_id = ? ORDER BY id",
@@ -310,7 +311,7 @@ class SqlitePortfolioLedger(PortfolioLedger):
             return Money(self._starting_cash, self._currency)
 
         total = Money(self._starting_cash, self._currency)
-        for entry in self.transactions():
+        for entry in self.transactions:
             total = total.add(Money(Decimal(str(entry["amount"])), str(entry["currency"])))
         return total
 

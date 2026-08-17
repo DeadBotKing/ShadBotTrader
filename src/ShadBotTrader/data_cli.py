@@ -21,7 +21,7 @@ import random
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 from ShadBotTrader.application.services.data_ingestion_service import DataIngestionService
 from ShadBotTrader.core.events.event_bus import EventBus
@@ -215,6 +215,56 @@ def cmd_mt5_symbols(args: argparse.Namespace) -> int:
     return 0
 
 
+def _suggest_symbol(provider: Any, requested: str) -> None:
+    """After a failed fetch, tell the user what the symbol is really called.
+
+    Best-effort only: the ingest already failed, so a problem here must
+    not replace the original error message with a new one.
+    """
+    from ShadBotTrader.infrastructure.data.mt5_symbol_resolver import resolve
+
+    try:
+        available = provider.available_symbols()
+    except Exception:
+        return
+    report = resolve(requested, available)
+    if report.found and not (report.best and report.best.is_exact):
+        print()
+        for line in report.advice():
+            print(f"  {line}")
+
+
+def cmd_mt5_resolve(args: argparse.Namespace) -> int:
+    """Work out what this broker calls an instrument.
+
+    Brokers rename the same instrument freely (XAUUSD.i, XAUUSDm, GOLD),
+    which is the single most common reason a first real-data run fails.
+    """
+    from ShadBotTrader.infrastructure.data.mt5_symbol_resolver import resolve
+
+    provider = _mt5_provider(args)
+    try:
+        available = provider.available_symbols()
+    except Exception as error:
+        print(f"Could not list symbols: {error}")
+        return 1
+    finally:
+        provider.shutdown()
+
+    report = resolve(args.symbol, available)
+    print(f"=== Resolving '{args.symbol}' against {report.searched} broker symbols ===\n")
+
+    if report.matches:
+        for match in report.matches[: args.limit]:
+            marker = "->" if match is report.best else "  "
+            print(f"  {marker} {match.name:<22} {match.score:>3}  {match.reason}")
+        print()
+
+    for line in report.advice():
+        print(f"  {line}")
+    return 0 if report.found else 1
+
+
 def cmd_mt5_ingest(args: argparse.Namespace) -> int:
     """Ingest real broker history through the standard pipeline."""
     storage_root = Path(args.storage_root)
@@ -226,6 +276,7 @@ def cmd_mt5_ingest(args: argparse.Namespace) -> int:
         result = service.ingest(args.symbol, args.timeframe, str(args.bars))
     except Exception as error:
         print(f"MT5 ingest failed: {error}")
+        _suggest_symbol(provider, args.symbol)
         return 1
     finally:
         provider.shutdown()
@@ -292,6 +343,12 @@ def main(argv: List[str] | None = None) -> int:
     mt5_symbols.add_argument("--limit", type=int, default=60)
     add_mt5_credentials(mt5_symbols)
     mt5_symbols.set_defaults(func=cmd_mt5_symbols)
+
+    mt5_resolve = subparsers.add_parser("mt5-resolve", help="find what your broker calls a symbol")
+    mt5_resolve.add_argument("--symbol", required=True, help="e.g. XAUUSD or GOLD")
+    mt5_resolve.add_argument("--limit", type=int, default=10)
+    add_mt5_credentials(mt5_resolve)
+    mt5_resolve.set_defaults(func=cmd_mt5_resolve)
 
     mt5_ingest = subparsers.add_parser("mt5-ingest", help="ingest real MT5 history")
     mt5_ingest.add_argument("--symbol", required=True, help="broker symbol, e.g. XAUUSD")

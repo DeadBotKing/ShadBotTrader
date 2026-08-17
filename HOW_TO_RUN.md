@@ -171,6 +171,96 @@ python -m ShadBotTrader.ai_cli train --model gold_direction
 python -m ShadBotTrader.intelligence
 ```
 
+### د) ریپلی زندهٔ بک‌تست — دیدن کندل‌ها و معامله‌ها
+
+```powershell
+# پخش‌کنندهٔ HTML بسازید و باز کنید
+python scripts\run_replay.py --open
+
+# یا همان چیز در ترمینال
+python scripts\run_replay.py --console
+python scripts\run_replay.py --console --all-bars --delay 0.05
+
+# از طریق CLI
+python -m ShadBotTrader.backtest_cli replay --out replay.html
+shadbot-backtest replay --console --every 25
+```
+
+`replay.html` یک فایل کاملاً مستقل است (بدون اینترنت، CDN یا فونت خارجی).
+داخلش: نمودار شمعی که جلو می‌رود، مثلث آبی = ورود، دایرهٔ سبز/قرمز = خروج با
+سود/ضرر، نوار equity، و جدولی که هر معامله را همان لحظه‌ای که بسته می‌شود
+اضافه می‌کند. کنترل‌ها: Play/Pause (Space)، یک کندل جلو/عقب (فلش‌ها)، اسلایدر،
+سرعت و تعداد کندل قابل مشاهده.
+
+از داشبورد هم می‌شود: دکمهٔ **Record a replay** را بزنید و بعد آدرس `/replay`
+را باز کنید.
+
+```powershell
+python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
+# http://localhost:8080/         داشبورد
+# http://localhost:8080/replay   ریپلی
+```
+
+### ه) دیتای واقعی از متاتریدر ۵ (ویندوز)
+
+```powershell
+pip install -r requirements-mt5.txt
+
+shadbot-data mt5-check                          # اتصال را بررسی کن
+shadbot-data mt5-resolve --symbol XAUUSD        # بروکرت طلا را چه می‌نامد؟
+shadbot-data mt5-symbols --pattern XAU          # فهرست کامل
+
+# اجرای کامل: دریافت → بک‌تست → بهینه‌سازی
+python scripts\run_real_data.py --symbol XAUUSD --auto-symbol
+
+# ریپلی روی همان دیتای واقعی
+python scripts\run_replay.py --symbol XAUUSD.i --open
+```
+
+**چرا `mt5-resolve`؟** بروکرها طلا را `XAUUSD`، `XAUUSD.i`، `XAUUSDm`،
+`GOLD` یا `GOLDmicro` می‌نامند. این دستور می‌گوید مال تو کدام است:
+
+```
+  -> XAUUSD.i    90  same instrument, broker suffix
+     shadbot-data mt5-ingest --symbol XAUUSD.i --timeframe 5M --bars 5000
+```
+
+اگر فهرست خالی بود: در MT5 → پنجرهٔ **Market Watch** → راست‌کلیک → **Show All**.
+
+> گپ آخر هفته در دیتای واقعی **طبیعی است** و باعث رد شدن دیتا نمی‌شود؛ فقط
+> به‌صورت `GAP_DETECTED` گزارش می‌شود.
+
+### و) استقرار و اجرای مداوم (فاز ۲۴)
+
+```powershell
+# سلامت سیستم
+shadbot-deploy health
+
+# بکاپ دیتابیس (خودش تأیید می‌کند که قابل بازیابی است)
+shadbot-deploy backup --note "before migration"
+shadbot-deploy backups
+shadbot-deploy restore --file backups\shadbot-....db --yes
+
+# دروازهٔ قبل از استقرار
+shadbot-deploy preflight --environment production
+
+# اجرای مداوم — Ctrl+C برای توقف تمیز
+python scripts\run_service.py --demo --interval 300 --backup-every 12
+
+# نگهداری هفتگی (بکاپ + محاسبهٔ مجدد فیچرها + ادامهٔ آموزش)
+python scripts\run_weekly_update.py --dry-run
+python scripts\run_weekly_update.py
+
+# ثبت خودکار در Task Scheduler ویندوز
+.\deploy\install_service.ps1 -WhatIf     # اول ببین چه می‌کند
+.\deploy\install_service.ps1
+.\deploy\install_service.ps1 -Remove     # حذف
+```
+
+> **چرا Task Scheduler و نه Windows Service؟** سرویس واقعی در session 0
+> اجرا می‌شود و آنجا ترمینال MT5 در دسترس **نیست** — متاتریدر از IPC محلی
+> در session کاربر استفاده می‌کند. این محدودیت واقعی است، نه میان‌بر.
+
 ---
 
 ## گام ۵ — ترتیب پیشنهادی برای اولین اجرا
@@ -222,16 +312,19 @@ ShadBotTrader/
 │   ├── domain/            ai, dataset, feature, market, portfolio, trading, risk
 │   ├── application/       bootstrap، runtime، سرویس‌ها
 │   ├── infrastructure/    data، feature (۲۰ calculator)، ai (WaveNet)، config، logging
+│   ├── presentation/      داشبورد، دکمه‌های Command، پخش‌کنندهٔ ریپلی
 │   ├── project/           Project Intelligence (scanner، builder، exporter)
 │   ├── main.py            نقطه‌ی ورود اصلی
 │   └── *_cli.py           رابط‌های خط فرمان
-├── tests/                 ۱۷۸ تست (unit / integration / architecture)
+├── tests/                 ۱۰۳۴ تست (unit / integration / architecture)
 ├── scripts/               دموهای اجرایی
 ├── datasets/              parquet های raw / processed / features
 ├── docs/                  مستندات معماری فازهای ۱–۲۸
 ├── legacy/                کد قدیمی (مرجع دامنه، از لینت مستثنا)
 ├── requirements*.txt      وابستگی‌ها
 ├── CHANGELOG_REVIEW.md    گزارش باگ‌های پیداشده و اصلاحات
+├── docs/IMPLEMENTATION_STATUS.md  وضعیت هر ۲۸ فاز
+├── docs/WORKLOG.md        دفترچهٔ کار (هر تغییر ثبت می‌شود)
 ├── WINDOWS_SETUP.md       راهنمای ویندوز
 └── setup_windows.ps1      اسکریپت خودکار راه‌اندازی
 ```

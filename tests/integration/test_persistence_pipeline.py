@@ -298,3 +298,102 @@ def test_statistics_report_what_was_written(database):
     assert stats["execution_attempt"] >= 1
     assert stats["portfolio_fill"] >= 1
     assert stats["portfolio_position"] == 1
+
+
+class TestPersistFlagClosesTheLoop:
+    """Sprint P8 built durable adapters; this verifies the demos use them.
+
+    Before the --persist flag, running a backtest produced results that
+    never reached the database, so the dashboard could not show them —
+    the storage layer existed but nothing in the main path used it.
+    """
+
+    def test_context_defaults_to_in_memory(self):
+        from ShadBotTrader.application.persistence_context import PersistenceContext
+        from ShadBotTrader.infrastructure.execution import InMemoryPortfolioLedger
+
+        context = PersistenceContext()
+        assert isinstance(context.portfolio_ledger(), InMemoryPortfolioLedger)
+        # the database is never even opened
+        assert context.database is None
+
+    def test_context_returns_durable_adapters_when_asked(self, tmp_path):
+        from ShadBotTrader.application.persistence_context import PersistenceContext
+        from ShadBotTrader.infrastructure.persistence import (
+            SqliteDecisionJournal,
+            SqliteLearningMemory,
+            SqlitePortfolioLedger,
+        )
+
+        context = PersistenceContext.for_run(
+            persist=True, database=str(tmp_path / "ctx.db"), session="s"
+        )
+        assert isinstance(context.portfolio_ledger(), SqlitePortfolioLedger)
+        assert isinstance(context.decision_journal(), SqliteDecisionJournal)
+        assert isinstance(context.learning_memory(), SqliteLearningMemory)
+        context.close()
+
+    def test_backtest_results_reach_the_database(self, tmp_path):
+        from ShadBotTrader.application.persistence_context import PersistenceContext
+        from ShadBotTrader.application.services.backtest_service import BacktestService
+        from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+        from ShadBotTrader.infrastructure.persistence import Database
+        from tests.simulation_fixtures import TF, rising
+        from tests.simulation_fixtures import XAU as SIM_XAU
+
+        path = tmp_path / "backtest.db"
+        context = PersistenceContext.for_run(persist=True, database=str(path), session="bt")
+        service = BacktestService(
+            configuration=SimulationConfiguration(
+                initial_capital=d("100"), spread=d("4"), warmup_bars=5
+            ),
+            base_quantity=d("0.01"),
+            persistence=context,
+        )
+        service.run("stored", SIM_XAU, TF, rising(60))
+        context.close()
+
+        # a fresh handle sees the results, as the dashboard would
+        database = Database(path)
+        assert database.row_count("trading_decision") > 0
+        assert database.statistics()["portfolio_position"] >= 1
+
+    def test_a_run_without_persist_writes_nothing(self, tmp_path):
+        from ShadBotTrader.application.services.backtest_service import BacktestService
+        from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+        from tests.simulation_fixtures import TF, rising
+        from tests.simulation_fixtures import XAU as SIM_XAU
+
+        path = tmp_path / "never.db"
+        service = BacktestService(
+            configuration=SimulationConfiguration(initial_capital=d("100"), warmup_bars=5),
+            base_quantity=d("0.01"),
+        )
+        service.run("ephemeral", SIM_XAU, TF, rising(60))
+        assert not path.exists()
+
+    def test_sessions_from_different_scripts_stay_separate(self, tmp_path):
+        from ShadBotTrader.application.persistence_context import PersistenceContext
+        from ShadBotTrader.infrastructure.persistence import Database
+
+        path = str(tmp_path / "multi.db")
+        for prefix in ("backtest", "trading"):
+            context = PersistenceContext.for_run(persist=True, database=path, prefix=prefix)
+            assert context.session_id.startswith(prefix)
+            context.close()
+
+        assert Database(path).schema_version == 1
+
+    def test_summary_lines_tell_the_user_where_results_went(self, tmp_path):
+        from ShadBotTrader.application.persistence_context import PersistenceContext
+
+        ephemeral = PersistenceContext()
+        assert any("NOT saved" in line for line in ephemeral.summary_lines())
+
+        durable = PersistenceContext.for_run(
+            persist=True, database=str(tmp_path / "x.db"), session="s"
+        )
+        lines = durable.summary_lines()
+        assert any("Saved to" in line for line in lines)
+        assert any("shadbot-dashboard" in line for line in lines)
+        durable.close()

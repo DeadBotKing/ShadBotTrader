@@ -33,6 +33,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
         port=args.port,
         allow_commands=not args.read_only,
         storage_root=args.storage_root,
+        replay_path=args.replay,
     )
     return 0
 
@@ -72,7 +73,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         key, value = entry.split("=", 1)
         parameters[key] = value
 
-    bus = CommandBus.with_defaults(args.db, args.storage_root)
+    bus = CommandBus.with_defaults(args.db, args.storage_root, args.replay)
     print(f"Running {kind.value} ...")
     result = bus.dispatch(Command(kind=kind, parameters=parameters))
 
@@ -191,12 +192,18 @@ def main(argv: List[str] | None = None) -> int:
         help="disable the action buttons (viewer only)",
     )
     serve_parser.add_argument("--storage-root", default="datasets")
+    serve_parser.add_argument(
+        "--replay",
+        default="replay.html",
+        help="file the replay recorder writes and /replay serves",
+    )
     serve_parser.set_defaults(func=cmd_serve)
 
     run = subparsers.add_parser("run", help="dispatch one command from the CLI")
     run.add_argument("command_name", help="e.g. run_backtest")
     run.add_argument("--param", action="append", default=[], metavar="KEY=VALUE")
     run.add_argument("--storage-root", default="datasets")
+    run.add_argument("--replay", default="replay.html", help="replay output file")
     run.set_defaults(func=cmd_run)
 
     commands = subparsers.add_parser("commands", help="list available actions")

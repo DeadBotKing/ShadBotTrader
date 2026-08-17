@@ -160,6 +160,30 @@ quality engine (NaN/Inf/range/alignment) and a leakage check
 (availability-time <= decision-time). Results are stored immutably as
 Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
 
+## Saving results (`--persist`)
+
+Every demo runs in memory by default and discards its results. Add
+`--persist` to keep them — and they appear on the dashboard immediately:
+
+```bash
+python scripts/run_backtest.py     --persist
+python scripts/run_optimisation.py --persist
+python scripts/run_execution.py    --persist
+python scripts/run_trading.py      --persist
+
+# all four into one database, then look at it
+python scripts/run_backtest.py --persist --db shadbot.db
+shadbot-dashboard --db shadbot.db serve
+```
+
+Each run gets its own session (`backtest-20260816-1623`), so results are
+never mixed. Without `--persist` nothing is written and the database is
+not even opened — a parameter sweep should not litter storage.
+
+The choice lives in one place (`PersistenceContext`), and both
+implementations satisfy the same ports, so no script knows which one it
+got.
+
 ## Dashboard (Phase 19)
 
 A read-only web view over the persisted state:

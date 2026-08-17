@@ -2,6 +2,8 @@
 
 python -m ShadBotTrader.backtest_cli run --capital 100 --spread 4
 python -m ShadBotTrader.backtest_cli sweep --param spread --values 0,2,4,10
+python -m ShadBotTrader.backtest_cli replay --out replay.html --open
+python -m ShadBotTrader.backtest_cli replay --console --delay 0.05
 """
 
 from __future__ import annotations
@@ -21,9 +23,11 @@ from ShadBotTrader.domain.market.timeframe import Timeframe
 from ShadBotTrader.domain.simulation.session import SimulationConfiguration
 from ShadBotTrader.domain.strategy.risk_policy import RiskPolicy
 from ShadBotTrader.infrastructure.simulation import (
+    ConsoleReplayPlayer,
     ConsoleSimulationReporter,
     MomentumPredictionSource,
 )
+from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
 DEFAULT_STORAGE_ROOT = Path.cwd() / "datasets"
 
@@ -77,6 +81,52 @@ def cmd_run(args: argparse.Namespace) -> int:
     print(f"  bars processed    : {result.bars_processed}")
     print(f"  intents created   : {result.intents_created}")
     print(f"  fills             : {result.fills}")
+    return 0
+
+
+def cmd_replay(args: argparse.Namespace) -> int:
+    """Run a backtest with recording on, then replay it.
+
+    The run itself is identical to ``run`` — the same engine, the same
+    production trading chain. Recording only adds an observer.
+    """
+    candles = _load_candles(args)
+    service = _service(args)
+    result = service.run(
+        args.session,
+        Symbol(args.symbol),
+        Timeframe(args.timeframe),
+        candles,
+        prediction_source=MomentumPredictionSource(lookback=args.lookback),
+        record_replay=True,
+    )
+
+    tape = result.tape
+    if tape is None:  # pragma: no cover - record_replay=True guarantees a tape
+        print("No replay was recorded.")
+        return 1
+
+    if args.console:
+        ConsoleReplayPlayer(
+            delay=args.delay,
+            show_all_bars=args.all_bars,
+            every=args.every,
+        ).play(tape)
+        return 0
+
+    markup = render_replay(tape, result.metrics, autoplay=args.autoplay)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(markup, encoding="utf-8")
+
+    trips = tape.round_trips()
+    wins = sum(1 for trip in trips if trip["result"] == "win")
+    print(f"Wrote {out} ({len(markup) / 1024:.1f} KB)")
+    print(f"  bars recorded : {len(tape.bars)}")
+    print(f"  fills         : {len(tape.markers)}")
+    print(f"  closed trades : {len(trips)} ({wins} win / {len(trips) - wins} loss)")
+    print("  self-contained: no network, CDN or external asset required")
+    print(f"\nOpen it in a browser:  {out.resolve()}")
     return 0
 
 
@@ -138,6 +188,42 @@ def main(argv: List[str] | None = None) -> int:
     common(run)
     run.add_argument("--steps", action="store_true", help="print per-bar progress")
     run.set_defaults(func=cmd_run)
+
+    replay = subparsers.add_parser(
+        "replay",
+        help="run a backtest and replay it bar by bar",
+    )
+    common(replay)
+    replay.add_argument("--session", default="replay", help="session id for the run")
+    replay.add_argument("--out", default="replay.html", help="HTML player to write")
+    replay.add_argument(
+        "--console",
+        action="store_true",
+        help="print the replay in the terminal instead of writing HTML",
+    )
+    replay.add_argument(
+        "--delay",
+        type=float,
+        default=0.0,
+        help="seconds to pause between printed bars (--console only)",
+    )
+    replay.add_argument(
+        "--all-bars",
+        action="store_true",
+        help="print every bar, not only traded ones (--console only)",
+    )
+    replay.add_argument(
+        "--every",
+        type=int,
+        default=10,
+        help="print one in N quiet bars (--console only)",
+    )
+    replay.add_argument(
+        "--autoplay",
+        action="store_true",
+        help="start the HTML player automatically",
+    )
+    replay.set_defaults(func=cmd_replay)
 
     sweep = subparsers.add_parser("sweep", help="sweep one parameter")
     common(sweep)

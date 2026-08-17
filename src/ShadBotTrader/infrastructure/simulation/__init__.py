@@ -4,9 +4,11 @@ Concrete adapters for the ports in ``domain.simulation.ports``:
 
 * :class:`CandleMarketDataProvider` — replays a historical candle series
 * :class:`MomentumPredictionSource` — deterministic baseline predictions
+* :class:`ModelPredictionSource` — the trained Phase 29 signal model
 * :class:`ScriptedPredictionSource` — fixed schedule, for tests/scenarios
 * :class:`BacktestEngine` — orchestrates the whole trading chain
 * :class:`ConsoleSimulationReporter` — plan, progress and results
+* :class:`ConsoleReplayPlayer` — bar-by-bar replay of a recorded run
 """
 
 from ShadBotTrader.infrastructure.simulation.backtest_engine import (
@@ -16,8 +18,15 @@ from ShadBotTrader.infrastructure.simulation.backtest_engine import (
 from ShadBotTrader.infrastructure.simulation.candle_data_provider import (
     CandleMarketDataProvider,
 )
+from ShadBotTrader.infrastructure.simulation.console_replay import (
+    ConsoleReplayPlayer,
+    summarise_tape,
+)
 from ShadBotTrader.infrastructure.simulation.console_reporter import (
     ConsoleSimulationReporter,
+)
+from ShadBotTrader.infrastructure.simulation.model_prediction_source import (
+    ModelPredictionSource,
 )
 from ShadBotTrader.infrastructure.simulation.prediction_sources import (
     MomentumPredictionSource,
@@ -28,7 +37,10 @@ __all__ = [
     "BacktestEngine",
     "BacktestResult",
     "CandleMarketDataProvider",
+    "ConsoleReplayPlayer",
     "ConsoleSimulationReporter",
+    "ModelPredictionSource",
     "MomentumPredictionSource",
     "ScriptedPredictionSource",
+    "summarise_tape",
 ]

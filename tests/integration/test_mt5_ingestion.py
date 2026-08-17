@@ -177,3 +177,131 @@ def test_same_pipeline_accepts_csv_and_mt5(tmp_path, mt5_provider):
     assert csv_result.candle_count == 60
     assert mt5_result.candle_count == 120
     assert type(csv_result) is type(mt5_result)
+
+
+# ------------------------------------------------- real market shape -------
+def session_rates(weeks: int = 3, step: int = 300):
+    """Bars shaped like a real FX/metals feed.
+
+    The market is closed at weekends, so a genuine 5M series contains a
+    ~48-hour hole every Friday night. Synthetic fixtures never have one,
+    which is exactly why this shape needs its own test: a weekend must
+    read as normal market structure, not as broken data.
+    """
+    rates = []
+    moment = datetime(2026, 1, 5, tzinfo=timezone.utc)  # a Monday
+    finish = moment + timedelta(weeks=weeks)
+    price, index = 2000.0, 0
+    while moment < finish:
+        if moment.weekday() < 5:  # Monday-Friday only
+            drift = 0.35 if index % 3 else -0.28
+            open_, close = price, price + drift
+            rates.append(
+                make_rate(
+                    time=int(moment.timestamp()),
+                    open_=round(open_, 2),
+                    high=round(max(open_, close) + 0.5, 2),
+                    low=round(min(open_, close) - 0.5, 2),
+                    close=round(close, 2),
+                    tick_volume=80 + (index % 50),
+                    # brokers widen the spread around the rollover
+                    spread=45 if moment.hour == 0 else 10,
+                )
+            )
+            price, index = close, index + 1
+        moment += timedelta(minutes=5)
+    return rates
+
+
+def test_weekend_gaps_are_reported_but_do_not_quarantine(tmp_path):
+    """A closed market is normal structure, not corrupt data."""
+    rates = session_rates()
+    provider = Mt5MarketDataProvider(mt5_module=FakeMt5(rates=rates))
+    service, _, _ = build_service(tmp_path, provider=provider)
+
+    result = service.ingest("XAUUSD", "5M", str(len(rates)))
+
+    assert result.candle_count == len(rates)
+    assert not result.quarantined  # the run must not be thrown away
+    codes = {issue.code for issue in result.quality_report.issues}
+    assert "GAP_DETECTED" in codes  # but it must still be reported
+    assert result.quality_report.score.overall > 99
+
+
+def test_a_weekend_shaped_series_backtests_end_to_end(tmp_path):
+    """Gaps must not break the clock, the queue or the accounting."""
+    from ShadBotTrader.application.services.backtest_service import BacktestService
+    from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+    from ShadBotTrader.infrastructure.simulation import MomentumPredictionSource
+
+    rates = session_rates(weeks=2)
+    provider = Mt5MarketDataProvider(mt5_module=FakeMt5(rates=rates))
+    service, store, _ = build_service(tmp_path, provider=provider)
+    service.ingest("XAUUSD", "5M", str(len(rates)))
+    candles = store.query(Symbol("XAUUSD"), Timeframe("5M"))
+
+    backtest = BacktestService(
+        configuration=SimulationConfiguration(
+            initial_capital=Decimal("100"),
+            spread=Decimal("4"),
+            commission_rate=Decimal("0.0001"),
+            warmup_bars=20,
+        ),
+        base_quantity=Decimal("0.01"),
+    )
+    result = backtest.run(
+        "weekend",
+        Symbol("XAUUSD"),
+        Timeframe("5M"),
+        candles,
+        prediction_source=MomentumPredictionSource(lookback=6),
+        record_replay=True,
+    )
+
+    assert result.bars_processed == len(candles)
+    # the equity curve stayed chronological across every weekend hole
+    stamps = [point.timestamp.value for point in result.equity_curve.points]
+    assert stamps == sorted(stamps)
+    assert result.tape is not None
+    assert len(result.tape.bars) == len(candles)
+
+
+def test_the_broker_spread_of_each_bar_is_preserved(tmp_path):
+    """Rollover spreads matter for cost modelling — they must survive."""
+    rates = session_rates(weeks=1)
+    provider = Mt5MarketDataProvider(mt5_module=FakeMt5(rates=rates))
+
+    records = provider.fetch_candles("XAUUSD", "5M", str(len(rates)))
+
+    spreads = {record.extra["spread"] for record in records}
+    assert spreads == {10, 45}
+
+
+def test_a_sunday_opening_jump_is_flagged_not_silently_accepted(tmp_path):
+    """A large weekend gap-open is real, but the analyser must notice it."""
+    rates = session_rates(weeks=1)
+    jumped = []
+    for rate in rates:
+        moment = datetime.fromtimestamp(rate["time"], tz=timezone.utc)
+        if moment.weekday() >= 3:  # everything from Thursday gaps upward
+            jumped.append(
+                make_rate(
+                    time=rate["time"],
+                    open_=rate["open"] + 120,
+                    high=rate["high"] + 120,
+                    low=rate["low"] + 120,
+                    close=rate["close"] + 120,
+                    tick_volume=rate["tick_volume"],
+                    spread=rate["spread"],
+                )
+            )
+        else:
+            jumped.append(rate)
+
+    provider = Mt5MarketDataProvider(mt5_module=FakeMt5(rates=jumped))
+    service, _, _ = build_service(tmp_path, provider=provider)
+
+    result = service.ingest("XAUUSD", "5M", str(len(jumped)))
+
+    assert result.candle_count == len(jumped)
+    assert not result.quarantined  # a real jump is not corruption

@@ -80,6 +80,7 @@ tr:last-child td { border-bottom: none; }
 footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border);
          color: var(--muted); font-size: 11px; }
 code { background: var(--bg); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+a { color: var(--accent); }
 .actions { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .action { background: var(--bg); border: 1px solid var(--border);
           border-radius: 6px; padding: 14px; display: flex; flex-direction: column; }
@@ -488,12 +489,13 @@ def render_dashboard(
 <body>
 <header>
   <h1>ShadBotTrader</h1>
-  <div class="sub">read-only dashboard · {session_note} · generated {_e(view.generated_at)}</div>
+  <div class="sub">{session_note} · generated {_e(view.generated_at)}
+    · <a class="accent" href="/replay">watch the last backtest replay</a></div>
 </header>
 {body}
 <footer>
-  Presentation layer only — this page displays stored state and cannot trade,
-  train or modify anything.
+  Presentation layer only — this page dispatches commands and displays stored
+  state; every calculation happens in the application services.
 </footer>
 </body>
 </html>"""

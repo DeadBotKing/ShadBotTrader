@@ -21,6 +21,10 @@ SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from ShadBotTrader.application.persistence_context import (  # noqa: E402
+    add_persistence_arguments,
+    context_from_args,
+)
 from ShadBotTrader.application.services.optimisation_service import (  # noqa: E402
     OptimisationService,
     default_baseline,
@@ -75,6 +79,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="show why in-sample ranking cannot be trusted",
     )
+    add_persistence_arguments(parser, prefix="optimisation")
     return parser.parse_args(argv)
 
 
@@ -100,8 +105,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     candles = load_candles()
 
+    context = context_from_args(args, prefix="optimisation")
+
     print("=== Self-learning demo (Sprint P7) ===")
     print(f"Dataset: {len(candles)} candles of {SYMBOL} {TIMEFRAME}")
+    print(f"Storage: {context.description}")
 
     generator = (
         RandomSearchGenerator(count=args.random, seed=args.seed)
@@ -130,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         generator=generator,
         validate_top_n=args.top,
+        persistence=context,
     )
 
     space = {
@@ -199,6 +208,11 @@ def main(argv: list[str] | None = None) -> int:
     print("  * no candidate was promoted without out-of-sample evidence")
     print("  * the winner was ranked on validation folds, not training data")
     print("  * self-learning produced a recommendation, not a live change")
+    print()
+    for line in context.summary_lines():
+        print(f"  {line}")
+    context.close()
+
     print("\nSelf-learning demo finished successfully.")
     return 0
 

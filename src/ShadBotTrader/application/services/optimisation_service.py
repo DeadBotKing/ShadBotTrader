@@ -13,6 +13,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Mapping, Optional, Sequence
 
+from ShadBotTrader.application.persistence_context import PersistenceContext
 from ShadBotTrader.domain.learning.experiment import LearningExperiment, WalkForwardPlan
 from ShadBotTrader.domain.learning.objective import (
     LearningObjective,
@@ -24,6 +25,7 @@ from ShadBotTrader.domain.learning.parameter_space import (
 )
 from ShadBotTrader.domain.learning.ports import (
     CandidateGenerator,
+    ExperimentRepository,
     LearningMemory,
     OptimisationReporter,
 )
@@ -35,10 +37,6 @@ from ShadBotTrader.infrastructure.learning.backtest_evaluator import (
     BacktestCandidateEvaluator,
 )
 from ShadBotTrader.infrastructure.learning.generators import GridSearchGenerator
-from ShadBotTrader.infrastructure.learning.learning_memory import (
-    InMemoryExperimentRepository,
-    InMemoryLearningMemory,
-)
 from ShadBotTrader.infrastructure.learning.optimizer import (
     OptimisationResult,
     WalkForwardOptimizer,
@@ -57,6 +55,7 @@ class OptimisationService:
         promotion_policy: Optional[PromotionPolicy] = None,
         generator: Optional[CandidateGenerator] = None,
         validate_top_n: int = 3,
+        persistence: Optional[PersistenceContext] = None,
     ) -> None:
         self._symbol = symbol
         self._timeframe = timeframe
@@ -66,10 +65,10 @@ class OptimisationService:
         self._generator = generator or GridSearchGenerator()
         self._validate_top_n = validate_top_n
 
-        # Typed as the port so a durable implementation can be swapped in
-        # (Sprint P8 added SqliteLearningMemory behind the same contract).
-        self.memory: LearningMemory = InMemoryLearningMemory()
-        self.experiments = InMemoryExperimentRepository()
+        # The context decides in-memory vs durable; both satisfy the port.
+        context = persistence or PersistenceContext()
+        self.memory: LearningMemory = context.learning_memory()
+        self.experiments: ExperimentRepository = context.experiment_repository()
 
     @property
     def objective(self) -> LearningObjective:

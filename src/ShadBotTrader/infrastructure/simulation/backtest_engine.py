@@ -26,6 +26,7 @@ from ShadBotTrader.application.services.trading_decision_service import (
     TradingDecisionService,
 )
 from ShadBotTrader.domain.execution.market_view import ExecutionContext
+from ShadBotTrader.domain.execution.ports import ReportingLedger
 from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.timeframe import Timeframe
 from ShadBotTrader.domain.simulation.clock import SimulationClock
@@ -44,6 +45,14 @@ from ShadBotTrader.domain.simulation.ports import (
     SimulationMarketDataProvider,
     SimulationReporter,
 )
+from ShadBotTrader.domain.simulation.replay import (
+    MARKER_ADJUST,
+    MARKER_ENTRY,
+    MARKER_EXIT,
+    ReplayRecorder,
+    ReplayTape,
+    TradeMarker,
+)
 from ShadBotTrader.domain.simulation.session import (
     SimulationConfiguration,
     SimulationSession,
@@ -53,7 +62,6 @@ from ShadBotTrader.domain.strategy.strategy_context import (
     PredictionView,
     StrategyContext,
 )
-from ShadBotTrader.infrastructure.execution.portfolio_ledger import InMemoryPortfolioLedger
 
 
 @dataclass(frozen=True)
@@ -67,6 +75,10 @@ class BacktestResult:
     bars_processed: int
     intents_created: int
     fills: int
+    #: Bar-by-bar recording, present only when the run was asked to record
+    #: one (``record_replay=True``). A sweep of hundreds of simulations
+    #: should not pay for a tape nobody reads.
+    tape: Optional[ReplayTape] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -89,10 +101,11 @@ class BacktestEngine:
         prediction_source: PredictionSource,
         trading_service: TradingDecisionService,
         execution_service: ExecutionService,
-        ledger: InMemoryPortfolioLedger,
+        ledger: ReportingLedger,
         timeframe: Timeframe,
         model_id: str = "gold_direction",
         reporter: Optional[SimulationReporter] = None,
+        record_replay: bool = False,
     ) -> None:
         self._session = session
         self._data = data_provider
@@ -121,6 +134,17 @@ class BacktestEngine:
         self._last_fees = Decimal("0")
         self._open_bar: Optional[str] = None
 
+        self._recorder: Optional[ReplayRecorder] = None
+        if record_replay:
+            symbol = str(data_provider.events()[0].symbol) if events else ""
+            self._recorder = ReplayRecorder(
+                session_id=session.session_id,
+                symbol=symbol,
+                timeframe=str(timeframe),
+                starting_equity=session.configuration.initial_capital,
+            )
+        self._last_prediction: Optional[float] = None
+
     # -- state -------------------------------------------------------------
     @property
     def clock(self) -> SimulationClock:
@@ -137,6 +161,15 @@ class BacktestEngine:
     @property
     def pending_events(self) -> int:
         return len(self._queue)
+
+    @property
+    def tape(self) -> Optional[ReplayTape]:
+        """The replay recorded so far, or None when recording is off.
+
+        Available mid-run too, so a caller driving ``step()`` by hand can
+        watch the tape grow.
+        """
+        return self._recorder.build() if self._recorder is not None else None
 
     # -- execution ---------------------------------------------------------
     def step(self) -> Optional[MarketEvent]:
@@ -177,6 +210,7 @@ class BacktestEngine:
             bars_processed=self._bars,
             intents_created=self._intents,
             fills=self._fills,
+            tape=self.tape,
         )
 
     # -- one bar -----------------------------------------------------------
@@ -193,12 +227,15 @@ class BacktestEngine:
         position = self._ledger.position(event.symbol)
         warmup_done = self._bars > self._session.configuration.warmup_bars
 
+        self._last_prediction = None
         if warmup_done:
             value = self._predictions.predict(event)
+            self._last_prediction = value
             if value is not None:
                 self._trade_bar(event, value, position)
 
         self._record_equity(event, candle.close)
+        self._record_replay_bar(event)
 
     def _trade_bar(self, event: MarketEvent, value: float, position: Any) -> None:
         now = self._clock.current_time
@@ -247,10 +284,80 @@ class BacktestEngine:
             return
 
         self._fills += 1
-        self._capture_trade(event, was_flat)
+        realized_delta, fee_delta = self._capture_trade(event, was_flat)
+        self._mark_fill(event, outcome=result, realized=realized_delta, fees=fee_delta)
 
-    def _capture_trade(self, event: MarketEvent, was_flat: bool) -> None:
-        """Turn a realised PnL change into a completed TradeRecord."""
+    def _mark_fill(
+        self,
+        event: MarketEvent,
+        outcome: Any,
+        realized: Decimal,
+        fees: Decimal,
+    ) -> None:
+        """Record the fill on the replay tape, if one is being recorded."""
+        recorder = self._recorder
+        execution = outcome.result
+        if recorder is None or execution is None:
+            return
+
+        average = execution.average_fill_price
+        if average is None:
+            return
+
+        position_after = self._ledger.position(event.symbol).signed_quantity
+        if position_after == 0:
+            kind = MARKER_EXIT
+        elif outcome.intent is not None and outcome.intent.intent_type.value == "exit_position":
+            # A partial exit still leaves exposure behind.
+            kind = MARKER_ADJUST
+        elif realized != 0:
+            kind = MARKER_ADJUST
+        else:
+            kind = MARKER_ENTRY
+
+        recorder.mark(
+            TradeMarker(
+                bar_index=self._bars - 1,
+                timestamp=str(self._clock.current_time),
+                side=outcome.order.side.value if outcome.order is not None else "",
+                kind=kind,
+                price=average.amount,
+                quantity=execution.filled_quantity,
+                position_after=position_after,
+                realized_pnl=realized if kind != MARKER_ENTRY else None,
+                fees=fees,
+                reason=outcome.intent.reason if outcome.intent is not None else "",
+            )
+        )
+
+    def _record_replay_bar(self, event: MarketEvent) -> None:
+        """Append the finished bar to the tape."""
+        recorder = self._recorder
+        candle = event.candle
+        if recorder is None or candle is None:
+            return
+
+        point = self._equity_curve.points[-1] if self._equity_curve.points else None
+        recorder.record_bar(
+            index=self._bars - 1,
+            timestamp=str(self._clock.current_time),
+            open_price=candle.open.amount,
+            high=candle.high.amount,
+            low=candle.low.amount,
+            close=candle.close.amount,
+            volume=candle.volume,
+            equity=point.equity if point is not None else self._ledger.cash.amount,
+            cash=self._ledger.cash.amount,
+            position=self._ledger.position(event.symbol).signed_quantity,
+            prediction=self._last_prediction,
+        )
+
+    def _capture_trade(self, event: MarketEvent, was_flat: bool) -> tuple[Decimal, Decimal]:
+        """Turn a realised PnL change into a completed TradeRecord.
+
+        Returns the realised PnL and the fees this fill alone produced, so
+        the caller can attach them to the replay tape without recomputing.
+        """
         if was_flat:
             self._open_bar = str(self._clock.current_time)
 
@@ -273,6 +380,7 @@ class BacktestEngine:
 
         self._last_realized = realized
         self._last_fees = fees
+        return delta, fee_delta
 
     def _record_equity(self, event: MarketEvent, close: Price) -> None:
         prices = {str(event.symbol): close}

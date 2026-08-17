@@ -20,6 +20,10 @@ SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from ShadBotTrader.application.persistence_context import (  # noqa: E402
+    add_persistence_arguments,
+    context_from_args,
+)
 from ShadBotTrader.application.services.backtest_service import BacktestService  # noqa: E402
 from ShadBotTrader.data_cli import build_service as build_data_service  # noqa: E402
 from ShadBotTrader.data_cli import generate_sample  # noqa: E402
@@ -57,6 +61,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="run the same data with and without costs, side by side",
     )
+    add_persistence_arguments(parser, prefix="backtest")
     return parser.parse_args(argv)
 
 
@@ -75,7 +80,12 @@ def load_candles():
     return candles
 
 
-def build(args: argparse.Namespace, spread: float, commission: float) -> BacktestService:
+def build(
+    args: argparse.Namespace,
+    spread: float,
+    commission: float,
+    persistence=None,
+) -> BacktestService:
     return BacktestService(
         configuration=SimulationConfiguration(
             initial_capital=Decimal(str(args.capital)),
@@ -89,6 +99,7 @@ def build(args: argparse.Namespace, spread: float, commission: float) -> Backtes
         risk_policy=RiskPolicy(max_open_positions=3, min_confidence=0.5),
         base_quantity=Decimal(str(args.quantity)),
         strategy_min_confidence=args.min_confidence,
+        persistence=persistence,
     )
 
 
@@ -96,8 +107,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     candles = load_candles()
 
+    context = context_from_args(args, prefix="backtest")
+
     print("=== Backtest demo (Sprint P6) ===")
     print(f"Dataset: {len(candles)} candles of {SYMBOL} {TIMEFRAME}")
+    print(f"Storage: {context.description}")
 
     if args.compare:
         print("\nRunning the same data twice: frictionless vs realistic costs.\n")
@@ -132,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\nCosts are what separate a backtest from a fantasy.")
         return 0
 
-    service = build(args, args.spread, args.commission)
+    service = build(args, args.spread, args.commission, persistence=context)
     result = service.run(
         "demo",
         Symbol(SYMBOL),
@@ -173,6 +187,12 @@ def main(argv: list[str] | None = None) -> int:
     print("\nInvariants verified:")
     print("  * every intent passed the risk gate")
     print("  * the clock only ever moved forward, driven by event time")
+
+    print()
+    for line in context.summary_lines():
+        print(f"  {line}")
+    context.close()
+
     print("\nBacktest demo finished successfully.")
     return 0
 

@@ -12,10 +12,12 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Optional, Sequence
 
+from ShadBotTrader.application.persistence_context import PersistenceContext
 from ShadBotTrader.application.services.execution_service import ExecutionService
 from ShadBotTrader.application.services.trading_decision_service import (
     TradingDecisionService,
 )
+from ShadBotTrader.domain.execution.ports import ExecutionJournal, ReportingLedger
 from ShadBotTrader.domain.market.candle import Candle
 from ShadBotTrader.domain.market.symbol import Symbol
 from ShadBotTrader.domain.market.timeframe import Timeframe
@@ -25,11 +27,10 @@ from ShadBotTrader.domain.simulation.session import (
     SimulationConfiguration,
     SimulationSession,
 )
+from ShadBotTrader.domain.strategy.ports import DecisionJournal
 from ShadBotTrader.domain.strategy.risk_policy import RiskPolicy
 from ShadBotTrader.infrastructure.execution import (
     DefaultIntentResolver,
-    InMemoryExecutionJournal,
-    InMemoryPortfolioLedger,
     SimulatedExecutionVenue,
 )
 from ShadBotTrader.infrastructure.simulation.backtest_engine import (
@@ -46,7 +47,6 @@ from ShadBotTrader.infrastructure.trading import (
     AiDirectionalStrategy,
     DefaultIntentFactory,
     DefaultSignalValidator,
-    InMemoryDecisionJournal,
     PolicyRiskGate,
     PositionAwareDecisionEngine,
 )
@@ -62,17 +62,21 @@ class BacktestService:
         base_quantity: Decimal = Decimal("1"),
         strategy_min_confidence: float = 0.55,
         allow_reversal: bool = False,
+        persistence: Optional[PersistenceContext] = None,
     ) -> None:
         self._configuration = configuration or SimulationConfiguration()
         self._risk_policy = risk_policy or RiskPolicy()
         self._base_quantity = base_quantity
         self._strategy_min_confidence = strategy_min_confidence
         self._allow_reversal = allow_reversal
+        # Defaults to in-memory: a backtest sweep must not write to disk
+        # unless the caller explicitly asked for it.
+        self._persistence = persistence or PersistenceContext()
 
         # exposed so a caller can inspect the books after a run
-        self.ledger: Optional[InMemoryPortfolioLedger] = None
-        self.decision_journal: Optional[InMemoryDecisionJournal] = None
-        self.execution_journal: Optional[InMemoryExecutionJournal] = None
+        self.ledger: Optional[ReportingLedger] = None
+        self.decision_journal: Optional[DecisionJournal] = None
+        self.execution_journal: Optional[ExecutionJournal] = None
 
     def build(
         self,
@@ -82,6 +86,7 @@ class BacktestService:
         candles: Sequence[Candle],
         prediction_source: Optional[PredictionSource] = None,
         reporter: Optional[SimulationReporter] = None,
+        record_replay: bool = False,
     ) -> BacktestEngine:
         """Wire every component and return the ready engine."""
         if not candles:
@@ -96,12 +101,10 @@ class BacktestService:
             symbol=symbol, candles=ordered, spread=config.spread
         )
 
-        ledger = InMemoryPortfolioLedger(
-            currency=config.base_currency,
-            starting_cash=config.initial_capital,
-        )
-        decision_journal = InMemoryDecisionJournal()
-        execution_journal = InMemoryExecutionJournal()
+        self._persistence.currency = config.base_currency
+        ledger = self._persistence.portfolio_ledger(config.initial_capital)
+        decision_journal = self._persistence.decision_journal()
+        execution_journal = self._persistence.execution_journal()
 
         trading = TradingDecisionService(
             strategies=[AiDirectionalStrategy(min_confidence=self._strategy_min_confidence)],
@@ -144,6 +147,7 @@ class BacktestService:
             ledger=ledger,
             timeframe=timeframe,
             reporter=reporter,
+            record_replay=record_replay,
         )
 
     def run(
@@ -154,6 +158,7 @@ class BacktestService:
         candles: Sequence[Candle],
         prediction_source: Optional[PredictionSource] = None,
         reporter: Optional[SimulationReporter] = None,
+        record_replay: bool = False,
     ) -> BacktestResult:
         """Build and immediately run a backtest."""
         engine = self.build(
@@ -163,5 +168,6 @@ class BacktestService:
             candles=candles,
             prediction_source=prediction_source,
             reporter=reporter,
+            record_replay=record_replay,
         )
         return engine.run()

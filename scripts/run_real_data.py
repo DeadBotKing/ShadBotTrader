@@ -63,6 +63,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--skip-ingest", action="store_true", help="reuse data already stored locally"
     )
     parser.add_argument("--skip-optimise", action="store_true", help="stop after the backtest")
+    parser.add_argument(
+        "--auto-symbol",
+        action="store_true",
+        help="accept the closest broker symbol when the exact name is absent",
+    )
     return parser.parse_args(argv)
 
 
@@ -116,26 +121,31 @@ def main(argv: list[str] | None = None) -> int:
 
         # ------------------------------------------------------ step 2 ---
         rule("STEP 2/5 - Symbol check")
+        from ShadBotTrader.infrastructure.data.mt5_symbol_resolver import resolve
+
         try:
-            matches = provider.available_symbols(args.symbol)
+            everything = provider.available_symbols()
         except Exception as error:
             provider.shutdown()
             return fail(f"Symbol lookup failed: {error}")
 
-        if args.symbol in matches:
+        report = resolve(args.symbol, everything)
+        best = report.best
+
+        if best is not None and best.is_exact:
             print(f"  [OK] '{args.symbol}' is available")
+        elif best is not None and args.auto_symbol:
+            # Brokers rename instruments freely; with --auto-symbol the
+            # closest match is used, but never silently — it is printed.
+            print(f"  [!]  '{args.symbol}' not found; using '{best.name}'")
+            print(f"       reason : {best.reason}")
+            args.symbol = best.name
         else:
             provider.shutdown()
-            suggestions = matches[:10] or ["(none)"]
-            return fail(
-                f"'{args.symbol}' was not found at this broker.",
-                "Brokers use different names (XAUUSD, XAUUSD.i, GOLD, ...).\n"
-                f"  Closest matches: {', '.join(suggestions)}\n\n"
-                "  List everything with:\n"
-                "      shadbot-data mt5-symbols --pattern XAU\n\n"
-                "  If the list is empty, make the symbol visible in the MT5\n"
-                "  Market Watch window (right-click -> Show All).",
-            )
+            hint = "\n  ".join(report.advice())
+            if best is not None:
+                hint += "\n\n  Or re-run with --auto-symbol to accept it automatically."
+            return fail(f"'{args.symbol}' was not found at this broker.", hint)
 
         # ------------------------------------------------------ step 3 ---
         rule("STEP 3/5 - Ingest real price history")

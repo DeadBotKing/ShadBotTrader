@@ -9,10 +9,12 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Wire persistence into the remaining demos and CLIs with a --persist "
-    "flag, so backtests and optimisations land in the database and show up "
-    "on the dashboard without extra wiring. After that: Phase 24 "
-    "(deployment) or richer charts once per-bar equity is stored."
+    "Model quality: the backtester still uses MomentumPredictionSource, a "
+    "deliberate baseline — the replay now makes every one of its trades "
+    "visible, and on random data they all lose. Feeding the trained WaveNet "
+    "and the 109-feature catalogue into the simulation is the remaining path "
+    "to a strategy that could be profitable, on real MT5 data rather than "
+    "noise. Alternatively Phase 24 (deployment) to run continuously."
 )
 
 KNOWN_ISSUES = [

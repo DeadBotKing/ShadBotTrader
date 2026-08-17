@@ -9,10 +9,12 @@ over a short price path, then prints the resulting book: positions,
 realised and unrealised PnL, fees and the transaction history.
 
     python scripts/run_execution.py
+    python scripts/run_execution.py --persist    # keep the result
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -23,6 +25,10 @@ SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from ShadBotTrader.application.persistence_context import (  # noqa: E402
+    add_persistence_arguments,
+    context_from_args,
+)
 from ShadBotTrader.application.services.execution_service import (  # noqa: E402
     ExecutionService,
 )
@@ -45,15 +51,12 @@ from ShadBotTrader.domain.strategy.strategy_context import (  # noqa: E402
 )
 from ShadBotTrader.infrastructure.execution import (  # noqa: E402
     DefaultIntentResolver,
-    InMemoryExecutionJournal,
-    InMemoryPortfolioLedger,
     SimulatedExecutionVenue,
 )
 from ShadBotTrader.infrastructure.trading import (  # noqa: E402
     AiDirectionalStrategy,
     DefaultIntentFactory,
     DefaultSignalValidator,
-    InMemoryDecisionJournal,
     PolicyRiskGate,
     PositionAwareDecisionEngine,
 )
@@ -74,18 +77,24 @@ PATH = [
 ]
 
 
-def main() -> int:
-    print("=== Execution & Portfolio demo (Sprint P5) ===")
-    print("prediction -> strategy -> risk gate -> intent -> venue -> portfolio\n")
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Execution & Portfolio demo.")
+    add_persistence_arguments(parser, prefix="execution")
+    args = parser.parse_args(argv)
+    context = context_from_args(args, prefix="execution")
 
-    ledger = InMemoryPortfolioLedger(currency="USD", starting_cash=STARTING_CASH)
+    print("=== Execution & Portfolio demo (Sprint P5) ===")
+    print("prediction -> strategy -> risk gate -> intent -> venue -> portfolio")
+    print(f"Storage: {context.description}\n")
+
+    ledger = context.portfolio_ledger(STARTING_CASH)
     venue = SimulatedExecutionVenue(
         slippage_rate=Decimal("0.0002"),
         commission_rate=Decimal("0.0001"),
         currency="USD",
     )
-    decision_journal = InMemoryDecisionJournal()
-    execution_journal = InMemoryExecutionJournal()
+    decision_journal = context.decision_journal()
+    execution_journal = context.execution_journal()
 
     trading = TradingDecisionService(
         strategies=[AiDirectionalStrategy(min_confidence=0.55)],
@@ -210,6 +219,11 @@ def main() -> int:
     print("\nInvariants verified:")
     print("  * every intent passed the risk gate")
     print("  * every booked position came from a real fill")
+    print()
+    for line in context.summary_lines():
+        print(f"  {line}")
+    context.close()
+
     print("\nExecution demo finished successfully.")
     return 0
 

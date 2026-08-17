@@ -20,12 +20,14 @@ Boundaries these contracts protect:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from ShadBotTrader.domain.execution.fill import ExecutionResult
 from ShadBotTrader.domain.execution.market_view import ExecutionContext
+from ShadBotTrader.domain.execution.money import Money
 from ShadBotTrader.domain.execution.position_state import PositionState
 from ShadBotTrader.domain.execution.resolved_order import ResolvedOrder
+from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.symbol import Symbol
 from ShadBotTrader.domain.strategy.trading_intent import TradingIntent
 
@@ -81,6 +83,40 @@ class PortfolioLedger(ABC):
     @abstractmethod
     def positions(self) -> List[PositionState]:
         """Every non-flat position."""
+
+
+class ReportingLedger(PortfolioLedger, ABC):
+    """A ledger that can also report cash and profit-and-loss.
+
+    ``PortfolioLedger`` is the minimum a venue-facing component needs:
+    apply fills, read a position. Reporting components (the backtest
+    engine, the dashboard) additionally need the money view, so it is
+    declared here rather than assumed — that is what let a concrete
+    class leak into the engine's signature before.
+    """
+
+    @property
+    @abstractmethod
+    def cash(self) -> "Money":
+        """Cash after realised PnL and fees."""
+
+    @property
+    @abstractmethod
+    def realized_pnl(self) -> "Money":
+        """Gross realised PnL across every symbol."""
+
+    @property
+    @abstractmethod
+    def total_fees(self) -> "Money":
+        """Every fee charged so far."""
+
+    @abstractmethod
+    def unrealized_pnl(self, prices: Dict[str, "Price"]) -> "Money":
+        """Mark open positions against ``prices``."""
+
+    @abstractmethod
+    def equity(self, prices: Dict[str, "Price"]) -> "Money":
+        """Cash plus unrealised PnL."""
 
 
 class ExecutionJournal(ABC):

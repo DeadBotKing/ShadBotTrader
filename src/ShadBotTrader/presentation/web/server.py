@@ -4,6 +4,7 @@ Built on the standard library so the GUI adds no dependency.
 
 Routes
     GET  /             the dashboard page
+    GET  /replay       the last recorded backtest replay, bar by bar
     GET  /api/state    the same data as JSON
     GET  /api/status   what the command bus is doing right now
     GET  /health       liveness probe
@@ -21,6 +22,7 @@ restores the strictly read-only behaviour.
 from __future__ import annotations
 
 import json
+from html import escape as html_escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Optional
@@ -38,6 +40,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     database_path: str = "shadbot.db"
     storage_root: str = "datasets"
+    replay_path: str = "replay.html"
     allow_commands: bool = True
     bus: Optional[CommandBus] = None
     server_version = "ShadBotTrader/1.1"
@@ -51,6 +54,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         try:
             if route.path in ("/", "/index.html"):
                 self._send_html(self._page(session))
+            elif route.path == "/replay":
+                self._send_html(self._replay())
             elif route.path == "/api/state":
                 self._send_json(self._state(session))
             elif route.path == "/api/status":
@@ -141,6 +146,25 @@ class DashboardHandler(BaseHTTPRequestHandler):
             busy_seconds=bus.running_for_seconds if bus else 0.0,
         )
 
+    def _replay(self) -> str:
+        """Serve the recorded replay, or explain how to record one."""
+        path = Path(self.replay_path)
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+        return (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<title>No replay yet</title>"
+            "<style>body{background:#0e1117;color:#e6edf3;font-family:ui-monospace,"
+            "monospace;padding:32px}a{color:#58a6ff}code{background:#161b22;"
+            "padding:2px 6px;border-radius:4px}</style></head><body>"
+            "<h1>No replay recorded yet</h1>"
+            "<p>Press <b>Record a replay</b> on the dashboard, or run:</p>"
+            "<p><code>python -m ShadBotTrader.backtest_cli replay --out "
+            f"{html_escape(str(path))}</code></p>"
+            "<p><a href='/'>&#8592; back to the dashboard</a></p>"
+            "</body></html>"
+        )
+
     def _state(self, session: Optional[str]) -> dict[str, Any]:
         gateway = DashboardGateway.open(self.database_path)
         view = gateway.dashboard(session)
@@ -224,6 +248,7 @@ def create_server(
     port: int = 8080,
     allow_commands: bool = True,
     storage_root: str | Path = "datasets",
+    replay_path: str | Path = "replay.html",
 ) -> ThreadingHTTPServer:
     """Build the dashboard server.
 
@@ -232,7 +257,9 @@ def create_server(
     read-only viewer.
     """
     bus = (
-        CommandBus.with_defaults(str(database_path), str(storage_root)) if allow_commands else None
+        CommandBus.with_defaults(str(database_path), str(storage_root), str(replay_path))
+        if allow_commands
+        else None
     )
     handler = type(
         "BoundDashboardHandler",
@@ -240,6 +267,7 @@ def create_server(
         {
             "database_path": str(database_path),
             "storage_root": str(storage_root),
+            "replay_path": str(replay_path),
             "allow_commands": allow_commands,
             "bus": bus,
         },
@@ -253,15 +281,17 @@ def serve(
     port: int = 8080,
     allow_commands: bool = True,
     storage_root: str | Path = "datasets",
+    replay_path: str | Path = "replay.html",
 ) -> None:
     """Run the dashboard until interrupted."""
-    server = create_server(database_path, host, port, allow_commands, storage_root)
+    server = create_server(database_path, host, port, allow_commands, storage_root, replay_path)
     shown = "localhost" if host in ("0.0.0.0", "") else host
 
     print("=== ShadBotTrader dashboard ===")
     print(f"  database : {database_path}")
     print(f"  url      : http://{shown}:{port}")
     print(f"  api      : http://{shown}:{port}/api/state")
+    print(f"  replay   : http://{shown}:{port}/replay")
     if allow_commands:
         print(f"  actions  : {len(descriptors())} buttons enabled (POST /run)")
         print("             the GUI dispatches intent; services do the work")

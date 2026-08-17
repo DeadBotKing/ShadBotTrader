@@ -2,35 +2,35 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Current phase: Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
-- Generated at: 2026-08-16T16:12:28.107902+00:00
-- Python version: 3.13.14
+- Current phase: Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed (plugin registry, layered config with secret redaction, structured contextual logging)
+- Generated at: 2026-08-17T05:35:10.315050+00:00
+- Python version: 3.12.10
 - Git branch: main
-- Git commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
+- Git commit: 8fbd24ede30c3459c660e724766cd16d50e5aa41
 - Dirty: yes
 
 ## Statistics
 
-- Source files: 248
-- Test files: 74
-- Documentation files: 43
-- Legacy files: 175
-- Total Python lines: 74179
-- Modules: 322
-- Classes: 429
-- Functions: 2331
+- Source files: 279
+- Test files: 94
+- Documentation files: 48
+- Legacy files: 176
+- Total Python lines: 88931
+- Modules: 373
+- Classes: 565
+- Functions: 3283
 
 ## External dependencies (top 20)
 
-- pytest: used by 39 module(s)
-- tests: used by 10 module(s)
-- numpy: used by 8 module(s)
+- pytest: used by 54 module(s)
+- numpy: used by 11 module(s)
+- tests: used by 11 module(s)
 - pandas: used by 7 module(s)
+- tensorflow: used by 5 module(s)
 - conftest: used by 4 module(s)
-- tensorflow: used by 3 module(s)
+- keras: used by 2 module(s)
 - pyarrow: used by 2 module(s)
+- yaml: used by 2 module(s)
 - MetaTrader5: used by 1 module(s)
-- keras: used by 1 module(s)
 - pywt: used by 1 module(s)
 - tomli: used by 1 module(s)
-- yaml: used by 1 module(s)

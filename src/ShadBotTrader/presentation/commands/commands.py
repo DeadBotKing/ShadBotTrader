@@ -38,6 +38,7 @@ class CommandKind(str, Enum):
     COMPUTE_FEATURES = "compute_features"
     TRAIN_MODEL = "train_model"
     RUN_BACKTEST = "run_backtest"
+    RECORD_REPLAY = "record_replay"
     RUN_OPTIMISATION = "run_optimisation"
     RUN_TRADING_CYCLE = "run_trading_cycle"
     REFRESH_PROJECT_STATE = "refresh_project_state"

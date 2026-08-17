@@ -16,11 +16,18 @@ from ShadBotTrader.domain.common.errors import ValidationError
 
 @dataclass(frozen=True)
 class WindowedSample:
-    """One (input, target) training/inference sample."""
+    """One (input, target) training/inference sample.
+
+    ``target`` carries the single label of the classification path.
+    ``targets`` carries several continuous labels for the Phase 29
+    regression head (future high and low offsets); it stays ``None`` for
+    single-target callers so existing behaviour is untouched.
+    """
 
     features: List[List[float]]
     target: Optional[float]
     target_index: int
+    targets: Optional[List[float]] = None
 
 
 def make_windows(
@@ -112,6 +119,78 @@ def build_samples(
             features=minmax_scale_window(sample.features),
             target=sample.target,
             target_index=sample.target_index,
+        )
+        for sample in samples
+    ]
+
+
+def make_multi_target_windows(
+    series: Sequence[Sequence[float]],
+    window_size: int,
+    target_columns: Sequence[int],
+    horizon: int = 0,
+) -> List[WindowedSample]:
+    """Causal windows with several continuous targets (Phase 29).
+
+    Used by the range model, which predicts two values at once (the
+    future high and low offsets). Every target column is removed from
+    the feature rows: the labels were pre-computed from future bars, so
+    leaving them in the input would hand the model the answer.
+    """
+    if window_size < 1:
+        raise ValidationError("window_size must be >= 1")
+    if not target_columns:
+        raise ValidationError("target_columns must not be empty")
+    if not series:
+        raise ValidationError("series must not be empty")
+
+    width = len(series[0])
+    for column in target_columns:
+        if column < 0 or column >= width:
+            raise ValidationError(f"target column {column} out of range (width {width})")
+
+    drop = set(target_columns)
+    keep = [index for index in range(width) if index not in drop]
+
+    samples: List[WindowedSample] = []
+    for end in range(window_size - 1, len(series) - horizon):
+        window = [
+            [float(row[index]) for index in keep] for row in series[end - window_size + 1 : end + 1]
+        ]
+        label_row = series[end + horizon]
+        samples.append(
+            WindowedSample(
+                features=window,
+                target=None,
+                target_index=target_columns[0],
+                targets=[float(label_row[column]) for column in target_columns],
+            )
+        )
+    return samples
+
+
+def build_multi_target_samples(
+    series: Sequence[Sequence[float]],
+    window_size: int,
+    target_columns: Sequence[int],
+    scale: bool = True,
+    horizon: int = 0,
+) -> List[WindowedSample]:
+    """Multi-target windows, optionally min-max scaled per window.
+
+    Only the *features* are scaled. The targets are already expressed as
+    price fractions and must keep their real magnitude — rescaling them
+    per window would make a 0.5% move and a 5% move look identical.
+    """
+    samples = make_multi_target_windows(series, window_size, target_columns, horizon=horizon)
+    if not scale:
+        return samples
+    return [
+        WindowedSample(
+            features=minmax_scale_window(sample.features),
+            target=sample.target,
+            target_index=sample.target_index,
+            targets=sample.targets,
         )
         for sample in samples
     ]

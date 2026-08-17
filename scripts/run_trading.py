@@ -10,10 +10,12 @@ blocked. No orders are ever created: the pipeline stops at a
 Execution Platform.
 
     python scripts/run_trading.py
+    python scripts/run_trading.py --persist    # keep the decisions
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -24,6 +26,10 @@ SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from ShadBotTrader.application.persistence_context import (  # noqa: E402
+    add_persistence_arguments,
+    context_from_args,
+)
 from ShadBotTrader.application.services.trading_decision_service import (  # noqa: E402
     TradingDecisionService,
 )
@@ -42,7 +48,6 @@ from ShadBotTrader.infrastructure.trading import (  # noqa: E402
     AiDirectionalStrategy,
     DefaultIntentFactory,
     DefaultSignalValidator,
-    InMemoryDecisionJournal,
     PolicyRiskGate,
     PositionAwareDecisionEngine,
 )
@@ -84,10 +89,16 @@ def scenario(
     return title, context
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Trading Platform demo.")
+    add_persistence_arguments(parser, prefix="trading")
+    args = parser.parse_args(argv)
+    storage = context_from_args(args, prefix="trading")
+
     print("=== Trading Platform demo (Phase 14) ===")
     print("Pipeline: strategy -> validate -> decide -> RISK GATE -> intent")
-    print("No orders are produced; the pipeline stops at a TradingIntent.\n")
+    print("No orders are produced; the pipeline stops at a TradingIntent.")
+    print(f"Storage: {storage.description}\n")
 
     policy = RiskPolicy(
         max_drawdown_percent=Decimal("15"),
@@ -96,7 +107,7 @@ def main() -> int:
         max_open_positions=3,
         min_confidence=0.5,
     )
-    journal = InMemoryDecisionJournal()
+    journal = storage.decision_journal()
     events: list[str] = []
     bus = EventBus()
     for event_name in ("SignalGenerated", "DecisionMade", "RiskRejected", "IntentCreated"):
@@ -184,6 +195,11 @@ def main() -> int:
             assert entry.verdict is not None and entry.verdict.approved
 
     print("\nInvariant verified: every intent passed the risk gate.")
+    print()
+    for line in storage.summary_lines():
+        print(f"  {line}")
+    storage.close()
+
     print("\nTrading Platform demo finished successfully.")
     return 0
 

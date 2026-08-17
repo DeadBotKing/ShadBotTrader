@@ -249,3 +249,66 @@ def test_empty_database_serves_guidance(tmp_path):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+# --------------------------------------------------------------- replay ---
+class TestReplayRoute:
+    """/replay serves the recorded player, or explains how to make one."""
+
+    def _serve(self, tmp_path, replay_name="replay.html"):
+        path = tmp_path / "replay.db"
+        Database(path).close()
+        httpd = create_server(
+            path,
+            host="127.0.0.1",
+            port=0,
+            replay_path=tmp_path / replay_name,
+        )
+        port = httpd.server_address[1]
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+        return httpd, f"http://127.0.0.1:{port}"
+
+    def test_missing_replay_explains_how_to_record_one(self, tmp_path):
+        httpd, base = self._serve(tmp_path)
+        try:
+            status, headers, body = get(f"{base}/replay")
+            assert status == 200
+            assert "text/html" in headers["Content-Type"]
+            assert "No replay recorded yet" in body
+            assert "backtest_cli replay" in body
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+    def test_a_recorded_replay_is_served_verbatim(self, tmp_path):
+        (tmp_path / "replay.html").write_text(
+            "<!DOCTYPE html><html><body>RECORDED PLAYER</body></html>",
+            encoding="utf-8",
+        )
+        httpd, base = self._serve(tmp_path)
+        try:
+            status, _, body = get(f"{base}/replay")
+            assert status == 200
+            assert "RECORDED PLAYER" in body
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+    def test_the_dashboard_links_to_the_replay(self, tmp_path):
+        httpd, base = self._serve(tmp_path)
+        try:
+            _, _, page = get(f"{base}/")
+            assert 'href="/replay"' in page
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
+
+    def test_record_replay_is_an_offered_command(self, tmp_path):
+        httpd, base = self._serve(tmp_path)
+        try:
+            _, _, body = get(f"{base}/api/status")
+            assert "record_replay" in json.loads(body)["available"]
+        finally:
+            httpd.shutdown()
+            httpd.server_close()
