@@ -3,7 +3,7 @@
 Commands:
 
     python -m ShadBotTrader.feature_cli list
-    python -m ShadBotTrader.feature_cli compute --symbol XAUUSD_i --timeframe 5M
+    python -m ShadBotTrader.feature_cli compute --symbol XAUUSD --timeframe 5M
 """
 
 from __future__ import annotations
@@ -98,7 +98,7 @@ def main(argv: List[str] | None = None) -> int:
     list_parser.set_defaults(func=cmd_list)
 
     compute = subparsers.add_parser("compute", help="compute the standard feature set")
-    compute.add_argument("--symbol", default="XAUUSD_i")
+    compute.add_argument("--symbol", default="XAUUSD")
     compute.add_argument("--timeframe", default="5M")
     compute.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))
     compute.set_defaults(func=cmd_compute)

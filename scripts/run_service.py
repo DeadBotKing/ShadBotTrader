@@ -37,7 +37,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Run ShadBotTrader continuously (Phase 24).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--symbol", default="XAUUSD_i")
+    parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument("--interval", type=float, default=300.0, help="seconds per cycle")
     parser.add_argument("--cycles", type=int, default=None, help="stop after N cycles")
     parser.add_argument("--environment", default="development")

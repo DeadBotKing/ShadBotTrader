@@ -27,6 +27,22 @@ from ShadBotTrader.presentation.commands.commands import (
 
 Handler = Callable[[Command], CommandResult]
 
+#: The two timeframes the platform trains on: 5M feeds the signal model,
+#: 1H feeds the range model (Phase 29 §2). They are fetched together
+#: because building the dataset with only one of them is not a smaller
+#: dataset — it is a missing model.
+TRAINING_TIMEFRAMES: tuple[str, ...] = ("5M", "1H")
+
+
+def parse_timeframes(raw: str) -> List[str]:
+    """Split a ``5M,1H`` field into an ordered, de-duplicated list."""
+    seen: List[str] = []
+    for token in (raw or "").replace(";", ",").replace(" ", ",").split(","):
+        cleaned = token.strip().upper()
+        if cleaned and cleaned not in seen:
+            seen.append(cleaned)
+    return seen
+
 
 # ---------------------------------------------------------------- registry --
 def descriptors() -> List[CommandDescriptor]:
@@ -36,13 +52,24 @@ def descriptors() -> List[CommandDescriptor]:
             kind=CommandKind.FETCH_MARKET_DATA,
             label="Fetch market data",
             description=(
-                "Download real candles from MetaTrader 5 and ingest them "
-                "through the Data Platform. Requires Windows with the MT5 "
-                "terminal running; falls back to the sample CSV otherwise."
+                "Download real candles from MetaTrader 5 for EVERY listed "
+                "timeframe and append them to the stored history. Requires "
+                "Windows with the MT5 terminal running — generated sample "
+                "data is never substituted for real prices."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD", hint="broker symbol"),
-                CommandField("timeframe", "Timeframe", "5M"),
+                CommandField(
+                    "symbol",
+                    "Symbol",
+                    "XAUUSD",
+                    hint="platform name; the broker's alias is applied automatically",
+                ),
+                CommandField(
+                    "timeframe",
+                    "Timeframes",
+                    "5M,1H",
+                    hint="comma separated — 5M feeds the signal model, 1H the range model",
+                ),
                 CommandField("bars", "Bars", "5000", kind="number"),
                 CommandField(
                     "max_candles",
@@ -69,7 +96,7 @@ def descriptors() -> List[CommandDescriptor]:
                 "and register the definitions in the database."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField("timeframe", "Timeframe", "5M"),
             ],
             slow=True,
@@ -99,7 +126,7 @@ def descriptors() -> List[CommandDescriptor]:
                 "chain and record the result."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("spread", "Spread", "4", kind="number"),
@@ -115,7 +142,7 @@ def descriptors() -> List[CommandDescriptor]:
                 "it exited and what each trade produced. Opens at /replay."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("spread", "Spread", "4", kind="number"),
@@ -130,7 +157,7 @@ def descriptors() -> List[CommandDescriptor]:
                 "on unseen folds, and remember the outcome."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("folds", "Validation folds", "3", kind="number"),
             ],
@@ -145,7 +172,7 @@ def descriptors() -> List[CommandDescriptor]:
                 "and persist the decision, execution and position."
             ),
             fields=[
-                CommandField("symbol", "Symbol", "XAUUSD_i"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("session", "Session", "dashboard"),
             ],
@@ -233,12 +260,14 @@ def descriptors() -> List[CommandDescriptor]:
             kind=CommandKind.BUILD_DATASET,
             label="Build training dataset",
             description=(
-                "Fetch candles for both timeframes, compute all 123 columns "
-                "and store the matrix the models train on."
+                "Build TWO separate datasets from the stored real candles: "
+                "5M for the signal model and 1H for the range model. Each "
+                "gets its own matrix of 123 columns. Real data only — "
+                "'Fetch market data' must have run for both timeframes."
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
-                CommandField("candles", "Candles", "100000", kind="number"),
+                CommandField("candles", "Candles per timeframe", "100000", kind="number"),
             ],
             slow=True,
             group="Data",
@@ -404,101 +433,118 @@ class CommandHandlers:
         return translated, f"account: {profile.name} ({canonical} -> {translated})"
 
     def fetch_market_data(self, command: Command) -> CommandResult:
-        from ShadBotTrader.data_cli import build_service, generate_sample
+        """Download real candles for every requested timeframe.
+
+        Phase 35 changed two things the operator kept tripping over:
+
+        * ``timeframe`` accepts a list (``5M,1H``) and each one is
+          fetched in the same run, because the training dataset needs
+          both and fetching one silently left the other empty.
+        * candles are stored under the **canonical** symbol even though
+          they are fetched under the broker's spelling, so ``XAUUSD`` and
+          ``XAUUSD_i`` stop being two disconnected datasets.
+        """
+        from ShadBotTrader.application.services.dataset_update_service import (
+            DatasetUpdateService,
+        )
+        from ShadBotTrader.data_cli import build_service
         from ShadBotTrader.infrastructure.data import mt5_market_data_provider as mt5mod
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD")
-        timeframe = command.text("timeframe", "5M")
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        timeframes = parse_timeframes(command.text("timeframe", "5M,1H"))
         bars = max(command.integer("bars", 5000), 1)
-        lines: List[str] = []
+        allow_gap = command.text("allow_gap", "0").strip() == "1"
+        max_candles = max(command.integer("max_candles", 100_000), 1000)
 
-        # Phase 32: fetch under the broker's name, store under ours.
+        if not timeframes:
+            return CommandResult.rejected(
+                command.kind, "No timeframe given. Use for example: 5M,1H"
+            )
+
+        if not mt5mod.is_available():
+            # Phase 35: no synthetic fallback. Silently ingesting a sine
+            # wave under a real symbol is how a model ends up trained on
+            # fiction that nobody can tell apart from market data.
+            return CommandResult.rejected(
+                command.kind,
+                "MetaTrader 5 is not available, and this platform no longer "
+                "substitutes generated candles for real ones. Run the "
+                "dashboard on Windows with the MT5 terminal open and an "
+                "account configured under 'Accounts'.",
+            )
+
         broker_symbol, account_note = self.broker_symbol(symbol)
         profile = self.active_profile()
-
-        if mt5mod.is_available():
-            if profile is not None:
-                provider = mt5mod.Mt5MarketDataProvider(
-                    login=profile.login,
-                    password=profile.resolve_password(),
-                    server=profile.server,
-                    terminal_path=profile.terminal_path or None,
-                )
-            else:
-                provider = mt5mod.Mt5MarketDataProvider()
-            try:
-                # Phase 33: append to the stored history instead of
-                # replacing it, repairing any gap at the join first.
-                from ShadBotTrader.application.services.dataset_update_service import (
-                    DatasetUpdateService,
-                )
-
-                _, store, _ = build_service(self._storage_root, provider=provider)
-                updater = DatasetUpdateService(
-                    store,
-                    provider=provider,
-                    max_candles=max(command.integer("max_candles", 100_000), 1000),
-                )
-                update = updater.fetch_and_update(
-                    broker_symbol,
-                    timeframe,
-                    bars=bars,
-                    allow_gap=command.text("allow_gap", "0").strip() == "1",
-                )
-
-                if update.refused:
-                    return CommandResult.failure(
-                        command.kind,
-                        "Update refused — the dataset was NOT modified",
-                        "\n".join(update.summary_lines())
-                        + "\n\nEither re-run when the broker can supply the "
-                        "missing range, or tick 'Allow gap' to accept the "
-                        "discontinuity deliberately.",
-                        time.monotonic() - started,
-                    )
-
-                lines = [
-                    "source: MetaTrader 5 (real broker data)",
-                    account_note or "account: terminal session",
-                    *update.summary_lines(),
-                    "",
-                    "See the candles: open /data",
-                ]
-                return CommandResult.success(
-                    command.kind,
-                    f"{broker_symbol} {timeframe}: "
-                    f"+{update.added_count:,} new, {update.final_count:,} stored",
-                    lines,
-                    time.monotonic() - started,
-                )
-            except Exception as error:
-                return CommandResult.failure(
-                    command.kind,
-                    "MetaTrader 5 ingestion failed",
-                    str(error),
-                    time.monotonic() - started,
-                )
-            finally:
-                provider.shutdown()
+        if profile is not None:
+            provider = mt5mod.Mt5MarketDataProvider(
+                login=profile.login,
+                password=profile.resolve_password(),
+                server=profile.server,
+                terminal_path=profile.terminal_path or None,
+            )
         else:
-            # Be explicit rather than silently producing synthetic data.
-            sample = self._storage_root / "samples" / f"{symbol}_{timeframe}.csv"
-            if not sample.exists():
-                generate_sample(symbol, timeframe, min(bars, 400), sample)
-            service, _, _ = build_service(self._storage_root)
-            result = service.ingest(symbol, timeframe, str(sample))
-            lines = [
-                "MetaTrader5 is not installed (Windows only).",
-                "source: generated sample CSV, NOT real market data",
-                f"valid candles : {result.candle_count}",
-                f"quality score : {result.quality_report.score.overall}",
-            ]
+            provider = mt5mod.Mt5MarketDataProvider()
 
-        stored_as = broker_symbol if mt5mod.is_available() else symbol
+        lines: List[str] = [
+            "source: MetaTrader 5 (real broker data)",
+            account_note or "account: terminal session",
+            f"fetched as    : {broker_symbol}",
+            f"stored as     : {symbol} (canonical)",
+        ]
+        headline: List[str] = []
+        refused: List[str] = []
+
+        try:
+            _, store, _ = build_service(self._storage_root, provider=provider)
+            updater = DatasetUpdateService(store, provider=provider, max_candles=max_candles)
+            for timeframe in timeframes:
+                lines.append("")
+                lines.append(f"--- {timeframe} ---")
+                try:
+                    update = updater.fetch_and_update(
+                        broker_symbol,
+                        timeframe,
+                        bars=bars,
+                        allow_gap=allow_gap,
+                        store_as=symbol,
+                    )
+                except Exception as error:
+                    refused.append(timeframe)
+                    lines.append(f"FAILED: {type(error).__name__}: {error}")
+                    continue
+
+                lines.extend(update.summary_lines())
+                if update.refused:
+                    refused.append(timeframe)
+                else:
+                    headline.append(
+                        f"{timeframe} +{update.added_count:,} " f"({update.final_count:,} stored)"
+                    )
+        finally:
+            provider.shutdown()
+
+        lines.append("")
+        lines.append("See the candles: open /data")
+
+        if refused:
+            lines.append("")
+            lines.append(
+                "A refused timeframe left its stored dataset untouched. "
+                "Re-run when the broker can supply the missing range, or "
+                "tick 'Allow gap' to accept the discontinuity deliberately."
+            )
+            return CommandResult.failure(
+                command.kind,
+                f"{symbol}: {len(refused)} of {len(timeframes)} timeframe(s) "
+                f"refused ({', '.join(refused)})",
+                "\n".join(lines),
+                time.monotonic() - started,
+            )
+
         return CommandResult.success(
             command.kind,
-            f"Ingested {stored_as} {timeframe} (v{result.version})",
+            f"{symbol}: " + " | ".join(headline),
             lines,
             time.monotonic() - started,
         )
@@ -518,7 +564,7 @@ class CommandHandlers:
         )
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD_i")
+        symbol = command.text("symbol", "XAUUSD")
         timeframe = command.text("timeframe", "5M")
 
         _, store, _ = build_service(self._storage_root)
@@ -645,7 +691,7 @@ class CommandHandlers:
         from ShadBotTrader.infrastructure.simulation import MomentumPredictionSource
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD_i")
+        symbol = command.text("symbol", "XAUUSD")
         timeframe = command.text("timeframe", "5M")
 
         _, store, _ = build_service(self._storage_root)
@@ -705,7 +751,7 @@ class CommandHandlers:
         from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD_i")
+        symbol = command.text("symbol", "XAUUSD")
         timeframe = command.text("timeframe", "5M")
 
         _, store, _ = build_service(self._storage_root)
@@ -779,7 +825,7 @@ class CommandHandlers:
         )
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD_i")
+        symbol = command.text("symbol", "XAUUSD")
         timeframe = command.text("timeframe", "5M")
         folds = max(command.integer("folds", 3), 2)
 
@@ -885,7 +931,7 @@ class CommandHandlers:
         )
 
         started = time.monotonic()
-        symbol_text = command.text("symbol", "XAUUSD_i")
+        symbol_text = command.text("symbol", "XAUUSD")
         timeframe_text = command.text("timeframe", "5M")
         session = command.text("session", "dashboard")
         symbol = Symbol(symbol_text)
@@ -1044,6 +1090,17 @@ class AccountCommandHandlers:
         from ShadBotTrader.infrastructure.account import AccountProfileStore
 
         return AccountProfileStore(self._account_store)
+
+    def active_profile(self):
+        """The active broker profile, or None when none is configured.
+
+        Used to translate symbols; a missing profile is not an error
+        because the canonical name is the default anyway.
+        """
+        try:
+            return self._store().active()
+        except Exception:
+            return None
 
     def _profile(self, command: Command):
         """The named profile, or the active one when no name is given."""
@@ -1248,10 +1305,51 @@ class AccountCommandHandlers:
         )
 
     # -- data ---------------------------------------------------------------
+    def missing_timeframes(self, symbol: str) -> List[str]:
+        """Training timeframes that have no stored candles yet.
+
+        Checked before the build rather than during it, so the operator
+        is told which button to press instead of reading a stack trace
+        three minutes into a feature computation.
+        """
+        from ShadBotTrader.data_cli import build_service
+        from ShadBotTrader.infrastructure.data.symbol_scope import (
+            resolve_stored_symbol,
+        )
+
+        try:
+            _, store, _ = build_service(self._storage_root)
+        except Exception:
+            return []
+
+        profile = self.active_profile()
+        missing: List[str] = []
+        for timeframe in TRAINING_TIMEFRAMES:
+            try:
+                found = resolve_stored_symbol(store, symbol, timeframe, profile).found
+            except Exception:
+                found = False
+            if not found:
+                missing.append(timeframe)
+        return missing
+
     def build_dataset(self, command: Command) -> CommandResult:
+        """Build the 5M and the 1H dataset — two matrices, one run."""
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD")
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
         candles = max(command.integer("candles", 100_000), 1000)
+
+        missing = self.missing_timeframes(symbol)
+        if missing:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored candles for {symbol} {', '.join(missing)}. "
+                f"The platform builds one dataset per timeframe — 5M for the "
+                f"signal model and 1H for the range model — and it will not "
+                f"substitute generated data for either. Run 'Fetch market "
+                f"data' with Timeframes = 5M,1H first.",
+            )
+
         return self._run_script(
             command,
             [
@@ -1262,7 +1360,7 @@ class AccountCommandHandlers:
                 "--candles",
                 str(candles),
             ],
-            f"Built the dataset for {symbol}",
+            f"Built the 5M and 1H datasets for {symbol}",
             started,
             timeout=3600,
         )

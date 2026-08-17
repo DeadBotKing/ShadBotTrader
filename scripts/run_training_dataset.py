@@ -25,6 +25,13 @@ if str(SRC) not in sys.path:
 
 STORAGE_ROOT = REPO_ROOT / "datasets"
 
+#: Which model each timeframe's dataset belongs to (Phase 29 §2). The
+#: two are built together and stored apart: one matrix per timeframe.
+ROLE_OF_TIMEFRAME = {
+    "5M": "signal model — buy / sell / hold",
+    "1H": "range model — future high and low",
+}
+
 
 def rule(title: str) -> None:
     print()
@@ -38,7 +45,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Training dataset and live buffer (Phase 30).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--symbol", default="XAUUSD_i")
+    parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument("--candles", type=int, default=100_000)
     parser.add_argument("--window", type=int, default=500)
     parser.add_argument("--horizon", type=int, default=5)
@@ -75,25 +82,59 @@ def build_service(args: argparse.Namespace):
     )
 
 
+class NoRealData(RuntimeError):
+    """Raised when a timeframe has no stored broker candles."""
+
+
+def active_profile():
+    """The active broker profile, or None when none is configured."""
+    from ShadBotTrader.infrastructure.account import AccountProfileStore
+
+    try:
+        return AccountProfileStore().active()
+    except Exception:
+        return None
+
+
 def load_candles(args: argparse.Namespace, timeframe: str, wanted: int):
-    """Stored candles for a timeframe, generating a sample when absent."""
+    """Stored REAL candles for a timeframe.
+
+    Phase 35: this function no longer manufactures sample candles when
+    the store is empty. A generated sine wave stored under XAUUSD is
+    indistinguishable from broker history one run later, and a model
+    trained on it looks trained. Missing data is now an error with an
+    instruction, not a silent substitution.
+
+    Symbol resolution follows Phase 32's alias map, so a history written
+    under the broker's spelling (``XAUUSD_i``) is still found when the
+    caller asks for the canonical ``XAUUSD``.
+    """
     from ShadBotTrader.data_cli import build_service as build_data_service
-    from ShadBotTrader.data_cli import generate_sample
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.infrastructure.data.symbol_scope import (
+        resolve_stored_symbol,
+        stored_symbols,
+    )
 
     storage = Path(args.storage_root)
-    service, store, _ = build_data_service(storage)
-    candles = store.query(Symbol(args.symbol), Timeframe(timeframe))
+    _, store, _ = build_data_service(storage)
 
-    if len(candles) < wanted:
-        sample = storage / "samples" / f"{args.symbol}_{timeframe}_{wanted}.csv"
-        if not sample.exists():
-            print(f"  generating {wanted:,} sample candles for {timeframe} ...")
-            generate_sample(args.symbol, timeframe, wanted, sample)
-        service.ingest(args.symbol, timeframe, str(sample))
-        candles = store.query(Symbol(args.symbol), Timeframe(timeframe))
+    resolved = resolve_stored_symbol(store, args.symbol, timeframe, active_profile())
+    if not resolved.found:
+        available = stored_symbols(storage)
+        raise NoRealData(
+            f"No stored candles for {args.symbol} {timeframe}.\n"
+            f"    {resolved.note}\n"
+            f"    symbols on disk: {', '.join(available) or 'none'}\n"
+            f"    Fix it from the dashboard: Data -> Fetch market data\n"
+            f"    with Timeframes = 5M,1H. Sample data is deliberately not\n"
+            f"    generated any more (Phase 35)."
+        )
+    if resolved.is_alias:
+        print(f"    [i] {resolved.note}")
 
+    candles = store.query(Symbol(resolved.resolved), Timeframe(timeframe))
     return candles[-wanted:] if len(candles) > wanted else candles
 
 
@@ -146,7 +187,11 @@ def do_build(args: argparse.Namespace, service, refresh: bool) -> int:
     data = {}
     for timeframe in spec.timeframes:
         print(f"\n  loading {timeframe} ...")
-        candles = load_candles(args, timeframe, args.candles)
+        try:
+            candles = load_candles(args, timeframe, args.candles)
+        except NoRealData as error:
+            print(f"\n  [X] {error}")
+            return 1
         print(f"    {len(candles):,} candles")
         data[timeframe] = candles
 
@@ -156,15 +201,25 @@ def do_build(args: argparse.Namespace, service, refresh: bool) -> int:
     manifest = service.refresh(spec, data) if refresh else service.build(spec, data)
     print(f"  done in {time.time() - started:.1f}s\n")
 
+    # Two datasets, reported one by one: 5M drives the signal model and
+    # 1H drives the range model, and they are never interchangeable.
     for name, item in manifest.slices.items():
+        role = ROLE_OF_TIMEFRAME.get(name, "")
+        print(f"  {name} dataset{f'  ({role})' if role else ''}")
         print(
-            f"  {name:>4}: {item.candles:>8,} candles -> "
-            f"{item.feature_rows:>8,} rows x {item.feature_columns} cols"
+            f"        {item.candles:,} candles -> "
+            f"{item.feature_rows:,} rows x {item.feature_columns} cols"
         )
+        print(f"        front rows removed (feature warm-up): " f"{item.warmup_dropped:,}")
+        print(f"        tail rows removed (forward-looking columns): " f"{item.tail_dropped:,}")
+        print(f"        rows are consecutive candles: {item.contiguous}")
+        if item.holed_features:
+            print(f"        columns dropped for interior gaps: " f"{len(item.holed_features)}")
         print(
             f"        stride-1 windows of ({args.window} x {item.feature_columns}): "
             f"{item.usable_windows(args.window, args.horizon):,}"
         )
+        print(f"        file: {service.matrix_path(spec.symbol, name)}")
 
     for warning in manifest.warnings():
         print(f"\n  [!] {warning}")
@@ -196,7 +251,11 @@ def live_demo(args: argparse.Namespace) -> int:
     )
 
     for timeframe in ("5M", "1H"):
-        candles = load_candles(args, timeframe, 900)
+        try:
+            candles = load_candles(args, timeframe, 900)
+        except NoRealData as error:
+            print(f"\n  {timeframe}: [X] {error}")
+            continue
         tally = live.prime(timeframe, candles)
         buffer = live.buffer(timeframe)
         print(f"\n  {timeframe}: primed with {len(candles)} candles -> {tally}")

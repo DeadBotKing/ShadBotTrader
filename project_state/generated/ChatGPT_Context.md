@@ -6,19 +6,19 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-17T07:17:50.955627+00:00
+- Snapshot generated at: 2026-08-17T08:32:26.566657+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 287
-- Test modules: 100
+- Source modules: 288
+- Test modules: 101
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument)
 
 ## Implemented Components
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (2346 files)
+- Dirty: yes (2365 files)
 - Recent commits:
   - 22e6743 NewFixSprint02
   - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Model quality: the backtester still uses MomentumPredictionSource, a deliberate baseline — the replay now makes every one of its trades visible, and on random data they all lose. Feeding the trained WaveNet and the 109-feature catalogue into the simulation is the remaining path to a strategy that could be profitable, on real MT5 data rather than noise. Alternatively Phase 24 (deployment) to run continuously.
+Train on real market data. Every synthetic path into the store is now closed (Phase 35), MT5 is connected, and the platform builds two real datasets — 5M for the signal model and 1H for the range model. What has never happened is a training run on actual broker prices: from the dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train both models. Only then does any backtest number mean anything.
 
 ## Statistics
 
-- Total files: 670
-- Source files: 287
-- Test files: 100
-- Documentation files: 51
+- Total files: 675
+- Source files: 288
+- Test files: 101
+- Documentation files: 52
 - Legacy files: 175
-- Total Python lines: 93704
-- Modules: 387
-- Classes: 607
-- Functions: 3580
+- Total Python lines: 94711
+- Modules: 389
+- Classes: 618
+- Functions: 3623
 - External dependencies: 12

@@ -45,7 +45,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Live five-minute decision loop (Phase 31).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--symbol", default="XAUUSD_i")
+    parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument("--ticks", type=int, default=3, help="cycles to run")
     parser.add_argument("--interval", type=int, default=0, help="seconds between ticks")
     parser.add_argument("--capital", type=float, default=100.0)
@@ -64,23 +64,81 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def load_history(args: argparse.Namespace, timeframe: str, wanted: int = 900):
-    """Candles to prime the buffer with."""
-    from ShadBotTrader.data_cli import build_service, generate_sample
+    """Candles to prime the buffer with.
+
+    Phase 35: stored real candles are used when they exist. When they do
+    not, ``--demo`` still runs — it exists to exercise the wiring — but
+    the substitute candles are built **in memory only** and never
+    ingested into the store. The old code wrote them to disk under the
+    real symbol, where the next run could not tell them from broker
+    history.
+    """
+    from ShadBotTrader.data_cli import build_service
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.infrastructure.data.symbol_scope import resolve_stored_symbol
 
     storage = Path(args.storage_root)
-    service, store, _ = build_service(storage)
-    candles = store.query(Symbol(args.symbol), Timeframe(timeframe))
+    _, store, _ = build_service(storage)
 
-    if len(candles) < wanted:
-        sample = storage / "samples" / f"{args.symbol}_{timeframe}_{wanted}.csv"
-        if not sample.exists():
-            generate_sample(args.symbol, timeframe, wanted, sample)
-        service.ingest(args.symbol, timeframe, str(sample))
-        candles = store.query(Symbol(args.symbol), Timeframe(timeframe))
+    resolved = resolve_stored_symbol(store, args.symbol, timeframe)
+    if resolved.found:
+        candles = store.query(Symbol(resolved.resolved), Timeframe(timeframe))
+        if len(candles) >= wanted:
+            return candles[-wanted:]
+        print(
+            f"  [i] {timeframe}: only {len(candles)} stored candles "
+            f"(want {wanted}); the buffer will hold what exists."
+        )
+        if candles:
+            return candles
 
-    return candles[-wanted:]
+    if not args.demo:
+        raise SystemExit(
+            f"\n  [X] No stored candles for {args.symbol} {timeframe}.\n"
+            f"      Run Data -> Fetch market data with Timeframes = 5M,1H."
+        )
+
+    print(f"  [!] {timeframe}: no stored candles — using IN-MEMORY demo candles.")
+    print("      They are not written to disk and are not market data.")
+    return synthetic_candles(args.symbol, timeframe, wanted)
+
+
+def synthetic_candles(symbol: str, timeframe: str, count: int):
+    """Throwaway candles for --demo. In memory, never persisted."""
+    import math
+    from datetime import datetime, timedelta, timezone
+    from decimal import Decimal
+
+    from ShadBotTrader.domain.market.candle import Candle
+    from ShadBotTrader.domain.market.price import Price
+    from ShadBotTrader.domain.market.symbol import Symbol
+    from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.domain.market.timestamp import Timestamp
+
+    frame = Timeframe(timeframe)
+    step = timedelta(minutes=60 if timeframe.upper() == "1H" else 5)
+    start = datetime.now(timezone.utc) - step * count
+
+    candles = []
+    for index in range(count):
+        base = 2000.0 + 20.0 * math.sin(index / 40.0)
+        close = base + 0.5 * math.sin(index / 7.0)
+        high = max(base, close) + 1.0
+        low = min(base, close) - 1.0
+        candles.append(
+            Candle(
+                symbol=Symbol(symbol),
+                timeframe=frame,
+                open_time=Timestamp(start + step * index),
+                open_price=Price(Decimal(f"{base:.2f}")),
+                high=Price(Decimal(f"{high:.2f}")),
+                low=Price(Decimal(f"{low:.2f}")),
+                close=Price(Decimal(f"{close:.2f}")),
+                volume=Decimal("100"),
+            )
+        )
+    return candles
 
 
 class DemoSignalModel:

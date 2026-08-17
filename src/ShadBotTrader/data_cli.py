@@ -2,8 +2,8 @@
 
 Commands:
 
-    python -m ShadBotTrader.data_cli sample   --symbol XAUUSD_i --timeframe 5M --rows 200
-    python -m ShadBotTrader.data_cli ingest   --csv PATH --symbol XAUUSD_i --timeframe 5M
+    python -m ShadBotTrader.data_cli sample   --symbol DEMOXAU --timeframe 5M --rows 200
+    python -m ShadBotTrader.data_cli ingest   --csv PATH --symbol XAUUSD --timeframe 5M
     python -m ShadBotTrader.data_cli catalog
 
 Real broker data (Windows + MetaTrader 5 terminal required):
@@ -311,10 +311,10 @@ def main(argv: List[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     sample = subparsers.add_parser("sample", help="generate a sample candle CSV")
-    sample.add_argument("--symbol", default="XAUUSD_i")
+    sample.add_argument("--symbol", default="DEMOXAU")
     sample.add_argument("--timeframe", default="5M")
     sample.add_argument("--rows", type=int, default=200)
-    sample.add_argument("--out", default=str(DEFAULT_SAMPLE_DIR / "XAUUSD_i_5M.csv"))
+    sample.add_argument("--out", default=str(DEFAULT_SAMPLE_DIR / "DEMOXAU_5M.csv"))
     sample.set_defaults(func=cmd_sample)
 
     ingest = subparsers.add_parser("ingest", help="ingest a candle CSV")

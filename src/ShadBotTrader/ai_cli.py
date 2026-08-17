@@ -2,7 +2,7 @@
 
 Commands:
 
-    python -m ShadBotTrader.ai_cli train    --model gold_direction --symbol XAUUSD_i --timeframe 5M
+    python -m ShadBotTrader.ai_cli train    --model gold_direction --symbol XAUUSD --timeframe 5M
     python -m ShadBotTrader.ai_cli predict  --model gold_direction --version 1
 """
 
@@ -182,7 +182,7 @@ def main(argv: List[str] | None = None) -> int:
 
     train = subparsers.add_parser("train", help="train a Wavenet direction classifier")
     train.add_argument("--model", default="gold_direction")
-    train.add_argument("--symbol", default="XAUUSD_i")
+    train.add_argument("--symbol", default="XAUUSD")
     train.add_argument("--timeframe", default="5M")
     train.add_argument("--window", type=int, default=16)
     train.add_argument("--epochs", type=int, default=3)
@@ -193,7 +193,7 @@ def main(argv: List[str] | None = None) -> int:
     predict = subparsers.add_parser("predict", help="predict with a trained model")
     predict.add_argument("--model", default="gold_direction")
     predict.add_argument("--version", type=int, default=1)
-    predict.add_argument("--symbol", default="XAUUSD_i")
+    predict.add_argument("--symbol", default="XAUUSD")
     predict.add_argument("--timeframe", default="5M")
     predict.add_argument("--window", type=int, default=16)
     predict.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))

@@ -47,7 +47,7 @@ from ShadBotTrader.infrastructure.learning import (  # noqa: E402
     RandomSearchGenerator,
 )
 
-SYMBOL = "XAUUSD_i"
+SYMBOL = "DEMOXAU"
 TIMEFRAME = "5M"
 ROWS = 400
 

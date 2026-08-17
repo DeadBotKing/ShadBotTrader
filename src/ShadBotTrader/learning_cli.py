@@ -162,7 +162,7 @@ def main(argv: List[str] | None = None) -> int:
     policy.set_defaults(func=cmd_policy)
 
     optimise = subparsers.add_parser("optimise", help="run a walk-forward search")
-    optimise.add_argument("--symbol", default="XAUUSD_i")
+    optimise.add_argument("--symbol", default="XAUUSD")
     optimise.add_argument("--timeframe", default="5M")
     optimise.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))
     optimise.add_argument("--experiment-id", default="cli")

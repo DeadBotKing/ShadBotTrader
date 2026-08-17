@@ -186,13 +186,13 @@ def main(argv: List[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     quote = subparsers.add_parser("quote", help="show bid/mid/ask for a spread")
-    quote.add_argument("--symbol", default="XAUUSD_i")
+    quote.add_argument("--symbol", default="XAUUSD")
     quote.add_argument("--mid", type=float, default=2000.0)
     quote.add_argument("--spread", type=float, default=2.0)
     quote.set_defaults(func=cmd_quote)
 
     pnl = subparsers.add_parser("pnl", help="account a round trip")
-    pnl.add_argument("--symbol", default="XAUUSD_i")
+    pnl.add_argument("--symbol", default="XAUUSD")
     pnl.add_argument("--side", choices=("buy", "sell"), default="buy")
     pnl.add_argument("--entry", type=float, default=2000.0)
     pnl.add_argument("--exit", type=float, default=2100.0)
@@ -202,7 +202,7 @@ def main(argv: List[str] | None = None) -> int:
     pnl.set_defaults(func=cmd_pnl)
 
     execute = subparsers.add_parser("execute", help="execute one synthetic intent")
-    execute.add_argument("--symbol", default="XAUUSD_i")
+    execute.add_argument("--symbol", default="XAUUSD")
     execute.add_argument("--side", choices=("buy", "sell"), default="buy")
     execute.add_argument("--quantity", type=float, default=2.0)
     execute.add_argument("--mid", type=float, default=2000.0)

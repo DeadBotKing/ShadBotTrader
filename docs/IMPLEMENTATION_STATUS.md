@@ -2,10 +2,10 @@
 
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
-- **آخرین به‌روزرسانی:** 2026-08-16
-- **آخرین کار انجام‌شده:** **فاز ۳۴** — چارت شمعی و بازرسی دیتاست در `/data`
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (287 files)` · `pytest 1182 passed, 12 skipped`
-- **تعداد فایل منبع:** ۲۸۷ · **فایل تست:** ۸۴
+- **آخرین به‌روزرسانی:** 2026-08-17
+- **آخرین کار انجام‌شده:** **فاز ۳۵** — دو دیتاست مجزا (5M/1H) و ممنوعیت دیتای ساختگی
+- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (288 files)` · `pytest 1205 passed, 12 skipped`
+- **تعداد فایل منبع:** ۲۸۸ · **فایل تست:** ۸۵
 - ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
 
@@ -48,6 +48,7 @@
 | ۲۶ | Freeze v1.0 | ✅ رعایت می‌شود | معماری منجمد دست‌نخورده مانده |
 | ۲۷ | Architecture Implementation | ✅ کامل | bootstrap/runtime/lifecycle |
 | ۲۸ | Implementation Foundation | 🔄 در حال انجام | Sprint P0…P8 + Replay + MT5 |
+| **۳۵** | **Dual-Timeframe Datasets** | ✅ **کامل (جدید)** | `infrastructure/data/symbol_scope.py` — دو دیتاست ۵ دقیقه/۱ ساعته، برش سطر فقط از دو سر، ممنوعیت کندل ساختگی، یک نماد canonical |
 | **۳۴** | **Data Inspection** | ✅ **کامل (جدید)** | `presentation/gateway/data_inspector.py`، `presentation/web/data_renderer.py` — چارت شمعی، شمارش کندل، فهرست ستون‌ها |
 | **۳۳** | **Dataset Continuity** | ✅ **کامل (جدید)** | `domain/dataset/continuity.py`، `application/services/dataset_update_service.py` — append، سقف ۱۰۰k، تقویم یادگیرنده، backfill |
 | **۳۲** | **Accounts & Full GUI** | ✅ **کامل (جدید)** | `domain/account/profile.py`، `infrastructure/account/profile_store.py`، ۲۱ دکمه در ۶ گروه |
@@ -192,6 +193,21 @@ hit rate:      0.118 → 0
     هرگز استفاده‌اش نمی‌کرد. در Keras 3 هر لایه وزن اولیه را از مولد خودش
     می‌گیرد، پس `tf.random.set_seed` کافی نیست. دو اجرای یکسان نتیجهٔ متفاوت
     می‌داد — نقض مستقیم فاز ۱۳ §۳۴. رفع: `keras.utils.set_random_seed`.
+۲۳. **یک نماد، دو دیتاست** — fetch زیر نام بروکر (`XAUUSD_i`) می‌نوشت و بقیهٔ
+    پلتفرم canonical (`XAUUSD`) می‌خواند. build چیزی پیدا نمی‌کرد و به باگ ۲۱
+    می‌رسید. رفع: `store_as` + `symbol_scope.py` که alias قدیمی را هم پیدا
+    می‌کند ولی **اعلام** می‌کند.
+۲۲. **سطر می‌توانست از وسط سری حذف شود** — `build_feature_matrix` هر سطری را
+    که یک فیچرش `None` بود می‌انداخت. یک `NaN` در سطر ۴٬۰۰۰ باعث می‌شد
+    ۳٬۹۹۹ به ۴٬۰۰۱ بچسبد و roll-forward از روی بازار ندیده رد شود. رفع:
+    برش فقط از دو سر؛ حفرهٔ وسط **ستون** را می‌برد نه سطر را. تضمین صریح:
+    `FeatureMatrix.is_contiguous`.
+۲۱. **کندل ساختگی زیر نماد واقعی ذخیره می‌شد** — نبود دیتا باعث می‌شد
+    `generate_sample` یک موج سینوسی بسازد و ingest کند. یک اجرا بعد،
+    تشخیص‌ناپذیر از دیتای بروکر. مدل رنج روی آن آموزش می‌دید و
+    «آموزش‌دیده» به‌نظر می‌رسید. نقض مستقیم `DEVELOPMENT_RULES.md`.
+۲۰. **`Fetch market data` فقط یک تایم‌فریم می‌گرفت** — ولی build هر دو را
+    لازم داشت، پس مسیر عادی اپراتور مستقیماً به باگ ۲۱ می‌رسید.
 ۱۴. **دکمهٔ «Update features» داشبورد هرگز کار نمی‌کرد** — هندلر
     `service.compute()` را صدا می‌زد که وجود ندارد (`compute_set()` درست است).
     تست‌ها نگرفتند چون فقط شاخهٔ «کندلی نیست» را می‌آزمودند.

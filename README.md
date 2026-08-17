@@ -211,7 +211,8 @@ from a terminal:
 
 | button | what it does |
 |---|---|
-| Fetch market data | pulls real candles from MetaTrader 5 and ingests them |
+| Fetch market data | pulls real candles from MetaTrader 5 for every listed timeframe (default `5M,1H`) and appends them; generated data is never substituted |
+| Build training dataset | builds two matrices — 5M for the signal model, 1H for the range model |
 | Update features | recomputes the feature set and registers it in the database |
 | Retrain the model | roll-forward WaveNet training |
 | Run a backtest | replays stored candles through the trading chain |

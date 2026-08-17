@@ -53,7 +53,7 @@ from ShadBotTrader.infrastructure.trading import (  # noqa: E402
 )
 
 NOW = datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc)
-SYMBOL = Symbol("XAUUSD_i")
+SYMBOL = Symbol("DEMOXAU")
 TIMEFRAME = Timeframe("5M")
 
 

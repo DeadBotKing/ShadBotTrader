@@ -36,7 +36,7 @@ from ShadBotTrader.infrastructure.simulation import (  # noqa: E402
     MomentumPredictionSource,
 )
 
-SYMBOL = "XAUUSD_i"
+SYMBOL = "DEMOXAU"
 TIMEFRAME = "5M"
 ROWS = 400
 

@@ -23,7 +23,7 @@ from ShadBotTrader.data_cli import (  # noqa: E402
 from ShadBotTrader.domain.market.symbol import Symbol  # noqa: E402
 from ShadBotTrader.domain.market.timeframe import Timeframe  # noqa: E402
 
-SYMBOL = "XAUUSD_i"
+SYMBOL = "DEMOXAU"
 TIMEFRAME = "5M"
 ROWS = 300
 

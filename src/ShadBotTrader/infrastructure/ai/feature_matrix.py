@@ -14,6 +14,18 @@ stochastic) already are stationary and pass through untouched.
 
 **No invented data.** A feature needing k bars of history is undefined
 for the first k rows. Those rows are dropped, never zero-filled.
+
+**Rows are only ever removed from the ends (Phase 35).** SMA-200 has
+nothing to say about candle 7, so the first rows go — that is warm-up.
+Forward-looking catalogue columns (``chikou``, ``*_target_p1``) have no
+value for the last few candles either, so the tail goes too. Both cuts
+keep the survivors consecutive.
+
+A hole in the *middle* is a different animal: dropping those rows would
+silently glue candle 4,000 to candle 4,010, and the stride-1
+roll-forward would step across ten minutes of market it never saw. So a
+feature with an interior hole loses its **column**, is recorded in
+``holed_features``, and every kept row stays contiguous.
 """
 
 from __future__ import annotations
@@ -109,6 +121,24 @@ class FeatureMatrix:
     source_index: List[int]
     dropped_warmup: int = 0
     skipped_features: List[str] = field(default_factory=list)
+    #: Features removed because they had a hole *inside* the kept range.
+    #: Keeping them would have cost interior rows and broken continuity.
+    holed_features: List[str] = field(default_factory=list)
+    #: Rows cut from the tail because a forward-looking column has no
+    #: value there. Contiguity-safe, exactly like the warm-up cut.
+    dropped_tail: int = 0
+
+    @property
+    def is_contiguous(self) -> bool:
+        """True when the kept rows are consecutive candles.
+
+        The stride-1 roll-forward assumes row ``i+1`` is the very next
+        candle after row ``i``. This is the property that guarantees it.
+        """
+        return all(
+            later == earlier + 1
+            for earlier, later in zip(self.source_index, self.source_index[1:], strict=False)
+        )
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -127,6 +157,9 @@ class FeatureMatrix:
             "columns": self.width,
             "dropped_warmup": self.dropped_warmup,
             "skipped_features": len(self.skipped_features),
+            "dropped_tail": self.dropped_tail,
+            "holed_features": len(self.holed_features),
+            "contiguous": self.is_contiguous,
         }
 
 
@@ -181,6 +214,48 @@ def _candle_columns(candles: Sequence[Candle], index: int) -> List[float]:
     return raw + derived
 
 
+def _is_usable(value: Optional[float]) -> bool:
+    """True when a feature actually produced a number for this bar."""
+    if value is None:
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _first_valid_index(values: Sequence[Optional[float]]) -> Optional[int]:
+    """Index of the first honest value, or None when there is none."""
+    for index, value in enumerate(values):
+        if _is_usable(value):
+            return index
+    return None
+
+
+def _last_valid_index(values: Sequence[Optional[float]]) -> Optional[int]:
+    """Index of the last honest value, or None when there is none.
+
+    Non-causal catalogue columns (a close shifted one bar forward) are
+    undefined at the tail for exactly the same structural reason warm-up
+    columns are undefined at the head.
+    """
+    for index in range(len(values) - 1, -1, -1):
+        if _is_usable(values[index]):
+            return index
+    return None
+
+
+def _has_hole(values: Sequence[Optional[float]], start: int, stop: int) -> bool:
+    """True when any value inside ``[start, stop)`` is missing.
+
+    A gap here is neither warm-up nor a forward shift — the feature was
+    already producing values, stopped, and started again. That usually
+    means a division by a zero range or a NaN leaking out of a recursive
+    indicator, and it is the one case that would cost interior rows.
+    """
+    return any(not _is_usable(value) for value in values[start:stop])
+
+
 def build_feature_matrix(
     candles: Sequence[Candle],
     symbol: Symbol,
@@ -233,30 +308,49 @@ def build_feature_matrix(
             warmup = max(warmup, result.warmup)
             column_names.append(feature_id)
 
+    # Phase 35: rows may only be cut from the FRONT. A feature whose
+    # first honest value arrives later than the shared warm-up simply
+    # pushes the start further out; a feature with a hole after that
+    # point loses its column instead, because removing interior rows
+    # would break the one-candle-per-row contract the roll-forward and
+    # every timestamp alignment depend on.
+    feature_ids = column_names[len(CANDLE_COLUMNS) :]
+    start = warmup
+    stop = len(candles)
+    holed: List[str] = []
+
+    for feature_id in feature_ids:
+        values = feature_columns[feature_id]
+        first_valid = _first_valid_index(values)
+        last_valid = _last_valid_index(values)
+        if first_valid is None or last_valid is None:
+            holed.append(feature_id)  # never produced a usable value
+            continue
+        start = max(start, first_valid)
+        stop = min(stop, last_valid + 1)
+
+    for feature_id in feature_ids:
+        if feature_id in holed:
+            continue
+        if _has_hole(feature_columns[feature_id], start, stop):
+            holed.append(feature_id)
+
+    kept_features = [feature_id for feature_id in feature_ids if feature_id not in holed]
+    column_names = list(CANDLE_COLUMNS) + kept_features
+
     rows: List[List[float]] = []
     source_index: List[int] = []
 
-    for index in range(len(candles)):
-        if index < warmup:
-            continue  # inside some feature's warm-up: no honest value exists
-
+    for index in range(start, max(stop, start)):
         close = float(candles[index].close.amount)
         row = _candle_columns(candles, index)
 
-        usable = True
-        for feature_id in column_names[len(CANDLE_COLUMNS) :]:
-            value = feature_columns[feature_id][index]
-            if value is None or not math.isfinite(float(value)):
-                usable = False
-                break
-            numeric = float(value)
+        for feature_id in kept_features:
+            numeric = float(feature_columns[feature_id][index])  # type: ignore[arg-type]
             if is_price_scaled(feature_id) and close:
                 # Ratio against the close: stationary across price regimes.
                 numeric = numeric / close - 1.0
             row.append(numeric)
-
-        if not usable:
-            continue
 
         rows.append(row)
         source_index.append(index)
@@ -265,8 +359,10 @@ def build_feature_matrix(
         rows=rows,
         column_names=column_names,
         source_index=source_index,
-        dropped_warmup=warmup,
+        dropped_warmup=start,
         skipped_features=skipped,
+        holed_features=holed,
+        dropped_tail=max(len(candles) - max(stop, start), 0),
     )
 
 

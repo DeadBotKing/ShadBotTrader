@@ -70,7 +70,7 @@ def seed(database_path: Path) -> None:
     )
 
     start = datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc)
-    symbol = Symbol("XAUUSD_i")
+    symbol = Symbol("DEMOXAU")
     timeframe = Timeframe("5M")
     session = "demo"
 

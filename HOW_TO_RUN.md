@@ -304,11 +304,16 @@ Accounts → Switch account   بین اکانت‌ها جابه‌جا شو
 دیتاست‌ها با نام canonical (`XAUUSD`) ذخیره می‌مانند، پس تاریخچهٔ یادگیری
 با عوض‌کردن بروکر از بین نمی‌رود.
 
+> **فاز ۳۵:** پلتفرم دو دیتاست مجزا می‌سازد — `5M` برای مدل سیگنال و `1H`
+> برای مدل رنج — و **هرگز** کندل ساختگی جای دیتای واقعی نمی‌گذارد. اگر
+> تایم‌فریمی دیتا نداشته باشد، Build با پیام روشن رد می‌کند. پس در
+> `Fetch market data` حتماً `5M,1H` را با هم بگیرید.
+
 #### روال روزمره
 
 ```
-Data  → Fetch market data      دریافت کندل واقعی
-Data  → Build training dataset ۱۰۰k کندل + ۱۲۳ ستون
+Data  → Fetch market data      Timeframes = 5M,1H  (هر دو در یک اجرا)
+Data  → Build training dataset دو دیتاست: 5M و 1H، هرکدام ۱۲۳ ستون
 AI    → Train both models      مدل رنج (۱H) و سیگنال (۵M)
 Sim   → Record a replay        تماشای کندل‌به‌کندل در /replay
 Trade → Run one live tick      یک چرخهٔ کامل تصمیم‌گیری

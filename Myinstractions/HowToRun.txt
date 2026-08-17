@@ -1,0 +1,1 @@
+python -m ShadBotTrader.dashboard_cli --db shadbot.db serve

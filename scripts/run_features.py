@@ -37,7 +37,7 @@ from ShadBotTrader.infrastructure.feature.standard_catalog import (  # noqa: E40
     standard_feature_set_v1,
 )
 
-SYMBOL = "XAUUSD_i"
+SYMBOL = "DEMOXAU"
 TIMEFRAME = "5M"
 ROWS = 300
 

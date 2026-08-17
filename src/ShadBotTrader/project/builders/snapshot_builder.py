@@ -26,7 +26,10 @@ CURRENT_PHASE = (
     "+ Phase 32 (multi-account profiles, per-broker symbol mapping, "
     "every run driven from the GUI) + Phase 33 (incremental dataset "
     "updates with learned market calendar and gap backfill) "
-    "+ Phase 34 (candlestick chart and dataset inspection at /data)"
+    "+ Phase 34 (candlestick chart and dataset inspection at /data) "
+    "+ Phase 35 (two separate 5M/1H training datasets, rows trimmed only "
+    "from the ends, generated candles never stored under a real symbol, "
+    "one canonical symbol per instrument)"
 )
 
 

@@ -63,7 +63,7 @@ from ShadBotTrader.infrastructure.trading import (  # noqa: E402
 )
 
 START = datetime(2026, 8, 16, 12, 0, tzinfo=timezone.utc)
-SYMBOL = Symbol("XAUUSD_i")
+SYMBOL = Symbol("DEMOXAU")
 TIMEFRAME = Timeframe("5M")
 SESSION = "demo-session"
 CASH = Decimal("100")

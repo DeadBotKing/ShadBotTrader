@@ -9,12 +9,12 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Model quality: the backtester still uses MomentumPredictionSource, a "
-    "deliberate baseline — the replay now makes every one of its trades "
-    "visible, and on random data they all lose. Feeding the trained WaveNet "
-    "and the 109-feature catalogue into the simulation is the remaining path "
-    "to a strategy that could be profitable, on real MT5 data rather than "
-    "noise. Alternatively Phase 24 (deployment) to run continuously."
+    "Train on real market data. Every synthetic path into the store is now "
+    "closed (Phase 35), MT5 is connected, and the platform builds two real "
+    "datasets — 5M for the signal model and 1H for the range model. What has "
+    "never happened is a training run on actual broker prices: from the "
+    "dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train "
+    "both models. Only then does any backtest number mean anything."
 )
 
 KNOWN_ISSUES = [

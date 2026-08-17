@@ -173,7 +173,7 @@ def main(argv: List[str] | None = None) -> int:
     policy_parser.set_defaults(func=cmd_policy)
 
     evaluate = subparsers.add_parser("evaluate", help="run one prediction through the pipeline")
-    evaluate.add_argument("--symbol", default="XAUUSD_i")
+    evaluate.add_argument("--symbol", default="XAUUSD")
     evaluate.add_argument("--timeframe", default="5M")
     evaluate.add_argument("--model", default="gold_direction")
     evaluate.add_argument("--value", type=float, default=0.9, help="prediction value in [0,1]")

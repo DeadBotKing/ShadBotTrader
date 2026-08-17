@@ -73,6 +73,12 @@ class TimeframeSlice:
     feature_columns: int
     warmup_dropped: int
     skipped_features: List[str] = field(default_factory=list)
+    #: Rows cut from the tail for forward-looking columns (Phase 35).
+    tail_dropped: int = 0
+    #: Features dropped as columns because they had an interior hole.
+    holed_features: List[str] = field(default_factory=list)
+    #: True when the kept rows are consecutive candles (Phase 35).
+    contiguous: bool = True
     first_time: str = ""
     last_time: str = ""
     digest: str = ""
@@ -101,6 +107,9 @@ class TimeframeSlice:
             "feature_columns": self.feature_columns,
             "warmup_dropped": self.warmup_dropped,
             "skipped_features": list(self.skipped_features),
+            "tail_dropped": self.tail_dropped,
+            "holed_features": list(self.holed_features),
+            "contiguous": self.contiguous,
             "first_time": self.first_time,
             "last_time": self.last_time,
             "digest": self.digest,
@@ -158,6 +167,18 @@ class DatasetManifest:
                 messages.append(
                     f"{item.timeframe}: {len(item.skipped_features)} feature(s) "
                     f"could not be computed and were left out."
+                )
+            if item.holed_features:
+                messages.append(
+                    f"{item.timeframe}: {len(item.holed_features)} feature(s) had "
+                    f"a gap after their warm-up and were dropped as columns "
+                    f"rather than costing interior rows."
+                )
+            if not item.contiguous:
+                messages.append(
+                    f"{item.timeframe}: the stored rows are NOT consecutive "
+                    f"candles. Roll-forward would step across missing market. "
+                    f"Rebuild after repairing the candle history."
                 )
             windows = item.usable_windows(self.spec.window_rows, horizon=5)
             if windows < 1000:

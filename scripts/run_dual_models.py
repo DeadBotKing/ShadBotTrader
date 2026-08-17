@@ -39,7 +39,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Train the range and signal models (Phase 29).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--symbol", default="XAUUSD_i")
+    parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument(
         "--model",
         choices=("both", "range", "signal"),
@@ -66,22 +66,42 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+class NoRealData(RuntimeError):
+    """Raised when a timeframe has no stored broker candles."""
+
+
 def load_candles(storage_root: Path, symbol: str, timeframe: str):
-    """Load stored candles, generating a sample only when none exist."""
-    from ShadBotTrader.data_cli import build_service, generate_sample
+    """Load stored REAL candles for one timeframe.
+
+    Phase 35: no sample fallback. Training a model on generated candles
+    produces weights that look trained and mean nothing, and once they
+    are on disk nobody can tell which run they came from.
+    """
+    from ShadBotTrader.data_cli import build_service
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.infrastructure.account import AccountProfileStore
+    from ShadBotTrader.infrastructure.data.symbol_scope import (
+        resolve_stored_symbol,
+        stored_symbols,
+    )
 
-    service, store, _ = build_service(storage_root)
-    candles = store.query(Symbol(symbol), Timeframe(timeframe))
-    if candles:
-        return candles
+    _, store, _ = build_service(storage_root)
+    try:
+        profile = AccountProfileStore().active()
+    except Exception:
+        profile = None
 
-    sample = storage_root / "samples" / f"{symbol}_{timeframe}.csv"
-    if not sample.exists():
-        generate_sample(symbol, timeframe, 600, sample)
-    service.ingest(symbol, timeframe, str(sample))
-    return store.query(Symbol(symbol), Timeframe(timeframe))
+    resolved = resolve_stored_symbol(store, symbol, timeframe, profile)
+    if not resolved.found:
+        raise NoRealData(
+            f"No stored candles for {symbol} {timeframe}. "
+            f"symbols on disk: {', '.join(stored_symbols(storage_root)) or 'none'}. "
+            f"Run Data -> Fetch market data with Timeframes = 5M,1H first."
+        )
+    if resolved.is_alias:
+        print(f"  [i] {resolved.note}")
+    return store.query(Symbol(resolved.resolved), Timeframe(timeframe))
 
 
 def build_service(args: argparse.Namespace):
@@ -111,7 +131,11 @@ def train_one(service, args, role, timeframe: str) -> int:
     rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {role.horizon} ahead)")
     print(f"  {role.description}")
 
-    candles = load_candles(Path(args.storage_root), args.symbol, timeframe)
+    try:
+        candles = load_candles(Path(args.storage_root), args.symbol, timeframe)
+    except NoRealData as error:
+        print(f"\n  [X] {error}")
+        return 1
     print(f"\n  candles loaded : {len(candles)}")
 
     try:

@@ -51,7 +51,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Weekly dataset refresh and model retraining.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--symbol", default="XAUUSD_i")
+    parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument("--candles", type=int, default=100_000)
     parser.add_argument("--db", default="shadbot.db")
     parser.add_argument("--environment", default="production")
@@ -138,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         print("  [dry run] would recompute every feature from candle 0")
     else:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
-        from run_training_dataset import load_candles
+        from run_training_dataset import NoRealData, load_candles
 
         from ShadBotTrader.domain.dataset.training_dataset import DatasetSpec
 
@@ -151,7 +151,15 @@ def main(argv: list[str] | None = None) -> int:
         data = {}
         for timeframe in spec.timeframes:
             print(f"  loading {timeframe} ...")
-            data[timeframe] = load_candles(args, timeframe, args.candles)
+            try:
+                data[timeframe] = load_candles(args, timeframe, args.candles)
+            except NoRealData as error:
+                return fail(
+                    f"{timeframe}: {error}",
+                    "The weekly update refuses to refresh half a dataset:\n"
+                    "  the two models would then be trained on histories that\n"
+                    "  end at different moments.",
+                )
 
         print("  recomputing every feature from scratch ...")
         manifest = service.refresh(spec, data)

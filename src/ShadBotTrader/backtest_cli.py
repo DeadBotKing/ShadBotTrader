@@ -172,7 +172,7 @@ def main(argv: List[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     def common(sub: argparse.ArgumentParser) -> None:
-        sub.add_argument("--symbol", default="XAUUSD_i")
+        sub.add_argument("--symbol", default="XAUUSD")
         sub.add_argument("--timeframe", default="5M")
         sub.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))
         sub.add_argument("--capital", type=float, default=100.0)

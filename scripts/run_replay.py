@@ -38,7 +38,7 @@ from ShadBotTrader.infrastructure.simulation import (  # noqa: E402
 )
 from ShadBotTrader.presentation.web.replay_renderer import render_replay  # noqa: E402
 
-SYMBOL = "XAUUSD_i"
+SYMBOL = "DEMOXAU"
 TIMEFRAME = "5M"
 ROWS = 400
 

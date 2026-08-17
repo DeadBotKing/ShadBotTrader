@@ -143,6 +143,9 @@ class DatasetUpdateService:
         self._tolerance = tolerance
         #: Why the last backfill attempt returned nothing, if it failed.
         self.last_backfill_error = ""
+        #: The broker's spelling to ask for when backfilling, when it
+        #: differs from the canonical name the candles are stored under.
+        self._broker_symbol: Dict[str, str] = {}
 
     # ----------------------------------------------------------- reading --
     def stored(self, symbol: str, timeframe: str) -> List[Candle]:
@@ -247,8 +250,16 @@ class DatasetUpdateService:
         timeframe: str,
         bars: int = 5000,
         allow_gap: bool = False,
+        store_as: Optional[str] = None,
     ) -> UpdateResult:
-        """Fetch from the provider, then merge — the GUI's path."""
+        """Fetch from the provider, then merge — the GUI's path.
+
+        ``symbol`` is the broker's spelling (``XAUUSD_i``); ``store_as``
+        is the canonical platform name the candles are filed under
+        (``XAUUSD``). Keeping the two apart is what stops one instrument
+        turning into two disconnected datasets when a second broker
+        spells it differently (Phase 35).
+        """
         if self._provider is None:
             return UpdateResult(
                 symbol=symbol,
@@ -257,9 +268,34 @@ class DatasetUpdateService:
                 reason="no market data provider is configured",
             )
 
+        canonical = (store_as or symbol).strip().upper()
+        # The gap repair inside update() must ask the broker using the
+        # broker's own spelling, not the canonical one.
+        self._broker_symbol[canonical] = symbol
         records = self._provider.fetch_candles(symbol, timeframe, str(bars))
-        candles = self._to_candles(records, symbol, timeframe)
-        return self.update(symbol, timeframe, candles, allow_gap=allow_gap)
+        candles = self._relabel(self._to_candles(records, symbol, timeframe), canonical)
+        return self.update(canonical, timeframe, candles, allow_gap=allow_gap)
+
+    def _relabel(self, candles: Sequence[Candle], symbol: str) -> List[Candle]:
+        """Re-file broker-named candles under the canonical symbol."""
+        target = Symbol(symbol)
+        return [
+            (
+                candle
+                if str(candle.symbol) == str(target)
+                else Candle(
+                    symbol=target,
+                    timeframe=candle.timeframe,
+                    open_time=candle.open_time,
+                    open_price=candle.open,
+                    high=candle.high,
+                    low=candle.low,
+                    close=candle.close,
+                    volume=candle.volume,
+                )
+            )
+            for candle in candles
+        ]
 
     # --------------------------------------------------------- internals --
     def _backfill(self, symbol: str, timeframe: str, gap: Gap) -> List[Candle]:
@@ -268,10 +304,12 @@ class DatasetUpdateService:
         if not callable(fetch_range):
             return []
 
+        broker_symbol = self._broker_symbol.get(symbol, symbol)
+
         step = timeframe_delta(Timeframe(timeframe))
         try:
             records = fetch_range(
-                symbol,
+                broker_symbol,
                 timeframe,
                 gap.after + step / 2,
                 gap.before,
@@ -284,7 +322,7 @@ class DatasetUpdateService:
             self.last_backfill_error = f"{type(error).__name__}: {error}"
             return []
 
-        candles = self._to_candles(records, symbol, timeframe)
+        candles = self._relabel(self._to_candles(records, broker_symbol, timeframe), symbol)
         return [candle for candle in candles if gap.after < candle.open_time.value < gap.before]
 
     def _to_candles(self, records: Sequence[Any], symbol: str, timeframe: str) -> List[Candle]:

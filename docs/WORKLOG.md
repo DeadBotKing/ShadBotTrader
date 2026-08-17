@@ -748,6 +748,103 @@ pytest 1182 passed, 12 skipped   (قبلاً 1155)
 
 ---
 
+## 2026-08-17 — فاز ۳۵: دو دیتاست مجزا + فقط دیتای واقعی (باگ‌های ۲۰–۲۳)
+
+**سؤال کاربر:** «چرا Build training dataset براش تایم فریم فرقی نداره؟ مگه
+نباید دوتا دیتاست داشته باشیم برای آموزش یکی ۵ دقیقه یکی ۱ ساعته؟»
+
+**پاسخ کوتاه:** دو دیتاست از فاز ۳۰ وجود داشت (`DatasetSpec.timeframes =
+("5M","1H")` و `build()` روی هر دو حلقه می‌زند و دو فایل `.npz` می‌نویسد)،
+ولی سه ایراد باعث می‌شد در عمل درست کار نکند. کاربر بعد از توضیح، چهار
+دستور صریح داد و هر چهار اجرا شد.
+
+### چهار باگ
+
+| # | باگ | چرا مهم بود |
+|---|---|---|
+| ۲۰ | `Fetch market data` فقط **یک** تایم‌فریم می‌گرفت (پیش‌فرض `5M`) | ولی build هر دو را لازم داشت → مستقیماً به باگ ۲۱ می‌رسید |
+| ۲۱ | نبود دیتا → **کندل نمونهٔ سینوسی** ساخته و زیر نماد واقعی ingest می‌شد | مدل رنج روی دیتای جعلی آموزش می‌دید و آموزش‌دیده به‌نظر می‌رسید. یک اجرا بعد، تشخیص‌ناپذیر. نقض مستقیم `DEVELOPMENT_RULES.md` |
+| ۲۲ | `build_feature_matrix` سطر را از **هر جای** سری حذف می‌کرد | یک `NaN` در سطر ۴٬۰۰۰ آن را حذف می‌کرد و ۳٬۹۹۹ به ۴٬۰۰۱ می‌چسبید. roll-forward از روی بازار ندیده رد می‌شد و هیچ تستی نمی‌گرفت |
+| ۲۳ | کندل زیر نام بروکر (`XAUUSD_i`) ذخیره، ولی بقیه canonical (`XAUUSD`) می‌خواندند | یک نماد، دو دیتاست بی‌ارتباط |
+
+### چهار قاعدهٔ جدید
+
+**۱. تایم‌فریم‌های آموزش با هم سفر می‌کنند.** `TRAINING_TIMEFRAMES = ("5M","1H")`.
+فیلد Timeframes حالا لیست می‌گیرد و پیش‌فرضش `5M,1H` است. هر تایم‌فریم مستقل
+merge می‌شود؛ رد شدن یکی، دیگری را برنمی‌گرداند.
+
+**۲. هیچ کندل ساختگی‌ای زیر نماد واقعی ذخیره نمی‌شود.** نبود دیتا حالا خطای
+`NoRealData` با دستور دقیق است. اسکریپت‌های دمو همچنان کندل می‌سازند — چون
+کارشان همین است — ولی زیر `DEMOXAU` که alias هیچ چیز واقعی‌ای نیست. تستی
+این را اجبار می‌کند: هر اسکریپتی که `generate_sample()` صدا می‌زند حق ندارد
+نام نماد طلا داشته باشد.
+
+**۳. سطر فقط از دو سرِ سری حذف می‌شود.** خواستهٔ صریح کاربر:
+«این کار فقط برای ابتدای دیتاست، اونم بخاطر اندیکاتورایی مثل SMA».
+
+| کجا | مثال | کار |
+|---|---|---|
+| ابتدا | `SMA 200` | حذف سطر → `dropped_warmup` |
+| انتها | `chikou`، `*_target_p1` | حذف سطر → `dropped_tail` |
+| **وسط** | `NaN` وسط سری | حذف **ستون** → `holed_features` |
+
+`FeatureMatrix.is_contiguous` این تضمین را صریح می‌کند و
+`TimeframeSlice.contiguous` آن را در manifest ثبت.
+
+**۴. زیر نام بروکر بگیر، زیر نام canonical ذخیره کن.**
+`fetch_and_update(..., store_as=...)` قبل از merge برچسب می‌زند. backfill
+هنوز با نام بروکر از MT5 می‌پرسد (تنها نامی که MT5 می‌شناسد) و جوابش را
+canonical ذخیره می‌کند. دیتای قدیمی زیر alias هنوز پیدا می‌شود ولی
+`symbol_scope.py` **می‌گوید** که از alias استفاده کرده — سکوت، تکرار همان
+اشتباه بود.
+
+### ساخته شد
+
+| فایل | نقش |
+|---|---|
+| `infrastructure/data/symbol_scope.py` | `StoredSymbol`، `alias_candidates`، `resolve_stored_symbol`، `stored_symbols` |
+| `tests/integration/test_dual_timeframe_datasets.py` | ۲۳ تست، یک کلاس برای هر باگ |
+| `docs/Phases/Phase35.md` | سند فاز |
+
+### تغییر کرد
+
+- `infrastructure/ai/feature_matrix.py` — برش دو سر، `holed_features`، `dropped_tail`، `is_contiguous`
+- `domain/dataset/training_dataset.py` — سه فیلد و سه هشدار جدید در slice
+- `application/services/training_data_service.py` — عبور فیلدها
+- `application/services/dataset_update_service.py` — `store_as`، `_relabel`، backfill آگاه از بروکر
+- `presentation/commands/handlers.py` — `parse_timeframes`، fetch چندتایم‌فریمی، `missing_timeframes`، حذف fallback نمونه
+- `scripts/run_{training_dataset,dual_models,weekly_update,live_loop}.py` — `NoRealData`
+- ده اسکریپت دمو + شش CLI — نماد `XAUUSD_i` → `DEMOXAU` یا `XAUUSD`
+
+### تصمیمی که گرفته نشد
+
+**به «Build training dataset» فیلد timeframe اضافه نشد.** اگر اضافه می‌شد،
+اپراتور می‌توانست 5M را روی 1H کهنه بسازد و دو مدل روی تاریخچه‌هایی که در دو
+لحظهٔ متفاوت تمام می‌شوند آموزش ببینند. **جفت، واحد کار است.**
+
+### تأیید
+
+```
+black --check .                 ✅ 407 files
+ruff check .                    ✅
+mypy src --python-version 3.12  ✅ 288 files
+pytest                          ✅ 1205 passed, 12 skipped   (قبلاً 1182)
+RUN_TF=1                        ✅ 278 + 344 + 592
+```
+**۲۳ تست جدید.**
+
+اجرای دمو دو بار: بار دوم `added 0` و digest هر دو slice بایت‌به‌بایت یکسان.
+
+```
+5M: 1,000 candles -> 897 rows x 123 cols | front 77 | tail 26 | contiguous True
+1H: 1,000 candles -> 897 rows x 123 cols | front 77 | tail 26 | contiguous True
+symbols on disk: ['XAUUSD']        ← گرچه از XAUUSD_i گرفته شد
+```
+
+**گزارش:** `PHASE35_REPORT.md`
+
+---
+
 ## قدم بعدی توافق‌شده
 
 **C — اتصال به دیتای واقعی MetaTrader 5.**
