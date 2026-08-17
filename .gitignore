@@ -154,3 +154,4 @@ secrets.json
 *.csv
 *.exe
 config.ini
+*.parquet
