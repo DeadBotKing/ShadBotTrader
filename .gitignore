@@ -1,157 +1,95 @@
-# ============================================================
-# Python
-# ============================================================
 
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Byte-compiled / optimized
-*.pyo
-*.pyd
-
-# Python packaging
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# ============================================================
-# Testing / Coverage
-# ============================================================
-
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pyre/
-
-# ============================================================
-# Linters / Formatters / Type Checkers
-# ============================================================
-
-.ruff_cache/
-.black_cache/
-.pytype/
-
-# ============================================================
-# Environment / Secrets
-# ============================================================
-
-.env
-.env.*
 !.env.example
-
-# ============================================================
-# IDE / Editors
-# ============================================================
-
-.vscode/
-.idea/
-*.swp
-*.swo
-*.swn
-
-# ============================================================
-# OS
-# ============================================================
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Linux
-*~
-
-# ============================================================
-# Logs
-# ============================================================
-
-*.log
-logs/
-
-# ============================================================
-# Temporary files
-# ============================================================
-
-*.tmp
-*.temp
-*.bak
-*.swp
-*.swo
-
-# ============================================================
-# Jupyter
-# ============================================================
-
-.ipynb_checkpoints/
-
-# ============================================================
-# Local project/runtime data
-# ============================================================
-
-.cache/
-.tmp/
-temp/
-tmp/
-
-# ============================================================
-# Local databases
-# ============================================================
-
-*.sqlite
-*.sqlite3
-*.db
-*.db-wal
-*.db-shm
-shadbot.db*
-demo_state.db*
-
 # ============================================================
 # Build / generated artifacts
-# ============================================================
-
-*.manifest
-*.spec
-
-# ============================================================
+# Byte-compiled / optimized
+# Environment / Secrets
+# IDE / Editors
+# Jupyter
+# Linters / Formatters / Type Checkers
+# Linux
+# Local databases
+# Local project/runtime data
+# Logs
+# OS
+# Python
+# Python cache
+# Python packaging
 # Secrets / credentials
-# ============================================================
-
-*.pem
-*.key
+# Temporary files
+# Testing / Coverage
+# Virtual environments
+# Windows
+# macOS
+*$py.class
+*.bak
 *.crt
-credentials.json
-secrets.json
-
-
-# ============================================================
-# Secrets / credentials
-# ============================================================
-*.h5
-*.png
 *.csv
+*.db
+*.db-shm
+*.db-wal
+*.egg
+*.egg-info/
 *.exe
-config.ini
-*.parquet
+*.h5
+*.key
+*.log
+*.manifest
+*.pem
+*.png
+*.py[cod]
+*.pyd
+*.pyo
+*.spec
+*.sqlite
+*.sqlite3
+*.swn
+*.swo
+*.swp
+*.temp
+*.tmp
+*~
+.AppleDouble
+.DS_Store
+.LSOverride
+.black_cache/
+.cache/
+.coverage
+.coverage.*
+.dmypy.json
+.eggs/
+.env
+.env.*
+.idea/
+.ipynb_checkpoints/
+.mypy_cache/
+.nox/
+.pyre/
+.pytest_cache/
+.pytype/
+.ruff_cache/
+.tmp/
+.tox/
+.venv/
+.vscode/
+Desktop.ini
+ENV/
+Thumbs.db
+__pycache__/
+build/
+config.inirun_logs/
+credentials.json
+demo_state.db*
+dist/
+dmypy.json
+ehthumbs.db
+env.bak/
+env/
+htmlcov/
+logs/
+secrets.json
+shadbot.db*
+temp/
+tmp/
+venv.bak/
+venv/

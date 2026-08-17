@@ -116,6 +116,9 @@ button:disabled { background: var(--border); color: var(--muted); cursor: not-al
               border-radius: 4px; color: var(--text); font-size: 11px;
               white-space: pre-wrap; overflow-x: auto; }
 .busy { background: rgba(210,153,34,.12); }
+.runlog { max-height: 320px; overflow-y: auto; font-family: ui-monospace,
+          SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
+          line-height: 1.45; }
 """
 
 
@@ -413,12 +416,47 @@ def render_actions(
 
     banner = ""
     if busy is not None:
-        banner = (
-            f'<div class="banner busy warning"><div class="head">'
-            f"Running: {_e(busy.value)}</div>"
-            f"<div>{busy_seconds:.0f}s elapsed — reload the page to check progress. "
-            f"Buttons are disabled until it finishes.</div></div>"
-        )
+        # Phase 36: a live view of the running script. Before this, the
+        # page said "reload to check progress" and reloading showed the
+        # same thing — the output only existed once the process exited.
+        banner = f"""<div class="banner busy warning"><div class="head">
+Running: {_e(busy.value)} <span id="run-elapsed">{busy_seconds:.0f}s</span></div>
+<div>Live output below, refreshed every 2 seconds. Buttons are disabled
+until it finishes.</div>
+<pre id="run-log" class="runlog">waiting for the first line ...</pre>
+</div>
+<script>
+(function () {{
+  var log = document.getElementById("run-log");
+  var elapsed = document.getElementById("run-elapsed");
+  if (!log) return;
+  var stick = true;
+  log.addEventListener("scroll", function () {{
+    stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 24;
+  }});
+  function tick() {{
+    fetch("/api/log?lines=300", {{ headers: {{ "Accept": "application/json" }} }})
+      .then(function (r) {{ return r.json(); }})
+      .then(function (data) {{
+        if (data.lines && data.lines.length) {{
+          log.textContent = data.lines.join("\n");
+          if (stick) log.scrollTop = log.scrollHeight;
+        }}
+        if (elapsed && data.running_for_seconds != null) {{
+          elapsed.textContent = Math.round(data.running_for_seconds) + "s";
+        }}
+        if (data.busy) {{
+          setTimeout(tick, 2000);
+        }} else {{
+          // The run finished: reload once so the result panel appears.
+          window.location.reload();
+        }}
+      }})
+      .catch(function () {{ setTimeout(tick, 4000); }});
+  }}
+  tick();
+}})();
+</script>"""
 
     return f"""<section class="panel wide">
   <h2>Actions — every run lives here</h2>

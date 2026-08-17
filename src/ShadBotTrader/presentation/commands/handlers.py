@@ -34,6 +34,35 @@ Handler = Callable[[Command], CommandResult]
 TRAINING_TIMEFRAMES: tuple[str, ...] = ("5M", "1H")
 
 
+#: Where a running script's output is streamed so the dashboard and the
+#: operator can watch it while it is still running (Phase 36).
+RUN_LOG_DIR = Path("run_logs")
+
+
+def run_log_path(action: str, root: "str | Path" = RUN_LOG_DIR) -> Path:
+    """The live log file for one command.
+
+    One file per command kind, overwritten each run: the point is to
+    answer "what is happening right now", and an ever-growing archive of
+    old attempts makes that question harder, not easier. Finished runs
+    are already summarised in the command history.
+    """
+    safe = "".join(character for character in action if character.isalnum() or character in "-_")
+    return Path(root) / f"{safe or 'command'}.log"
+
+
+def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200) -> List[str]:
+    """The last ``lines`` of a command's live log, or an empty list."""
+    path = run_log_path(action, root)
+    if not path.exists():
+        return []
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return text.splitlines()[-lines:]
+
+
 def parse_timeframes(raw: str) -> List[str]:
     """Split a ``5M,1H`` field into an ordered, de-duplicated list."""
     seen: List[str] = []
@@ -92,12 +121,24 @@ def descriptors() -> List[CommandDescriptor]:
             kind=CommandKind.COMPUTE_FEATURES,
             label="Update features",
             description=(
-                "Recompute the standard feature set over the stored candles "
-                "and register the definitions in the database."
+                "Compute the standard feature set for EVERY listed timeframe, "
+                "each stored separately. Stored features are REUSED until the "
+                "candles change; updating the dataset forces a full recompute."
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
-                CommandField("timeframe", "Timeframe", "5M"),
+                CommandField(
+                    "timeframe",
+                    "Timeframes",
+                    "5M,1H",
+                    hint="comma separated — each one is computed and stored separately",
+                ),
+                CommandField(
+                    "force",
+                    "Force recompute",
+                    "0",
+                    hint="1 = recompute even when the candles have not changed",
+                ),
             ],
             slow=True,
             group="Data",
@@ -363,10 +404,15 @@ class CommandHandlers:
         # Where "Record a replay" writes its player. The server serves this
         # file at /replay, so the two must agree on one location.
         self._replay_path = Path(replay_path)
+        self._run_log_dir = RUN_LOG_DIR
 
     @property
     def replay_path(self) -> Path:
         return self._replay_path
+
+    def run_log_path(self, action: str) -> Path:
+        """Where this handler streams a script's output while it runs."""
+        return run_log_path(action, self._run_log_dir)
 
     def registry(self) -> Dict[CommandKind, Handler]:
         registry: Dict[CommandKind, Handler] = {
@@ -551,10 +597,28 @@ class CommandHandlers:
 
     # -- features ------------------------------------------------------------
     def compute_features(self, command: Command) -> CommandResult:
+        """Compute the feature catalogue for every requested timeframe.
+
+        Phase 37 changed three things:
+
+        * ``timeframe`` accepts a list and defaults to ``5M,1H``, because
+          the two models train on two different timeframes and computing
+          only one silently left the other stale.
+        * each timeframe is stored under its own directory, so 5M and 1H
+          copies of ``atr_14`` no longer land in the same folder as two
+          indistinguishable versions.
+        * progress is streamed to the run log while it happens: 109
+          features over 100k candles takes minutes and used to print
+          nothing at all.
+        """
         from ShadBotTrader.data_cli import build_service
         from ShadBotTrader.domain.market.symbol import Symbol
         from ShadBotTrader.domain.market.timeframe import Timeframe
         from ShadBotTrader.feature_cli import _build_service as build_feature_service
+        from ShadBotTrader.infrastructure.data.symbol_scope import resolve_stored_symbol
+        from ShadBotTrader.infrastructure.feature.feature_progress import (
+            ConsoleFeatureProgress,
+        )
         from ShadBotTrader.infrastructure.feature.standard_catalog import (
             standard_feature_set_v1,
         )
@@ -564,57 +628,101 @@ class CommandHandlers:
         )
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD")
-        timeframe = command.text("timeframe", "5M")
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        timeframes = parse_timeframes(command.text("timeframe", "5M,1H"))
+        force = command.text("force", "0").strip() == "1"
+        if not timeframes:
+            return CommandResult.rejected(
+                command.kind, "No timeframe given. Use for example: 5M,1H"
+            )
 
         _, store, _ = build_service(self._storage_root)
-        candles = store.query(Symbol(symbol), Timeframe(timeframe))
-        if not candles:
-            return CommandResult.rejected(
-                command.kind,
-                f"No stored candles for {symbol} {timeframe}. Fetch data first.",
-            )
-
         feature_set = standard_feature_set_v1()
-        try:
-            service, _, _ = build_feature_service(self._storage_root)
-            outcome = service.compute_set(
-                feature_set=feature_set,
-                symbol=Symbol(symbol),
-                timeframe=Timeframe(timeframe),
-                candles=candles,
-                source_dataset_id=(f"csv.market_candle.{symbol}.{timeframe}.L3_normalized"),
-                dataset_version=1,
-            )
-        except Exception as error:
-            return CommandResult.failure(
-                command.kind,
-                "Feature computation failed",
-                str(error),
-                time.monotonic() - started,
-            )
 
-        # record the catalogue in the database so the dashboard can show it
+        log_path = self.run_log_path(command.kind.value)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        lines: List[str] = [f"feature set : {feature_set.name}"]
+        failed: List[str] = []
+
+        with log_path.open("w", encoding="utf-8", errors="replace") as log:
+            reporter = ConsoleFeatureProgress(stream=log)
+
+            for timeframe in timeframes:
+                resolved = resolve_stored_symbol(store, symbol, timeframe)
+                if not resolved.found:
+                    message = (
+                        f"{timeframe}: no stored candles for {symbol}. "
+                        f"Run 'Fetch market data' first."
+                    )
+                    log.write(f"\n[X] {message}\n")
+                    log.flush()
+                    lines.append(f"{timeframe}: SKIPPED — no candles")
+                    failed.append(timeframe)
+                    continue
+
+                candles = store.query(Symbol(resolved.resolved), Timeframe(timeframe))
+                try:
+                    service, _, _ = build_feature_service(self._storage_root)
+                    service._progress = reporter
+                    outcome = service.compute_set(
+                        feature_set=feature_set,
+                        symbol=Symbol(symbol),
+                        timeframe=Timeframe(timeframe),
+                        candles=candles,
+                        source_dataset_id=(f"csv.market_candle.{symbol}.{timeframe}.L3_normalized"),
+                        dataset_version=1,
+                        force=force,
+                    )
+                except Exception as error:
+                    log.write(f"\n[X] {timeframe}: {type(error).__name__}: {error}\n")
+                    log.flush()
+                    lines.append(f"{timeframe}: FAILED — {error}")
+                    failed.append(timeframe)
+                    continue
+
+                quarantined = sum(1 for item in outcome.outcomes if item.quarantined)
+                research = sum(1 for item in outcome.outcomes if not item.live_compatible)
+                if outcome.from_cache:
+                    # Phase 38: unchanged candles mean the stored values
+                    # are still correct, so nothing was recomputed.
+                    lines.append(
+                        f"{timeframe}: {outcome.reused_count} feature(s) REUSED "
+                        f"from the store — the dataset has not changed"
+                    )
+                else:
+                    lines.append(
+                        f"{timeframe}: {len(outcome.outcomes) - quarantined}/"
+                        f"{len(outcome.outcomes)} recomputed over "
+                        f"{len(candles):,} candles "
+                        f"({quarantined} quarantined, {research} research-only)"
+                    )
+
+        # Record the catalogue in the database so the dashboard can show it.
         database = Database(self._database_path)
         registry = SqliteFeatureRegistry(database)
         for definition in feature_set.definitions:
             registry.register(definition)
         database.close()
 
-        quarantined = sum(1 for item in outcome.outcomes if item.quarantined)
-        research_only = sum(1 for item in outcome.outcomes if not item.live_compatible)
+        lines.append("")
+        lines.append(f"{len(feature_set.definitions)} definitions registered in the database")
+        lines.append("Each timeframe is stored separately: features/{symbol}/{timeframe}/")
+        lines.append("Inspect them: open /data")
+
+        if failed:
+            return CommandResult.failure(
+                command.kind,
+                f"{symbol}: {len(failed)} of {len(timeframes)} timeframe(s) failed "
+                f"({', '.join(failed)})",
+                "\n".join(lines),
+                time.monotonic() - started,
+            )
+
         return CommandResult.success(
             command.kind,
-            f"Computed {len(outcome.outcomes)} features over {len(candles)} candles",
-            [
-                f"feature set : {outcome.set_name}",
-                f"computed    : {len(outcome.outcomes) - quarantined}",
-                f"quarantined : {quarantined}",
-                f"research    : {research_only} (not live-compatible)",
-                f"{len(feature_set.definitions)} definitions registered in the database",
-                "",
-                "Inspect them: open /data",
-            ],
+            f"{symbol}: features computed for {', '.join(timeframes)}",
+            lines,
             time.monotonic() - started,
         )
 
@@ -1084,6 +1192,11 @@ class AccountCommandHandlers:
         self._database_path = Path(database_path)
         self._storage_root = Path(storage_root)
         self._account_store = Path(account_store)
+        self._run_log_dir = RUN_LOG_DIR
+
+    def run_log_path(self, action: str) -> Path:
+        """Where this handler streams a script's output while it runs."""
+        return run_log_path(action, self._run_log_dir)
 
     # -- helpers ------------------------------------------------------------
     def _store(self):
@@ -1359,6 +1472,8 @@ class AccountCommandHandlers:
                 symbol,
                 "--candles",
                 str(candles),
+                "--storage-root",
+                str(self._storage_root),
             ],
             f"Built the 5M and 1H datasets for {symbol}",
             started,
@@ -1375,6 +1490,8 @@ class AccountCommandHandlers:
             str(max(command.integer("candles", 100_000), 1000)),
             "--db",
             str(self._database_path),
+            "--storage-root",
+            str(self._storage_root),
         ]
         if command.text("force", "0").strip() == "1":
             arguments.append("--force")
@@ -1403,6 +1520,8 @@ class AccountCommandHandlers:
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                "--storage-root",
+                str(self._storage_root),
             ],
             "Both models trained",
             started,
@@ -1427,6 +1546,8 @@ class AccountCommandHandlers:
                 "1",
                 "--symbol",
                 command.text("symbol", "XAUUSD"),
+                "--storage-root",
+                str(self._storage_root),
             ],
             "Live tick complete",
             started,
@@ -1500,29 +1621,74 @@ class AccountCommandHandlers:
         started: float,
         timeout: int = 900,
     ) -> CommandResult:
-        """Run a project script and turn its output into a result.
+        """Run a project script, streaming its output to a live log.
 
         Scripts run in a subprocess so a crash inside one cannot take the
         dashboard down with it, and so a long run can be time-limited.
+
+        Phase 36: the output is read line by line and appended to
+        ``run_logs/{command}.log`` **as it arrives**, instead of being
+        collected by ``subprocess.run`` and revealed only at the end. A
+        twenty-minute training run that prints nothing until it finishes
+        is indistinguishable from one that has hung, and the operator has
+        no way to tell whether the loss is falling.
+
+        Two details make the stream actually live:
+
+        * ``PYTHONUNBUFFERED=1`` — otherwise Python buffers 8 KB of stdout
+          when the far end is a pipe rather than a terminal, so the log
+          would arrive in bursts long after the epoch produced it.
+        * ``bufsize=1`` with ``text=True`` — line buffering on our side.
         """
+        import os
         import subprocess
         import sys
 
+        log_path = self.run_log_path(command.kind.value)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        environment = dict(os.environ)
+        environment["PYTHONUNBUFFERED"] = "1"
+
+        tail: List[str] = []
+        deadline = time.monotonic() + timeout
+
         try:
-            completed = subprocess.run(
-                [sys.executable, *arguments],
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=str(Path.cwd()),
-            )
-        except subprocess.TimeoutExpired:
-            return CommandResult.failure(
-                command.kind,
-                f"Timed out after {timeout // 60} minutes",
-                "Reduce the size of the run, or start it from a terminal.",
-                time.monotonic() - started,
-            )
+            with log_path.open("w", encoding="utf-8", errors="replace") as log:
+                log.write(f"$ {' '.join(arguments)}\n")
+                log.flush()
+
+                process = subprocess.Popen(
+                    [sys.executable, *arguments],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    cwd=str(Path.cwd()),
+                    env=environment,
+                )
+
+                assert process.stdout is not None
+                for line in process.stdout:
+                    log.write(line)
+                    log.flush()
+                    stripped = line.rstrip("\n")
+                    if stripped.strip():
+                        tail.append(stripped)
+                        if len(tail) > 400:
+                            del tail[:200]
+                    if time.monotonic() > deadline:
+                        process.kill()
+                        log.write("\n[killed: timeout]\n")
+                        return CommandResult.failure(
+                            command.kind,
+                            f"Timed out after {timeout // 60} minutes",
+                            "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
+                            "from a terminal.",
+                            time.monotonic() - started,
+                        )
+
+                returncode = process.wait()
         except Exception as error:
             return CommandResult.failure(
                 command.kind,
@@ -1531,16 +1697,15 @@ class AccountCommandHandlers:
                 time.monotonic() - started,
             )
 
-        output = completed.stdout.strip().splitlines()
-        if completed.returncode != 0:
+        if returncode != 0:
             return CommandResult.failure(
                 command.kind,
                 "The script reported a failure",
-                (completed.stderr or "\n".join(output[-25:]))[-1500:],
+                ("\n".join(tail[-25:]))[-1500:],
                 time.monotonic() - started,
             )
 
-        interesting = [line for line in output if line.strip() and not line.startswith("=")]
+        interesting = [line for line in tail if not line.startswith("=")]
         return CommandResult.success(
-            command.kind, success_message, interesting[-20:], time.monotonic() - started
+            command.kind, success_message, interesting[-25:], time.monotonic() - started
         )

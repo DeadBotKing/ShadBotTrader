@@ -66,6 +66,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(self._state(session))
             elif route.path == "/api/status":
                 self._send_json(self._status())
+            elif route.path == "/api/log":
+                self._send_json(self._run_log(query))
             elif route.path == "/health":
                 self._send_json({"status": "ok", "database": self.database_path})
             elif route.path == "/favicon.ico":
@@ -258,6 +260,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "running_for_seconds": round(bus.running_for_seconds, 1),
             "available": [item.action for item in descriptors()],
             "history": [item.to_dict() for item in bus.history()],
+        }
+
+    def _run_log(self, query: dict[str, list[str]]) -> dict[str, Any]:
+        """The live output of a running (or just-finished) command.
+
+        Polled by the dashboard every two seconds while a command runs,
+        so a long training job shows its epochs as they happen instead of
+        looking frozen until it exits (Phase 36).
+        """
+        from ShadBotTrader.presentation.commands.handlers import read_run_log
+
+        bus = self.bus
+        running = bus.running.value if (bus is not None and bus.running) else None
+        action = (query.get("command", [None])[0] or running or "").strip()
+
+        if not action:
+            return {"command": None, "busy": False, "lines": []}
+
+        return {
+            "command": action,
+            "busy": bool(bus is not None and bus.is_busy),
+            "running": running,
+            "running_for_seconds": round(bus.running_for_seconds, 1) if bus else 0.0,
+            "lines": read_run_log(action, lines=int(query.get("lines", ["200"])[0] or 200)),
         }
 
     # -- request helpers -------------------------------------------------

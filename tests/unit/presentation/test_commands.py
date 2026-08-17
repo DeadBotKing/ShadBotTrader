@@ -320,7 +320,11 @@ class TestComputeFeaturesCommand:
         )
 
         assert result.status is CommandStatus.SUCCEEDED, result.detail
-        assert "109" in result.message
+        # Phase 37: the headline names the series; the per-timeframe
+        # counts moved into the detail lines because one run may now
+        # cover several timeframes.
+        assert "5M" in result.message
+        assert "109" in "\n".join(result.lines)
         assert any("feature set" in line for line in result.lines)
 
     def test_the_definitions_reach_the_database(self, tmp_path):

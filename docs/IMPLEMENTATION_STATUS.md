@@ -3,9 +3,9 @@
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
 - **آخرین به‌روزرسانی:** 2026-08-17
-- **آخرین کار انجام‌شده:** **فاز ۳۵** — دو دیتاست مجزا (5M/1H) و ممنوعیت دیتای ساختگی
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (288 files)` · `pytest 1205 passed, 12 skipped`
-- **تعداد فایل منبع:** ۲۸۸ · **فایل تست:** ۸۵
+- **آخرین کار انجام‌شده:** **فاز ۳۸** — کش ویژگی‌ها بر پایهٔ اثر انگشت دیتاست
+- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (290 files)` · `pytest 1267 passed, 13 skipped`
+- **تعداد فایل منبع:** ۲۹۰ · **فایل تست:** ۸۸
 - ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
 
@@ -48,6 +48,9 @@
 | ۲۶ | Freeze v1.0 | ✅ رعایت می‌شود | معماری منجمد دست‌نخورده مانده |
 | ۲۷ | Architecture Implementation | ✅ کامل | bootstrap/runtime/lifecycle |
 | ۲۸ | Implementation Foundation | 🔄 در حال انجام | Sprint P0…P8 + Replay + MT5 |
+| **۳۸** | **Feature Caching** | ✅ **کامل (جدید)** | `infrastructure/feature/feature_cache.py` — اثر انگشت کندل‌ها، استفادهٔ مجدد تا آپدیت دیتاست، محاسبهٔ کامل (نه append) بعد از تغییر |
+| **۳۷** | **Feature Visibility & Per-Series Storage** | ✅ **کامل (جدید)** | `infrastructure/feature/feature_progress.py`، چیدمان `features/{symbol}/{timeframe}/`، دکمهٔ چندتایم‌فریمی، ستون Series در `/data` |
+| **۳۶** | **Training Visibility** | ✅ **کامل (جدید)** | `_run_script` استریم زنده، `GET /api/log`، پنل لاگ در داشبورد، `fold_metrics`، مقایسه با majority-class baseline |
 | **۳۵** | **Dual-Timeframe Datasets** | ✅ **کامل (جدید)** | `infrastructure/data/symbol_scope.py` — دو دیتاست ۵ دقیقه/۱ ساعته، برش سطر فقط از دو سر، ممنوعیت کندل ساختگی، یک نماد canonical |
 | **۳۴** | **Data Inspection** | ✅ **کامل (جدید)** | `presentation/gateway/data_inspector.py`، `presentation/web/data_renderer.py` — چارت شمعی، شمارش کندل، فهرست ستون‌ها |
 | **۳۳** | **Dataset Continuity** | ✅ **کامل (جدید)** | `domain/dataset/continuity.py`، `application/services/dataset_update_service.py` — append، سقف ۱۰۰k، تقویم یادگیرنده، backfill |
@@ -193,6 +196,26 @@ hit rate:      0.118 → 0
     هرگز استفاده‌اش نمی‌کرد. در Keras 3 هر لایه وزن اولیه را از مولد خودش
     می‌گیرد، پس `tf.random.set_seed` کافی نیست. دو اجرای یکسان نتیجهٔ متفاوت
     می‌داد — نقض مستقیم فاز ۱۳ §۳۴. رفع: `keras.utils.set_random_seed`.
+۲۸. **ویژگی‌های ۵ دقیقه و ۱ ساعته روی هم می‌افتادند** — مسیر ذخیره‌سازی
+    `features/{feature_id}/v{n}.parquet` بود، بدون نماد و تایم‌فریم. `atr_14`
+    برای 5M می‌شد `v1` و برای 1H می‌شد `v2` در همان پوشه: دو کمیت متفاوت،
+    غیرقابل تشخیص، با شمارندهٔ نسخهٔ مشترک. آموزش سالم بود چون مدل‌ها این
+    انبار را نمی‌خوانند (در حافظه از نو حساب می‌کنند)، ولی هر مصرف‌کنندهٔ
+    دیگری دیتای اشتباه می‌گرفت. رفع: `features/{symbol}/{timeframe}/...`
+    بدون تغییر پورت فریزشدهٔ `FeatureRepository`.
+۲۷. **`--storage-root` داشبورد به اسکریپت‌ها نمی‌رسید** — چهار دکمه‌ای که
+    اسکریپت اجرا می‌کنند آن را پاس نمی‌دادند، پس اسکریپت سراغ `datasets/`
+    پیش‌فرض مخزن می‌رفت. کاربر در `/data` هزاران کندل می‌دید و آموزش
+    می‌گفت «کندلی نیست». موقع تست زندهٔ فاز ۳۶ پیدا شد.
+۲۶. **accuracy محاسبه و دور ریخته می‌شد** — کراس هر epoch آن را حساب
+    می‌کرد و trainer فقط `val_loss` را نگه می‌داشت. «مدل چقدر خوبه؟» در
+    هیچ جای سیستم جواب نداشت. رفع: `fold_metrics` + مقایسه با baseline.
+۲۵. **`ConsoleProgressReporter` ساخته شده بود و هیچ‌کس صدایش نمی‌زد** — از
+    فاز ۱۳ وجود داشت ولی هیچ فراخوانی‌ای `progress=` پاس نمی‌داد، پس همیشه
+    `NullProgressReporter` فعال بود.
+۲۴. **خروجی اسکریپت تا پایان کار buffer می‌شد** — `subprocess.run` تا exit
+    پروسه برنمی‌گردد، پس آموزش بیست‌دقیقه‌ای بیست دقیقه سکوت بود و صفحهٔ وب
+    می‌گفت «reload کن» در حالی که reload همان هیچ را نشان می‌داد.
 ۲۳. **یک نماد، دو دیتاست** — fetch زیر نام بروکر (`XAUUSD_i`) می‌نوشت و بقیهٔ
     پلتفرم canonical (`XAUUSD`) می‌خواند. build چیزی پیدا نمی‌کرد و به باگ ۲۱
     می‌رسید. رفع: `store_as` + `symbol_scope.py` که alias قدیمی را هم پیدا

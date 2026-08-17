@@ -6,19 +6,19 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-17T08:32:26.566657+00:00
+- Snapshot generated at: 2026-08-17T10:57:37.476744+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 288
-- Test modules: 101
+- Source modules: 290
+- Test modules: 104
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features)
 
 ## Implemented Components
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (2365 files)
+- Dirty: yes (2395 files)
 - Recent commits:
   - 22e6743 NewFixSprint02
   - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Train on real market data. Every synthetic path into the store is now closed (Phase 35), MT5 is connected, and the platform builds two real datasets — 5M for the signal model and 1H for the range model. What has never happened is a training run on actual broker prices: from the dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train both models. Only then does any backtest number mean anything.
+Train on real market data. Every synthetic path into the store is now closed (Phase 35), MT5 is connected, and the platform builds two real datasets — 5M for the signal model and 1H for the range model. What has never happened is a training run on actual broker prices: from the dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train both models — and Phase 36 now shows the loss and accuracy of that run as it happens. Only then does any backtest number mean anything.
 
 ## Statistics
 
-- Total files: 675
-- Source files: 288
-- Test files: 101
-- Documentation files: 52
+- Total files: 686
+- Source files: 290
+- Test files: 104
+- Documentation files: 55
 - Legacy files: 175
-- Total Python lines: 94711
-- Modules: 389
-- Classes: 618
-- Functions: 3623
+- Total Python lines: 96759
+- Modules: 394
+- Classes: 640
+- Functions: 3733
 - External dependencies: 12

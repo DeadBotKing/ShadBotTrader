@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import List, Sequence
+from typing import Dict, List, Sequence
 
 from ShadBotTrader.domain.ai.inference import InferenceRequest
 from ShadBotTrader.domain.ai.model_artifact import ModelArtifact
@@ -133,6 +133,8 @@ class WavenetTrainer(ModelTrainer):
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self.fold_history: List[float] = []
+        #: Final-epoch metrics per fold (loss, val_loss, accuracy, mae...).
+        self.fold_metrics: List[Dict[str, float]] = []
 
     @property
     def framework(self) -> str:
@@ -176,6 +178,7 @@ class WavenetTrainer(ModelTrainer):
             folds = folds[-self._max_folds :]
 
         self.fold_history = []
+        self.fold_metrics = []
         last_model = None
         # Target columns are removed from the feature windows, so the
         # model sees fewer columns than the raw series has.
@@ -248,6 +251,14 @@ class WavenetTrainer(ModelTrainer):
             )
             val_loss = float(history.history["val_loss"][-1])
             self.fold_history.append(val_loss)
+            # Phase 36: Keras computes accuracy (or MAE) every epoch and
+            # the trainer used to discard all of it, keeping only the
+            # loss. "Is the model any good?" then had no answer anywhere
+            # in the system. The final-epoch value of every metric is
+            # kept per fold.
+            self.fold_metrics.append(
+                {name: float(values[-1]) for name, values in history.history.items() if values}
+            )
             last_model = model
             self._progress.on_fold_end(fold_info, val_loss)
 

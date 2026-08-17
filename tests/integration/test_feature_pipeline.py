@@ -103,9 +103,12 @@ def test_full_feature_pipeline(tmp_path):
     assert len(set_events) == 1
     assert set_events[0].payload["computed"] == 109
 
-    # features stored and loadable
+    # Features are stored under their own series (Phase 37), so the check
+    # must ask the store scoped to the symbol and timeframe that produced
+    # them — an unscoped store deliberately looks somewhere else.
+    stored = feature_store.for_series("XAUUSD_i", "5M")
     for outcome in result.outcomes:
-        assert feature_store.exists(outcome.feature_id, outcome.version)
+        assert stored.exists(outcome.feature_id, outcome.version)
 
     # registry has all definitions
     assert len(registry.list_all()) == 109

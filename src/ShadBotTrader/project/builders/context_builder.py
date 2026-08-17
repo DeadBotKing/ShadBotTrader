@@ -14,7 +14,8 @@ NEXT_PHASE = (
     "datasets — 5M for the signal model and 1H for the range model. What has "
     "never happened is a training run on actual broker prices: from the "
     "dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train "
-    "both models. Only then does any backtest number mean anything."
+    "both models — and Phase 36 now shows the loss and accuracy of that "
+    "run as it happens. Only then does any backtest number mean anything."
 )
 
 KNOWN_ISSUES = [

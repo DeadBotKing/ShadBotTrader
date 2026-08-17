@@ -248,25 +248,41 @@ class DataInspector:
             return {"exists": False, "count": 0, "features": []}
 
         entries: List[Dict[str, Any]] = []
-        for feature_dir in sorted(directory.iterdir()):
-            if not feature_dir.is_dir():
-                continue
+
+        def collect(feature_dir: Path, series: str) -> None:
             versions = sorted(
                 int(path.stem[1:])
                 for path in feature_dir.glob("v*.parquet")
                 if path.stem[1:].isdigit()
             )
             if not versions:
-                continue
+                return
             newest = feature_dir / f"v{versions[-1]}.parquet"
             entries.append(
                 {
                     "feature_id": feature_dir.name,
+                    "series": series,
                     "versions": len(versions),
                     "latest_version": versions[-1],
                     "size_kb": round(newest.stat().st_size / 1024, 1),
                 }
             )
+
+        # Phase 37 layout: features/{symbol}/{timeframe}/{feature_id}/.
+        # Anything directly under features/ is pre-Phase-37 data whose
+        # series is unknown — it is listed as such rather than hidden.
+        for entry in sorted(directory.iterdir()):
+            if not entry.is_dir():
+                continue
+            if list(entry.glob("v*.parquet")):
+                collect(entry, "legacy (no timeframe recorded)")
+                continue
+            for timeframe_dir in sorted(entry.iterdir()):
+                if not timeframe_dir.is_dir():
+                    continue
+                for feature_dir in sorted(timeframe_dir.iterdir()):
+                    if feature_dir.is_dir():
+                        collect(feature_dir, f"{entry.name} {timeframe_dir.name}")
 
         return {
             "exists": bool(entries),

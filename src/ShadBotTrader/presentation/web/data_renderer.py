@@ -324,6 +324,7 @@ def render_features_section(features: Dict[str, Any]) -> str:
     rows = [
         [
             _e(item["feature_id"]),
+            _e(item.get("series", "?")),
             f'v{item["latest_version"]}',
             str(item["versions"]),
             f'{item["size_kb"]:.1f} KB',
@@ -339,7 +340,7 @@ def render_features_section(features: Dict[str, Any]) -> str:
       <div class="v">{features["count"]}</div></div>
   </div>
   {note}
-  {_table(["Feature", "Latest", "Versions", "Size"], rows, "None stored.")}
+  {_table(["Feature", "Series", "Latest", "Versions", "Size"], rows, "None stored.")}
 </section>"""
 
 

@@ -2,8 +2,8 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Current phase: Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument)
-- Generated at: 2026-08-17T08:32:26.566657+00:00
+- Current phase: Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features)
+- Generated at: 2026-08-17T10:57:37.476744+00:00
 - Python version: 3.13.14
 - Git branch: main
 - Git commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
@@ -11,18 +11,18 @@
 
 ## Statistics
 
-- Source files: 288
-- Test files: 101
-- Documentation files: 52
+- Source files: 290
+- Test files: 104
+- Documentation files: 55
 - Legacy files: 175
-- Total Python lines: 94711
-- Modules: 389
-- Classes: 618
-- Functions: 3623
+- Total Python lines: 96759
+- Modules: 394
+- Classes: 640
+- Functions: 3733
 
 ## External dependencies (top 20)
 
-- pytest: used by 60 module(s)
+- pytest: used by 63 module(s)
 - numpy: used by 11 module(s)
 - tests: used by 11 module(s)
 - pandas: used by 7 module(s)

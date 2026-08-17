@@ -213,6 +213,12 @@ def do_build(args: argparse.Namespace, service, refresh: bool) -> int:
         print(f"        front rows removed (feature warm-up): " f"{item.warmup_dropped:,}")
         print(f"        tail rows removed (forward-looking columns): " f"{item.tail_dropped:,}")
         print(f"        rows are consecutive candles: {item.contiguous}")
+        # Make it impossible to wonder whether the catalogue is in there.
+        candle_columns = 14
+        print(
+            f"        columns = {candle_columns} candle-derived + "
+            f"{item.feature_columns - candle_columns} catalogue features"
+        )
         if item.holed_features:
             print(f"        columns dropped for interior gaps: " f"{len(item.holed_features)}")
         print(

@@ -287,6 +287,7 @@ class DualModelService:
             "definition": definition,
             "dataset": dataset.summary(),
             "fold_losses": list(trainer.fold_history),
+            "fold_metrics": [dict(item) for item in getattr(trainer, "fold_metrics", [])],
         }
 
 

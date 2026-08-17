@@ -63,6 +63,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="use the full 109-feature catalogue (slower)",
     )
     parser.add_argument("--storage-root", default=str(STORAGE_ROOT))
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="suppress the per-epoch training log",
+    )
     return parser.parse_args(argv)
 
 
@@ -166,6 +171,16 @@ def train_one(service, args, role, timeframe: str) -> int:
         print("      Install with: pip install -r requirements-ai.txt")
         return 0
 
+    # Phase 36: the reporter has existed since Phase 13 and nothing ever
+    # passed it, so a run that takes twenty minutes printed one line at
+    # the end. Silence during training is indistinguishable from a hang.
+    from ShadBotTrader.infrastructure.ai.training_progress import (
+        ConsoleProgressReporter,
+        NullProgressReporter,
+    )
+
+    reporter = NullProgressReporter() if args.quiet else ConsoleProgressReporter()
+
     print(f"\n  training roll-forward ({args.epochs} epoch(s), {args.folds} fold(s)) ...")
     outcome = service.train(
         candles,
@@ -175,9 +190,11 @@ def train_one(service, args, role, timeframe: str) -> int:
         run_id=f"{role.name}-demo",
         epochs=args.epochs,
         max_folds=args.folds,
+        progress=reporter,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
+    print_quality(outcome, role)
 
     # ---- one live prediction so the output is concrete -----------------
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
@@ -216,6 +233,53 @@ def train_one(service, args, role, timeframe: str) -> int:
         print(f"    actionable (>=60%): {forecast.is_actionable()}")
 
     return 0
+
+
+def print_quality(outcome: dict, role) -> None:
+    """Report how good the model actually is, not just that it ran.
+
+    Phase 36: the run printed fold losses and nothing else. A loss is
+    unitless — 0.31 means nothing on its own — so this prints the metric
+    that answers the question the operator is really asking.
+
+    For the signal model that is accuracy against the majority-class
+    baseline: a 3-class problem where one class dominates can reach 70%
+    accuracy by never doing anything, and a model that has not beaten
+    its baseline has learned nothing worth trading.
+    """
+    metrics = outcome.get("fold_metrics") or []
+    if not metrics:
+        return
+
+    final = metrics[-1]
+    print("\n  QUALITY (final fold)")
+    for name in sorted(final):
+        print(f"    {name:<16}: {final[name]:.6f}")
+
+    if role.name == "signal":
+        accuracy = final.get("val_accuracy", final.get("accuracy"))
+        distribution = outcome.get("dataset", {}).get("label_distribution") or {}
+        total = sum(distribution.values()) if distribution else 0
+        if accuracy is not None and total:
+            baseline = max(distribution.values()) / total
+            verdict = "BETTER than" if accuracy > baseline else "NO BETTER than"
+            print(
+                f"\n    val_accuracy {accuracy:.1%} vs majority-class baseline " f"{baseline:.1%}"
+            )
+            print(f"    -> the model is {verdict} always predicting the commonest class.")
+            if accuracy <= baseline:
+                print(
+                    "    With one epoch and a few folds this is expected; it is "
+                    "reported rather than hidden."
+                )
+    else:
+        mae = final.get("val_mae", final.get("mae"))
+        if mae is not None:
+            print(
+                f"\n    val_mae {mae:.6f} — average error of the predicted "
+                f"high/low offsets, as a fraction of price."
+            )
+            print(f"    On gold at 2,000 that is about {mae * 2000:.2f} USD per bound.")
 
 
 def main(argv: list[str] | None = None) -> int:
