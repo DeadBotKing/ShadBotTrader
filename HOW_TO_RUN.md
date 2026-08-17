@@ -312,12 +312,13 @@ Accounts → Switch account   بین اکانت‌ها جابه‌جا شو
 #### روال روزمره
 
 ```
-Data  → Fetch market data      Timeframes = 5M,1H  (هر دو در یک اجرا)
+Data  → Fetch market data      Timeframes = 5M,1H,1D  (هر سه در یک اجرا)
 Data  → Update features        ویژگی‌ها برای 5M و 1H، هرکدام جدا
                                ↳ لاگ زنده: کدام ویژگی، چندتا از ۱۰۹
                                ↳ تا دیتاست عوض نشده، از انبار خوانده می‌شود
 Data  → Build training dataset دو دیتاست: 5M و 1H، هرکدام ۱۲۳ ستون
-AI    → Train both models      مدل رنج (۱H) و سیگنال (۵M)
+Data  → Build a higher timeframe  اگر بروکر 1D نداد: از 1H بساز
+AI    → Train models           Model=range_1d یا range_1h یا signal
                                ↳ لاگ زنده هر ۲ ثانیه در همان صفحه
 Sim   → Record a replay        تماشای کندل‌به‌کندل در /replay
 Trade → Run one live tick      یک چرخهٔ کامل تصمیم‌گیری

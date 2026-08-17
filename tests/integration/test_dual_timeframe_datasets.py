@@ -143,7 +143,8 @@ class TestSampleDataIsNeverSubstituted:
         handlers = AccountCommandHandlers(tmp_path / "db.sqlite", tmp_path)
         missing = handlers.missing_timeframes("XAUUSD")
 
-        assert missing == ["1H"]
+        # Phase 39 added 1D, so both higher timeframes are missing here.
+        assert missing == ["1H", "1D"]
 
         result = handlers.build_dataset(Command(CommandKind.BUILD_DATASET, {"symbol": "XAUUSD"}))
 
@@ -151,11 +152,11 @@ class TestSampleDataIsNeverSubstituted:
         assert "1H" in result.message
         assert "Fetch market data" in result.message
 
-    def test_the_build_is_allowed_once_both_exist(self, tmp_path):
+    def test_the_build_is_allowed_once_every_timeframe_exists(self, tmp_path):
         store = ParquetCandleStore(tmp_path)
-        provider = FakeProvider({"5M": 60, "1H": 40})
+        provider = FakeProvider({"5M": 60, "1H": 40, "1D": 30})
         updater = DatasetUpdateService(store, provider=provider)
-        for timeframe in ("5M", "1H"):
+        for timeframe in ("5M", "1H", "1D"):
             updater.fetch_and_update("XAUUSD", timeframe, bars=100)
 
         handlers = AccountCommandHandlers(tmp_path / "db.sqlite", tmp_path)

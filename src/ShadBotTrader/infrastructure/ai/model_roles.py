@@ -89,12 +89,30 @@ class ModelRole:
         }
 
 
+#: Timeframes that have their own trained models (Phase 39).
+#: 1D was added alongside 1H so the platform can forecast a daily range,
+#: which is a different question from an hourly one and deserves its own
+#: weights rather than a rescaled reuse of the hourly model.
+MODEL_TIMEFRAMES: tuple[str, ...] = ("5M", "1H", "1D")
+
+
+def range_model_id(timeframe: str) -> str:
+    """The model id for the range model of one timeframe.
+
+    Each timeframe gets its OWN id. Sharing ``gold_range`` between 1H and
+    1D would make the second training run overwrite the first, and the
+    artifact store would hand back whichever was written last with no way
+    to tell them apart.
+    """
+    return f"gold_range_{timeframe.strip().lower()}"
+
+
 def range_model_role(
     timeframe: str = "1H",
     horizon: int = 5,
     window_size: int = 32,
 ) -> ModelRole:
-    """The price-extremes model. Defaults to 1H bars, 5 candles ahead."""
+    """The price-extremes model for one timeframe (1H or 1D)."""
     return ModelRole(
         name="range",
         target=PredictionTarget(
@@ -102,7 +120,7 @@ def range_model_role(
             horizon=horizon,
             timeframe=timeframe,
         ),
-        model_id="gold_range",
+        model_id=range_model_id(timeframe),
         description=(
             f"Predicts the highest high and lowest low over the next "
             f"{horizon} {timeframe} candles, as offsets from the current close."
@@ -126,7 +144,7 @@ def signal_model_role(
             timeframe=timeframe,
             threshold=threshold,
         ),
-        model_id="gold_signal",
+        model_id=f"gold_signal_{timeframe.strip().lower()}",
         description=(
             f"Predicts sell / hold / buy with probabilities over the next "
             f"{horizon} {timeframe} candles (neutral band {threshold:.4%})."

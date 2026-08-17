@@ -30,6 +30,7 @@ from ShadBotTrader.infrastructure.ai.training_progress import (
     NullProgressReporter,
     TrainingPlanInfo,
     TrainingProgressReporter,
+    keras_batch_callback,
     keras_progress_callback,
 )
 
@@ -149,6 +150,12 @@ class WavenetTrainer(ModelTrainer):
         tf.random.set_seed(self._seed)
         np.random.seed(self._seed)
 
+        # Phase 39: building 50,000 overlapping windows takes ~10 seconds
+        # and used to happen in total silence BEFORE on_train_begin, so
+        # the first sign of life came long after the operator pressed the
+        # button. Announce the preparation, then do it.
+        _notify(self._progress, "on_prepare_begin", len(self._series), self._window_size)
+
         if self._target_columns is not None:
             samples = build_multi_target_samples(
                 self._series,
@@ -164,6 +171,8 @@ class WavenetTrainer(ModelTrainer):
                 scale=True,
                 drop_target_column=True,
             )
+        _notify(self._progress, "on_prepare_end", len(samples))
+
         plan = expanding_split(
             total_length=len(samples),
             val_size=self._val_size,
@@ -239,6 +248,17 @@ class WavenetTrainer(ModelTrainer):
             callbacks = []
             if not isinstance(self._progress, NullProgressReporter):
                 callbacks.append(keras_progress_callback(self._progress, fold_info, self._epochs))
+                # An epoch over 50,000 samples is thousands of batches and
+                # several minutes; without this the log sits still between
+                # epoch lines and looks hung.
+                if hasattr(self._progress, "on_batch_end"):
+                    callbacks.append(
+                        keras_batch_callback(
+                            self._progress,
+                            fold_info,
+                            total_batches=max(1, -(-len(train_x) // max(self._batch_size, 1))),
+                        )
+                    )
 
             history = model.fit(
                 train_x,
@@ -310,6 +330,19 @@ class WavenetTrainer(ModelTrainer):
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
 
         return _require_tensorflow().__version__
+
+
+def _notify(reporter: object, hook: str, *args: object) -> None:
+    """Call an optional reporter hook.
+
+    The reporter contract grew in Phase 39 (preparation and batch
+    hooks). A reporter written against the older, smaller contract is
+    still valid — it simply observes less — so a missing hook is skipped
+    rather than raising. Observation must never break training.
+    """
+    method = getattr(reporter, hook, None)
+    if callable(method):
+        method(*args)
 
 
 def _build_compiled(

@@ -106,6 +106,17 @@ class ParquetFeatureStore(FeatureRepository):
             for point in result.points
         ]
         table = pa.Table.from_pylist(rows)
+        # Phase 39: warm-up must survive the round trip. It is not a
+        # property of the values — it is how many leading rows have no
+        # honest value — and build_feature_matrix uses it to decide where
+        # the matrix starts. Losing it would make a matrix loaded from the
+        # store silently differ from a freshly computed one.
+        table = table.replace_schema_metadata(
+            {
+                b"warmup": str(int(getattr(result, "warmup", 0))).encode("utf-8"),
+                b"feature_id": str(feature_id).encode("utf-8"),
+            }
+        )
         path = self._path(feature_id, version)
         if path.exists():
             raise FileExistsError(f"Refusing to overwrite existing feature version: {path}")
@@ -127,7 +138,11 @@ class ParquetFeatureStore(FeatureRepository):
                     value=None if value is None else float(value),
                 )
             )
-        return FeatureResult(feature_id=feature_id, points=points)
+        return FeatureResult(
+            feature_id=feature_id,
+            points=points,
+            warmup=_warmup_of(table),
+        )
 
     def exists(self, feature_id: str, version: int) -> bool:
         """Return True when the version exists."""
@@ -152,6 +167,22 @@ class ParquetFeatureStore(FeatureRepository):
 
     def _path(self, feature_id: str, version: int) -> Path:
         return self.root / feature_id / f"v{version}.parquet"
+
+
+def _warmup_of(table: "pa.Table") -> int:
+    """The warm-up recorded when the feature was stored, or 0.
+
+    Files written before Phase 39 carry no metadata; 0 is the honest
+    answer for them, and the fingerprint will force a recompute anyway.
+    """
+    metadata = table.schema.metadata or {}
+    raw = metadata.get(b"warmup")
+    if raw is None:
+        return 0
+    try:
+        return int(raw.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return 0
 
 
 def _parse_iso(value: object) -> datetime:

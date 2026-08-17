@@ -221,9 +221,9 @@ class DualModelService:
         dataset: PreparedDataset,
         epochs: int = 2,
         batch_size: int = 8,
-        val_size: int = 4,
-        step: int = 2,
-        min_train_size: int = 8,
+        val_size: int = 0,
+        step: int = 0,
+        min_train_size: int = 0,
         max_folds: Optional[int] = None,
         progress: Any = None,
     ) -> Any:
@@ -234,6 +234,20 @@ class DualModelService:
 
         role = dataset.role
         is_regression = role.target.kind is TargetKind.PRICE_RANGE
+
+        # Phase 39: the roll-forward geometry must scale with the data.
+        # The old fixed defaults (val_size=4, step=2) were sized for the
+        # few-hundred-row demo series; on 50,000 real candles they produce
+        # 24,976 folds — each one a full model fit. That is not a slow
+        # run, it is a run that never finishes, and it was the reason
+        # training appeared to hang with no output.
+        rows = len(dataset.series)
+        if not val_size:
+            val_size = max(4, min(2000, rows // 50))
+        if not step:
+            step = max(1, val_size)
+        if not min_train_size:
+            min_train_size = max(8, min(rows // 4, 20 * role.window_size))
 
         return WavenetTrainer(
             series=dataset.series,

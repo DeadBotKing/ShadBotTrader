@@ -87,6 +87,7 @@ env.bak/
 env/
 htmlcov/
 logs/
+run_logs/
 secrets.json
 shadbot.db*
 temp/

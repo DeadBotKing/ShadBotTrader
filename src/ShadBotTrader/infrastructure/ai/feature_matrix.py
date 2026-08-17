@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Protocol, Sequence, Tuple
 
 from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.domain.feature.ports import FeatureInputContext
@@ -105,6 +105,18 @@ def is_price_scaled(feature_id: str) -> bool:
     if any(token in lowered for token in _NEVER_SCALED):
         return False
     return any(token in lowered for token in _PRICE_SCALED)
+
+
+class FeatureSource(Protocol):
+    """Supplies already-computed feature columns (Phase 39).
+
+    Implemented by :class:`StoredFeatureSource`, which reads the Parquet
+    store. Returning ``None`` for a feature means "not available" and the
+    caller records it as skipped rather than inventing a column.
+    """
+
+    def get(self, feature_id: str):  # pragma: no cover - protocol
+        """The stored result for ``feature_id``, or None."""
 
 
 @dataclass(frozen=True)
@@ -263,6 +275,7 @@ def build_feature_matrix(
     feature_set=None,
     resolver=None,
     include_features: bool = True,
+    source: Optional["FeatureSource"] = None,
 ) -> FeatureMatrix:
     """Build the model input matrix for ``candles``.
 
@@ -274,6 +287,13 @@ def build_feature_matrix(
     Rows inside any feature's warm-up window are dropped, because a
     feature that has not seen enough history has no value, and inventing
     one would be training on fiction.
+
+    ``source`` (Phase 39) supplies already-computed feature columns —
+    normally from the Parquet store — instead of running every
+    calculator again. It changes WHERE the numbers come from and nothing
+    else: the scaling, the warm-up trim, the tail trim and the column
+    order below are shared by both paths, which is what makes a loaded
+    matrix byte-identical to a computed one.
     """
     if not candles:
         raise ValidationError("Cannot build a feature matrix from zero candles")
@@ -283,19 +303,29 @@ def build_feature_matrix(
     skipped: List[str] = []
     warmup = 0
 
-    if include_features and feature_set is not None and resolver is not None:
+    if include_features and feature_set is not None:
         context = FeatureInputContext(symbol=symbol, timeframe=timeframe, candles=list(candles))
         for definition in feature_set.definitions:
             feature_id = definition.feature_id.value
-            calculator = resolver.resolve(definition.calculator_family)
-            if calculator is None:
-                skipped.append(feature_id)
-                continue
-            try:
-                result = calculator.compute(definition, context)
-            except Exception:
-                # A single misbehaving calculator must not destroy the
-                # whole matrix; it is recorded and left out.
+
+            if source is not None:
+                result = source.get(feature_id)
+            elif resolver is not None:
+                calculator = resolver.resolve(definition.calculator_family)
+                if calculator is None:
+                    skipped.append(feature_id)
+                    continue
+                try:
+                    result = calculator.compute(definition, context)
+                except Exception:
+                    # A single misbehaving calculator must not destroy
+                    # the whole matrix; it is recorded and left out.
+                    skipped.append(feature_id)
+                    continue
+            else:
+                break
+
+            if result is None:
                 skipped.append(feature_id)
                 continue
 

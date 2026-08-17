@@ -213,7 +213,8 @@ from a terminal:
 |---|---|
 | Fetch market data | pulls real candles from MetaTrader 5 for every listed timeframe (default `5M,1H`) and appends them; generated data is never substituted |
 | Build training dataset | builds two matrices — 5M for the signal model, 1H for the range model |
-| Train both models | roll-forward training; loss and accuracy stream into the page live |
+| Train models | pick the model (`range_1h`, `range_1d`, `signal`) and the dataset it trains on; loss, accuracy and batch progress stream live |
+| Build a higher timeframe | aggregate 1H candles into 1D when the broker has no daily history |
 | Update features | computes the catalogue for every listed timeframe (default `5M,1H`), stored separately, with live progress; reused until the candles change |
 | Retrain the model | roll-forward WaveNet training |
 | Run a backtest | replays stored candles through the trading chain |

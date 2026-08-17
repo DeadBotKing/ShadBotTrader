@@ -29,7 +29,8 @@ STORAGE_ROOT = REPO_ROOT / "datasets"
 #: two are built together and stored apart: one matrix per timeframe.
 ROLE_OF_TIMEFRAME = {
     "5M": "signal model — buy / sell / hold",
-    "1H": "range model — future high and low",
+    "1H": "range model — future high and low (hourly)",
+    "1D": "range model — future high and low (daily)",
 }
 
 
@@ -46,6 +47,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--symbol", default="XAUUSD")
+    parser.add_argument(
+        "--timeframes",
+        default="5M,1H,1D",
+        help="comma separated timeframes to build a dataset for",
+    )
     parser.add_argument("--candles", type=int, default=100_000)
     parser.add_argument("--window", type=int, default=500)
     parser.add_argument("--horizon", type=int, default=5)
@@ -179,7 +185,9 @@ def do_build(args: argparse.Namespace, service, refresh: bool) -> int:
 
     spec = DatasetSpec(
         symbol=args.symbol,
-        timeframes=("5M", "1H"),
+        timeframes=tuple(
+            item.strip().upper() for item in args.timeframes.split(",") if item.strip()
+        ),
         target_candles=args.candles,
         window_rows=args.window,
     )
@@ -248,7 +256,11 @@ def live_demo(args: argparse.Namespace) -> int:
 
     rule("LIVE BUFFER — 800 candles, self-maintaining")
 
-    live = LiveMarketData(timeframes=("5M", "1H"))
+    live = LiveMarketData(
+        timeframes=tuple(
+            item.strip().upper() for item in args.timeframes.split(",") if item.strip()
+        )
+    )
     builder = LiveMatrixBuilder(
         args.symbol,
         feature_set=standard_feature_set(),

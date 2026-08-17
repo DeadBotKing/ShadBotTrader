@@ -208,7 +208,7 @@ class LiveMarketData:
 
     def __init__(
         self,
-        timeframes: Sequence[str] = ("5M", "1H"),
+        timeframes: Sequence[str] = ("5M", "1H", "1D"),
         capacity: int = DEFAULT_CAPACITY,
     ) -> None:
         if not timeframes:

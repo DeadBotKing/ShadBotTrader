@@ -36,7 +36,11 @@ CURRENT_PHASE = (
     "store per symbol/timeframe instead of a shared directory) "
     "+ Phase 38 (features reused until the candle fingerprint changes, "
     "then fully recomputed; the training matrix is 14 candle columns "
-    "plus all 109 catalogue features)"
+    "plus all 109 catalogue features) "
+    "+ Phase 39 (the training matrix reads stored features and is proven "
+    "byte-identical to the computed one; the 1D timeframe has its own "
+    "candles, features, dataset and range model; the operator chooses "
+    "which model trains on which dataset)"
 )
 
 

@@ -309,13 +309,17 @@ class TestFeatureProgressIsReported:
 
 # ------------------------------------------------ 4) the dashboard button --
 class TestTheUpdateFeaturesButton:
-    def test_it_defaults_to_both_training_timeframes(self):
-        from ShadBotTrader.presentation.commands.handlers import parse_timeframes
+    def test_it_defaults_to_every_training_timeframe(self):
+        """Phase 39 added 1D, so the default covers all three."""
+        from ShadBotTrader.presentation.commands.handlers import (
+            TRAINING_TIMEFRAMES,
+            parse_timeframes,
+        )
 
         descriptor = descriptor_for(CommandKind.COMPUTE_FEATURES)
         field = next(item for item in descriptor.fields if item.name == "timeframe")
 
-        assert parse_timeframes(field.default) == ["5M", "1H"]
+        assert parse_timeframes(field.default) == list(TRAINING_TIMEFRAMES)
 
     def test_missing_candles_are_reported_not_crashed(self, tmp_path):
         handlers = CommandHandlers(tmp_path / "db.sqlite", tmp_path / "datasets")

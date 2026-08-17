@@ -144,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
 
         spec = DatasetSpec(
             symbol=args.symbol,
-            timeframes=("5M", "1H"),
+            timeframes=("5M", "1H", "1D"),
             target_candles=args.candles,
             window_rows=args.window,
         )

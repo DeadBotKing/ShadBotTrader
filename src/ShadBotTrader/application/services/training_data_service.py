@@ -64,11 +64,15 @@ class TrainingDataService:
         storage_root: Path,
         feature_set: Any = None,
         resolver: Any = None,
+        use_stored_features: bool = True,
     ) -> None:
         self._root = Path(storage_root)
         self._dataset_root = self._root / "training"
         self._feature_set = feature_set
         self._resolver = resolver
+        self._use_stored = use_stored_features
+        #: Whether the last slice came from the store or was recomputed.
+        self.last_source = "computed"
 
     # ------------------------------------------------------------ paths --
     @property
@@ -93,14 +97,44 @@ class TrainingDataService:
         if not candles:
             raise ValidationError(f"No candles supplied for {symbol} {timeframe}")
 
+        # Phase 39: prefer the stored features. stored_source_for returns
+        # None unless the store holds columns built from exactly these
+        # candles, so this is an optimisation that cannot change the
+        # numbers — a regression test asserts the two matrices are
+        # byte-identical.
+        source = None
+        self.last_source = "computed"
+        if self._feature_set is not None and self._use_stored:
+            from ShadBotTrader.infrastructure.ai.stored_feature_source import (
+                stored_source_for,
+            )
+
+            source = stored_source_for(self._root, symbol, timeframe, candles, self._feature_set)
+            if source is not None:
+                self.last_source = "stored"
+
         matrix = build_feature_matrix(
             candles=candles,
             symbol=Symbol(symbol),
             timeframe=Timeframe(timeframe),
             feature_set=self._feature_set,
             resolver=self._resolver,
-            include_features=self._feature_set is not None and self._resolver is not None,
+            include_features=self._feature_set is not None
+            and (self._resolver is not None or source is not None),
+            source=source,
         )
+        if source is not None and not source.is_complete:
+            # A partial cache would quietly narrow the model input.
+            # Recompute the whole thing instead.
+            self.last_source = "computed (stored set was incomplete)"
+            matrix = build_feature_matrix(
+                candles=candles,
+                symbol=Symbol(symbol),
+                timeframe=Timeframe(timeframe),
+                feature_set=self._feature_set,
+                resolver=self._resolver,
+                include_features=self._resolver is not None,
+            )
         if matrix.is_empty:
             raise ValidationError(
                 f"{timeframe}: every row was consumed by feature warm-up. " f"Supply more candles."

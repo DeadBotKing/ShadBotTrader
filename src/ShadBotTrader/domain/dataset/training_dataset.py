@@ -32,7 +32,7 @@ class DatasetSpec:
     """What a training dataset is supposed to contain."""
 
     symbol: str
-    timeframes: Sequence[str] = ("5M", "1H")
+    timeframes: Sequence[str] = ("5M", "1H", "1D")
     target_candles: int = DEFAULT_TARGET_CANDLES
     window_rows: int = DEFAULT_WINDOW_ROWS
 

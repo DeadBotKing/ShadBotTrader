@@ -31,7 +31,7 @@ Handler = Callable[[Command], CommandResult]
 #: 1H feeds the range model (Phase 29 §2). They are fetched together
 #: because building the dataset with only one of them is not a smaller
 #: dataset — it is a missing model.
-TRAINING_TIMEFRAMES: tuple[str, ...] = ("5M", "1H")
+TRAINING_TIMEFRAMES: tuple[str, ...] = ("5M", "1H", "1D")
 
 
 #: Where a running script's output is streamed so the dashboard and the
@@ -96,7 +96,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField(
                     "timeframe",
                     "Timeframes",
-                    "5M,1H",
+                    "5M,1H,1D",
                     hint="comma separated — 5M feeds the signal model, 1H the range model",
                 ),
                 CommandField("bars", "Bars", "5000", kind="number"),
@@ -130,7 +130,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField(
                     "timeframe",
                     "Timeframes",
-                    "5M,1H",
+                    "5M,1H,1D",
                     hint="comma separated — each one is computed and stored separately",
                 ),
                 CommandField(
@@ -314,6 +314,23 @@ def descriptors() -> List[CommandDescriptor]:
             group="Data",
         ),
         CommandDescriptor(
+            kind=CommandKind.BUILD_TIMEFRAME,
+            label="Build a higher timeframe",
+            description=(
+                "Aggregate stored candles into a larger timeframe, e.g. 1H "
+                "into 1D. Use this when the broker gave you hours of history "
+                "but you want to train a daily model. Incomplete buckets are "
+                "dropped, never half-filled."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("source", "From", "1H"),
+                CommandField("target", "To", "1D"),
+            ],
+            slow=True,
+            group="Data",
+        ),
+        CommandDescriptor(
             kind=CommandKind.WEEKLY_UPDATE,
             label="Weekly update",
             description=(
@@ -331,13 +348,33 @@ def descriptors() -> List[CommandDescriptor]:
         # -- AI --------------------------------------------------------------
         CommandDescriptor(
             kind=CommandKind.TRAIN_DUAL_MODELS,
-            label="Train both models",
+            label="Train models",
             description=(
-                "Roll-forward training of the range model (1H high/low) and "
-                "the signal model (5M buy/sell/hold)."
+                "Roll-forward training. Choose WHICH model and WHICH dataset: "
+                "range_1h trains the hourly high/low model on 1H candles, "
+                "range_1d the daily one on 1D candles, signal the 5M "
+                "buy/sell/hold model. 'all' trains every one."
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "model",
+                    "Model",
+                    "all",
+                    hint="all | range_1h | range_1d | signal | range | both",
+                ),
+                CommandField(
+                    "range_timeframes",
+                    "Range dataset(s)",
+                    "1H,1D",
+                    hint="which candles the range model trains on",
+                ),
+                CommandField(
+                    "signal_timeframe",
+                    "Signal dataset",
+                    "5M",
+                    hint="which candles the signal model trains on",
+                ),
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
@@ -440,6 +477,7 @@ class CommandHandlers:
                 CommandKind.AUTO_MAP_SYMBOLS: accounts.auto_map_symbols,
                 CommandKind.BUILD_DATASET: accounts.build_dataset,
                 CommandKind.WEEKLY_UPDATE: accounts.weekly_update,
+                CommandKind.BUILD_TIMEFRAME: accounts.build_timeframe,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.RUN_EXECUTION_DEMO: accounts.run_execution_demo,
                 CommandKind.RUN_LIVE_TICK: accounts.run_live_tick,
@@ -498,7 +536,7 @@ class CommandHandlers:
 
         started = time.monotonic()
         symbol = command.text("symbol", "XAUUSD").strip().upper()
-        timeframes = parse_timeframes(command.text("timeframe", "5M,1H"))
+        timeframes = parse_timeframes(command.text("timeframe", "5M,1H,1D"))
         bars = max(command.integer("bars", 5000), 1)
         allow_gap = command.text("allow_gap", "0").strip() == "1"
         max_candles = max(command.integer("max_candles", 100_000), 1000)
@@ -629,7 +667,7 @@ class CommandHandlers:
 
         started = time.monotonic()
         symbol = command.text("symbol", "XAUUSD").strip().upper()
-        timeframes = parse_timeframes(command.text("timeframe", "5M,1H"))
+        timeframes = parse_timeframes(command.text("timeframe", "5M,1H,1D"))
         force = command.text("force", "0").strip() == "1"
         if not timeframes:
             return CommandResult.rejected(
@@ -1480,6 +1518,78 @@ class AccountCommandHandlers:
             timeout=3600,
         )
 
+    def build_timeframe(self, command: Command) -> CommandResult:
+        """Aggregate a stored series into a larger timeframe (Phase 39).
+
+        The daily model needs daily candles. A broker usually serves them
+        directly, but an operator who already downloaded years of 1H
+        history should not have to download it all again to train a 1D
+        model — the daily bar is fully determined by the hours inside it.
+        """
+        from ShadBotTrader.application.services.dataset_update_service import (
+            DatasetUpdateService,
+        )
+        from ShadBotTrader.data_cli import build_service
+        from ShadBotTrader.domain.market.resample import resample_candles
+        from ShadBotTrader.domain.market.symbol import Symbol
+        from ShadBotTrader.domain.market.timeframe import Timeframe
+        from ShadBotTrader.infrastructure.data.symbol_scope import resolve_stored_symbol
+
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        source = command.text("source", "1H").strip().upper()
+        target = command.text("target", "1D").strip().upper()
+
+        _, store, _ = build_service(self._storage_root)
+        resolved = resolve_stored_symbol(store, symbol, source)
+        if not resolved.found:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {source} candles for {symbol}. Fetch them first.",
+            )
+
+        candles = store.query(Symbol(resolved.resolved), Timeframe(source))
+        try:
+            outcome = resample_candles(candles, target, source=source)
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind, "Could not aggregate", str(error), time.monotonic() - started
+            )
+
+        if not outcome.candles:
+            return CommandResult.failure(
+                command.kind,
+                "Nothing to store",
+                f"Every {target} bucket was incomplete.",
+                time.monotonic() - started,
+            )
+
+        updater = DatasetUpdateService(store, max_candles=200_000)
+        update = updater.update(symbol, target, outcome.candles, allow_gap=True, backfill=False)
+
+        lines = [
+            f"source : {symbol} {source}",
+            f"target : {symbol} {target}",
+            *outcome.summary_lines(),
+            "",
+            *update.summary_lines(),
+            "",
+            f"Now run 'Update features' and 'Build training dataset' for {target}.",
+        ]
+        if update.refused:
+            return CommandResult.failure(
+                command.kind,
+                "Storing the aggregate was refused",
+                "\n".join(lines),
+                time.monotonic() - started,
+            )
+        return CommandResult.success(
+            command.kind,
+            f"{symbol}: {outcome.count:,} {target} candles from {outcome.source_count:,} {source}",
+            lines,
+            time.monotonic() - started,
+        )
+
     def weekly_update(self, command: Command) -> CommandResult:
         started = time.monotonic()
         arguments = [
@@ -1514,6 +1624,12 @@ class AccountCommandHandlers:
                 "--with-features",
                 "--symbol",
                 command.text("symbol", "XAUUSD"),
+                "--model",
+                command.text("model", "all").strip() or "all",
+                "--range-timeframes",
+                command.text("range_timeframes", "1H,1D").strip() or "1H,1D",
+                "--signal-timeframe",
+                command.text("signal_timeframe", "5M").strip() or "5M",
                 "--epochs",
                 str(max(command.integer("epochs", 1), 1)),
                 "--folds",
@@ -1523,7 +1639,7 @@ class AccountCommandHandlers:
                 "--storage-root",
                 str(self._storage_root),
             ],
-            "Both models trained",
+            "Training finished",
             started,
             timeout=7200,
         )

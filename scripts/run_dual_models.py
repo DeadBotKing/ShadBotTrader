@@ -42,10 +42,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument(
         "--model",
-        choices=("both", "range", "signal"),
-        default="both",
+        choices=("all", "both", "range", "signal", "range_1h", "range_1d"),
+        default="all",
+        help=(
+            "which model to train. 'range_1h' / 'range_1d' pick one "
+            "range model; 'all' trains the signal model plus every "
+            "range timeframe in --range-timeframes."
+        ),
     )
-    parser.add_argument("--range-timeframe", default="1H", help="range model candles")
+    parser.add_argument(
+        "--range-timeframes",
+        default="1H,1D",
+        help="comma separated timeframes to train a range model for",
+    )
+    parser.add_argument("--range-timeframe", default="", help="alias of --range-timeframes")
     parser.add_argument("--signal-timeframe", default="5M", help="signal model candles")
     parser.add_argument("--horizon", type=int, default=5, help="candles to look ahead")
     parser.add_argument("--window", type=int, default=24, help="input window size")
@@ -134,6 +144,8 @@ def train_one(service, args, role, timeframe: str) -> int:
     from ShadBotTrader.domain.market.timeframe import Timeframe
 
     rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {role.horizon} ahead)")
+    print(f"  model id : {role.model_id}")
+    print(f"  dataset  : {args.symbol} {timeframe}")
     print(f"  {role.description}")
 
     try:
@@ -297,15 +309,34 @@ def main(argv: list[str] | None = None) -> int:
     service = build_service(args)
     status = 0
 
-    if args.model in ("both", "range"):
-        role = range_model_role(
-            timeframe=args.range_timeframe,
-            horizon=args.horizon,
-            window_size=args.window,
-        )
-        status |= train_one(service, args, role, args.range_timeframe)
+    # Which range timeframes to train (Phase 39). The operator can pick
+    # one model and one dataset explicitly — training the 1H range model
+    # on 1H candles is a different job from the 1D one, and mixing them
+    # up silently would be worse than refusing.
+    if args.model in ("range_1h", "range_1d"):
+        range_timeframes = [args.model.split("_")[1].upper()]
+    else:
+        raw = args.range_timeframe or args.range_timeframes
+        range_timeframes = [item.strip().upper() for item in raw.split(",") if item.strip()]
 
-    if args.model in ("both", "signal"):
+    wants_range = args.model in ("all", "both", "range", "range_1h", "range_1d")
+    wants_signal = args.model in ("all", "both", "signal")
+
+    planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
+    if wants_signal:
+        planned.append(f"signal({args.signal_timeframe})")
+    print(f"training: {', '.join(planned) or 'nothing'}")
+
+    if wants_range:
+        for timeframe in range_timeframes:
+            role = range_model_role(
+                timeframe=timeframe,
+                horizon=args.horizon,
+                window_size=args.window,
+            )
+            status |= train_one(service, args, role, timeframe)
+
+    if wants_signal:
         role = signal_model_role(
             timeframe=args.signal_timeframe,
             horizon=args.horizon,

@@ -91,6 +91,15 @@ class TrainingProgressReporter(Protocol):
     a reporter may never influence weights, ordering or determinism.
     """
 
+    def on_prepare_begin(self, rows: int, window_size: int) -> None:
+        """Called before the (slow) window-building step."""
+
+    def on_prepare_end(self, samples: int) -> None:
+        """Called when the windows are ready."""
+
+    def on_batch_end(self, fold: "FoldInfo", batch: int, total_batches: int, logs: dict) -> None:
+        """Called periodically inside an epoch."""
+
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
         """Called once before the first fold."""
 
@@ -109,6 +118,15 @@ class TrainingProgressReporter(Protocol):
 
 class NullProgressReporter:
     """Reporter that does nothing (the default; keeps trainers silent)."""
+
+    def on_prepare_begin(self, rows: int, window_size: int) -> None:
+        return None
+
+    def on_prepare_end(self, samples: int) -> None:
+        return None
+
+    def on_batch_end(self, fold: "FoldInfo", batch: int, total_batches: int, logs: dict) -> None:
+        return None
 
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
         return None
@@ -188,6 +206,31 @@ elapsed 0:14 | eta 1:42
         self._stream.flush()
 
     # -- reporter contract ------------------------------------------------
+    def on_prepare_begin(self, rows: int, window_size: int) -> None:
+        self._prepare_started = time.monotonic()
+        self._write("")
+        self._write(
+            f"  preparing {rows:,} rows into windows of {window_size} " f"(this takes a moment) ..."
+        )
+
+    def on_prepare_end(self, samples: int) -> None:
+        elapsed = time.monotonic() - getattr(self, "_prepare_started", time.monotonic())
+        self._write(f"  {samples:,} training windows ready in {format_duration(elapsed)}")
+
+    def on_batch_end(self, fold: "FoldInfo", batch: int, total_batches: int, logs: dict) -> None:
+        """One in-place line so a long epoch visibly advances."""
+        fraction = (batch + 1) / total_batches if total_batches else 1.0
+        parts = [f"    batch {batch + 1:>6,}/{total_batches:,}"]
+        for key in ("loss", "accuracy", "mae"):
+            if key in logs:
+                parts.append(f"{key} {float(logs[key]):.4f}")
+        self._stream.write(
+            f"\r    [{_bar(fraction, 20)}] {fraction * 100:5.1f}% | "
+            + " | ".join(parts[1:] or ["running"])
+            + f" | {parts[0].strip()}   "
+        )
+        self._stream.flush()
+
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
         self._plan = plan
         self._run_start = time.monotonic()
@@ -225,6 +268,8 @@ elapsed 0:14 | eta 1:42
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
         if not self._show_epochs:
             return
+        # Close the in-place batch line before writing a permanent one.
+        self._stream.write("\r" + " " * 100 + "\r")
         parts = [
             f"  epoch {metrics.human_epoch}/{metrics.total_epochs}",
             f"loss {_fmt(metrics.loss)}",
@@ -331,3 +376,32 @@ def _as_float(value: Any) -> Optional[float]:
         return float(value)
     except (TypeError, ValueError):  # pragma: no cover - non-numeric log
         return None
+
+
+def keras_batch_callback(
+    reporter: TrainingProgressReporter,
+    fold: FoldInfo,
+    total_batches: int,
+    every: int = 0,
+) -> Any:
+    """A Keras callback that reports progress inside an epoch.
+
+    An epoch over 50,000 samples is thousands of batches and can take
+    minutes. Reporting only at epoch boundaries leaves the log frozen for
+    all of it, which is indistinguishable from a hang.
+
+    ``every`` defaults to roughly 1% of the epoch so the line moves
+    without drowning the log in output.
+    """
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
+
+    tf = _require_tensorflow()
+    stride = every or max(1, total_batches // 100)
+
+    class _BatchCallback(tf.keras.callbacks.Callback):  # type: ignore[misc,name-defined]
+        def on_train_batch_end(self, batch: int, logs: Optional[Dict[str, Any]] = None) -> None:
+            if batch % stride and batch + 1 != total_batches:
+                return
+            reporter.on_batch_end(fold, batch, total_batches, dict(logs or {}))
+
+    return _BatchCallback()
