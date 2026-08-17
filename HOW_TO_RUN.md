@@ -272,6 +272,13 @@ python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
 
 **۲۱ دکمه در ۶ گروه:** Accounts · Data · AI · Simulation · Trading · Operations
 
+**سه صفحه:**
+| صفحه | چه نشان می‌دهد |
+|---|---|
+| `/` | داشبورد و دکمه‌ها |
+| `/data` | **چارت شمعی + تعداد کندل + فهرست ۱۲۳ ستون** |
+| `/replay` | پخش کندل‌به‌کندل بک‌تست |
+
 #### اولین بار — تنظیم اکانت
 
 ۱. **Accounts → Add account**

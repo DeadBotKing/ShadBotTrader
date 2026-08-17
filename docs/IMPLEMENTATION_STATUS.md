@@ -3,9 +3,9 @@
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
 - **آخرین به‌روزرسانی:** 2026-08-16
-- **آخرین کار انجام‌شده:** **فاز ۳۲** — پروفایل چند-اکانتی، نگاشت نماد per-broker، همهٔ ران‌ها در GUI
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (283 files)` · `pytest 1101 passed, 12 skipped`
-- **تعداد فایل منبع:** ۲۸۳ · **فایل تست:** ۸۱
+- **آخرین کار انجام‌شده:** **فاز ۳۴** — چارت شمعی و بازرسی دیتاست در `/data`
+- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (287 files)` · `pytest 1182 passed, 12 skipped`
+- **تعداد فایل منبع:** ۲۸۷ · **فایل تست:** ۸۴
 - ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
 
@@ -48,6 +48,8 @@
 | ۲۶ | Freeze v1.0 | ✅ رعایت می‌شود | معماری منجمد دست‌نخورده مانده |
 | ۲۷ | Architecture Implementation | ✅ کامل | bootstrap/runtime/lifecycle |
 | ۲۸ | Implementation Foundation | 🔄 در حال انجام | Sprint P0…P8 + Replay + MT5 |
+| **۳۴** | **Data Inspection** | ✅ **کامل (جدید)** | `presentation/gateway/data_inspector.py`، `presentation/web/data_renderer.py` — چارت شمعی، شمارش کندل، فهرست ستون‌ها |
+| **۳۳** | **Dataset Continuity** | ✅ **کامل (جدید)** | `domain/dataset/continuity.py`، `application/services/dataset_update_service.py` — append، سقف ۱۰۰k، تقویم یادگیرنده، backfill |
 | **۳۲** | **Accounts & Full GUI** | ✅ **کامل (جدید)** | `domain/account/profile.py`، `infrastructure/account/profile_store.py`، ۲۱ دکمه در ۶ گروه |
 | **۳۱** | **Live Loop & Model Backtest** | ✅ **کامل (جدید)** | `infrastructure/trading/dual_model_strategy.py`، `infrastructure/simulation/model_prediction_source.py`، `application/services/live_decision_service.py` |
 | **۳۰** | **Training Dataset & Live Buffer** | ✅ **کامل** | `domain/dataset/training_dataset.py`، `infrastructure/ai/{window_generator,live_matrix}.py`، `infrastructure/data/live_buffer.py`، `application/services/training_data_service.py` |
@@ -147,7 +149,9 @@ hit rate:      0.118 → 0
 | — | فاز ۳۱ — حلقهٔ زنده + بک‌تست مدل | 878 | `PHASE31_REPORT.md` |
 | — | فاز ۲۴ — Deployment | 932 | `PHASE24_REPORT.md` |
 | — | فازهای ۹/۲۱/۲۲ — تکمیل | 1034 | `PHASE_9_21_22_REPORT.md` |
-| — | **فاز ۳۲ — اکانت‌ها و GUI کامل** | **1097** | `PHASE32_REPORT.md` |
+| — | فاز ۳۲ — اکانت‌ها و GUI کامل | 1101 | `PHASE32_REPORT.md` |
+| — | فاز ۳۳ — پیوستگی دیتاست | 1155 | `PHASE33_REPORT.md` |
+| — | **فاز ۳۴ — بازرسی دیتا و چارت** | **1182** | `PHASE34_REPORT.md` |
 
 ---
 
@@ -168,6 +172,9 @@ hit rate:      0.118 → 0
 ۱۱. `BacktestEngine` به کلاس concrete وابسته بود → پورت `ReportingLedger`
 ۱۲. `transactions` در یکی property و در دیگری method بود
 ۱۳. سایه‌افتادن متغیر `context` در `run_trading.py`
+۱۹. **`Fetch market data` دیتاست را جایگزین می‌کرد نه اضافه** — نسخهٔ جدید
+    می‌نوشت و `query` فقط آخرین را می‌خواند. ۲۰۰ کندل + ۵۰ تای جدید = ۵۰ تا.
+    نه سقفی بود، نه بررسی پیوستگی بین آپدیت‌ها. با آزمایش ثابت شد، نه حدس.
 ۱۸. **داشبورد بدون دیتابیس بالا نمی‌آمد** — کاربر را به `run_persistence.py`
     هدایت می‌کرد؛ همان اسکریپتی که در فاز ۳۲ عمداً از GUI حذف شده بود.
     تناقض مستقیم با «همه‌چیز از GUI». حالا دیتابیس خودکار ساخته می‌شود و

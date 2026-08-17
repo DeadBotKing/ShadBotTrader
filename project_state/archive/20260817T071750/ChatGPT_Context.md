@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-17T07:17:50.955627+00:00
+- Snapshot generated at: 2026-08-17T07:16:11.207029+00:00
 
 ## Current Architecture
 
@@ -18,7 +18,7 @@
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill)
 
 ## Implemented Components
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (2346 files)
+- Dirty: yes (2344 files)
 - Recent commits:
   - 22e6743 NewFixSprint02
   - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
@@ -61,12 +61,12 @@ Model quality: the backtester still uses MomentumPredictionSource, a deliberate 
 
 ## Statistics
 
-- Total files: 670
+- Total files: 669
 - Source files: 287
 - Test files: 100
-- Documentation files: 51
+- Documentation files: 50
 - Legacy files: 175
-- Total Python lines: 93704
+- Total Python lines: 93703
 - Modules: 387
 - Classes: 607
 - Functions: 3580

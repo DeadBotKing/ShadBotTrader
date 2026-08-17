@@ -593,6 +593,7 @@ def render_dashboard(
 <header>
   <h1>ShadBotTrader</h1>
   <div class="sub">{session_note} · generated {_e(view.generated_at)}
+    · <a class="accent" href="/data">inspect the data</a>
     · <a class="accent" href="/replay">watch the last backtest replay</a></div>
 </header>
 {body}

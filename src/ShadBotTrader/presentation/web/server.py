@@ -5,6 +5,7 @@ Built on the standard library so the GUI adds no dependency.
 Routes
     GET  /             the dashboard page
     GET  /replay       the last recorded backtest replay, bar by bar
+    GET  /data         candlestick chart and dataset inspection
     GET  /api/state    the same data as JSON
     GET  /api/status   what the command bus is doing right now
     GET  /health       liveness probe
@@ -57,6 +58,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_html(self._page(session))
             elif route.path == "/replay":
                 self._send_html(self._replay())
+            elif route.path == "/data":
+                self._send_html(self._data_page(query))
+            elif route.path == "/api/data":
+                self._send_json(self._data_payload(query))
             elif route.path == "/api/state":
                 self._send_json(self._state(session))
             elif route.path == "/api/status":
@@ -176,6 +181,56 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "<p><a href='/'>&#8592; back to the dashboard</a></p>"
             "</body></html>"
         )
+
+    def _selected_series(self, query: dict[str, list[str]]) -> tuple[str, str]:
+        """Which symbol/timeframe the page is showing.
+
+        Falls back to the first stored series so the page is useful on the
+        very first visit, before anything has been chosen.
+        """
+        from ShadBotTrader.presentation.gateway.data_inspector import DataInspector
+
+        raw = query.get("series", [""])[0]
+        if "|" in raw:
+            symbol, timeframe = raw.split("|", 1)
+            if symbol.strip() and timeframe.strip():
+                return symbol.strip(), timeframe.strip()
+
+        available = DataInspector(self.storage_root).available_series()
+        if available:
+            return available[0]["symbol"], available[0]["timeframe"]
+        return "XAUUSD", "5M"
+
+    def _data_page(self, query: dict[str, list[str]]) -> str:
+        from ShadBotTrader.presentation.gateway.data_inspector import DataInspector
+        from ShadBotTrader.presentation.web.data_renderer import render_data_page
+
+        inspector = DataInspector(self.storage_root)
+        symbol, timeframe = self._selected_series(query)
+
+        return render_data_page(
+            candles=inspector.candles(symbol, timeframe).to_dict(),
+            matrix=inspector.training_matrix(symbol, timeframe).to_dict(),
+            features=inspector.features(),
+            series=inspector.available_series(),
+            selected={"symbol": symbol, "timeframe": timeframe},
+        )
+
+    def _data_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
+        """The same information as JSON, for scripting or checking."""
+        from ShadBotTrader.presentation.gateway.data_inspector import DataInspector
+
+        inspector = DataInspector(self.storage_root)
+        symbol, timeframe = self._selected_series(query)
+
+        return {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "candles": inspector.candles(symbol, timeframe).to_dict(),
+            "matrix": inspector.training_matrix(symbol, timeframe).to_dict(),
+            "features": inspector.features(),
+            "series": inspector.available_series(),
+        }
 
     def _state(self, session: Optional[str]) -> dict[str, Any]:
         gateway = DashboardGateway.open(self.database_path)
@@ -318,6 +373,7 @@ def serve(
     print(f"  url      : http://{shown}:{port}")
     print(f"  api      : http://{shown}:{port}/api/state")
     print(f"  replay   : http://{shown}:{port}/replay")
+    print(f"  data     : http://{shown}:{port}/data")
     if allow_commands:
         print(f"  actions  : {len(descriptors())} buttons enabled (POST /run)")
         print("             the GUI dispatches intent; services do the work")

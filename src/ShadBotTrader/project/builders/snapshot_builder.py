@@ -24,7 +24,9 @@ CURRENT_PHASE = (
     "+ Phases 29-31 (dual models, 100k dataset, live loop) "
     "+ Phase 24 Deployment + Phases 9/21/22 completed "
     "+ Phase 32 (multi-account profiles, per-broker symbol mapping, "
-    "every run driven from the GUI)"
+    "every run driven from the GUI) + Phase 33 (incremental dataset "
+    "updates with learned market calendar and gap backfill) "
+    "+ Phase 34 (candlestick chart and dataset inspection at /data)"
 )
 
 

@@ -44,6 +44,19 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("symbol", "Symbol", "XAUUSD", hint="broker symbol"),
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("bars", "Bars", "5000", kind="number"),
+                CommandField(
+                    "max_candles",
+                    "Keep at most",
+                    "100000",
+                    kind="number",
+                    hint="rolling limit — oldest candles are dropped",
+                ),
+                CommandField(
+                    "allow_gap",
+                    "Allow gap",
+                    "0",
+                    hint="1 = accept a discontinuity the broker could not fill",
+                ),
             ],
             slow=True,
             group="Data",
@@ -415,16 +428,50 @@ class CommandHandlers:
             else:
                 provider = mt5mod.Mt5MarketDataProvider()
             try:
-                service, _, _ = build_service(self._storage_root, provider=provider)
-                result = service.ingest(broker_symbol, timeframe, str(bars))
+                # Phase 33: append to the stored history instead of
+                # replacing it, repairing any gap at the join first.
+                from ShadBotTrader.application.services.dataset_update_service import (
+                    DatasetUpdateService,
+                )
+
+                _, store, _ = build_service(self._storage_root, provider=provider)
+                updater = DatasetUpdateService(
+                    store,
+                    provider=provider,
+                    max_candles=max(command.integer("max_candles", 100_000), 1000),
+                )
+                update = updater.fetch_and_update(
+                    broker_symbol,
+                    timeframe,
+                    bars=bars,
+                    allow_gap=command.text("allow_gap", "0").strip() == "1",
+                )
+
+                if update.refused:
+                    return CommandResult.failure(
+                        command.kind,
+                        "Update refused — the dataset was NOT modified",
+                        "\n".join(update.summary_lines())
+                        + "\n\nEither re-run when the broker can supply the "
+                        "missing range, or tick 'Allow gap' to accept the "
+                        "discontinuity deliberately.",
+                        time.monotonic() - started,
+                    )
+
                 lines = [
                     "source: MetaTrader 5 (real broker data)",
                     account_note or "account: terminal session",
-                    f"raw rows      : {result.raw_row_count}",
-                    f"valid candles : {result.candle_count}",
-                    f"quality score : {result.quality_report.score.overall}",
-                    f"quarantined   : {result.quarantined}",
+                    *update.summary_lines(),
+                    "",
+                    "See the candles: open /data",
                 ]
+                return CommandResult.success(
+                    command.kind,
+                    f"{broker_symbol} {timeframe}: "
+                    f"+{update.added_count:,} new, {update.final_count:,} stored",
+                    lines,
+                    time.monotonic() - started,
+                )
             except Exception as error:
                 return CommandResult.failure(
                     command.kind,
@@ -519,6 +566,8 @@ class CommandHandlers:
                 f"quarantined : {quarantined}",
                 f"research    : {research_only} (not live-compatible)",
                 f"{len(feature_set.definitions)} definitions registered in the database",
+                "",
+                "Inspect them: open /data",
             ],
             time.monotonic() - started,
         )

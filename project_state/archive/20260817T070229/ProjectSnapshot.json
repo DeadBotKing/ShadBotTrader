@@ -1,10 +1,10 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data)",
+  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI)",
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 59
+      "used_by": 56
     },
     {
       "name": "numpy",
@@ -73,8 +73,8 @@
     {
       "category": "other",
       "path": "HOW_TO_RUN.md",
-      "sha256": "90b21f271b9a8650d73828af18ee0a81d86c3bed99b3110943d8a28f5071b77d",
-      "size_bytes": 14662
+      "sha256": "4bb89ce63270121e0bbb9fc33eb52d4a8723c5ee12f4bf0846f3be5c96526867",
+      "size_bytes": 14530
     },
     {
       "category": "other",
@@ -135,12 +135,6 @@
       "path": "PHASE32_REPORT.md",
       "sha256": "ae15cb387b201f8e37ac1e55fa886e4ed708364985e0f2fb68b608cd349bce5c",
       "size_bytes": 7617
-    },
-    {
-      "category": "other",
-      "path": "PHASE33_REPORT.md",
-      "sha256": "bf1162d3c527be6db1a075ecc45d56f7b8bb7b44d659231b316d44442e0719bd",
-      "size_bytes": 6626
     },
     {
       "category": "other",
@@ -277,8 +271,8 @@
     {
       "category": "documentation",
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "70ba405d8730cae042b1b1f43015b7a044ddd643731c198ce2ed05277d968faa",
-      "size_bytes": 15776
+      "sha256": "7fc89dfe844bee4487cbca2b1124ef1a379b4d869c8c30742a550f08bb044ba1",
+      "size_bytes": 14368
     },
     {
       "category": "documentation",
@@ -444,18 +438,6 @@
     },
     {
       "category": "documentation",
-      "path": "docs/Phases/Phase33.md",
-      "sha256": "acfcad50dfd9a3380acac4d1df4e457e46d570f8c7bf3e9bdbf252a1de25c50d",
-      "size_bytes": 5120
-    },
-    {
-      "category": "documentation",
-      "path": "docs/Phases/Phase34.md",
-      "sha256": "18f0b9c286fedacd53d52c6d9d3d2b8d5c3ba2cb8774ac358edd106b17a36ebf",
-      "size_bytes": 5065
-    },
-    {
-      "category": "documentation",
       "path": "docs/Phases/Phase4.md",
       "sha256": "14d500a9c5f651ebcd4dbd29602f35556a97eb1340326512f8b90d9d32f829e2",
       "size_bytes": 41395
@@ -511,8 +493,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "d576b9ffea9216de2ccfe02a4e6899b9e3477ac3eaff82235419346e8bdb3bf8",
-      "size_bytes": 36701
+      "sha256": "3f419813e10be1ab51725caf27537c1f97903705ff4da8da3860951e764e746c",
+      "size_bytes": 31805
     },
     {
       "category": "legacy",
@@ -1788,12 +1770,6 @@
     },
     {
       "category": "source",
-      "path": "src/ShadBotTrader/application/services/dataset_update_service.py",
-      "sha256": "d6a6dee71c5cb9ddc6d8c0894ceac25bb9e7a5aad8e5bb1fd618466701d3b7b7",
-      "size_bytes": 13965
-    },
-    {
-      "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
       "sha256": "0800b60520c3fc6baadd6560c6f8c3599e11a70a0b04f095cabbada3d139c9a7",
       "size_bytes": 10965
@@ -2109,12 +2085,6 @@
       "path": "src/ShadBotTrader/domain/dataset/__init__.py",
       "sha256": "986102df8ae1c9e525271a9b32330d29a6a631f190b39c66025ad61f79a09192",
       "size_bytes": 342
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/domain/dataset/continuity.py",
-      "sha256": "51ba2d2f4ac4c13bc5c6943e1b0cc7d31b43040332e7ed4647a579c4731aeba5",
-      "size_bytes": 13103
     },
     {
       "category": "source",
@@ -3253,8 +3223,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "35ae801bc39c6c1aadd43921528928107b3c3e1c7549427cafe0d749206b2aeb",
-      "size_bytes": 57794
+      "sha256": "2284a77d1a7f44cf9208ed715798ee0ec6515e7f18d02f2d1fa60b92986ec7f3",
+      "size_bytes": 55879
     },
     {
       "category": "source",
@@ -3267,12 +3237,6 @@
       "path": "src/ShadBotTrader/presentation/gateway/dashboard_gateway.py",
       "sha256": "ac4f53c5b8132d888c1a21500cdd72d2ad600764942e6c0e7c6d6cdde51cdea8",
       "size_bytes": 13657
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader/presentation/gateway/data_inspector.py",
-      "sha256": "2982c7c90adfc3bd735a19e7f41fd7be6f59f4b4a2496e04ced07c579f7d2433",
-      "size_bytes": 14252
     },
     {
       "category": "source",
@@ -3294,15 +3258,9 @@
     },
     {
       "category": "source",
-      "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "afe5f31312b31d9a1463db89b9dd190b84f3f3b24c7cf49b62c8f1037eda9a15",
-      "size_bytes": 15489
-    },
-    {
-      "category": "source",
       "path": "src/ShadBotTrader/presentation/web/renderer.py",
-      "sha256": "e0c18af879d9cd41e42b1fe58f4977d4573df243619b85cd2384c5a2becc7fdc",
-      "size_bytes": 23521
+      "sha256": "1756c861c19de4e43fc14cf212098ad86dc1516338816b86357659123fa620d6",
+      "size_bytes": 23462
     },
     {
       "category": "source",
@@ -3313,8 +3271,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "b2c18f1ba383ce637e55d603c3da43c1bf236334def36c32337ab376ca22678d",
-      "size_bytes": 15037
+      "sha256": "46aaee4ace7782502b4ce2e1e4fa097b1aa46a4eda09ebc14f01985ea54281cc",
+      "size_bytes": 12564
     },
     {
       "category": "source",
@@ -3343,8 +3301,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "cb5ad2a1784c54999ef2b127f04cd839d0d40718889909d35d2bedbe41690576",
-      "size_bytes": 3167
+      "sha256": "a447f20a8ddc0c663b961cfa7e9d7b055ae4ee402d0d2999120f9222ae2706c4",
+      "size_bytes": 3003
     },
     {
       "category": "source",
@@ -3445,8 +3403,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader.egg-info/SOURCES.txt",
-      "sha256": "90f83994cf013a39c4bdc409f68fded162c79a5b95a49ae86ea7d65433113470",
-      "size_bytes": 14852
+      "sha256": "85f646abff240d1b7c9bd3098d96a017917986195d7cc11a469424119af0efe6",
+      "size_bytes": 14652
     },
     {
       "category": "source",
@@ -3507,18 +3465,6 @@
       "path": "tests/integration/test_data_ingestion.py",
       "sha256": "9add6551c818816cc403d610089f53736747c8dafaf0edaa96e9345d8ebbece3",
       "size_bytes": 4743
-    },
-    {
-      "category": "test",
-      "path": "tests/integration/test_data_inspector.py",
-      "sha256": "e51654fab6c046d4f299f31d25547c0f9bc5e184d90d1d863055e8f053b8979a",
-      "size_bytes": 13227
-    },
-    {
-      "category": "test",
-      "path": "tests/integration/test_dataset_update.py",
-      "sha256": "32e923e6916796ce05b8fc436b964f50f73a40b4fa22806275a27d015d1f2bba",
-      "size_bytes": 12368
     },
     {
       "category": "test",
@@ -3765,12 +3711,6 @@
       "path": "tests/unit/dataset/test_catalog.py",
       "sha256": "abffea71330fcd177e5c5abbb9f024916dda64949cfb5a2c3aedc3ee38382ddc",
       "size_bytes": 1451
-    },
-    {
-      "category": "test",
-      "path": "tests/unit/dataset/test_continuity.py",
-      "sha256": "ceaad1a0b3aa39619e6d78c0625d49b83e3dd5e4aee970acc67c672e14f3fc22",
-      "size_bytes": 11202
     },
     {
       "category": "test",
@@ -4073,12 +4013,12 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-17T07:17:50.955627+00:00",
+  "generated_at": "2026-08-17T06:05:50.047506+00:00",
   "git": {
     "branch": "main",
     "commit": "22e6743c8c948a0916fc4183319e6b123bd6db72",
     "dirty": true,
-    "dirty_files": 2346,
+    "dirty_files": 2334,
     "is_repo": true,
     "recent_commits": [
       "22e6743 NewFixSprint02",
@@ -4265,24 +4205,6 @@
       ],
       "name": "ShadBotTrader.application.services.data_ingestion_service",
       "path": "src/ShadBotTrader/application/services/data_ingestion_service.py"
-    },
-    {
-      "classes": 2,
-      "external_imports": [],
-      "functions": 13,
-      "internal_imports": [
-        "ShadBotTrader.domain.dataset.continuity",
-        "ShadBotTrader.domain.dataset.data_layer",
-        "ShadBotTrader.domain.dataset.dataset_identity",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.infrastructure.data.candle_normalizer",
-        "ShadBotTrader.infrastructure.data.candle_validator",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store"
-      ],
-      "name": "ShadBotTrader.application.services.dataset_update_service",
-      "path": "src/ShadBotTrader/application/services/dataset_update_service.py"
     },
     {
       "classes": 2,
@@ -4913,18 +4835,6 @@
       "internal_imports": [],
       "name": "ShadBotTrader.domain.dataset",
       "path": "src/ShadBotTrader/domain/dataset/__init__.py"
-    },
-    {
-      "classes": 3,
-      "external_imports": [],
-      "functions": 19,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.timeframe"
-      ],
-      "name": "ShadBotTrader.domain.dataset.continuity",
-      "path": "src/ShadBotTrader/domain/dataset/continuity.py"
     },
     {
       "classes": 1,
@@ -7340,7 +7250,6 @@
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
-        "ShadBotTrader.application.services.dataset_update_service",
         "ShadBotTrader.application.services.execution_service",
         "ShadBotTrader.application.services.optimisation_service",
         "ShadBotTrader.application.services.trading_decision_service",
@@ -7394,22 +7303,6 @@
       "path": "src/ShadBotTrader/presentation/gateway/dashboard_gateway.py"
     },
     {
-      "classes": 4,
-      "external_imports": [],
-      "functions": 21,
-      "internal_imports": [
-        "ShadBotTrader.application.services.training_data_service",
-        "ShadBotTrader.domain.dataset.continuity",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store",
-        "ShadBotTrader.infrastructure.feature.parquet_feature_store"
-      ],
-      "name": "ShadBotTrader.presentation.gateway.data_inspector",
-      "path": "src/ShadBotTrader/presentation/gateway/data_inspector.py"
-    },
-    {
       "classes": 0,
       "external_imports": [],
       "functions": 0,
@@ -7441,14 +7334,6 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 6,
-      "internal_imports": [],
-      "name": "ShadBotTrader.presentation.web.data_renderer",
-      "path": "src/ShadBotTrader/presentation/web/data_renderer.py"
-    },
-    {
-      "classes": 0,
-      "external_imports": [],
       "functions": 17,
       "internal_imports": [
         "ShadBotTrader.presentation.commands.commands",
@@ -7471,15 +7356,13 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 23,
+      "functions": 20,
       "internal_imports": [
         "ShadBotTrader.infrastructure.account",
         "ShadBotTrader.presentation.commands.bus",
         "ShadBotTrader.presentation.commands.commands",
         "ShadBotTrader.presentation.commands.handlers",
         "ShadBotTrader.presentation.gateway.dashboard_gateway",
-        "ShadBotTrader.presentation.gateway.data_inspector",
-        "ShadBotTrader.presentation.web.data_renderer",
         "ShadBotTrader.presentation.web.renderer"
       ],
       "name": "ShadBotTrader.presentation.web.server",
@@ -7792,52 +7675,6 @@
       ],
       "name": "integration.test_data_ingestion",
       "path": "tests/integration/test_data_ingestion.py"
-    },
-    {
-      "classes": 5,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 33,
-      "internal_imports": [
-        "ShadBotTrader.application.services.training_data_service",
-        "ShadBotTrader.domain.dataset.data_layer",
-        "ShadBotTrader.domain.dataset.dataset_identity",
-        "ShadBotTrader.domain.dataset.training_dataset",
-        "ShadBotTrader.domain.feature.feature_result",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.price",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store",
-        "ShadBotTrader.infrastructure.feature.parquet_feature_store",
-        "ShadBotTrader.infrastructure.persistence",
-        "ShadBotTrader.presentation.gateway.data_inspector",
-        "ShadBotTrader.presentation.web.data_renderer",
-        "ShadBotTrader.presentation.web.server"
-      ],
-      "name": "integration.test_data_inspector",
-      "path": "tests/integration/test_data_inspector.py"
-    },
-    {
-      "classes": 7,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 27,
-      "internal_imports": [
-        "ShadBotTrader.application.services.dataset_update_service",
-        "ShadBotTrader.domain.dataset.raw_record",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.price",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.market.timestamp",
-        "ShadBotTrader.infrastructure.data.parquet_candle_store"
-      ],
-      "name": "integration.test_dataset_update",
-      "path": "tests/integration/test_dataset_update.py"
     },
     {
       "classes": 4,
@@ -8492,24 +8329,6 @@
       ],
       "name": "unit.dataset.test_catalog",
       "path": "tests/unit/dataset/test_catalog.py"
-    },
-    {
-      "classes": 5,
-      "external_imports": [
-        "pytest"
-      ],
-      "functions": 34,
-      "internal_imports": [
-        "ShadBotTrader.domain.common.errors",
-        "ShadBotTrader.domain.dataset.continuity",
-        "ShadBotTrader.domain.market.candle",
-        "ShadBotTrader.domain.market.price",
-        "ShadBotTrader.domain.market.symbol",
-        "ShadBotTrader.domain.market.timeframe",
-        "ShadBotTrader.domain.market.timestamp"
-      ],
-      "name": "unit.dataset.test_continuity",
-      "path": "tests/unit/dataset/test_continuity.py"
     },
     {
       "classes": 0,
@@ -9259,22 +9078,22 @@
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.13.14",
-  "source_file_count": 287,
+  "source_file_count": 283,
   "statistics": {
-    "class_count": 607,
+    "class_count": 581,
     "config_file_count": 2,
-    "documentation_file_count": 51,
+    "documentation_file_count": 49,
     "external_dependency_count": 12,
-    "function_count": 3580,
-    "internal_dependency_count": 229,
+    "function_count": 3424,
+    "internal_dependency_count": 225,
     "legacy_file_count": 175,
-    "module_count": 387,
-    "source_file_count": 287,
-    "source_lines": 35637,
-    "test_file_count": 100,
-    "test_lines": 15601,
-    "total_file_count": 670,
-    "total_lines": 93704
+    "module_count": 380,
+    "source_file_count": 283,
+    "source_lines": 33969,
+    "test_file_count": 97,
+    "test_lines": 14568,
+    "total_file_count": 660,
+    "total_lines": 91003
   },
-  "test_file_count": 100
+  "test_file_count": 97
 }

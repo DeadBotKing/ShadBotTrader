@@ -1,6 +1,6 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data)",
+  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill)",
   "dependencies": [
     {
       "name": "pytest",
@@ -277,8 +277,8 @@
     {
       "category": "documentation",
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "70ba405d8730cae042b1b1f43015b7a044ddd643731c198ce2ed05277d968faa",
-      "size_bytes": 15776
+      "sha256": "559da7a2eb25100d0f9598b0eb7f4572fa57bc35008a079337101d9a1eada794",
+      "size_bytes": 15503
     },
     {
       "category": "documentation",
@@ -447,12 +447,6 @@
       "path": "docs/Phases/Phase33.md",
       "sha256": "acfcad50dfd9a3380acac4d1df4e457e46d570f8c7bf3e9bdbf252a1de25c50d",
       "size_bytes": 5120
-    },
-    {
-      "category": "documentation",
-      "path": "docs/Phases/Phase34.md",
-      "sha256": "18f0b9c286fedacd53d52c6d9d3d2b8d5c3ba2cb8774ac358edd106b17a36ebf",
-      "size_bytes": 5065
     },
     {
       "category": "documentation",
@@ -3343,8 +3337,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "cb5ad2a1784c54999ef2b127f04cd839d0d40718889909d35d2bedbe41690576",
-      "size_bytes": 3167
+      "sha256": "1e608852820eae997d140361f580e879531822a72d460d94714398c20999c6d6",
+      "size_bytes": 3097
     },
     {
       "category": "source",
@@ -4073,12 +4067,12 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-17T07:17:50.955627+00:00",
+  "generated_at": "2026-08-17T07:16:11.207029+00:00",
   "git": {
     "branch": "main",
     "commit": "22e6743c8c948a0916fc4183319e6b123bd6db72",
     "dirty": true,
-    "dirty_files": 2346,
+    "dirty_files": 2344,
     "is_repo": true,
     "recent_commits": [
       "22e6743 NewFixSprint02",
@@ -9263,18 +9257,18 @@
   "statistics": {
     "class_count": 607,
     "config_file_count": 2,
-    "documentation_file_count": 51,
+    "documentation_file_count": 50,
     "external_dependency_count": 12,
     "function_count": 3580,
     "internal_dependency_count": 229,
     "legacy_file_count": 175,
     "module_count": 387,
     "source_file_count": 287,
-    "source_lines": 35637,
+    "source_lines": 35636,
     "test_file_count": 100,
     "test_lines": 15601,
-    "total_file_count": 670,
-    "total_lines": 93704
+    "total_file_count": 669,
+    "total_lines": 93703
   },
   "test_file_count": 100
 }
