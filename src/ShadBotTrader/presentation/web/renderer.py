@@ -11,7 +11,7 @@ browser with no network.
 from __future__ import annotations
 
 import html
-from typing import Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from ShadBotTrader.presentation.commands.commands import (
     CommandDescriptor,
@@ -98,6 +98,17 @@ button { background: var(--accent); color: #04101f; border: 0; border-radius: 5p
 button:hover { filter: brightness(1.1); }
 button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
 .slow { color: var(--warning); font-size: 10px; margin-top: 6px; }
+.danger-note { color: var(--negative); font-size: 10px; margin-top: 6px; }
+.action.danger { border-color: rgba(248,81,73,.45); }
+.action.danger button { background: var(--negative); color: #fff; }
+.group { margin-bottom: 22px; }
+.group-title { margin: 0 0 10px; font-size: 12px; text-transform: uppercase;
+               letter-spacing: 1px; color: var(--text); font-weight: 600;
+               border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.group-title .count { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.steps { margin: 8px 0 12px; padding-left: 22px; line-height: 1.9; }
+.steps li { color: var(--text); }
+.steps b { color: var(--accent); }
 .banner { border-radius: 6px; padding: 12px 14px; margin-bottom: 16px;
           border: 1px solid currentColor; }
 .banner .head { font-weight: 600; margin-bottom: 4px; }
@@ -360,29 +371,45 @@ def render_actions(
     server turns it into a Command and hands it to the bus. No logic
     runs here — this is markup.
     """
-    cards = []
+    # Group the commands so twenty-one buttons read as a control panel
+    # rather than a wall. Insertion order of the groups is preserved.
+    grouped: Dict[str, List[CommandDescriptor]] = {}
     for descriptor in descriptors:
-        inputs = "".join(
-            f"<label>{_e(field.label)}"
-            f'<input type="{"number" if field.kind == "number" else "text"}" '
-            f'name="{_e(field.name)}" value="{_e(field.default)}" '
-            f'{"step=any" if field.kind == "number" else ""}></label>'
-            for field in descriptor.fields
-        )
-        disabled = " disabled" if busy is not None else ""
-        note = (
-            '<div class="slow">takes a while — the page stays responsive</div>'
-            if descriptor.slow
-            else ""
-        )
-        cards.append(f"""<form class="action" method="post" action="/run">
+        grouped.setdefault(descriptor.group, []).append(descriptor)
+
+    sections = []
+    for group, items in grouped.items():
+        cards = []
+        for descriptor in items:
+            inputs = "".join(
+                f"<label>{_e(field.label)}"
+                f'<input type="{"number" if field.kind == "number" else "text"}" '
+                f'name="{_e(field.name)}" value="{_e(field.default)}" '
+                f'{"step=any" if field.kind == "number" else ""}'
+                f'{f" title={_e(field.hint)!r}" if field.hint else ""}></label>'
+                for field in descriptor.fields
+            )
+            disabled = " disabled" if busy is not None else ""
+            notes = []
+            if descriptor.slow:
+                notes.append('<div class="slow">takes a while — the page stays responsive</div>')
+            if descriptor.danger:
+                notes.append('<div class="danger-note">destructive</div>')
+
+            cards.append(f"""<form class="action{' danger' if descriptor.danger else ''}"
+      method="post" action="/run">
   <input type="hidden" name="command" value="{_e(descriptor.action)}">
   <h3>{_e(descriptor.label)}</h3>
   <p>{_e(descriptor.description)}</p>
   {f'<div class="inputs">{inputs}</div>' if inputs else ""}
   <button type="submit"{disabled}>Run</button>
-  {note}
+  {"".join(notes)}
 </form>""")
+
+        sections.append(f"""<div class="group">
+  <h3 class="group-title">{_e(group)} <span class="count">{len(items)}</span></h3>
+  <div class="actions">{"".join(cards)}</div>
+</div>""")
 
     banner = ""
     if busy is not None:
@@ -394,9 +421,69 @@ def render_actions(
         )
 
     return f"""<section class="panel wide">
-  <h2>Actions</h2>
+  <h2>Actions — every run lives here</h2>
   {banner}
-  <div class="actions">{"".join(cards)}</div>
+  {"".join(sections)}
+</section>"""
+
+
+def render_accounts(accounts: Optional[Dict[str, object]]) -> str:
+    """The account panel: which profiles exist and which is active.
+
+    Passwords are never shown because they are never stored — the panel
+    reports the environment variable that supplies each one instead.
+    """
+    if not accounts or not accounts.get("profiles"):
+        return """<section class="panel">
+  <h2>Accounts</h2>
+  <p class="empty">No broker account configured yet.</p>
+  <p>Use <b>Add account</b> above: give it a name, your MT5 login and the
+     server shown in the terminal (for example <code>Alpari-MT5-Demo</code>).</p>
+</section>"""
+
+    active = str(accounts.get("active", ""))
+    profiles = accounts.get("profiles")
+    if not isinstance(profiles, dict):
+        return ""
+
+    rows = []
+    for name, profile in sorted(profiles.items()):
+        entry: Dict[str, Any] = profile if isinstance(profile, dict) else {}
+        is_active = name == active
+        aliases = entry.get("symbol_map") or {}
+        alias_text = (
+            ", ".join(f"{key}&rarr;{value}" for key, value in sorted(aliases.items()))
+            or "<span class='neutral'>none</span>"
+        )
+        rows.append(
+            [
+                f"<b class='accent'>{_e(name)}</b>" if is_active else _e(name),
+                "<span class='positive'>active</span>" if is_active else "",
+                _e(entry.get("login", "")),
+                _e(entry.get("server", "")),
+                (
+                    "<span class='neutral'>demo</span>"
+                    if entry.get("is_demo", True)
+                    else "<span class='negative'>LIVE</span>"
+                ),
+                alias_text,
+                (
+                    "<span class='positive'>set</span>"
+                    if entry.get("password_set")
+                    else f"<code>{_e(entry.get('password_variable', ''))}</code>"
+                ),
+            ]
+        )
+
+    return f"""<section class="panel wide">
+  <h2>Accounts</h2>
+  {_table(
+      ["Profile", "", "Login", "Server", "Type", "Symbol aliases", "Password"],
+      rows,
+      "No accounts.",
+  )}
+  <p class="sub">Passwords are never stored. Set the shown variable in your
+     shell, or leave it unset to reuse the terminal's own session.</p>
 </section>"""
 
 
@@ -442,6 +529,7 @@ def render_dashboard(
     history: Sequence[CommandResult] = (),
     busy: Optional[CommandKind] = None,
     busy_seconds: float = 0.0,
+    accounts: Optional[Dict[str, object]] = None,
 ) -> str:
     """Render the complete dashboard page."""
     session_note = (
@@ -451,18 +539,33 @@ def render_dashboard(
     )
 
     actions = render_actions(commands, busy, busy_seconds) if commands else ""
+    account_panel = render_accounts(accounts)
     outcome = render_result(result)
 
     if view.is_empty:
-        body = actions + outcome + """<section class="panel wide">
-  <h2>Nothing recorded yet</h2>
-  <p class="empty">Use an action above, or run a script:</p>
-  <p><code>python scripts/run_persistence.py --keep --db shadbot.db</code></p>
+        # Every instruction here names a BUTTON, never a terminal
+        # command: sending the operator back to a shell defeats the
+        # purpose of the dashboard.
+        body = actions + account_panel + outcome + """<section class="panel wide">
+  <h2>Nothing recorded yet — start here</h2>
+  <ol class="steps">
+    <li><b>Accounts &rarr; Add account</b> — your MT5 login and server
+        (for example <code>Alpari-MT5-Demo</code>).</li>
+    <li><b>Accounts &rarr; Check account</b> — confirms the terminal is
+        reachable and the symbols exist.</li>
+    <li><b>Accounts &rarr; Detect symbol names</b> — finds what this
+        broker calls each instrument.</li>
+    <li><b>Data &rarr; Fetch market data</b> — the first real candles.</li>
+    <li><b>Data &rarr; Build training dataset</b>, then
+        <b>AI &rarr; Train both models</b>.</li>
+  </ol>
+  <p class="sub">Everything runs from this page. No terminal required.</p>
 </section>""" + render_history(history)
     else:
         body = "".join(
             [
                 actions,
+                account_panel,
                 outcome,
                 render_portfolio(view.portfolio),
                 render_equity_chart(equity_points),

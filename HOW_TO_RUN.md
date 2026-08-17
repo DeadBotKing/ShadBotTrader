@@ -261,6 +261,53 @@ python scripts\run_weekly_update.py
 > اجرا می‌شود و آنجا ترمینال MT5 در دسترس **نیست** — متاتریدر از IPC محلی
 > در session کاربر استفاده می‌کند. این محدودیت واقعی است، نه میان‌بر.
 
+### ز) 🎛 همه‌چیز از داشبورد (فاز ۳۲ — روش توصیه‌شده)
+
+```powershell
+python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
+# مرورگر: http://localhost:8080
+```
+
+> دیتابیس اگر نباشد **خودش ساخته می‌شود**. هیچ آماده‌سازی دستی لازم نیست.
+
+**۲۱ دکمه در ۶ گروه:** Accounts · Data · AI · Simulation · Trading · Operations
+
+#### اولین بار — تنظیم اکانت
+
+۱. **Accounts → Add account**
+   `name=alpari-demo`، `login=53102853`، `server=Alpari-MT5-Demo`
+۲. (اختیاری) رمز — فقط اگر ترمینال لاگین نیست:
+   ```powershell
+   $env:SHADBOT_MT5_PASSWORD_ALPARI_DEMO = 'your-password'
+   ```
+۳. **Accounts → Check account** — اتصال و نمادها را تأیید می‌کند
+۴. **Accounts → Detect symbol names** — می‌گوید بروکرت هر ابزار را چه می‌نامد
+
+> 🔐 **رمز هرگز ذخیره نمی‌شود.** پروفایل فقط نام متغیر محیطی را نگه می‌دارد.
+> اگر ست نکنی، از session خودِ متاتریدر استفاده می‌شود.
+
+#### چند اکانت با نام‌های نماد متفاوت
+
+اگر بروکر دیگری طلا را `XAUUSD_i` بنامد:
+```
+Accounts → Add account      (پروفایل دوم)
+Accounts → Map a symbol     XAUUSD → XAUUSD_i
+Accounts → Switch account   بین اکانت‌ها جابه‌جا شو
+```
+دیتاست‌ها با نام canonical (`XAUUSD`) ذخیره می‌مانند، پس تاریخچهٔ یادگیری
+با عوض‌کردن بروکر از بین نمی‌رود.
+
+#### روال روزمره
+
+```
+Data  → Fetch market data      دریافت کندل واقعی
+Data  → Build training dataset ۱۰۰k کندل + ۱۲۳ ستون
+AI    → Train both models      مدل رنج (۱H) و سیگنال (۵M)
+Sim   → Record a replay        تماشای کندل‌به‌کندل در /replay
+Trade → Run one live tick      یک چرخهٔ کامل تصمیم‌گیری
+Ops   → Back up the database   قبل از هر کار مهم
+```
+
 ---
 
 ## گام ۵ — ترتیب پیشنهادی برای اولین اجرا
@@ -316,7 +363,7 @@ ShadBotTrader/
 │   ├── project/           Project Intelligence (scanner، builder، exporter)
 │   ├── main.py            نقطه‌ی ورود اصلی
 │   └── *_cli.py           رابط‌های خط فرمان
-├── tests/                 ۱۰۳۴ تست (unit / integration / architecture)
+├── tests/                 ۱۰۹۷ تست (unit / integration / architecture)
 ├── scripts/               دموهای اجرایی
 ├── datasets/              parquet های raw / processed / features
 ├── docs/                  مستندات معماری فازهای ۱–۲۸

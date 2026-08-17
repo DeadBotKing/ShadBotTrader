@@ -1,10 +1,10 @@
 {
   "architecture_version": "1.0",
-  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed (plugin registry, layered config with secret redaction, structured contextual logging)",
+  "current_phase": "Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI)",
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 54
+      "used_by": 56
     },
     {
       "name": "numpy",
@@ -65,28 +65,142 @@
       "size_bytes": 2832
     },
     {
-      "category": "documentation",
-      "path": "architecture/SHADBOTTRADER_ARCHITECTURE_FREEZE_v1.0.md",
-      "sha256": "2f5aa854d53c8f05f731c8f9535a78e79158b2f1ac85381b2c727331967e7b3f",
-      "size_bytes": 5876
-    },
-    {
       "category": "other",
       "path": "CHANGELOG_REVIEW.md",
       "sha256": "ce383eb79fbd5fd5f341cec5621f068ef2d70697708ad29ac6784140b699fd20",
       "size_bytes": 9140
     },
     {
+      "category": "other",
+      "path": "HOW_TO_RUN.md",
+      "sha256": "4bb89ce63270121e0bbb9fc33eb52d4a8723c5ee12f4bf0846f3be5c96526867",
+      "size_bytes": 14530
+    },
+    {
+      "category": "other",
+      "path": "MT5_READINESS_REPORT.md",
+      "sha256": "d049a8591ef2e86c1e8f91a5129d3d1a177029c328f989f86836f2cb6f34c23d",
+      "size_bytes": 8567
+    },
+    {
+      "category": "other",
+      "path": "Myinstractions/VenvUbuntu.txt",
+      "sha256": "e15a0326862f3884f2d6ca0dcd4710f40e8f5e29258d1ba5a6914a34bbf9044c",
+      "size_bytes": 40
+    },
+    {
+      "category": "other",
+      "path": "PARQUET_AND_MT5.md",
+      "sha256": "fabaa4033d6de0fa1cc1f332d93f673f0cddb409e188e285b78d01c549f29b18",
+      "size_bytes": 11402
+    },
+    {
+      "category": "other",
+      "path": "PERSIST_REPORT.md",
+      "sha256": "e069ac1daeab4b84bfd994ba8e8c16cce01a6abdcc47fc441fcc85f51b06aaa2",
+      "size_bytes": 6007
+    },
+    {
+      "category": "other",
+      "path": "PHASE19_REPORT.md",
+      "sha256": "79e9adc7592221f0c6d673a91ba0b588378d6ba756af822cb161f284d5b971e5",
+      "size_bytes": 10200
+    },
+    {
+      "category": "other",
+      "path": "PHASE24_REPORT.md",
+      "sha256": "8b5934389f693ec97e0fd6c3f882737f23e19e58363489c830847b5fae4cd1c2",
+      "size_bytes": 7857
+    },
+    {
+      "category": "other",
+      "path": "PHASE29_REPORT.md",
+      "sha256": "9b8641e381f5c8cfba68819d886a6be0d8cc2454cf3b7d589690a4cd4c805efe",
+      "size_bytes": 9826
+    },
+    {
+      "category": "other",
+      "path": "PHASE30_REPORT.md",
+      "sha256": "9fd5cd66480b3915efa744854e39fe68c0e6732472bde075d026a7663eedc5b5",
+      "size_bytes": 10030
+    },
+    {
+      "category": "other",
+      "path": "PHASE31_REPORT.md",
+      "sha256": "15fe6d26a2928c420b64924d853450b0251925319a21a1c254babc9cb696d851",
+      "size_bytes": 7286
+    },
+    {
+      "category": "other",
+      "path": "PHASE32_REPORT.md",
+      "sha256": "ae15cb387b201f8e37ac1e55fa886e4ed708364985e0f2fb68b608cd349bce5c",
+      "size_bytes": 7617
+    },
+    {
+      "category": "other",
+      "path": "PHASE_9_21_22_REPORT.md",
+      "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
+      "size_bytes": 9198
+    },
+    {
+      "category": "other",
+      "path": "README.md",
+      "sha256": "4fd9170495d70adc335491782642c986d50ee10d5f999b3a4cb2716513e946b2",
+      "size_bytes": 20448
+    },
+    {
+      "category": "other",
+      "path": "REPLAY_REPORT.md",
+      "sha256": "141a551872ae43603beba104e88e0a398731b162e4b4a099d800d07566005405",
+      "size_bytes": 11622
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P4_REPORT.md",
+      "sha256": "a44e16132fc0b3dcc7c18dbdf5bc5facbf4cce24b3a935436b21840c68a57a91",
+      "size_bytes": 9360
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P5_REPORT.md",
+      "sha256": "0300c6a33c806de0240b584ff7fa84e995b604e5230f3a62e63f07026176b2dc",
+      "size_bytes": 8796
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P6_REPORT.md",
+      "sha256": "9a65e70a6c18a8ec6c3f37a4a8c0b42a26a26f54b1f5e23fe62e54c9c710020f",
+      "size_bytes": 9043
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P7_REPORT.md",
+      "sha256": "e358bc03f324eb7cd92939bdf1f58bb73eadb6a5236d1418bae6d688cc0e833e",
+      "size_bytes": 9530
+    },
+    {
+      "category": "other",
+      "path": "SPRINT_P8_REPORT.md",
+      "sha256": "8a00fd2e9260a87570770a6e6bf0bca6d77bde9cc20c229f8d1c45dd5cf32005",
+      "size_bytes": 10129
+    },
+    {
+      "category": "other",
+      "path": "WINDOWS_SETUP.md",
+      "sha256": "e5bd2ff2c8b636994263ceda92d1d7abea7581aa28cade46e621258acfc48421",
+      "size_bytes": 7211
+    },
+    {
+      "category": "documentation",
+      "path": "architecture/SHADBOTTRADER_ARCHITECTURE_FREEZE_v1.0.md",
+      "sha256": "2f5aa854d53c8f05f731c8f9535a78e79158b2f1ac85381b2c727331967e7b3f",
+      "size_bytes": 5876
+    },
+    {
       "category": "config",
       "path": "configs/app.yaml",
       "sha256": "a60c70f145bcdaa123b416901c45b72486ec72146628888eb76e3938e9c61606",
       "size_bytes": 109
-    },
-    {
-      "category": "other",
-      "path": "dashboard.db",
-      "sha256": "d2fa88596e3252dd7618a02576228399a6355e5cb5a0a0840bd6a5afb48c5d82",
-      "size_bytes": 155648
     },
     {
       "category": "other",
@@ -120,15 +234,15 @@
     },
     {
       "category": "documentation",
-      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
-      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
-      "size_bytes": 108314
-    },
-    {
-      "category": "documentation",
       "path": "docs/DATABASE_SCHEMA_SPECIFICATION.md",
       "sha256": "221933dcc460a057b82e859cfdf8e94698fe140b401bfc80addf5aec14575b9c",
       "size_bytes": 78424
+    },
+    {
+      "category": "documentation",
+      "path": "docs/DATA_FLOW_DOCUMENTATION.md",
+      "sha256": "96c6d67d2fac72415320c8266631232ed2e8e6d00977a6f442f2fad37dc900db",
+      "size_bytes": 108314
     },
     {
       "category": "documentation",
@@ -157,8 +271,14 @@
     {
       "category": "documentation",
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "cf0b50571e8e20a64ecf4b7feb0a3284da0fb42cec0036e8428c84f8c2faeeca",
-      "size_bytes": 14022
+      "sha256": "7fc89dfe844bee4487cbca2b1124ef1a379b4d869c8c30742a550f08bb044ba1",
+      "size_bytes": 14368
+    },
+    {
+      "category": "documentation",
+      "path": "docs/PROJECT_STATE.md",
+      "sha256": "52366e4a87ed29b2399bd166194b57f289c06939ee80a33719c97b3bd1cc7dd9",
+      "size_bytes": 51604
     },
     {
       "category": "documentation",
@@ -312,6 +432,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Phases/Phase32.md",
+      "sha256": "b8fdc1f673e969c0244caa0cab2774d28be6c5389d206cba3c5a0e682dd7762c",
+      "size_bytes": 7158
+    },
+    {
+      "category": "documentation",
       "path": "docs/Phases/Phase4.md",
       "sha256": "14d500a9c5f651ebcd4dbd29602f35556a97eb1340326512f8b90d9d32f829e2",
       "size_bytes": 41395
@@ -348,12 +474,6 @@
     },
     {
       "category": "documentation",
-      "path": "docs/PROJECT_STATE.md",
-      "sha256": "52366e4a87ed29b2399bd166194b57f289c06939ee80a33719c97b3bd1cc7dd9",
-      "size_bytes": 51604
-    },
-    {
-      "category": "documentation",
       "path": "docs/README.md",
       "sha256": "efc87a099cf555b9f755545c02e7264f39481569c3c16c269b92100deac5191c",
       "size_bytes": 70063
@@ -373,44 +493,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "b7d95bc81140f82bda088c22c83ad12c97524bba5d2c98e415521de19561ae2c",
-      "size_bytes": 29179
-    },
-    {
-      "category": "other",
-      "path": "HOW_TO_RUN.md",
-      "sha256": "d1bb87100865d545d3a6140f1e75e8cfe8bfdcd60ad05e3b65fff7440aed12e4",
-      "size_bytes": 12480
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__init__.py",
-      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
-      "size_bytes": 82
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__main__.py",
-      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
-      "size_bytes": 265
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__mainbot__.py",
-      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
-      "size_bytes": 2499
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__MainTester__.py",
-      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
-      "size_bytes": 39647
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/__Updater__.py",
-      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
-      "size_bytes": 413
+      "sha256": "3f419813e10be1ab51725caf27537c1f97903705ff4da8da3860951e764e746c",
+      "size_bytes": 31805
     },
     {
       "category": "legacy",
@@ -429,18 +513,6 @@
       "path": "legacy/ColabRunner.ipynb",
       "sha256": "0734a7de9d2dfa42fb560081c6b903e0b1fcc1a147385a46ea654c72a1d86c2c",
       "size_bytes": 185993
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -492,6 +564,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/MACD/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerBuyPrimary__.py",
       "sha256": "59211060d1dd03be7a2d5a6e8dff38c865fc0fefc591faf12b906500ee058826",
       "size_bytes": 343
@@ -513,12 +591,6 @@
       "path": "legacy/GeneticLearningRunner/Main Runners/__mainRunnerSellSecondry__.py",
       "sha256": "3ee00b838724cd4aa4a94bccdb9e9b66f81152b9b3ead6b795706c409b6b5e38",
       "size_bytes": 5448
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
-      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
-      "size_bytes": 131
     },
     {
       "category": "legacy",
@@ -570,7 +642,7 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "path": "legacy/GeneticLearningRunner/RSI/__init__.py",
       "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
       "size_bytes": 131
     },
@@ -621,6 +693,18 @@
       "path": "legacy/GeneticLearningRunner/StochAstic/Runner_SellSecondry.py",
       "sha256": "33fb8b6fd2e351298084277ea06f7b0a004be01b4953e7cd8b75050dc9bbe00e",
       "size_bytes": 5521
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/StochAstic/__init__.py",
+      "sha256": "64b0a9c0eb81c6a2006adda58746f5e6644517ed4a8027cfe935e4e2be2fdfc4",
+      "size_bytes": 131
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/GeneticLearningRunner/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -678,12 +762,6 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/OnlineBot/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
       "path": "legacy/OnlineBot/MACD/__init__.py",
       "sha256": "25febc7dd3829d80eeff6afb050d68b3a9b6a40d8109a3e9c09f5aef23129617",
       "size_bytes": 19
@@ -720,15 +798,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/PipWindowsInstaller.txt",
-      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
-      "size_bytes": 447
+      "path": "legacy/OnlineBot/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
-      "path": "legacy/requirements.txt",
-      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
-      "size_bytes": 847
+      "path": "legacy/PipWindowsInstaller.txt",
+      "sha256": "bed57c80d4bba37c733a3c908fdbdca56b475c66edfd54c641078f079a7fbb26",
+      "size_bytes": 447
     },
     {
       "category": "legacy",
@@ -738,21 +816,93 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
+      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
+      "size_bytes": 80128
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TestPhotographer.py",
+      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
+      "size_bytes": 929
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction.py",
+      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
+      "size_bytes": 37033
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPrediction2.py",
+      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
+      "size_bytes": 73610
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesPredictionTrend.py",
+      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
+      "size_bytes": 36714
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/TimeSeriesSignalPredictor.py",
+      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
+      "size_bytes": 21191
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/MainDatasetUpdater.py",
+      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
+      "size_bytes": 389
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/Updater/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__MainTester__.py",
+      "sha256": "78094677c358faf24da348db8d07c991051dc2599a4dc6b78bad58e96d96a05a",
+      "size_bytes": 39647
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__Updater__.py",
+      "sha256": "86817591d06f1e43c852c8508984e4ebdfc3fd6b3ed3877a070643dcd9cc743e",
+      "size_bytes": 413
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__init__.py",
+      "sha256": "834a03b3faa500484ca0abd3dd52bf2a3c7f3be8bb8be02f6f817793b718e66e",
+      "size_bytes": 82
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__main__.py",
+      "sha256": "b7c8babee64856a4ebe1a4ad770d33af46414cff37c0d21413f7693ae59d5945",
+      "size_bytes": 265
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/__mainbot__.py",
+      "sha256": "00cdc9d8702b9a5f975cf3eb9e919db310d4ec0f003730d92e0ff255ea4e91f2",
+      "size_bytes": 2499
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/requirements.txt",
+      "sha256": "dbccc2286f53a36d98eed4a3765d5aef5ea9b15ad640f878a8f4a50783642622",
+      "size_bytes": 847
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/__init__.py",
       "sha256": "961c629354bb8a471a8d7e69f3a199bfd8950efc9d1b7ed3e0da926e975bb116",
       "size_bytes": 48
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/__init__.py",
-      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
-      "size_bytes": 66
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/indicators/MACD/__init__.py",
-      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
-      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -822,9 +972,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/RSI/__init__.py",
-      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
-      "size_bytes": 144
+      "path": "legacy/src/indicators/MACD/__init__.py",
+      "sha256": "47f7c638982e9b9d144cc039944a97226b9626f134eaa8e37a5aa17b46b52c85",
+      "size_bytes": 145
     },
     {
       "category": "legacy",
@@ -894,9 +1044,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/StochAstic/__init__.py",
-      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
-      "size_bytes": 151
+      "path": "legacy/src/indicators/RSI/__init__.py",
+      "sha256": "ef3578aec631101d82b2a6c36ff16edaeaff693c31f13b01d4915d5393816c76",
+      "size_bytes": 144
     },
     {
       "category": "legacy",
@@ -966,9 +1116,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/indicators/ZigZag/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/indicators/StochAstic/__init__.py",
+      "sha256": "775a364c787ff2bbd759498ffb9f9cd7d2b94d400d268a45df3db74f5e40fcde",
+      "size_bytes": 151
     },
     {
       "category": "legacy",
@@ -978,27 +1128,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/__init__.py",
-      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
-      "size_bytes": 130
+      "path": "legacy/src/indicators/ZigZag/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DataReader/__init__.py",
-      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
-      "size_bytes": 33
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
-      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
-      "size_bytes": 58
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/DataReader/MetaTraderReader5/config.ini",
-      "sha256": "c94a6152fe65a441fbae8f8bec31ccf51b2a7691d09dc888be094677bb284a74",
-      "size_bytes": 185
+      "path": "legacy/src/indicators/__init__.py",
+      "sha256": "611e40ed0d6bec2a9089a0f8f66f7f64df4aca93fd23c5ee1b2f5437fbc7bbab",
+      "size_bytes": 66
     },
     {
       "category": "legacy",
@@ -1020,15 +1158,21 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/DataReader/MetaTraderReader5/__init__.py",
+      "sha256": "6a4692105d88cab60f784dc668991aa1f8e7afffd90193cdf1c37c44682bc5f8",
+      "size_bytes": 58
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Divergence/__init__.py",
-      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
-      "size_bytes": 105
+      "path": "legacy/src/utils/DataReader/__init__.py",
+      "sha256": "e671a81748ef7080ec35e7ed93132ca5ac3878b626a796b4441312417f09994a",
+      "size_bytes": 33
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/DatasetPreparer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1068,9 +1212,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Divergence/__init__.py",
+      "sha256": "110d99c4fb6a3e78f0074f683459e1895d019846c75591ad04c092ed44775d81",
+      "size_bytes": 105
     },
     {
       "category": "legacy",
@@ -1188,15 +1332,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
-      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
-      "size_bytes": 3601
-    },
-    {
-      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePCAMI.py",
       "sha256": "27794ac776807dc44557af269a48a6b63bc55291221cc93886fe94f1be82cced",
       "size_bytes": 2443
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/HowToUse/HowToUsePattern.py",
+      "sha256": "48cf0530122b273a48d0e88d3bc556a9d44a5771dfac8b48ff83215d943ec8ea",
+      "size_bytes": 3601
     },
     {
       "category": "legacy",
@@ -1218,6 +1362,12 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
+      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
+      "size_bytes": 10258
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/FeatureEngineering/ParameterReader.py",
       "sha256": "334edbe4978c9acf039c304d8df45ab3b40fa66aac4b254c0431f5254ec50a9f",
       "size_bytes": 7457
@@ -1230,9 +1380,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/FeatureEngineering/PCAMI.py",
-      "sha256": "dea2c2de6a93bbad08439402ac37a4af168482fe2a885ac9ec942bc2c573a4e1",
-      "size_bytes": 10258
+      "path": "legacy/src/utils/FeatureEngineering/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1251,18 +1401,6 @@
       "path": "legacy/src/utils/ForexNews/forexnews.json",
       "sha256": "79613c93042c6b00f45b923644fb160da1797b23af4409c7f7e8c38818f62002",
       "size_bytes": 291
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1296,9 +1434,15 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Optimizers/__init__.py",
-      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
-      "size_bytes": 79
+      "path": "legacy/src/utils/MLModelGenerator/Image/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/MLModelGenerator/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
     },
     {
       "category": "legacy",
@@ -1344,9 +1488,9 @@
     },
     {
       "category": "legacy",
-      "path": "legacy/src/utils/Photographer/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "path": "legacy/src/utils/Optimizers/__init__.py",
+      "sha256": "b7bea6510f0a7dd6ee53cb9ccc39bebd4826e0ee9d8567f032ca5f3a1572f782",
+      "size_bytes": 79
     },
     {
       "category": "legacy",
@@ -1356,21 +1500,15 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Photographer/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/ProtectResist/__init__.py",
       "sha256": "684233ac8c8dcd148cb9a793abdf35e1d9fbcea5a661be76925795d142a8ae2d",
       "size_bytes": 94
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/__init__.py",
-      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
-      "size_bytes": 93
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/src/utils/Tools/carrier.py",
-      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
-      "size_bytes": 5180
     },
     {
       "category": "legacy",
@@ -1386,147 +1524,33 @@
     },
     {
       "category": "legacy",
+      "path": "legacy/src/utils/Tools/__init__.py",
+      "sha256": "511614c96a4f6bd2588c07e828461708872f71f30939c3905d14ba60de2c30b8",
+      "size_bytes": 93
+    },
+    {
+      "category": "legacy",
+      "path": "legacy/src/utils/Tools/carrier.py",
+      "sha256": "52e6517ca9b6672f814dc829de4808ef8cac6d3362647211694d621bc1a07793",
+      "size_bytes": 5180
+    },
+    {
+      "category": "legacy",
       "path": "legacy/src/utils/Tools/timer.py",
       "sha256": "aa49b8bd19f4b0cfe04667442f05e07a03d5c8944b51a586f7f2d3ea343428e5",
       "size_bytes": 344
     },
     {
       "category": "legacy",
-      "path": "legacy/TensorBoard/train/events.out.tfevents.1697186137.72a92c3ff8f1.3247.0.v2",
-      "sha256": "a2fcd333b5b1c49fdd818310a53a01b6b22b804ed416cd386d4227e16b84d904",
-      "size_bytes": 80128
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TestPhotographer.py",
-      "sha256": "1c73f6b8762e161ad82f042aef6834b228537f800e712b230bdd7219ad8c89d5",
-      "size_bytes": 929
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction.py",
-      "sha256": "598e84782e21f30f84184c9d595e3dcc15dc56b0038fdf4d4b61de2179be9bfa",
-      "size_bytes": 37033
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPrediction2.py",
-      "sha256": "feecd306557b960ba7b8817d8a732ed445806dd62156029c57f8fd833e921222",
-      "size_bytes": 73610
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesPredictionTrend.py",
-      "sha256": "7e03080bbd47e2ae9c2ca84d21bb465533e126c04b8dbd200b6020545ef3ebc3",
-      "size_bytes": 36714
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/TimeSeriesSignalPredictor.py",
-      "sha256": "7de963c425cb74fa6949acbb7a3724f934e2d148f946963f56106b0ec67fe766",
-      "size_bytes": 21191
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/__init__.py",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
-    },
-    {
-      "category": "legacy",
-      "path": "legacy/Updater/MainDatasetUpdater.py",
-      "sha256": "be42df372bbf2d052738a42f200bd83bb0a7abf76ac9ad1f4243665563ff4498",
-      "size_bytes": 389
-    },
-    {
-      "category": "other",
-      "path": "MT5_READINESS_REPORT.md",
-      "sha256": "d049a8591ef2e86c1e8f91a5129d3d1a177029c328f989f86836f2cb6f34c23d",
-      "size_bytes": 8567
-    },
-    {
-      "category": "other",
-      "path": "Myinstractions/venv.txt",
-      "sha256": "f4abb9fec37fc597f3cd67b4bc8406532b78979a54a3a0b687f531b1e6caf557",
-      "size_bytes": 327
-    },
-    {
-      "category": "other",
-      "path": "Myinstractions/VenvUbuntu.txt",
-      "sha256": "e15a0326862f3884f2d6ca0dcd4710f40e8f5e29258d1ba5a6914a34bbf9044c",
-      "size_bytes": 40
-    },
-    {
-      "category": "other",
-      "path": "out.html",
-      "sha256": "f526ee89a7cc817f1356960fe2d28538b084efa8f296950194c53b06c076fd5d",
-      "size_bytes": 9180
-    },
-    {
-      "category": "other",
-      "path": "PARQUET_AND_MT5.md",
-      "sha256": "fabaa4033d6de0fa1cc1f332d93f673f0cddb409e188e285b78d01c549f29b18",
-      "size_bytes": 11402
-    },
-    {
-      "category": "other",
-      "path": "PERSIST_REPORT.md",
-      "sha256": "e069ac1daeab4b84bfd994ba8e8c16cce01a6abdcc47fc441fcc85f51b06aaa2",
-      "size_bytes": 6007
-    },
-    {
-      "category": "other",
-      "path": "PHASE19_REPORT.md",
-      "sha256": "79e9adc7592221f0c6d673a91ba0b588378d6ba756af822cb161f284d5b971e5",
-      "size_bytes": 10200
-    },
-    {
-      "category": "other",
-      "path": "PHASE24_REPORT.md",
-      "sha256": "8b5934389f693ec97e0fd6c3f882737f23e19e58363489c830847b5fae4cd1c2",
-      "size_bytes": 7857
-    },
-    {
-      "category": "other",
-      "path": "PHASE29_REPORT.md",
-      "sha256": "9b8641e381f5c8cfba68819d886a6be0d8cc2454cf3b7d589690a4cd4c805efe",
-      "size_bytes": 9826
-    },
-    {
-      "category": "other",
-      "path": "PHASE30_REPORT.md",
-      "sha256": "9fd5cd66480b3915efa744854e39fe68c0e6732472bde075d026a7663eedc5b5",
-      "size_bytes": 10030
-    },
-    {
-      "category": "other",
-      "path": "PHASE31_REPORT.md",
-      "sha256": "15fe6d26a2928c420b64924d853450b0251925319a21a1c254babc9cb696d851",
-      "size_bytes": 7286
-    },
-    {
-      "category": "other",
-      "path": "PHASE_9_21_22_REPORT.md",
-      "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
-      "size_bytes": 9198
+      "path": "legacy/src/utils/__init__.py",
+      "sha256": "0eabb52aa209c553c7021cf9f8853c5baf5e5ae7a7ebb5f97306a1e15eb94d67",
+      "size_bytes": 130
     },
     {
       "category": "config",
       "path": "pyproject.toml",
       "sha256": "bacea35ba81cfd46642086aa6a837af2b6d4bf56a5ba91eb5d411e821aaa93a6",
       "size_bytes": 2124
-    },
-    {
-      "category": "other",
-      "path": "README.md",
-      "sha256": "4fd9170495d70adc335491782642c986d50ee10d5f999b3a4cb2716513e946b2",
-      "size_bytes": 20448
-    },
-    {
-      "category": "other",
-      "path": "REPLAY_REPORT.md",
-      "sha256": "141a551872ae43603beba104e88e0a398731b162e4b4a099d800d07566005405",
-      "size_bytes": 11622
     },
     {
       "category": "other",
@@ -1671,36 +1695,6 @@
       "path": "setup_windows.ps1",
       "sha256": "5da1bba463cd2071b60b3b7f5ccedf382fa38a1837da3515ea5ac68af4c80084",
       "size_bytes": 5167
-    },
-    {
-      "category": "other",
-      "path": "SPRINT_P4_REPORT.md",
-      "sha256": "a44e16132fc0b3dcc7c18dbdf5bc5facbf4cce24b3a935436b21840c68a57a91",
-      "size_bytes": 9360
-    },
-    {
-      "category": "other",
-      "path": "SPRINT_P5_REPORT.md",
-      "sha256": "0300c6a33c806de0240b584ff7fa84e995b604e5230f3a62e63f07026176b2dc",
-      "size_bytes": 8796
-    },
-    {
-      "category": "other",
-      "path": "SPRINT_P6_REPORT.md",
-      "sha256": "9a65e70a6c18a8ec6c3f37a4a8c0b42a26a26f54b1f5e23fe62e54c9c710020f",
-      "size_bytes": 9043
-    },
-    {
-      "category": "other",
-      "path": "SPRINT_P7_REPORT.md",
-      "sha256": "e358bc03f324eb7cd92939bdf1f58bb73eadb6a5236d1418bae6d688cc0e833e",
-      "size_bytes": 9530
-    },
-    {
-      "category": "other",
-      "path": "SPRINT_P8_REPORT.md",
-      "sha256": "8a00fd2e9260a87570770a6e6bf0bca6d77bde9cc20c229f8d1c45dd5cf32005",
-      "size_bytes": 10129
     },
     {
       "category": "source",
@@ -1951,8 +1945,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/dashboard_cli.py",
-      "sha256": "26044059c7a22f1eb171624e0bc18e55c9e27225a1e4993dadb6a4c66615471f",
-      "size_bytes": 8481
+      "sha256": "5071cd2549ce856c17d82bc753b1946ab6a3e8c265ee47e4667eeecccb51e703",
+      "size_bytes": 9307
     },
     {
       "category": "source",
@@ -1977,6 +1971,18 @@
       "path": "src/ShadBotTrader/domain/__init__.py",
       "sha256": "cd4a297ea1b8b71e18375bf6c84084ac1f1c2431b76956982f9c3223d104446e",
       "size_bytes": 69
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/account/__init__.py",
+      "sha256": "6664e801422fdb3b4cf7a17dc0990b8ea046f5d5a9a23c17a67d16352ca7229d",
+      "size_bytes": 250
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/domain/account/profile.py",
+      "sha256": "74c98ec49c776876c570892bccd0686a36ba8b50f1352cb7284a4ce32dcf72f9",
+      "size_bytes": 11284
     },
     {
       "category": "source",
@@ -2571,6 +2577,18 @@
       "path": "src/ShadBotTrader/infrastructure/__init__.py",
       "sha256": "f0e6f8356c81decb068df07306bd46a94b1adbba9d46f45b23e014680cf06a7e",
       "size_bytes": 72
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/account/__init__.py",
+      "sha256": "1b7dc4c741594045aeab2479d4b3f8bd216e0e74bcca4f3a5e6b37fee26bbc85",
+      "size_bytes": 267
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/account/profile_store.py",
+      "sha256": "4964b613f94bd0a589324e68da95d0dec2971e271702d2a5d8e30a36b4adb774",
+      "size_bytes": 9369
     },
     {
       "category": "source",
@@ -3193,20 +3211,20 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/bus.py",
-      "sha256": "3d127318978f9ddde88d061e9cfc26cac997ce01cb0a3ae3fc8242513d09a9c7",
-      "size_bytes": 5345
+      "sha256": "e2589227cb30e90f488dafa4804b22dcaf23b5296bad7952144fd2f33ed46e97",
+      "size_bytes": 5436
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "e87557fbd2f33d4f8bcc1156767999731516c4a284e2a7a61ed1d355b2c61ad8",
-      "size_bytes": 5090
+      "sha256": "d58c7154c39dbed43f891d3dca3133ffa9c7e0ea8402269fe3ca838a00be2d00",
+      "size_bytes": 6135
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "d163f86646c7b7b2ae1861a1a0effcb597fa1014a355a49df06eb1673e0506bd",
-      "size_bytes": 30191
+      "sha256": "2284a77d1a7f44cf9208ed715798ee0ec6515e7f18d02f2d1fa60b92986ec7f3",
+      "size_bytes": 55879
     },
     {
       "category": "source",
@@ -3241,8 +3259,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/renderer.py",
-      "sha256": "15852d5ea4d3e92489e6be6af4f87c3857d746a51835720ebc3ee97fa2219216",
-      "size_bytes": 18834
+      "sha256": "1756c861c19de4e43fc14cf212098ad86dc1516338816b86357659123fa620d6",
+      "size_bytes": 23462
     },
     {
       "category": "source",
@@ -3253,8 +3271,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "4342b83c7802d459b44b0b170d1649b45bcf009573316725b46bc0c3e42c4595",
-      "size_bytes": 11740
+      "sha256": "46aaee4ace7782502b4ce2e1e4fa097b1aa46a4eda09ebc14f01985ea54281cc",
+      "size_bytes": 12564
     },
     {
       "category": "source",
@@ -3283,8 +3301,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/project/builders/snapshot_builder.py",
-      "sha256": "b7c0288c5364ee53cd7be3cde449255a790fe713d1c5efcc302760fccaf6a284",
-      "size_bytes": 2996
+      "sha256": "a447f20a8ddc0c663b961cfa7e9d7b055ae4ee402d0d2999120f9222ae2706c4",
+      "size_bytes": 3003
     },
     {
       "category": "source",
@@ -3378,6 +3396,18 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader.egg-info/PKG-INFO",
+      "sha256": "248b9a6162996b9b6468ff0f6ddc1a77600e23b8a6df90f3a1230069f1a60cc6",
+      "size_bytes": 21184
+    },
+    {
+      "category": "source",
+      "path": "src/ShadBotTrader.egg-info/SOURCES.txt",
+      "sha256": "85f646abff240d1b7c9bd3098d96a017917986195d7cc11a469424119af0efe6",
+      "size_bytes": 14652
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader.egg-info/dependency_links.txt",
       "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
       "size_bytes": 1
@@ -3385,26 +3415,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader.egg-info/entry_points.txt",
-      "sha256": "a216fc1e2cb5cc920704a17bf52496b33e097cb21229c1179dd50d76118fd527",
-      "size_bytes": 425
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader.egg-info/PKG-INFO",
-      "sha256": "b46ce7818fdd6d498fa9eeaf559ce4f444bce30b0ed8bc8d9395cf69d79dc998",
-      "size_bytes": 15806
+      "sha256": "6fa3ced0860efed85503df298c0154733b4d39262119d0e50f687a34285224e7",
+      "size_bytes": 564
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader.egg-info/requires.txt",
       "sha256": "fbcd6ecd77994c01b905af551af61317a5b85b63b7f02b4689aa3cac225000a2",
       "size_bytes": 250
-    },
-    {
-      "category": "source",
-      "path": "src/ShadBotTrader.egg-info/SOURCES.txt",
-      "sha256": "d6a350400702b08330ddada6a7678357f56e59ba84db6531cafb0dce8bf62c7e",
-      "size_bytes": 11943
     },
     {
       "category": "source",
@@ -3439,8 +3457,8 @@
     {
       "category": "test",
       "path": "tests/integration/test_dashboard_server.py",
-      "sha256": "e59d6c07a622c6f1041bb520edf182af0a160fce494d7a4aa68e82b50fa6100e",
-      "size_bytes": 11142
+      "sha256": "5ce2f1350cbdedc2d52f4858fc99cbf913fe3493bfac4f8785a3a328474c9b62",
+      "size_bytes": 11306
     },
     {
       "category": "test",
@@ -3471,6 +3489,12 @@
       "path": "tests/integration/test_feature_pipeline.py",
       "sha256": "31533e34de9022fdd5d3b06db060e2a211581c9d73099d2bd19e485532b9609c",
       "size_bytes": 5627
+    },
+    {
+      "category": "test",
+      "path": "tests/integration/test_gui_coverage.py",
+      "sha256": "743818b53df69df5ac3d440926409480735c67bc0fcc341075e4e1a2c3719675",
+      "size_bytes": 13102
     },
     {
       "category": "test",
@@ -3525,6 +3549,18 @@
       "path": "tests/simulation_fixtures.py",
       "sha256": "2feff9af606b5198ceadcdee2a449b79a44016688af586c59b8b5e26acdff7c9",
       "size_bytes": 2001
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/account/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/account/test_profiles.py",
+      "sha256": "10def3411b80e373c85ee79e6654e4a546abd42b8912a56e057207546f2ccc0a",
+      "size_bytes": 9982
     },
     {
       "category": "test",
@@ -3883,8 +3919,8 @@
     {
       "category": "test",
       "path": "tests/unit/presentation/test_dashboard.py",
-      "sha256": "6049f0f1e65efb90023babed654f8dbab32ba92c3f5130e94190451f16729cfd",
-      "size_bytes": 14750
+      "sha256": "1e96523b27d24d310e9c6c5083053cd22286e26bf3c87e101858c9abee4735b8",
+      "size_bytes": 14847
     },
     {
       "category": "test",
@@ -3975,32 +4011,26 @@
       "path": "tests/unit/strategy/test_trading_components.py",
       "sha256": "3f99ae318677fc551620386dcc245be8820ebcbd866e2472cd08a95b4c1a5127",
       "size_bytes": 21652
-    },
-    {
-      "category": "other",
-      "path": "WINDOWS_SETUP.md",
-      "sha256": "e5bd2ff2c8b636994263ceda92d1d7abea7581aa28cade46e621258acfc48421",
-      "size_bytes": 7211
     }
   ],
-  "generated_at": "2026-08-17T05:35:10.315050+00:00",
+  "generated_at": "2026-08-17T06:05:50.047506+00:00",
   "git": {
     "branch": "main",
-    "commit": "8fbd24ede30c3459c660e724766cd16d50e5aa41",
+    "commit": "22e6743c8c948a0916fc4183319e6b123bd6db72",
     "dirty": true,
-    "dirty_files": 384,
+    "dirty_files": 2334,
     "is_repo": true,
     "recent_commits": [
-      "8fbd24e Update Dashboard",
-      "98df9b6 Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)",
-      "715cfce Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)",
-      "4951f42 Real Data",
-      "9dbcec3 Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P7: Self-Learning \u00e2\u20ac\u201d walk-forward optimisation with a promotion gate)",
-      "be2bcf9 Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P5: Execution & Portfolio \u00e2\u20ac\u201d fill-based accounting)",
-      "422b7dc Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P4: Trading Platform \u00e2\u20ac\u201d risk-gated decision pipeline)",
-      "dcd31ce Phase 28 \u00e2\u20ac\u201d Implementation Foundation (Sprint P2: Feature Platform \u00e2\u20ac\u201d full 85-feature catalog)",
-      "b5df12b Create venv.txt",
-      "22e6743 NewFixSprint02"
+      "22e6743 NewFixSprint02",
+      "74c72cf Phase 28 \u2014 Implementation Foundation (Sprint P2: Feature Platform \u2014 full 85-feature catalog)",
+      "e9eb8fe Phase 28 \u2014 Implementation Foundation (Sprint P2: Feature Platform)",
+      "81751ce Phase 28 \u2014 Implementation Foundation (Sprint P1: Data Platform)",
+      "80cbf5a Phase 28 \u2014 Implementation Foundation (Sprint P0: Project Intelligence)",
+      "e019203 Phase1",
+      "28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md",
+      "ac8c959 Upda",
+      "0ddcbe9 Update Docs From Done To No Done",
+      "a7c6b62 Docs"
     ]
   },
   "modules": [
@@ -4556,6 +4586,7 @@
       "external_imports": [],
       "functions": 7,
       "internal_imports": [
+        "ShadBotTrader.infrastructure.persistence",
         "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.gateway.dashboard_gateway",
         "ShadBotTrader.presentation.web.renderer",
@@ -4618,6 +4649,26 @@
       "internal_imports": [],
       "name": "ShadBotTrader.domain",
       "path": "src/ShadBotTrader/domain/__init__.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [
+        "ShadBotTrader.domain.account.profile"
+      ],
+      "name": "ShadBotTrader.domain.account",
+      "path": "src/ShadBotTrader/domain/account/__init__.py"
+    },
+    {
+      "classes": 3,
+      "external_imports": [],
+      "functions": 28,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors"
+      ],
+      "name": "ShadBotTrader.domain.account.profile",
+      "path": "src/ShadBotTrader/domain/account/profile.py"
     },
     {
       "classes": 0,
@@ -5760,6 +5811,29 @@
       "internal_imports": [],
       "name": "ShadBotTrader.infrastructure",
       "path": "src/ShadBotTrader/infrastructure/__init__.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.account.profile_store"
+      ],
+      "name": "ShadBotTrader.infrastructure.account",
+      "path": "src/ShadBotTrader/infrastructure/account/__init__.py"
+    },
+    {
+      "classes": 3,
+      "external_imports": [],
+      "functions": 21,
+      "internal_imports": [
+        "ShadBotTrader.domain.account.profile",
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.infrastructure.data.mt5_market_data_provider",
+        "ShadBotTrader.infrastructure.data.mt5_symbol_resolver"
+      ],
+      "name": "ShadBotTrader.infrastructure.account.profile_store",
+      "path": "src/ShadBotTrader/infrastructure/account/profile_store.py"
     },
     {
       "classes": 0,
@@ -7168,12 +7242,13 @@
       "path": "src/ShadBotTrader/presentation/commands/commands.py"
     },
     {
-      "classes": 1,
+      "classes": 2,
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 13,
+      "functions": 32,
       "internal_imports": [
+        "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
         "ShadBotTrader.application.services.execution_service",
         "ShadBotTrader.application.services.optimisation_service",
@@ -7186,7 +7261,10 @@
         "ShadBotTrader.domain.strategy.risk_policy",
         "ShadBotTrader.domain.strategy.strategy_context",
         "ShadBotTrader.feature_cli",
+        "ShadBotTrader.infrastructure.account",
         "ShadBotTrader.infrastructure.data",
+        "ShadBotTrader.infrastructure.deployment.backup",
+        "ShadBotTrader.infrastructure.deployment.health_checks",
         "ShadBotTrader.infrastructure.execution",
         "ShadBotTrader.infrastructure.feature.standard_catalog",
         "ShadBotTrader.infrastructure.persistence",
@@ -7256,7 +7334,7 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 16,
+      "functions": 17,
       "internal_imports": [
         "ShadBotTrader.presentation.commands.commands",
         "ShadBotTrader.presentation.viewmodels.models"
@@ -7278,8 +7356,9 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 19,
+      "functions": 20,
       "internal_imports": [
+        "ShadBotTrader.infrastructure.account",
         "ShadBotTrader.presentation.commands.bus",
         "ShadBotTrader.presentation.commands.commands",
         "ShadBotTrader.presentation.commands.handlers",
@@ -7686,6 +7765,23 @@
       "path": "tests/integration/test_feature_pipeline.py"
     },
     {
+      "classes": 5,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 34,
+      "internal_imports": [
+        "ShadBotTrader",
+        "ShadBotTrader.infrastructure.account",
+        "ShadBotTrader.infrastructure.persistence",
+        "ShadBotTrader.presentation.commands.commands",
+        "ShadBotTrader.presentation.commands.handlers",
+        "ShadBotTrader.presentation.web.server"
+      ],
+      "name": "integration.test_gui_coverage",
+      "path": "tests/integration/test_gui_coverage.py"
+    },
+    {
       "classes": 7,
       "external_imports": [],
       "functions": 22,
@@ -7874,6 +7970,28 @@
       ],
       "name": "simulation_fixtures",
       "path": "tests/simulation_fixtures.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 0,
+      "internal_imports": [],
+      "name": "unit.account",
+      "path": "tests/unit/account/__init__.py"
+    },
+    {
+      "classes": 4,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 37,
+      "internal_imports": [
+        "ShadBotTrader.domain.account",
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.infrastructure.account"
+      ],
+      "name": "unit.account.test_profiles",
+      "path": "tests/unit/account/test_profiles.py"
     },
     {
       "classes": 0,
@@ -8959,23 +9077,23 @@
     }
   ],
   "project_name": "ShadBotTrader",
-  "python_version": "3.12.10",
-  "source_file_count": 279,
+  "python_version": "3.13.14",
+  "source_file_count": 283,
   "statistics": {
-    "class_count": 565,
+    "class_count": 581,
     "config_file_count": 2,
-    "documentation_file_count": 48,
+    "documentation_file_count": 49,
     "external_dependency_count": 12,
-    "function_count": 3283,
-    "internal_dependency_count": 221,
-    "legacy_file_count": 176,
-    "module_count": 373,
-    "source_file_count": 279,
-    "source_lines": 32552,
-    "test_file_count": 94,
-    "test_lines": 13913,
-    "total_file_count": 655,
-    "total_lines": 88931
+    "function_count": 3424,
+    "internal_dependency_count": 225,
+    "legacy_file_count": 175,
+    "module_count": 380,
+    "source_file_count": 283,
+    "source_lines": 33969,
+    "test_file_count": 97,
+    "test_lines": 14568,
+    "total_file_count": 660,
+    "total_lines": 91003
   },
-  "test_file_count": 94
+  "test_file_count": 97
 }

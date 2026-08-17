@@ -192,8 +192,10 @@ class TestRenderer:
 
     def test_empty_database_gets_guidance_not_a_broken_page(self, database):
         markup = render_dashboard(DashboardGateway(database).dashboard())
-        assert "Nothing recorded yet" in markup
-        assert "run_persistence" in markup
+        assert "start here" in markup
+        # Guidance points at buttons, never at a script to run.
+        assert "Add account" in markup
+        assert "run_persistence" not in markup
 
     def test_everything_is_inlined(self, populated):
         """The preview sandbox has no network: no external assets allowed."""

@@ -1,0 +1,18 @@
+{
+  "active": "alpari-demo",
+  "profiles": {
+    "alpari-demo": {
+      "name": "alpari-demo",
+      "login": 53102853,
+      "server": "Alpari-MT5-Demo",
+      "terminal_path": "",
+      "symbol_map": {},
+      "is_demo": true,
+      "note": "",
+      "created_at": "2026-08-17T06:31:05.386188+00:00",
+      "last_used_at": "",
+      "password_variable": "SHADBOT_MT5_PASSWORD_ALPARI_DEMO",
+      "password_set": false
+    }
+  }
+}

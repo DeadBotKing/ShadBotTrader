@@ -34,13 +34,35 @@ class CommandKind(str, Enum):
     reviewer can see the entire surface in one place.
     """
 
+    # -- accounts (Phase 32) --------------------------------------------
+    ADD_ACCOUNT = "add_account"
+    ACTIVATE_ACCOUNT = "activate_account"
+    REMOVE_ACCOUNT = "remove_account"
+    CHECK_ACCOUNT = "check_account"
+    MAP_SYMBOL = "map_symbol"
+    AUTO_MAP_SYMBOLS = "auto_map_symbols"
+
+    # -- data and features ----------------------------------------------
     FETCH_MARKET_DATA = "fetch_market_data"
     COMPUTE_FEATURES = "compute_features"
+    BUILD_DATASET = "build_dataset"
+    WEEKLY_UPDATE = "weekly_update"
+
+    # -- AI ---------------------------------------------------------------
     TRAIN_MODEL = "train_model"
+    TRAIN_DUAL_MODELS = "train_dual_models"
+
+    # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"
     RECORD_REPLAY = "record_replay"
     RUN_OPTIMISATION = "run_optimisation"
     RUN_TRADING_CYCLE = "run_trading_cycle"
+    RUN_EXECUTION_DEMO = "run_execution_demo"
+    RUN_LIVE_TICK = "run_live_tick"
+
+    # -- operations --------------------------------------------------------
+    BACKUP_DATABASE = "backup_database"
+    HEALTH_CHECK = "health_check"
     REFRESH_PROJECT_STATE = "refresh_project_state"
 
 
@@ -162,6 +184,9 @@ class CommandDescriptor:
     fields: List["CommandField"] = field(default_factory=list)
     danger: bool = False
     slow: bool = False
+    #: UI section this command belongs to. With thirty buttons on one
+    #: page, grouping is the difference between a control panel and a wall.
+    group: str = "General"
 
     @property
     def action(self) -> str:

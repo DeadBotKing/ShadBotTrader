@@ -41,6 +41,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     database_path: str = "shadbot.db"
     storage_root: str = "datasets"
     replay_path: str = "replay.html"
+    account_store: str = "configs/accounts.json"
     allow_commands: bool = True
     bus: Optional[CommandBus] = None
     server_version = "ShadBotTrader/1.1"
@@ -144,7 +145,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
             history=bus.history()[:8] if bus else (),
             busy=bus.running if bus else None,
             busy_seconds=bus.running_for_seconds if bus else 0.0,
+            accounts=self._accounts(),
         )
+
+    def _accounts(self) -> dict[str, Any]:
+        """The account book, or an empty one when nothing is configured."""
+        from ShadBotTrader.infrastructure.account import AccountProfileStore
+
+        try:
+            return AccountProfileStore(self.account_store).load().to_dict()
+        except Exception:
+            # A damaged account file must not take the dashboard down.
+            return {}
 
     def _replay(self) -> str:
         """Serve the recorded replay, or explain how to record one."""
@@ -176,6 +188,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             ]
         gateway.database.close()
         payload["commands"] = self._status()
+        payload["accounts"] = self._accounts()
         return payload
 
     def _status(self) -> dict[str, Any]:
@@ -249,6 +262,7 @@ def create_server(
     allow_commands: bool = True,
     storage_root: str | Path = "datasets",
     replay_path: str | Path = "replay.html",
+    account_store: str | Path = "configs/accounts.json",
 ) -> ThreadingHTTPServer:
     """Build the dashboard server.
 
@@ -257,7 +271,9 @@ def create_server(
     read-only viewer.
     """
     bus = (
-        CommandBus.with_defaults(str(database_path), str(storage_root), str(replay_path))
+        CommandBus.with_defaults(
+            str(database_path), str(storage_root), str(replay_path), str(account_store)
+        )
         if allow_commands
         else None
     )
@@ -268,6 +284,7 @@ def create_server(
             "database_path": str(database_path),
             "storage_root": str(storage_root),
             "replay_path": str(replay_path),
+            "account_store": str(account_store),
             "allow_commands": allow_commands,
             "bus": bus,
         },
@@ -282,9 +299,18 @@ def serve(
     allow_commands: bool = True,
     storage_root: str | Path = "datasets",
     replay_path: str | Path = "replay.html",
+    account_store: str | Path = "configs/accounts.json",
 ) -> None:
     """Run the dashboard until interrupted."""
-    server = create_server(database_path, host, port, allow_commands, storage_root, replay_path)
+    server = create_server(
+        database_path,
+        host,
+        port,
+        allow_commands,
+        storage_root,
+        replay_path,
+        account_store,
+    )
     shown = "localhost" if host in ("0.0.0.0", "") else host
 
     print("=== ShadBotTrader dashboard ===")

@@ -47,9 +47,12 @@ class CommandBus:
         database_path: str,
         storage_root: str = "datasets",
         replay_path: str = "replay.html",
+        account_store: str = "configs/accounts.json",
     ) -> "CommandBus":
         """A bus wired to the standard handlers."""
-        return cls(CommandHandlers(database_path, storage_root, replay_path).registry())
+        return cls(
+            CommandHandlers(database_path, storage_root, replay_path, account_store).registry()
+        )
 
     # -- state ----------------------------------------------------------------
     @property

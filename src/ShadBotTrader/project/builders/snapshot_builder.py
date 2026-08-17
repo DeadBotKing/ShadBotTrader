@@ -23,8 +23,8 @@ CURRENT_PHASE = (
     "Phase 28 - Implementation Foundation "
     "+ Phases 29-31 (dual models, 100k dataset, live loop) "
     "+ Phase 24 Deployment + Phases 9/21/22 completed "
-    "(plugin registry, layered config with secret redaction, "
-    "structured contextual logging)"
+    "+ Phase 32 (multi-account profiles, per-broker symbol mapping, "
+    "every run driven from the GUI)"
 )
 
 

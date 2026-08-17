@@ -5,20 +5,20 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Python version: 3.12.10
-- Snapshot generated at: 2026-08-17T05:35:10.315050+00:00
+- Python version: 3.13.14
+- Snapshot generated at: 2026-08-17T06:05:50.047506+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 279
-- Test modules: 94
+- Source modules: 283
+- Test modules: 97
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed (plugin registry, layered config with secret redaction, structured contextual logging)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI)
 
 ## Implemented Components
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 8fbd24ede30c3459c660e724766cd16d50e5aa41
-- Dirty: yes (384 files)
+- Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
+- Dirty: yes (2334 files)
 - Recent commits:
-  - 8fbd24e Update Dashboard
-  - 98df9b6 Phase 28 - Implementation Foundation (Phase 19: read-only dashboard over persisted state)
-  - 715cfce Phase 28 - Implementation Foundation (Sprint P8: Persistence - SQLite-backed state that survives restarts)
-  - 4951f42 Real Data
-  - 9dbcec3 Phase 28 â€” Implementation Foundation (Sprint P7: Self-Learning â€” walk-forward optimisation with a promotion gate)
-  - be2bcf9 Phase 28 â€” Implementation Foundation (Sprint P5: Execution & Portfolio â€” fill-based accounting)
-  - 422b7dc Phase 28 â€” Implementation Foundation (Sprint P4: Trading Platform â€” risk-gated decision pipeline)
-  - dcd31ce Phase 28 â€” Implementation Foundation (Sprint P2: Feature Platform â€” full 85-feature catalog)
-  - b5df12b Create venv.txt
   - 22e6743 NewFixSprint02
+  - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
+  - e9eb8fe Phase 28 — Implementation Foundation (Sprint P2: Feature Platform)
+  - 81751ce Phase 28 — Implementation Foundation (Sprint P1: Data Platform)
+  - 80cbf5a Phase 28 — Implementation Foundation (Sprint P0: Project Intelligence)
+  - e019203 Phase1
+  - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
+  - ac8c959 Upda
+  - 0ddcbe9 Update Docs From Done To No Done
+  - a7c6b62 Docs
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Model quality: the backtester still uses MomentumPredictionSource, a deliberate 
 
 ## Statistics
 
-- Total files: 655
-- Source files: 279
-- Test files: 94
-- Documentation files: 48
-- Legacy files: 176
-- Total Python lines: 88931
-- Modules: 373
-- Classes: 565
-- Functions: 3283
+- Total files: 660
+- Source files: 283
+- Test files: 97
+- Documentation files: 49
+- Legacy files: 175
+- Total Python lines: 91003
+- Modules: 380
+- Classes: 581
+- Functions: 3424
 - External dependencies: 12

@@ -21,12 +21,26 @@ DEFAULT_DB = "shadbot.db"
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
-    """Run the read-only dashboard server."""
-    if not Path(args.db).exists():
-        print(f"Database not found: {args.db}")
-        print("Create one first, for example:")
-        print("    python scripts/run_persistence.py --keep --db " + args.db)
-        return 1
+    """Run the dashboard server, creating the database when absent.
+
+    The dashboard used to refuse to start without a database and tell the
+    user to run a script first. That contradicted the whole point of the
+    GUI: the one command needed to reach the buttons was itself a
+    terminal command. ``Database()`` applies its own migrations, so the
+    empty database is created here and the operator goes straight to the
+    page.
+    """
+    from ShadBotTrader.infrastructure.persistence import Database
+
+    database = Path(args.db)
+    if not database.exists():
+        print(f"No database at {database} — creating it ...")
+        created = Database(database)
+        try:
+            print(f"  created with schema v{created.schema_version}")
+        finally:
+            created.close()
+
     serve(
         args.db,
         host=args.host,
@@ -34,6 +48,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
         allow_commands=not args.read_only,
         storage_root=args.storage_root,
         replay_path=args.replay,
+        account_store=args.account_store,
     )
     return 0
 
@@ -73,7 +88,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         key, value = entry.split("=", 1)
         parameters[key] = value
 
-    bus = CommandBus.with_defaults(args.db, args.storage_root, args.replay)
+    bus = CommandBus.with_defaults(args.db, args.storage_root, args.replay, args.account_store)
     print(f"Running {kind.value} ...")
     result = bus.dispatch(Command(kind=kind, parameters=parameters))
 
@@ -197,6 +212,11 @@ def main(argv: List[str] | None = None) -> int:
         default="replay.html",
         help="file the replay recorder writes and /replay serves",
     )
+    serve_parser.add_argument(
+        "--account-store",
+        default="configs/accounts.json",
+        help="where broker account profiles are stored",
+    )
     serve_parser.set_defaults(func=cmd_serve)
 
     run = subparsers.add_parser("run", help="dispatch one command from the CLI")
@@ -204,6 +224,7 @@ def main(argv: List[str] | None = None) -> int:
     run.add_argument("--param", action="append", default=[], metavar="KEY=VALUE")
     run.add_argument("--storage-root", default="datasets")
     run.add_argument("--replay", default="replay.html", help="replay output file")
+    run.add_argument("--account-store", default="configs/accounts.json")
     run.set_defaults(func=cmd_run)
 
     commands = subparsers.add_parser("commands", help="list available actions")

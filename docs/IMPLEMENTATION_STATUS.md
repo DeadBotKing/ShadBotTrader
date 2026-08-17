@@ -3,9 +3,10 @@
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
 - **آخرین به‌روزرسانی:** 2026-08-16
-- **آخرین کار انجام‌شده:** **تکمیل فازهای ۹، ۲۱، ۲۲** — رجیستری پلاگین، پیکربندی لایه‌ای، لاگینگ ساختاریافته
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (279 files)` · `pytest 1034 passed, 12 skipped`
-- **تعداد فایل منبع:** ۲۷۹ · **فایل تست:** ۷۸
+- **آخرین کار انجام‌شده:** **فاز ۳۲** — پروفایل چند-اکانتی، نگاشت نماد per-broker، همهٔ ران‌ها در GUI
+- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (283 files)` · `pytest 1101 passed, 12 skipped`
+- **تعداد فایل منبع:** ۲۸۳ · **فایل تست:** ۸۱
+- ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
 
 > **قاعده (طبق `docs/AGENTOPERATINGRULE.md`):** کد موجود در workspace مرجع
@@ -47,6 +48,7 @@
 | ۲۶ | Freeze v1.0 | ✅ رعایت می‌شود | معماری منجمد دست‌نخورده مانده |
 | ۲۷ | Architecture Implementation | ✅ کامل | bootstrap/runtime/lifecycle |
 | ۲۸ | Implementation Foundation | 🔄 در حال انجام | Sprint P0…P8 + Replay + MT5 |
+| **۳۲** | **Accounts & Full GUI** | ✅ **کامل (جدید)** | `domain/account/profile.py`، `infrastructure/account/profile_store.py`، ۲۱ دکمه در ۶ گروه |
 | **۳۱** | **Live Loop & Model Backtest** | ✅ **کامل (جدید)** | `infrastructure/trading/dual_model_strategy.py`، `infrastructure/simulation/model_prediction_source.py`، `application/services/live_decision_service.py` |
 | **۳۰** | **Training Dataset & Live Buffer** | ✅ **کامل** | `domain/dataset/training_dataset.py`، `infrastructure/ai/{window_generator,live_matrix}.py`، `infrastructure/data/live_buffer.py`، `application/services/training_data_service.py` |
 | **۲۹** | **Dual Predictive Models** | ✅ **کامل** | `domain/ai/prediction_target.py`، `infrastructure/ai/{target_builder,feature_matrix,model_roles,dual_predictor}.py`، `application/services/dual_model_service.py` |
@@ -144,7 +146,8 @@ hit rate:      0.118 → 0
 | — | فاز ۳۰ — دیتاست و بافر زنده | 831 | `PHASE30_REPORT.md` |
 | — | فاز ۳۱ — حلقهٔ زنده + بک‌تست مدل | 878 | `PHASE31_REPORT.md` |
 | — | فاز ۲۴ — Deployment | 932 | `PHASE24_REPORT.md` |
-| — | **فازهای ۹/۲۱/۲۲ — تکمیل** | **1034** | `PHASE_9_21_22_REPORT.md` |
+| — | فازهای ۹/۲۱/۲۲ — تکمیل | 1034 | `PHASE_9_21_22_REPORT.md` |
+| — | **فاز ۳۲ — اکانت‌ها و GUI کامل** | **1097** | `PHASE32_REPORT.md` |
 
 ---
 
@@ -165,6 +168,10 @@ hit rate:      0.118 → 0
 ۱۱. `BacktestEngine` به کلاس concrete وابسته بود → پورت `ReportingLedger`
 ۱۲. `transactions` در یکی property و در دیگری method بود
 ۱۳. سایه‌افتادن متغیر `context` در `run_trading.py`
+۱۸. **داشبورد بدون دیتابیس بالا نمی‌آمد** — کاربر را به `run_persistence.py`
+    هدایت می‌کرد؛ همان اسکریپتی که در فاز ۳۲ عمداً از GUI حذف شده بود.
+    تناقض مستقیم با «همه‌چیز از GUI». حالا دیتابیس خودکار ساخته می‌شود و
+    صفحهٔ خالی، دکمه‌ها را معرفی می‌کند نه دستور شل.
 ۱۷. **ترتیب لیست بکاپ‌ها غلط بود** — مرتب‌سازی بر اساس نام فایل انجام می‌شد،
     ولی دو بکاپ در یک ثانیه فقط با پسوند عددی فرق دارند و `...-1.db` از
     `...db` جلوتر مرتب می‌شود. یعنی `latest()` بکاپ **قدیمی‌تر** را برمی‌گرداند

@@ -22,6 +22,7 @@ from ShadBotTrader.presentation.commands.commands import (
     CommandField,
     CommandKind,
     CommandResult,
+    CommandStatus,
 )
 
 Handler = Callable[[Command], CommandResult]
@@ -45,6 +46,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("bars", "Bars", "5000", kind="number"),
             ],
             slow=True,
+            group="Data",
         ),
         CommandDescriptor(
             kind=CommandKind.COMPUTE_FEATURES,
@@ -58,6 +60,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("timeframe", "Timeframe", "5M"),
             ],
             slow=True,
+            group="Data",
         ),
         CommandDescriptor(
             kind=CommandKind.TRAIN_MODEL,
@@ -73,6 +76,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("window", "Window size", "8", kind="number"),
             ],
             slow=True,
+            group="AI",
         ),
         CommandDescriptor(
             kind=CommandKind.RUN_BACKTEST,
@@ -87,6 +91,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("spread", "Spread", "4", kind="number"),
             ],
+            group="Simulation",
         ),
         CommandDescriptor(
             kind=CommandKind.RECORD_REPLAY,
@@ -102,6 +107,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("spread", "Spread", "4", kind="number"),
             ],
+            group="Simulation",
         ),
         CommandDescriptor(
             kind=CommandKind.RUN_OPTIMISATION,
@@ -116,6 +122,7 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("folds", "Validation folds", "3", kind="number"),
             ],
             slow=True,
+            group="Simulation",
         ),
         CommandDescriptor(
             kind=CommandKind.RUN_TRADING_CYCLE,
@@ -129,11 +136,163 @@ def descriptors() -> List[CommandDescriptor]:
                 CommandField("timeframe", "Timeframe", "5M"),
                 CommandField("session", "Session", "dashboard"),
             ],
+            group="Trading",
         ),
         CommandDescriptor(
             kind=CommandKind.REFRESH_PROJECT_STATE,
             label="Refresh project state",
             description="Rescan the repository and regenerate the project snapshot.",
+            group="Operations",
+        ),
+        # -- accounts (Phase 32) -----------------------------------------
+        CommandDescriptor(
+            kind=CommandKind.ADD_ACCOUNT,
+            label="Add account",
+            description=(
+                "Register a MetaTrader 5 account. The password is NOT stored: "
+                "set it in the environment variable shown after saving."
+            ),
+            fields=[
+                CommandField("name", "Profile name", "alpari-demo"),
+                CommandField("login", "Login", "", kind="number"),
+                CommandField("server", "Server", "Alpari-MT5-Demo"),
+                CommandField("terminal_path", "Terminal path", "", hint="optional"),
+                CommandField("is_demo", "Demo account", "1", hint="1 = demo, 0 = live"),
+            ],
+            group="Accounts",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.ACTIVATE_ACCOUNT,
+            label="Switch account",
+            description="Make a profile the active one; every run then uses it.",
+            fields=[CommandField("name", "Profile name", "")],
+            group="Accounts",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.CHECK_ACCOUNT,
+            label="Check account",
+            description=(
+                "Connect to the broker and confirm every mapped symbol exists. "
+                "Leave the name empty to check the active profile."
+            ),
+            fields=[CommandField("name", "Profile name", "")],
+            group="Accounts",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.MAP_SYMBOL,
+            label="Map a symbol",
+            description=(
+                "Tell this profile what its broker calls an instrument, "
+                "e.g. XAUUSD -> XAUUSD_i. Datasets keep the canonical name."
+            ),
+            fields=[
+                CommandField("name", "Profile name", ""),
+                CommandField("canonical", "Platform symbol", "XAUUSD"),
+                CommandField("broker", "Broker symbol", "XAUUSD_i"),
+            ],
+            group="Accounts",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUTO_MAP_SYMBOLS,
+            label="Detect symbol names",
+            description=(
+                "Ask the broker what it calls each instrument and suggest a "
+                "mapping. Suggestions are applied only when you confirm."
+            ),
+            fields=[
+                CommandField("name", "Profile name", ""),
+                CommandField("symbols", "Symbols", "XAUUSD,EURUSD,GBPUSD"),
+                CommandField("apply", "Apply suggestions", "0", hint="1 = save them"),
+            ],
+            slow=True,
+            group="Accounts",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.REMOVE_ACCOUNT,
+            label="Remove account",
+            description="Delete a profile. The broker account itself is untouched.",
+            fields=[CommandField("name", "Profile name", "")],
+            danger=True,
+            group="Accounts",
+        ),
+        # -- data ----------------------------------------------------------
+        CommandDescriptor(
+            kind=CommandKind.BUILD_DATASET,
+            label="Build training dataset",
+            description=(
+                "Fetch candles for both timeframes, compute all 123 columns "
+                "and store the matrix the models train on."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("candles", "Candles", "100000", kind="number"),
+            ],
+            slow=True,
+            group="Data",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.WEEKLY_UPDATE,
+            label="Weekly update",
+            description=(
+                "Back up, refresh the dataset (full feature recompute) and "
+                "prepare the models for continued training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("candles", "Candles", "100000", kind="number"),
+                CommandField("force", "Ignore the 7-day gate", "0"),
+            ],
+            slow=True,
+            group="Data",
+        ),
+        # -- AI --------------------------------------------------------------
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_DUAL_MODELS,
+            label="Train both models",
+            description=(
+                "Roll-forward training of the range model (1H high/low) and "
+                "the signal model (5M buy/sell/hold)."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("epochs", "Epochs", "1", kind="number"),
+                CommandField("folds", "Folds", "2", kind="number"),
+                CommandField("window", "Window rows", "500", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        # -- trading ---------------------------------------------------------
+        CommandDescriptor(
+            kind=CommandKind.RUN_EXECUTION_DEMO,
+            label="Run execution demo",
+            description="Drive one intent through resolver, venue and ledger.",
+            fields=[CommandField("symbol", "Symbol", "XAUUSD")],
+            group="Trading",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.RUN_LIVE_TICK,
+            label="Run one live tick",
+            description=(
+                "One five-minute cycle: buffers, both models, strategy, risk " "gate and execution."
+            ),
+            fields=[CommandField("symbol", "Symbol", "XAUUSD")],
+            slow=True,
+            group="Trading",
+        ),
+        # -- operations --------------------------------------------------------
+        CommandDescriptor(
+            kind=CommandKind.BACKUP_DATABASE,
+            label="Back up the database",
+            description="Take a backup and verify it can be read back.",
+            fields=[CommandField("note", "Note", "manual backup")],
+            group="Operations",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.HEALTH_CHECK,
+            label="Health check",
+            description="Liveness, readiness and every dependency.",
+            group="Operations",
         ),
     ]
 
@@ -154,9 +313,11 @@ class CommandHandlers:
         database_path: str | Path,
         storage_root: str | Path = "datasets",
         replay_path: str | Path = "replay.html",
+        account_store: str | Path = "configs/accounts.json",
     ):
         self._database_path = Path(database_path)
         self._storage_root = Path(storage_root)
+        self._account_store = Path(account_store)
         # Where "Record a replay" writes its player. The server serves this
         # file at /replay, so the two must agree on one location.
         self._replay_path = Path(replay_path)
@@ -166,7 +327,7 @@ class CommandHandlers:
         return self._replay_path
 
     def registry(self) -> Dict[CommandKind, Handler]:
-        return {
+        registry: Dict[CommandKind, Handler] = {
             CommandKind.FETCH_MARKET_DATA: self.fetch_market_data,
             CommandKind.COMPUTE_FEATURES: self.compute_features,
             CommandKind.TRAIN_MODEL: self.train_model,
@@ -176,8 +337,59 @@ class CommandHandlers:
             CommandKind.RUN_TRADING_CYCLE: self.run_trading_cycle,
             CommandKind.REFRESH_PROJECT_STATE: self.refresh_project_state,
         }
+        # Phase 32 handlers live in their own class; merged here so the
+        # bus still sees a single flat registry.
+        accounts = AccountCommandHandlers(
+            self._database_path, self._storage_root, self._account_store
+        )
+        registry.update(
+            {
+                CommandKind.ADD_ACCOUNT: accounts.add_account,
+                CommandKind.ACTIVATE_ACCOUNT: accounts.activate_account,
+                CommandKind.REMOVE_ACCOUNT: accounts.remove_account,
+                CommandKind.CHECK_ACCOUNT: accounts.check_account,
+                CommandKind.MAP_SYMBOL: accounts.map_symbol,
+                CommandKind.AUTO_MAP_SYMBOLS: accounts.auto_map_symbols,
+                CommandKind.BUILD_DATASET: accounts.build_dataset,
+                CommandKind.WEEKLY_UPDATE: accounts.weekly_update,
+                CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
+                CommandKind.RUN_EXECUTION_DEMO: accounts.run_execution_demo,
+                CommandKind.RUN_LIVE_TICK: accounts.run_live_tick,
+                CommandKind.BACKUP_DATABASE: accounts.backup_database,
+                CommandKind.HEALTH_CHECK: accounts.health_check,
+            }
+        )
+        return registry
 
     # -- data ---------------------------------------------------------------
+    def active_profile(self):
+        """The active broker profile, or None when none is configured.
+
+        Returned rather than raised: every run must still work on sample
+        data before a broker is set up.
+        """
+        from ShadBotTrader.infrastructure.account import AccountProfileStore
+
+        try:
+            return AccountProfileStore(self._account_store).active()
+        except Exception:
+            return None
+
+    def broker_symbol(self, canonical: str) -> tuple[str, str]:
+        """Translate a platform symbol for the active broker.
+
+        Returns ``(broker_symbol, note)``. The dataset keeps the canonical
+        name so that switching brokers does not fragment history into
+        XAUUSD / XAUUSD_i / GOLD copies of the same instrument.
+        """
+        profile = self.active_profile()
+        if profile is None:
+            return canonical, ""
+        translated = profile.broker_symbol(canonical)
+        if translated == canonical:
+            return translated, f"account: {profile.name}"
+        return translated, f"account: {profile.name} ({canonical} -> {translated})"
+
     def fetch_market_data(self, command: Command) -> CommandResult:
         from ShadBotTrader.data_cli import build_service, generate_sample
         from ShadBotTrader.infrastructure.data import mt5_market_data_provider as mt5mod
@@ -188,13 +400,26 @@ class CommandHandlers:
         bars = max(command.integer("bars", 5000), 1)
         lines: List[str] = []
 
+        # Phase 32: fetch under the broker's name, store under ours.
+        broker_symbol, account_note = self.broker_symbol(symbol)
+        profile = self.active_profile()
+
         if mt5mod.is_available():
-            provider = mt5mod.Mt5MarketDataProvider()
+            if profile is not None:
+                provider = mt5mod.Mt5MarketDataProvider(
+                    login=profile.login,
+                    password=profile.resolve_password(),
+                    server=profile.server,
+                    terminal_path=profile.terminal_path or None,
+                )
+            else:
+                provider = mt5mod.Mt5MarketDataProvider()
             try:
                 service, _, _ = build_service(self._storage_root, provider=provider)
-                result = service.ingest(symbol, timeframe, str(bars))
+                result = service.ingest(broker_symbol, timeframe, str(bars))
                 lines = [
                     "source: MetaTrader 5 (real broker data)",
+                    account_note or "account: terminal session",
                     f"raw rows      : {result.raw_row_count}",
                     f"valid candles : {result.candle_count}",
                     f"quality score : {result.quality_report.score.overall}",
@@ -223,9 +448,10 @@ class CommandHandlers:
                 f"quality score : {result.quality_report.score.overall}",
             ]
 
+        stored_as = broker_symbol if mt5mod.is_available() else symbol
         return CommandResult.success(
             command.kind,
-            f"Ingested {symbol} {timeframe} (v{result.version})",
+            f"Ingested {stored_as} {timeframe} (v{result.version})",
             lines,
             time.monotonic() - started,
         )
@@ -743,4 +969,431 @@ class CommandHandlers:
             "Project state regenerated",
             ["written to project_state/generated/"],
             time.monotonic() - started,
+        )
+
+
+class AccountCommandHandlers:
+    """Handlers for the Phase 32 account and operations commands.
+
+    Separated from :class:`CommandHandlers` so the original class stays
+    focused; both are merged into one registry by
+    :meth:`CommandHandlers.registry`.
+    """
+
+    def __init__(
+        self,
+        database_path: "str | Path",
+        storage_root: "str | Path" = "datasets",
+        account_store: "str | Path" = "configs/accounts.json",
+    ) -> None:
+        self._database_path = Path(database_path)
+        self._storage_root = Path(storage_root)
+        self._account_store = Path(account_store)
+
+    # -- helpers ------------------------------------------------------------
+    def _store(self):
+        from ShadBotTrader.infrastructure.account import AccountProfileStore
+
+        return AccountProfileStore(self._account_store)
+
+    def _profile(self, command: Command):
+        """The named profile, or the active one when no name is given."""
+        store = self._store()
+        name = command.text("name", "").strip()
+        book = store.load()
+        if name:
+            return store, book.get(name)
+        active = book.active_profile
+        if active is None:
+            raise LookupError("No account profile exists yet. Use 'Add account' first.")
+        return store, active
+
+    # -- accounts -----------------------------------------------------------
+    def add_account(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        name = command.text("name", "").strip()
+        login = command.integer("login", 0)
+        server = command.text("server", "").strip()
+
+        if not name or login <= 0 or not server:
+            return CommandResult.rejected(command.kind, "name, login and server are all required")
+
+        try:
+            profile = self._store().add(
+                name=name,
+                login=login,
+                server=server,
+                terminal_path=command.text("terminal_path", "").strip(),
+                is_demo=command.text("is_demo", "1").strip() != "0",
+                make_active=True,
+            )
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not add the account",
+                str(error),
+                time.monotonic() - started,
+            )
+
+        lines = [
+            f"login    : {profile.login} @ {profile.server}",
+            f"type     : {'demo' if profile.is_demo else 'LIVE'}",
+            "",
+            "The password is NOT stored. Set it in your shell:",
+            f"    $env:{profile.password_variable} = 'your-password'",
+            "",
+            "Or leave it unset to use the terminal's existing session.",
+        ]
+        return CommandResult.success(
+            command.kind,
+            f"Added '{name}' and made it active",
+            lines,
+            time.monotonic() - started,
+        )
+
+    def activate_account(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        name = command.text("name", "").strip()
+        if not name:
+            return CommandResult.rejected(command.kind, "a profile name is required")
+        try:
+            profile = self._store().activate(name)
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not switch account",
+                str(error),
+                time.monotonic() - started,
+            )
+        return CommandResult.success(
+            command.kind,
+            f"'{name}' is now the active account",
+            [
+                f"login  : {profile.login} @ {profile.server}",
+                f"type   : {'demo' if profile.is_demo else 'LIVE'}",
+                f"symbols: {profile.symbol_map.to_dict() or 'no aliases'}",
+            ],
+            time.monotonic() - started,
+        )
+
+    def remove_account(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        name = command.text("name", "").strip()
+        if not name:
+            return CommandResult.rejected(command.kind, "a profile name is required")
+        try:
+            self._store().remove(name)
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not remove the account",
+                str(error),
+                time.monotonic() - started,
+            )
+        remaining = self._store().load()
+        return CommandResult.success(
+            command.kind,
+            f"Removed '{name}'",
+            [
+                f"remaining: {', '.join(remaining.names) or 'none'}",
+                f"active   : {remaining.active or 'none'}",
+            ],
+            time.monotonic() - started,
+        )
+
+    def check_account(self, command: Command) -> CommandResult:
+        from ShadBotTrader.infrastructure.account import AccountConnector
+
+        started = time.monotonic()
+        try:
+            store, profile = self._profile(command)
+        except Exception as error:
+            return CommandResult.rejected(command.kind, str(error))
+
+        report = AccountConnector(store).check(profile)
+        if not report.connected:
+            return CommandResult.failure(
+                command.kind,
+                f"Cannot reach the broker for '{profile.name}'",
+                report.error + "\n\nIs MetaTrader 5 running and logged in?",
+                time.monotonic() - started,
+            )
+
+        return CommandResult.success(
+            command.kind,
+            f"'{profile.name}' is reachable"
+            + ("" if report.is_usable else " — but some symbols are missing"),
+            report.summary_lines(),
+            time.monotonic() - started,
+        )
+
+    def map_symbol(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        canonical = command.text("canonical", "").strip()
+        broker = command.text("broker", "").strip()
+        if not canonical or not broker:
+            return CommandResult.rejected(
+                command.kind, "both the platform and broker symbol are required"
+            )
+        try:
+            store, profile = self._profile(command)
+            updated = store.set_symbol(profile.name, canonical, broker)
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not map the symbol",
+                str(error),
+                time.monotonic() - started,
+            )
+        return CommandResult.success(
+            command.kind,
+            f"{canonical} -> {broker} on '{updated.name}'",
+            [f"{key} -> {value}" for key, value in sorted(updated.symbol_map.aliases.items())],
+            time.monotonic() - started,
+        )
+
+    def auto_map_symbols(self, command: Command) -> CommandResult:
+        from ShadBotTrader.infrastructure.account import AccountConnector
+
+        started = time.monotonic()
+        try:
+            store, profile = self._profile(command)
+        except Exception as error:
+            return CommandResult.rejected(command.kind, str(error))
+
+        wanted = [
+            item.strip() for item in command.text("symbols", "XAUUSD").split(",") if item.strip()
+        ]
+        try:
+            found = AccountConnector(store).auto_map(profile, wanted)
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not read the broker's symbol list",
+                str(error),
+                time.monotonic() - started,
+            )
+
+        apply = command.text("apply", "0").strip() == "1"
+        lines: List[str] = []
+        for canonical in wanted:
+            suggestion = found.get(canonical.strip().upper())
+            if suggestion is None:
+                lines.append(f"{canonical:<10} -> NOT FOUND at this broker")
+                continue
+            lines.append(f"{canonical:<10} -> {suggestion}")
+            if apply:
+                store.set_symbol(profile.name, canonical, suggestion)
+
+        lines.append("")
+        lines.append(
+            "Applied and saved."
+            if apply
+            else "Suggestions only — re-run with 'Apply suggestions' = 1 to save."
+        )
+        return CommandResult.success(
+            command.kind,
+            f"Matched {len(found)} of {len(wanted)} symbol(s)",
+            lines,
+            time.monotonic() - started,
+        )
+
+    # -- data ---------------------------------------------------------------
+    def build_dataset(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD")
+        candles = max(command.integer("candles", 100_000), 1000)
+        return self._run_script(
+            command,
+            [
+                "scripts/run_training_dataset.py",
+                "--build",
+                "--symbol",
+                symbol,
+                "--candles",
+                str(candles),
+            ],
+            f"Built the dataset for {symbol}",
+            started,
+            timeout=3600,
+        )
+
+    def weekly_update(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        arguments = [
+            "scripts/run_weekly_update.py",
+            "--symbol",
+            command.text("symbol", "XAUUSD"),
+            "--candles",
+            str(max(command.integer("candles", 100_000), 1000)),
+            "--db",
+            str(self._database_path),
+        ]
+        if command.text("force", "0").strip() == "1":
+            arguments.append("--force")
+        return self._run_script(command, arguments, "Weekly update finished", started, timeout=7200)
+
+    # -- AI -------------------------------------------------------------------
+    def train_dual_models(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        try:
+            import tensorflow  # noqa: F401
+        except ImportError:
+            return CommandResult.rejected(
+                command.kind,
+                "TensorFlow is not installed — run: pip install -r requirements-ai.txt",
+            )
+        return self._run_script(
+            command,
+            [
+                "scripts/run_dual_models.py",
+                "--with-features",
+                "--symbol",
+                command.text("symbol", "XAUUSD"),
+                "--epochs",
+                str(max(command.integer("epochs", 1), 1)),
+                "--folds",
+                str(max(command.integer("folds", 2), 1)),
+                "--window",
+                str(max(command.integer("window", 500), 2)),
+            ],
+            "Both models trained",
+            started,
+            timeout=7200,
+        )
+
+    # -- trading ---------------------------------------------------------------
+    def run_execution_demo(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        return self._run_script(
+            command, ["scripts/run_execution.py"], "Execution demo finished", started
+        )
+
+    def run_live_tick(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        return self._run_script(
+            command,
+            [
+                "scripts/run_live_loop.py",
+                "--demo",
+                "--ticks",
+                "1",
+                "--symbol",
+                command.text("symbol", "XAUUSD"),
+            ],
+            "Live tick complete",
+            started,
+            timeout=1800,
+        )
+
+    # -- operations --------------------------------------------------------------
+    def backup_database(self, command: Command) -> CommandResult:
+        from ShadBotTrader.infrastructure.deployment.backup import BackupService
+
+        started = time.monotonic()
+        if not self._database_path.exists():
+            return CommandResult.rejected(
+                command.kind, f"No database at {self._database_path} to back up."
+            )
+        try:
+            record = BackupService(self._database_path).create(
+                note=command.text("note", "manual backup")
+            )
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind, "Backup failed", str(error), time.monotonic() - started
+            )
+        return CommandResult.success(
+            command.kind,
+            f"Backed up {record.total_rows:,} rows",
+            [
+                f"file    : {Path(record.path).name}",
+                f"size    : {record.size_kb:.1f} KB",
+                f"schema  : v{record.schema_version}",
+                f"verified: {record.verified}",
+            ],
+            time.monotonic() - started,
+        )
+
+    def health_check(self, command: Command) -> CommandResult:
+        from ShadBotTrader import __version__
+        from ShadBotTrader.infrastructure.deployment.health_checks import default_monitor
+
+        started = time.monotonic()
+        report = default_monitor(
+            version=__version__,
+            environment="development",
+            database_path=(str(self._database_path) if self._database_path.exists() else None),
+            storage_root=str(self._storage_root),
+        ).run()
+
+        message = f"{report.status.value} — ready={report.is_ready}"
+        if report.is_ready:
+            return CommandResult.success(
+                command.kind, message, report.summary_lines(), time.monotonic() - started
+            )
+        # An unhealthy result must still show WHICH check failed. Putting
+        # the detail only in `detail` left the GUI showing an empty box —
+        # exactly when the operator most needs to see something.
+        return CommandResult(
+            kind=command.kind,
+            status=CommandStatus.FAILED,
+            message=message,
+            detail="Fix the failing critical dependency before running anything.",
+            lines=report.summary_lines(),
+            duration_seconds=time.monotonic() - started,
+        )
+
+    # -- shared ------------------------------------------------------------------
+    def _run_script(
+        self,
+        command: Command,
+        arguments: List[str],
+        success_message: str,
+        started: float,
+        timeout: int = 900,
+    ) -> CommandResult:
+        """Run a project script and turn its output into a result.
+
+        Scripts run in a subprocess so a crash inside one cannot take the
+        dashboard down with it, and so a long run can be time-limited.
+        """
+        import subprocess
+        import sys
+
+        try:
+            completed = subprocess.run(
+                [sys.executable, *arguments],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=str(Path.cwd()),
+            )
+        except subprocess.TimeoutExpired:
+            return CommandResult.failure(
+                command.kind,
+                f"Timed out after {timeout // 60} minutes",
+                "Reduce the size of the run, or start it from a terminal.",
+                time.monotonic() - started,
+            )
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not start the script",
+                str(error),
+                time.monotonic() - started,
+            )
+
+        output = completed.stdout.strip().splitlines()
+        if completed.returncode != 0:
+            return CommandResult.failure(
+                command.kind,
+                "The script reported a failure",
+                (completed.stderr or "\n".join(output[-25:]))[-1500:],
+                time.monotonic() - started,
+            )
+
+        interesting = [line for line in output if line.strip() and not line.startswith("=")]
+        return CommandResult.success(
+            command.kind, success_message, interesting[-20:], time.monotonic() - started
         )

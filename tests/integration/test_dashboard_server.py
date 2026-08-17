@@ -244,8 +244,11 @@ def test_empty_database_serves_guidance(tmp_path):
     thread.start()
     try:
         _, _, body = get(f"http://127.0.0.1:{port}/")
-        assert "Nothing recorded yet" in body
-        assert "run_persistence" in body
+        assert "start here" in body
+        # The guidance must name buttons, not terminal commands: the
+        # dashboard exists so the operator never needs a shell.
+        assert "Add account" in body
+        assert "run_persistence" not in body
     finally:
         httpd.shutdown()
         httpd.server_close()
