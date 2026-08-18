@@ -9,13 +9,13 @@ from ShadBotTrader.project.models.project_context import ProjectContext
 from ShadBotTrader.project.models.project_snapshot import ProjectSnapshot
 
 NEXT_PHASE = (
-    "Train on real market data. Every synthetic path into the store is now "
-    "closed (Phase 35), MT5 is connected, and the platform builds two real "
-    "datasets — 5M for the signal model and 1H for the range model. What has "
-    "never happened is a training run on actual broker prices: from the "
-    "dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train "
-    "both models — and Phase 36 now shows the loss and accuracy of that "
-    "run as it happens. Only then does any backtest number mean anything."
+    "Decide how a simulated trade opens and closes. Phase 49 fixed the "
+    "signal threshold so evaluation grades a model against its own label "
+    "rule. What remains unanswered is the trade itself: the backtest still "
+    "runs on the momentum baseline rather than the two trained models, a "
+    "position closes only when the direction flips, and there is no stop "
+    "loss, no take profit and no holding period. The operator is reviewing "
+    "that chain before the next change is made."
 )
 
 KNOWN_ISSUES = [

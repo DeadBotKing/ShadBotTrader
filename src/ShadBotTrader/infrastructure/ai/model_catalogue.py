@@ -54,9 +54,27 @@ class ModelRecord:
     feature_columns: int = 0
     epochs: int = 0
     folds: int = 0
+    #: Phase 49. The neutral band the signal labels were built with, as a
+    #: fraction (0.0008 == 0.08%). A signal model trained at 0.15% and
+    #: scored against 0.08% labels is being marked against an exam it
+    #: never sat, so the number travels WITH the model instead of being
+    #: assumed by whoever reads it. Zero means "not recorded" — models
+    #: saved before this field existed, and every range model, for which
+    #: a threshold is meaningless.
+    threshold: float = 0.0
+    #: How many candles ahead the label looks. Recorded for the same
+    #: reason: the evaluator must rebuild the exact question.
+    horizon: int = 0
     trained_at: str = ""
     metrics: Dict[str, float] = field(default_factory=dict)
     note: str = ""
+
+    @property
+    def threshold_percent(self) -> str:
+        """The neutral band as a human percent, or ``n/a`` when unknown."""
+        if self.role != "signal" or self.threshold <= 0:
+            return "n/a"
+        return f"{self.threshold:.4%}"
 
     @property
     def label(self) -> str:
@@ -85,6 +103,8 @@ class ModelRecord:
             "feature_columns": self.feature_columns,
             "epochs": self.epochs,
             "folds": self.folds,
+            "threshold": self.threshold,
+            "horizon": self.horizon,
             "trained_at": self.trained_at,
             "metrics": dict(self.metrics),
             "note": self.note,
@@ -104,6 +124,8 @@ class ModelRecord:
             feature_columns=int(payload.get("feature_columns", 0)),
             epochs=int(payload.get("epochs", 0)),
             folds=int(payload.get("folds", 0)),
+            threshold=float(payload.get("threshold", 0.0) or 0.0),
+            horizon=int(payload.get("horizon", 0) or 0),
             trained_at=str(payload.get("trained_at", "")),
             metrics={
                 str(key): float(value) for key, value in (payload.get("metrics") or {}).items()
@@ -119,6 +141,14 @@ class ModelRecord:
             f"trained   : {self.rows:,} rows, {self.windows:,} windows, "
             f"{self.epochs} epoch(s) x {self.folds} fold(s)",
             f"quality   : {self.headline_metric}",
+            *(
+                [
+                    f"threshold : {self.threshold_percent} neutral band, "
+                    f"horizon {self.horizon} candle(s)"
+                ]
+                if self.role == "signal" and self.threshold > 0
+                else []
+            ),
             f"at        : {self.trained_at}",
         ]
 

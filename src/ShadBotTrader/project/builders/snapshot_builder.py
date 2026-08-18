@@ -43,7 +43,15 @@ CURRENT_PHASE = (
     "which model trains on which dataset) "
     "+ Phase 40 (model type, dataset and saved model are dropdowns; "
     "trained models are persisted with the role and dataset that "
-    "produced them; retraining adds a version instead of replacing one)"
+    "produced them; retraining adds a version instead of replacing one) "
+    "+ Phases 41-48 (streamed training, capped progress lines, batch "
+    "count from fold geometry, batch size scaled to the data, a signal "
+    "threshold field and a live broker spread, per-epoch checkpoints, "
+    "the best epoch kept rather than the last, and buttons to test a "
+    "model on a dataset and inspect a dataset) "
+    "+ Phase 49 (a signal model records the neutral band it was trained "
+    "with, and evaluation rebuilds the labels with that band instead of "
+    "a hard-coded 0.08%)"
 )
 
 

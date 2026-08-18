@@ -24,6 +24,10 @@ class IntelligenceRuntime:
     ``project_state/archive/`` first (evolution model).
     """
 
+    #: How many archived snapshots to keep. Older ones are deleted; they
+    #: are regenerable from the code they describe.
+    ARCHIVE_KEEP = 5
+
     GENERATED = (
         "ProjectSnapshot.md",
         "ProjectSnapshot.json",
@@ -123,3 +127,24 @@ class IntelligenceRuntime:
         target_dir.mkdir(parents=True, exist_ok=True)
         for path in previous:
             shutil.move(str(path), str(target_dir / path.name))
+        self._prune_archive()
+
+    def _prune_archive(self) -> None:
+        """Keep only the most recent snapshots (Phase 48).
+
+        Every run of the intelligence pipeline archived the previous
+        output and nothing ever removed it. After 158 runs the archive
+        held 48 MB — a third of the whole workspace — of near-identical
+        snapshots nobody had read.
+
+        The evolution model wants *some* history, not all of it, so a
+        small window is kept and the rest is dropped.
+        """
+        if not self._archive_dir.is_dir():
+            return
+        snapshots = sorted(
+            (path for path in self._archive_dir.iterdir() if path.is_dir()),
+            key=lambda path: path.name,
+        )
+        for stale in snapshots[: -self.ARCHIVE_KEEP] if self.ARCHIVE_KEEP else snapshots:
+            shutil.rmtree(stale, ignore_errors=True)

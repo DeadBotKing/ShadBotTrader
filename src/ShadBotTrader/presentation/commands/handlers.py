@@ -334,9 +334,12 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField(
                     "threshold_pct",
                     "Signal threshold %",
-                    "0.08",
+                    "",
                     kind="number",
-                    hint="only used by the signal model; ignored by range",
+                    hint=(
+                        "leave empty to keep the threshold this model was "
+                        "trained with; only the signal model uses it"
+                    ),
                 ),
                 CommandField("epochs", "Epochs", "2", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -504,6 +507,63 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("candles", "Candles per timeframe", "100000", kind="number"),
             ],
             slow=True,
+            group="Data",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.EVALUATE_MODEL,
+            label="Test a model on a dataset",
+            description=(
+                "Score a saved model against a stored dataset without "
+                "training it. Every result is appended to "
+                "run_logs/evaluations.jsonl so runs can be compared."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "saved_model",
+                    "Model",
+                    trained[0] if trained else "",
+                    kind="select",
+                    options=tuple(trained) if trained else ("(none trained yet)",),
+                ),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    datasets[0] if datasets else "1H",
+                    kind="select",
+                    options=tuple(datasets),
+                    hint="which stored candles to score against",
+                ),
+                CommandField(
+                    "max_windows",
+                    "Sample at most",
+                    "5000",
+                    kind="number",
+                    hint="0 = every window (slow on 49,000)",
+                ),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.INSPECT_DATASET,
+            label="Inspect a dataset",
+            description=(
+                "Show what a stored dataset actually is: how many candles, "
+                "the matrix shape, the column breakdown and the model input "
+                "tensor it produces."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    datasets[0] if datasets else "1H",
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("window", "Window rows", "500", kind="number"),
+            ],
             group="Data",
         ),
         CommandDescriptor(
@@ -781,6 +841,8 @@ class CommandHandlers:
                 CommandKind.BUILD_DATASET: accounts.build_dataset,
                 CommandKind.WEEKLY_UPDATE: accounts.weekly_update,
                 CommandKind.BUILD_TIMEFRAME: accounts.build_timeframe,
+                CommandKind.EVALUATE_MODEL: accounts.evaluate_model,
+                CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.RUN_EXECUTION_DEMO: accounts.run_execution_demo,
                 CommandKind.RUN_LIVE_TICK: accounts.run_live_tick,
@@ -1114,6 +1176,13 @@ class CommandHandlers:
         if not dataset:
             dataset = (record.timeframe if record else "") or "1H"
 
+        # Phase 49: an empty threshold field inherits the model's OWN
+        # neutral band rather than the platform default. Retraining a
+        # 0.25% model must not silently turn it into a 0.08% model
+        # because a form field happened to be blank.
+        inherited = float(getattr(record, "threshold", 0.0) or 0.0) if record else 0.0
+        threshold = percent_to_fraction(command.text("threshold_pct", ""), inherited or 0.0008)
+
         note = []
         if record is not None and dataset != record.timeframe:
             # Allowed, but the operator should know: the same model is
@@ -1141,7 +1210,7 @@ class CommandHandlers:
                 "--window",
                 str(max(command.integer("window", 500), 2)),
                 "--threshold",
-                str(percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)),
+                str(threshold),
                 "--storage-root",
                 str(self._storage_root),
             ],
@@ -1845,6 +1914,161 @@ class AccountCommandHandlers(CommandHandlers):
             f"Built the 5M and 1H datasets for {symbol}",
             started,
             timeout=3600,
+        )
+
+    def evaluate_model(self, command: Command) -> CommandResult:
+        """Score a saved model on a chosen dataset and log the result."""
+        from ShadBotTrader.application.services.model_evaluation_service import (
+            ModelEvaluationService,
+        )
+        from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
+        started = time.monotonic()
+        try:
+            import tensorflow  # noqa: F401
+        except ImportError:
+            return CommandResult.rejected(
+                command.kind,
+                "TensorFlow is not installed — run: pip install -r requirements-ai.txt",
+            )
+
+        catalogue = ModelCatalogue(self._storage_root)
+        known = catalogue.choices()
+        if not known:
+            return CommandResult.rejected(
+                command.kind,
+                "No trained models yet. Use 'Train a model' first — there is " "nothing to test.",
+            )
+
+        model_id = command.text("saved_model", "").strip()
+        if model_id in ("", "(none trained yet)"):
+            model_id = known[0]
+        if model_id not in known:
+            return CommandResult.rejected(
+                command.kind, f"Unknown model {model_id!r}. Available: {', '.join(known)}"
+            )
+
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = available[0] if available else "1H"
+
+        service = ModelEvaluationService(self._storage_root, self._run_log_dir)
+        result = service.evaluate(
+            model_id=model_id,
+            symbol=symbol,
+            timeframe=dataset,
+            max_windows=max(command.integer("max_windows", 5000), 0),
+        )
+        log_path = service.append_to_log(result)
+
+        lines = [*result.summary_lines(), "", f"appended to {log_path}"]
+        if result.failed:
+            return CommandResult.failure(
+                command.kind,
+                f"Could not test {model_id} on {dataset}",
+                "\n".join(lines),
+                time.monotonic() - started,
+            )
+        return CommandResult.success(
+            command.kind,
+            f"{model_id} on {symbol} {dataset}: {result.headline}",
+            lines,
+            time.monotonic() - started,
+        )
+
+    def inspect_dataset(self, command: Command) -> CommandResult:
+        """Describe a stored dataset: shape, columns, model input."""
+        from ShadBotTrader.infrastructure.ai.model_diagram import describe_input_matrix
+        from ShadBotTrader.presentation.gateway.data_inspector import DataInspector
+
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = available[0] if available else "1H"
+        window = max(command.integer("window", 500), 2)
+
+        inspector = DataInspector(self._storage_root)
+        candles = inspector.candles(symbol, dataset)
+        matrix = inspector.training_matrix(symbol, dataset)
+
+        candle_count = getattr(candles, "count", 0) or 0
+        lines: List[str] = [
+            f"symbol / dataset : {symbol} {dataset}",
+            f"candles stored   : {candle_count:,}",
+        ]
+        first = getattr(candles, "first_time", "")
+        last = getattr(candles, "last_time", "")
+        if first or last:
+            lines.append(f"range            : {first} .. {last}")
+        low = getattr(candles, "price_low", None)
+        high = getattr(candles, "price_high", None)
+        if low is not None and high is not None:
+            lines.append(f"price range      : {low} .. {high}")
+
+        if not matrix.exists:
+            lines.extend(
+                [
+                    "",
+                    "No training matrix yet for this dataset.",
+                    "Run 'Build training dataset' to create it.",
+                ]
+            )
+            return CommandResult.success(
+                command.kind,
+                f"{symbol} {dataset}: {candle_count:,} candles, no matrix yet",
+                lines,
+                time.monotonic() - started,
+            )
+
+        # ColumnInfo objects, not dicts — ask them directly rather than
+        # guessing at a mapping shape.
+        kinds: Dict[str, int] = {}
+        constant: List[str] = []
+        incomplete: List[str] = []
+        for column in matrix.columns:
+            kind = str(getattr(column, "kind", "?"))
+            kinds[kind] = kinds.get(kind, 0) + 1
+            if getattr(column, "is_constant", False):
+                constant.append(str(getattr(column, "name", "?")))
+            if not getattr(column, "is_complete", True):
+                incomplete.append(str(getattr(column, "name", "?")))
+
+        width = len(matrix.columns)
+        lines.append("")
+        lines.extend(describe_input_matrix(matrix.rows, width, window, horizon=5))
+        lines.append("")
+        lines.append("columns by kind:")
+        for kind in sorted(kinds):
+            lines.append(f"    {kind:<14}: {kinds[kind]}")
+
+        if matrix.digest:
+            lines.append("")
+            lines.append(f"digest   : {matrix.digest}")
+        if matrix.built_at:
+            lines.append(f"built at : {matrix.built_at}")
+        if constant:
+            lines.append("")
+            lines.append(
+                f"constant columns ({len(constant)}): {', '.join(constant[:6])}"
+                + (" ..." if len(constant) > 6 else "")
+            )
+        if incomplete:
+            lines.append(f"incomplete columns: {', '.join(incomplete[:6])}")
+        for warning in matrix.warnings[:5]:
+            lines.append(f"[!] {warning}")
+
+        lines.append("")
+        lines.append("See the candles as a chart: open /data")
+
+        return CommandResult.success(
+            command.kind,
+            f"{symbol} {dataset}: matrix {matrix.rows:,} x {width}",
+            lines,
+            time.monotonic() - started,
         )
 
     def build_timeframe(self, command: Command) -> CommandResult:

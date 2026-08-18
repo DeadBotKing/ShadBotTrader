@@ -205,7 +205,20 @@ def train_one(service, args, role, timeframe: str) -> int:
     rows = len(dataset.series)
     windows = max(rows - role.window_size - role.horizon + 1, 0)
     naive_gb = windows * role.window_size * dataset.feature_count * 4 / 1e9
-    print(f"\n  windows        : {windows:,} of {role.window_size} x {dataset.feature_count}")
+
+    # Phase 48: state the matrix shape outright at the start of every
+    # run. "What am I actually feeding this thing" used to require
+    # reading three files to answer.
+    from ShadBotTrader.infrastructure.ai.model_diagram import describe_input_matrix
+
+    rule("INPUT MATRIX")
+    for line in describe_input_matrix(
+        rows=rows,
+        columns=dataset.feature_count,
+        window_size=role.window_size,
+        horizon=role.horizon,
+    ):
+        print(f"  {line}")
     print(f"  if materialised: {naive_gb:.1f} GB  (streamed instead when large)")
     if windows < 1:
         print(
@@ -235,7 +248,7 @@ def train_one(service, args, role, timeframe: str) -> int:
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
     print_quality(outcome, role)
-    save_model(outcome, args, role, timeframe, dataset)
+    save_model(outcome, args, role, timeframe, dataset, checkpoint)
 
     # ---- one live prediction so the output is concrete -----------------
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
@@ -297,9 +310,42 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
 
     root = Path(args.storage_root)
     catalogue = ModelCatalogue(root)
-    state = {"version": catalogue.next_version(role.model_id)}
+    state = {
+        "version": catalogue.next_version(role.model_id),
+        "best_score": float("inf"),
+        "best_epoch": 0,
+        "best_metric": "val_loss",
+        "worse_streak": 0,
+        "diagram_done": False,
+    }
 
     def checkpoint(model, epoch: int, logs: dict, total_epochs: int) -> None:
+        # Phase 48: the architecture picture, saved once per run on the
+        # first epoch — the earliest moment a built model exists.
+        if not state.get("diagram_done"):
+            state["diagram_done"] = True
+            try:
+                from ShadBotTrader.infrastructure.ai.model_diagram import (
+                    save_model_diagram,
+                )
+
+                target = (
+                    Path(args.storage_root)
+                    / "models"
+                    / role.model_id
+                    / f"v{state['version']}_architecture.png"
+                )
+                outcome = save_model_diagram(
+                    model,
+                    target,
+                    title=f"{role.model_id} — {role.window_size} x {dataset.feature_count} input",
+                )
+                print(f"      {outcome.describe()}")
+                if outcome.reason:
+                    print(f"        ({outcome.reason})")
+            except Exception as error:
+                print(f"      [!] could not save the architecture diagram: {error}")
+
         from ShadBotTrader.domain.ai.model_artifact import ModelArtifact
         from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
         from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
@@ -308,6 +354,46 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
             _serialize_model,
         )
+
+        # Phase 47: keep the BEST epoch, not the newest one.
+        #
+        # Training loss falls almost monotonically; validation loss does
+        # not. It falls, bottoms out, then climbs as the network starts
+        # memorising. Saving whatever happened to run last therefore
+        # saves the most overfitted model of the run — the operator asked
+        # exactly the right question about this.
+        #
+        # val_loss is the judge rather than val_accuracy: accuracy moves
+        # in coarse steps on a 3-class problem and ties constantly, while
+        # loss registers every improvement in confidence.
+        # Both roles are judged the same way, on their own metric: the
+        # signal model reports val_loss, the range model val_mae. Naming
+        # the metric in the log matters — a range model that printed
+        # "val_loss" would send the operator hunting for a number that
+        # is not there.
+        metric_name = "val_loss"
+        score = logs.get("val_loss")
+        if score is None:
+            if "val_mae" in logs:
+                metric_name, score = "val_mae", logs["val_mae"]
+            else:
+                metric_name, score = "loss", logs.get("loss")
+        score = float(score) if score is not None else float("inf")
+
+        improved = score < state["best_score"]
+        if not improved:
+            state["worse_streak"] += 1
+            print(
+                f"      [epoch {epoch + 1}/{total_epochs}] {metric_name} "
+                f"{score:.6f} — no better than {state['best_score']:.6f} "
+                f"(best is epoch {state['best_epoch']}); keeping it"
+            )
+            return
+
+        state["best_score"] = score
+        state["best_epoch"] = epoch + 1
+        state["best_metric"] = metric_name
+        state["worse_streak"] = 0
 
         version = state["version"]
         payload = _serialize_model(model)
@@ -342,16 +428,25 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
                 feature_columns=dataset.feature_count,
                 epochs=epoch + 1,
                 folds=args.folds,
+                # Phase 49: the label rule travels with the model. Without
+                # it, testing a 0.15%-trained model rebuilds 0.08% labels
+                # and reports an accuracy that belongs to no model at all.
+                threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
+                horizon=int(role.horizon),
                 metrics={k: float(v) for k, v in logs.items()},
-                note=f"checkpoint after epoch {epoch + 1}/{total_epochs}",
+                note=(f"best epoch {epoch + 1}/{total_epochs} " f"({metric_name} {score:.6f})"),
             )
         )
-        print(f"      [checkpoint] epoch {epoch + 1}/{total_epochs} saved as v{version}")
+        print(
+            f"      [BEST so far] epoch {epoch + 1}/{total_epochs} "
+            f"{metric_name} {score:.6f} — saved as v{version}"
+        )
 
+    checkpoint.state = state  # type: ignore[attr-defined]
     return checkpoint
 
 
-def save_model(outcome: dict, args, role, timeframe: str, dataset) -> None:
+def save_model(outcome: dict, args, role, timeframe: str, dataset, checkpoint=None) -> None:
     """Persist the trained artifact and record what produced it.
 
     Phase 40: training used to fit a network, print a prediction and
@@ -374,10 +469,41 @@ def save_model(outcome: dict, args, role, timeframe: str, dataset) -> None:
 
     root = Path(args.storage_root)
     catalogue = ModelCatalogue(root)
-    version = catalogue.next_version(role.model_id)
 
     artifact = outcome["artifact"]
     metrics = (outcome.get("fold_metrics") or [{}])[-1]
+
+    # Phase 47: `artifact` holds the weights of the LAST epoch. The
+    # per-epoch checkpoint already saved the BEST one. Writing the last
+    # epoch as a second version would leave two models on disk and put
+    # the worse one at the top of the dropdown, which is precisely the
+    # trap the operator asked about.
+    state = getattr(checkpoint, "state", None)
+    if state and state.get("best_epoch"):
+        final = float(metrics.get("val_loss", metrics.get("val_mae", float("inf"))))
+        best = float(state["best_score"])
+        version = int(state["version"])
+        label = state.get("best_metric", "val_loss")
+        if final > best:
+            print(
+                f"\n  KEPT   {role.model_id} v{version} from epoch "
+                f"{state['best_epoch']} ({label} {best:.6f})"
+            )
+            print(
+                f"    the final epoch scored {final:.6f} — worse, so it was "
+                f"NOT written over the best one"
+            )
+            print(f"    record  : {catalogue.record_path(role.model_id, version)}")
+            return
+        # The last epoch WAS the best; the checkpoint already stored it.
+        print(
+            f"\n  KEPT   {role.model_id} v{version} from the final epoch "
+            f"({label} {final:.6f}, the best of the run)"
+        )
+        print(f"    record  : {catalogue.record_path(role.model_id, version)}")
+        return
+
+    version = catalogue.next_version(role.model_id)
 
     try:
         stored = artifact.with_version(version) if hasattr(artifact, "with_version") else artifact
@@ -402,6 +528,8 @@ def save_model(outcome: dict, args, role, timeframe: str, dataset) -> None:
         feature_columns=dataset.feature_count,
         epochs=args.epochs,
         folds=args.folds,
+        threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
+        horizon=int(role.horizon),
         metrics={key: float(value) for key, value in metrics.items()},
     )
     path = catalogue.write(record)

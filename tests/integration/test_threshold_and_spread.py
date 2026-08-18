@@ -38,7 +38,22 @@ class TestTheThresholdIsAPercentField:
         field = field_of(kind, "threshold_pct", tmp_path)
 
         assert field.kind == "number"
+
+    def test_a_fresh_model_starts_at_the_platform_default(self, tmp_path):
+        field = field_of(CommandKind.TRAIN_DUAL_MODELS, "threshold_pct", tmp_path)
+
         assert field.default == "0.08"
+
+    def test_retraining_starts_blank_so_the_model_supplies_it(self, tmp_path):
+        """Phase 49: a blank box means 'keep the band this model has'.
+
+        Pre-filling 0.08 here silently converted a 0.25% model into a
+        0.08% one every time the operator clicked Retrain without
+        touching the field.
+        """
+        field = field_of(CommandKind.TRAIN_MODEL, "threshold_pct", tmp_path)
+
+        assert field.default == ""
 
     @pytest.mark.parametrize(
         "typed,expected",

@@ -163,11 +163,17 @@ class TestEveryEpochIsCheckpointed:
         record = ModelCatalogue(tmp_path).read("gold_range_1d", 1)
         assert record is not None
         assert record.epochs == 8  # 1-based for humans
-        assert "checkpoint after epoch 8/20" in record.note
+        # Phase 47 reworded this: the checkpoint now records WHY it was
+        # written (it was the best epoch so far), not merely that it was.
+        assert "epoch 8/20" in record.note
         assert (tmp_path / "models/gold_range_1d/v1.bin").exists()
 
     def test_a_later_checkpoint_replaces_the_earlier_one(self, tmp_path):
-        """One rescue copy, not twenty — this is a lifeline, not history."""
+        """One rescue copy, not twenty — a lifeline, not history.
+
+        Phase 47: the replacement only happens when the epoch is BETTER,
+        so this feeds an improving sequence.
+        """
         pytest.importorskip("tensorflow")
         import importlib.util
         from pathlib import Path
@@ -200,8 +206,8 @@ class TestEveryEpochIsCheckpointed:
         checkpoint = module.make_epoch_checkpoint(Args(), Role(), "1D", Dataset())
         model = tf.keras.Sequential([tf.keras.layers.Dense(2, input_shape=(4,))])
 
-        checkpoint(model, 0, {"loss": 0.9}, 20)
-        checkpoint(model, 1, {"loss": 0.8}, 20)
+        checkpoint(model, 0, {"val_loss": 0.9}, 20)
+        checkpoint(model, 1, {"val_loss": 0.8}, 20)
 
         versions = sorted((tmp_path / "models/gold_range_1d").glob("v*.bin"))
         assert len(versions) == 1

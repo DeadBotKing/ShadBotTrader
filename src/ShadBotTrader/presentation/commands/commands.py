@@ -48,6 +48,8 @@ class CommandKind(str, Enum):
     BUILD_DATASET = "build_dataset"
     WEEKLY_UPDATE = "weekly_update"
     BUILD_TIMEFRAME = "build_timeframe"
+    EVALUATE_MODEL = "evaluate_model"
+    INSPECT_DATASET = "inspect_dataset"
 
     # -- AI ---------------------------------------------------------------
     TRAIN_MODEL = "train_model"
