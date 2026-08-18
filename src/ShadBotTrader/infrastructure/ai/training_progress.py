@@ -191,6 +191,10 @@ elapsed 0:14 | eta 1:42
     #: epoch line the operator cannot see.
     BATCH_LINES_PER_EPOCH = 8
 
+    #: Never let more than this many seconds pass without a sign of life.
+    #: Silence is the thing the operator reads as "frozen".
+    MAX_SECONDS_BETWEEN_LINES = 30.0
+
     def __init__(
         self,
         stream: Optional[TextIO] = None,
@@ -203,7 +207,9 @@ elapsed 0:14 | eta 1:42
         self._plan: Optional[TrainingPlanInfo] = None
         self._run_start: float = 0.0
         self._fold_start: float = 0.0
+        self._epoch_start: float = 0.0
         self._completed_folds: int = 0
+        self._last_batch_line: float = 0.0
 
     # -- helpers ----------------------------------------------------------
     def _write(self, text: str) -> None:
@@ -243,8 +249,20 @@ elapsed 0:14 | eta 1:42
         # Report at a fixed number of checkpoints, plus the final batch.
         stride = max(1, total_batches // self.BATCH_LINES_PER_EPOCH)
         is_last = batch + 1 >= total_batches
-        if not is_last and batch % stride:
+        due_by_count = is_last or not batch % stride
+
+        # Phase 44: a count-based stride alone is not enough. On 5,986
+        # batches it puts eleven minutes between lines, and eleven
+        # minutes of silence is indistinguishable from a hang — which is
+        # the exact complaint this whole reporter exists to answer. So a
+        # line is also emitted whenever too much wall-clock time has
+        # passed, regardless of how few batches have gone by.
+        now = time.monotonic()
+        due_by_time = now - self._last_batch_line >= self.MAX_SECONDS_BETWEEN_LINES
+
+        if not (due_by_count or due_by_time):
             return
+        self._last_batch_line = now
 
         fraction = (batch + 1) / total_batches
         parts = []
@@ -252,9 +270,24 @@ elapsed 0:14 | eta 1:42
             if key in logs:
                 parts.append(f"{key} {float(logs[key]):.4f}")
 
+        # Phase 46: measure from the START OF THIS EPOCH, not the fold.
+        # Dividing two hours of fold time by this epoch's 105 batches
+        # produced "eta 2:58:40" when the true answer was four minutes —
+        # an ETA that wrong is worse than none, because the operator
+        # cannot tell a slow run from a stuck one.
+        if self._epoch_start <= 0:
+            self._epoch_start = now
+        elapsed = now - self._epoch_start
+        eta = ""
+        if batch > 0 and elapsed > 0:
+            remaining = (elapsed / (batch + 1)) * (total_batches - batch - 1)
+            eta = f" | eta {format_duration(remaining)}"
+
         self._write(
             f"    [{_bar(fraction, 20)}] {fraction * 100:5.1f}% | "
-            f"batch {batch + 1:,}/{total_batches:,}" + (" | " + " | ".join(parts) if parts else "")
+            f"batch {batch + 1:,}/{total_batches:,}"
+            + (" | " + " | ".join(parts) if parts else "")
+            + eta
         )
 
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
@@ -283,6 +316,8 @@ elapsed 0:14 | eta 1:42
 
     def on_fold_begin(self, fold: FoldInfo) -> None:
         self._fold_start = time.monotonic()
+        self._epoch_start = time.monotonic()
+        self._last_batch_line = time.monotonic()
         if self._show_epochs:
             self._write(
                 f"fold {fold.human_index:>3}/{fold.total_folds} | "
@@ -307,6 +342,9 @@ elapsed 0:14 | eta 1:42
         if metrics.learning_rate is not None:
             parts.append(f"lr {metrics.learning_rate:.2e}")
         self._write(" | ".join(parts))
+        # The next epoch's ETA must be measured from here, not from the
+        # start of the fold.
+        self._epoch_start = time.monotonic()
 
     def on_fold_end(self, fold: FoldInfo, val_loss: float) -> None:
         self._completed_folds += 1

@@ -133,6 +133,9 @@ class WavenetTrainer(ModelTrainer):
         self._depth_multiplier = depth_multiplier
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
+        #: Called as ``(model, epoch, logs)`` after each epoch so the
+        #: caller can checkpoint. None disables checkpointing.
+        self.on_epoch_model: Any = None
         self.fold_history: List[float] = []
         #: Lazily built window generator + the width it assumes (Phase 41).
         self._window_cache: Any = None
@@ -145,6 +148,10 @@ class WavenetTrainer(ModelTrainer):
     @property
     def framework(self) -> str:
         return "tensorflow"
+
+    @property
+    def _on_epoch_model(self) -> Any:
+        return self.on_epoch_model
 
     def train(self, definition: ModelDefinition, run: TrainingRun) -> ModelArtifact:
         import numpy as np
@@ -276,17 +283,32 @@ class WavenetTrainer(ModelTrainer):
             )
 
             callbacks = []
+            if self._on_epoch_model is not None:
+                # Phase 46: hand the live model out after every epoch so
+                # a timeout cannot destroy hours of work. The operator
+                # lost 18 completed epochs to the 2-hour limit because
+                # nothing was persisted until train() returned.
+                callbacks.append(_EpochCheckpoint(self._on_epoch_model, model, self._epochs))
             if not isinstance(self._progress, NullProgressReporter):
                 callbacks.append(keras_progress_callback(self._progress, fold_info, self._epochs))
                 # An epoch over 50,000 samples is thousands of batches and
                 # several minutes; without this the log sits still between
                 # epoch lines and looks hung.
                 if hasattr(self._progress, "on_batch_end"):
+                    # Phase 43: a streamed fold is an INFINITE tf.data
+                    # dataset (it repeats so multi-epoch runs do not run
+                    # dry), and len() on it raises "The dataset is
+                    # infinite". The batch count is already known from
+                    # the fold geometry, so ask arithmetic rather than
+                    # the dataset.
+                    batches_per_epoch = train_steps or max(
+                        1, -(-train_size // max(self._batch_size, 1))
+                    )
                     callbacks.append(
                         keras_batch_callback(
                             self._progress,
                             fold_info,
-                            total_batches=max(1, -(-len(train_x) // max(self._batch_size, 1))),
+                            total_batches=batches_per_epoch,
                         )
                     )
 
@@ -444,6 +466,30 @@ class _LazySampleCount:
             "This fold is streamed; its windows were deliberately never "
             "materialised. Use the tf.data path instead of indexing."
         )
+
+
+def _EpochCheckpoint(callback: Any, model: Any, total_epochs: int) -> Any:
+    """A Keras callback that hands the model out after every epoch.
+
+    Training a real dataset takes hours. Persisting only at the very end
+    means any interruption — a timeout, a closed laptop, Ctrl+C — throws
+    away everything. Saving each epoch turns a lost run into a slightly
+    older model.
+    """
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
+
+    tf = _require_tensorflow()
+
+    class _Checkpoint(tf.keras.callbacks.Callback):  # type: ignore[misc,name-defined]
+        def on_epoch_end(self, epoch: int, logs: Any = None) -> None:
+            try:
+                callback(self.model, epoch, dict(logs or {}), total_epochs)
+            except Exception:
+                # A failing checkpoint must never abort training that is
+                # otherwise going fine.
+                pass
+
+    return _Checkpoint()
 
 
 def _notify(reporter: object, hook: str, *args: object) -> None:

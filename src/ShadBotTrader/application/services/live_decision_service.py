@@ -120,6 +120,8 @@ class LiveDecisionService:
         signal_artifact: Any = None,
         signal_timeframe: str = "5M",
         range_timeframe: str = "1H",
+        quote_source: Any = None,
+        fallback_spread: Decimal = Decimal("0.35"),
     ) -> None:
         self._symbol = symbol
         self._market = market
@@ -133,6 +135,17 @@ class LiveDecisionService:
         self._signal_artifact = signal_artifact
         self._signal_timeframe = signal_timeframe
         self._range_timeframe = range_timeframe
+        #: Anything exposing ``live_quote(symbol)`` — normally the MT5
+        #: provider. Phase 45: the spread is read from the broker rather
+        #: than assumed, because gold spreads float.
+        self._quote_source = quote_source
+        #: Used only when the broker cannot be asked. Deliberately a
+        #: realistic retail gold spread, not the old Decimal("4") which
+        #: is wide enough to make every 0.08% signal loss-making.
+        self._fallback_spread = fallback_spread
+        #: Where the last spread came from, so a run can be audited.
+        self.last_spread: Decimal = fallback_spread
+        self.last_spread_source: str = "fallback"
         self._history: List[TickResult] = []
 
     @property
@@ -293,6 +306,33 @@ class LiveDecisionService:
             generated_at=window.last_timestamp,
         )
 
+    def _current_spread(self) -> Decimal:
+        """The live spread from the broker, or the fallback.
+
+        A failure to read the quote must never abort a tick: the run
+        continues on the fallback and records that it did so, because a
+        missing spread is a data problem, not a reason to stop trading
+        logic that is otherwise sound.
+        """
+        source = self._quote_source
+        reader = getattr(source, "live_quote", None)
+        if callable(reader):
+            try:
+                quote = reader(self._symbol)
+                value = Decimal(str(quote["spread"]))
+                if value > 0:
+                    self.last_spread = value
+                    self.last_spread_source = "broker"
+                    return value
+                self.last_spread_source = "fallback (broker returned <= 0)"
+            except Exception as error:
+                self.last_spread_source = f"fallback ({type(error).__name__})"
+        else:
+            self.last_spread_source = "fallback (no quote source)"
+
+        self.last_spread = self._fallback_spread
+        return self._fallback_spread
+
     def _execute(
         self,
         intent: Any,
@@ -307,10 +347,11 @@ class LiveDecisionService:
         from ShadBotTrader.domain.market.price import Price
 
         close = Decimal(str(window.reference_close))
+        spread = self._current_spread()
         quote = MarketQuote.from_mid(
             symbol=Symbol(self._symbol),
             mid=Price(close),
-            spread=Decimal("4"),
+            spread=spread,
             timestamp=timestamp,
         )
         position = self._ledger.position(Symbol(self._symbol)) if self._ledger is not None else None

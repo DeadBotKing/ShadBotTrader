@@ -220,7 +220,7 @@ class DualModelService:
         self,
         dataset: PreparedDataset,
         epochs: int = 2,
-        batch_size: int = 8,
+        batch_size: int = 0,
         val_size: int = 0,
         step: int = 0,
         min_train_size: int = 0,
@@ -242,6 +242,24 @@ class DualModelService:
         # run, it is a run that never finishes, and it was the reason
         # training appeared to hang with no output.
         rows = len(dataset.series)
+
+        # Phase 44: batch size must scale with the data too. The old
+        # fixed 8 was sized for the few-hundred-row demo series; on
+        # 47,886 windows it means 5,986 gradient steps per epoch, each
+        # one a full forward+backward pass over a 500x123 window. That
+        # is ~1.4 hours for a SINGLE epoch, which reads as "hung" long
+        # before it reads as "slow". A larger batch does the same work
+        # in far fewer steps and uses the CPU's vector units properly.
+        if not batch_size:
+            if rows >= 20_000:
+                batch_size = 64
+            elif rows >= 5_000:
+                batch_size = 32
+            elif rows >= 1_000:
+                batch_size = 16
+            else:
+                batch_size = 8
+
         if not val_size:
             val_size = max(4, min(2000, rows // 50))
         if not step:
@@ -277,11 +295,19 @@ class DualModelService:
         epochs: int = 2,
         max_folds: Optional[int] = 3,
         progress: Any = None,
+        on_epoch_model: Any = None,
     ) -> Dict[str, Any]:
-        """Prepare, train and return the artifact plus its provenance."""
+        """Prepare, train and return the artifact plus its provenance.
+
+        ``on_epoch_model`` is called ``(model, epoch, logs, total)`` after
+        every epoch so the caller can checkpoint. Without it an
+        interrupted run — a timeout, a closed lid — loses everything
+        (Phase 46).
+        """
         dataset = self.prepare(candles, symbol, timeframe, role)
         definition = self.definition_for(role, dataset)
         trainer = self.build_trainer(dataset, epochs=epochs, max_folds=max_folds, progress=progress)
+        trainer.on_epoch_model = on_epoch_model
 
         run = TrainingRun(
             run_id=run_id,

@@ -63,6 +63,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def build_quote_source(args: argparse.Namespace):
+    """A live quote reader when MT5 is reachable, else None.
+
+    Phase 45: the spread used to be hard-coded at 4.00, which on gold at
+    4,376 is 0.09% — wider than the 0.08% move the signal model is
+    trained to call a BUY. Every such trade was loss-making before it
+    started. Real gold spreads float, so they are read from the broker.
+
+    Returning None is fine: the service falls back to a realistic retail
+    spread and records that it did so.
+    """
+    from ShadBotTrader.infrastructure.data import mt5_market_data_provider as mt5mod
+
+    if not mt5mod.is_available():
+        return None
+    try:
+        return mt5mod.Mt5MarketDataProvider()
+    except Exception:
+        return None
+
+
 def load_history(args: argparse.Namespace, timeframe: str, wanted: int = 900):
     """Candles to prime the buffer with.
 
@@ -244,6 +265,7 @@ def build_service(args: argparse.Namespace):
         signal_predictor=DemoSignalModel(),
         range_artifact=object(),
         signal_artifact=object(),
+        quote_source=build_quote_source(args),
     )
     return service, ledger, market
 

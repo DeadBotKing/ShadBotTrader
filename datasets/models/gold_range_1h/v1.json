@@ -1,0 +1,11 @@
+{
+  "checksum": "f078e001f7a9fbd34596acab4c931dbdc97a4165ae5b91dcd30bb63273eb1193",
+  "created_at": "2026-08-18T10:20:43.796220+03:30",
+  "format": "keras",
+  "framework": "tensorflow",
+  "framework_version": "2.21.0",
+  "model_id": "gold_range_1h",
+  "size_bytes": 3213734,
+  "training_run_id": "range-demo",
+  "version": 1
+}

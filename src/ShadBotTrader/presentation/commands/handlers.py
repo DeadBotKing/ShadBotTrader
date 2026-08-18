@@ -154,6 +154,25 @@ def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200
     return merged[-budget:] + recent
 
 
+def percent_to_fraction(raw: str, default: float) -> float:
+    """Turn a percent typed by a human into the fraction the code uses.
+
+    ``0.08`` means 0.08%, which is 0.0008 as a return. Accepts a stray
+    ``%`` and falls back rather than raising: a malformed number in a
+    form field should not abort a training run that is otherwise valid.
+    """
+    text = str(raw).strip().rstrip("%").strip()
+    if not text:
+        return default
+    try:
+        value = float(text)
+    except ValueError:
+        return default
+    if value <= 0:
+        return default
+    return value / 100.0
+
+
 def parse_timeframes(raw: str) -> List[str]:
     """Split a ``5M,1H`` field into an ordered, de-duplicated list."""
     seen: List[str] = []
@@ -312,9 +331,23 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=tuple(datasets),
                     hint="which stored candles to train on",
                 ),
+                CommandField(
+                    "threshold_pct",
+                    "Signal threshold %",
+                    "0.08",
+                    kind="number",
+                    hint="only used by the signal model; ignored by range",
+                ),
                 CommandField("epochs", "Epochs", "2", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
+                CommandField(
+                    "timeout_minutes",
+                    "Give up after (minutes)",
+                    "480",
+                    kind="number",
+                    hint="real training takes hours; each epoch is checkpointed",
+                ),
             ],
             slow=True,
             group="AI",
@@ -533,9 +566,23 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=tuple(datasets),
                     hint="which stored candles to train on",
                 ),
+                CommandField(
+                    "threshold_pct",
+                    "Signal threshold %",
+                    "0.08",
+                    kind="number",
+                    hint="a move bigger than this is BUY/SELL; smaller is HOLD",
+                ),
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
+                CommandField(
+                    "timeout_minutes",
+                    "Give up after (minutes)",
+                    "480",
+                    kind="number",
+                    hint="real training takes hours; each epoch is checkpointed",
+                ),
             ],
             slow=True,
             group="AI",
@@ -678,7 +725,8 @@ class CommandHandlers:
                         log.write("\n[killed: timeout]\n")
                         return CommandResult.failure(
                             command.kind,
-                            f"Timed out after {timeout // 60} minutes",
+                            f"Timed out after {timeout // 60} minutes "
+                            f"(any completed epoch was checkpointed)",
                             "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
                             "from a terminal.",
                             time.monotonic() - started,
@@ -1092,6 +1140,8 @@ class CommandHandlers:
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                "--threshold",
+                str(percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)),
                 "--storage-root",
                 str(self._storage_root),
             ],
@@ -1938,12 +1988,18 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                # The form speaks percent because that is how a trader
+                # thinks about a move; the script speaks fractions
+                # because that is how a return is computed. Convert once,
+                # here, rather than letting both units float around.
+                "--threshold",
+                str(percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)),
                 "--storage-root",
                 str(self._storage_root),
             ],
             f"Trained {role} on {dataset}",
             started,
-            timeout=7200,
+            timeout=max(command.integer("timeout_minutes", 480), 5) * 60,
         )
 
     # -- trading ---------------------------------------------------------------

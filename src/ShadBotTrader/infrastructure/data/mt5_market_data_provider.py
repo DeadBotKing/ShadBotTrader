@@ -174,6 +174,58 @@ class Mt5MarketDataProvider(MarketDataProvider):
         symbols = mt5.symbols_get(pattern) if pattern else mt5.symbols_get()
         return sorted(item.name for item in (symbols or ()))
 
+    def live_quote(self, symbol: str) -> Dict[str, Any]:
+        """The current bid/ask and the spread BETWEEN them (Phase 45).
+
+        The spread is read from the live tick rather than assumed. Gold
+        spreads float: they widen at the session roll and around news,
+        and a fixed guess is wrong in whichever direction hurts — too
+        low and the backtest flatters itself, too high and the strategy
+        refuses trades it should take.
+
+        ``spread_points`` from ``symbol_info`` is an integer in points
+        and is only a snapshot; ``ask - bid`` from the tick is the price
+        actually available right now, so that is what is authoritative
+        here. The integer is returned alongside for diagnostics.
+        """
+        mt5 = self._ensure_initialized()
+
+        tick = mt5.symbol_info_tick(symbol)
+        if tick is None:
+            raise ConnectionError(
+                f"MT5 has no tick for {symbol!r}: {self._last_error(mt5)}. "
+                f"Is the symbol visible in Market Watch?"
+            )
+
+        bid = float(getattr(tick, "bid", 0.0) or 0.0)
+        ask = float(getattr(tick, "ask", 0.0) or 0.0)
+        if bid <= 0 or ask <= 0:
+            raise ConnectionError(
+                f"MT5 returned an unusable tick for {symbol!r} "
+                f"(bid={bid}, ask={ask}). The market may be closed."
+            )
+
+        info = mt5.symbol_info(symbol)
+        point = float(getattr(info, "point", 0.0) or 0.0) if info is not None else 0.0
+        digits = int(getattr(info, "digits", 0) or 0) if info is not None else 0
+        spread_points = getattr(info, "spread", None) if info is not None else None
+
+        spread = ask - bid
+        mid = (ask + bid) / 2.0
+
+        return {
+            "symbol": symbol,
+            "bid": bid,
+            "ask": ask,
+            "mid": mid,
+            "spread": spread,
+            "spread_pct": (spread / mid) if mid else 0.0,
+            "spread_points": spread_points,
+            "point": point,
+            "digits": digits,
+            "time": getattr(tick, "time", None),
+        }
+
     def account_summary(self) -> Dict[str, Any]:
         """Basic account facts, useful for verifying the connection."""
         mt5 = self._ensure_initialized()

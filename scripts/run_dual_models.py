@@ -146,6 +146,12 @@ def train_one(service, args, role, timeframe: str) -> int:
     rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {role.horizon} ahead)")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
+    if role.name == "signal":
+        # State the labelling rule outright: it decides what BUY means.
+        print(
+            f"  label rule: a move of more than {args.threshold:.4%} over "
+            f"{role.horizon} candles is BUY/SELL, otherwise HOLD"
+        )
     print(f"  {role.description}")
 
     try:
@@ -210,6 +216,11 @@ def train_one(service, args, role, timeframe: str) -> int:
         return 1
 
     print(f"\n  training roll-forward ({args.epochs} epoch(s), {args.folds} fold(s)) ...")
+    # Phase 46: checkpoint after every epoch. The operator lost 18
+    # completed epochs to a 2-hour timeout because nothing was written
+    # until train() returned.
+    checkpoint = make_epoch_checkpoint(args, role, timeframe, dataset)
+
     outcome = service.train(
         candles,
         Symbol(args.symbol),
@@ -219,6 +230,7 @@ def train_one(service, args, role, timeframe: str) -> int:
         epochs=args.epochs,
         max_folds=args.folds,
         progress=reporter,
+        on_epoch_model=checkpoint,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
@@ -262,6 +274,81 @@ def train_one(service, args, role, timeframe: str) -> int:
         print(f"    actionable (>=60%): {forecast.is_actionable()}")
 
     return 0
+
+
+def make_epoch_checkpoint(args, role, timeframe: str, dataset):
+    """A callback that writes the model after every epoch.
+
+    Hours of training used to live only in RAM until the very last line
+    of train(). Any interruption threw all of it away. Now each epoch
+    overwrites a single ``checkpoint`` version, so the worst case is
+    losing one epoch instead of twenty.
+
+    The checkpoint reuses one version number on purpose: the point is a
+    rescue copy, not a history. The final save still writes a proper new
+    version through save_model().
+    """
+    from pathlib import Path
+
+    from ShadBotTrader.infrastructure.ai.model_catalogue import (
+        ModelCatalogue,
+        ModelRecord,
+    )
+
+    root = Path(args.storage_root)
+    catalogue = ModelCatalogue(root)
+    state = {"version": catalogue.next_version(role.model_id)}
+
+    def checkpoint(model, epoch: int, logs: dict, total_epochs: int) -> None:
+        from ShadBotTrader.domain.ai.model_artifact import ModelArtifact
+        from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
+        from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
+            FilesystemArtifactStore,
+        )
+        from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
+            _serialize_model,
+        )
+
+        version = state["version"]
+        payload = _serialize_model(model)
+        artifact = ModelArtifact.create(
+            model_id=ModelId(role.model_id),
+            version=ModelVersion(version),
+            framework="tensorflow",
+            framework_version="",
+            format="keras",
+            payload=payload,
+            training_run_id=f"{role.name}-epoch{epoch + 1}",
+        )
+
+        store = FilesystemArtifactStore(root)
+        directory = root / "models" / role.model_id
+        for name in (f"v{version}.bin", f"v{version}.json"):
+            path = directory / name
+            if path.exists():
+                path.unlink()  # artifacts are immutable; replace
+        store.save(artifact)
+
+        catalogue.write(
+            ModelRecord(
+                model_id=role.model_id,
+                role=role.name,
+                symbol=args.symbol,
+                timeframe=timeframe,
+                version=version,
+                rows=len(dataset.series),
+                windows=max(len(dataset.series) - role.window_size - role.horizon + 1, 0),
+                window_size=role.window_size,
+                feature_columns=dataset.feature_count,
+                epochs=epoch + 1,
+                folds=args.folds,
+                metrics={k: float(v) for k, v in logs.items()},
+                note=f"checkpoint after epoch {epoch + 1}/{total_epochs}",
+            )
+        )
+        print(f"      [checkpoint] epoch {epoch + 1}/{total_epochs} saved as v{version}")
+
+    return checkpoint
 
 
 def save_model(outcome: dict, args, role, timeframe: str, dataset) -> None:

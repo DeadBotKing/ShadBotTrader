@@ -1,0 +1,21 @@
+{
+  "model_id": "gold_signal_5m",
+  "role": "signal",
+  "symbol": "XAUUSD",
+  "timeframe": "5M",
+  "version": 1,
+  "rows": 49897,
+  "windows": 49793,
+  "window_size": 100,
+  "feature_columns": 123,
+  "epochs": 9,
+  "folds": 10,
+  "trained_at": "2026-08-18T15:24:52+00:00",
+  "metrics": {
+    "accuracy": 0.868099570274353,
+    "loss": 0.40420281887054443,
+    "val_accuracy": 0.9287863373756409,
+    "val_loss": 0.27066877484321594
+  },
+  "note": "checkpoint after epoch 9/10"
+}

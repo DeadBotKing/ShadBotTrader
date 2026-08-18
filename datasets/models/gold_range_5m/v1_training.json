@@ -1,0 +1,21 @@
+{
+  "model_id": "gold_range_5m",
+  "role": "range",
+  "symbol": "XAUUSD",
+  "timeframe": "5M",
+  "version": 1,
+  "rows": 49897,
+  "windows": 49793,
+  "window_size": 100,
+  "feature_columns": 123,
+  "epochs": 1,
+  "folds": 10,
+  "trained_at": "2026-08-18T08:01:55+00:00",
+  "metrics": {
+    "loss": 0.09919983148574829,
+    "mae": 0.002623967593535781,
+    "val_loss": 0.06132718175649643,
+    "val_mae": 0.0008682861807756126
+  },
+  "note": ""
+}
