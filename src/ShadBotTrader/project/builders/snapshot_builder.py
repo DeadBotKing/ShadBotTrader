@@ -40,7 +40,10 @@ CURRENT_PHASE = (
     "+ Phase 39 (the training matrix reads stored features and is proven "
     "byte-identical to the computed one; the 1D timeframe has its own "
     "candles, features, dataset and range model; the operator chooses "
-    "which model trains on which dataset)"
+    "which model trains on which dataset) "
+    "+ Phase 40 (model type, dataset and saved model are dropdowns; "
+    "trained models are persisted with the role and dataset that "
+    "produced them; retraining adds a version instead of replacing one)"
 )
 
 

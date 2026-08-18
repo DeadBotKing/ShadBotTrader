@@ -186,6 +186,11 @@ elapsed 0:14 | eta 1:42
     first few folds.
     """
 
+    #: Progress lines emitted per epoch. Small on purpose: the dashboard
+    #: shows a fixed tail of the log, so every batch line spent is an
+    #: epoch line the operator cannot see.
+    BATCH_LINES_PER_EPOCH = 8
+
     def __init__(
         self,
         stream: Optional[TextIO] = None,
@@ -218,18 +223,39 @@ elapsed 0:14 | eta 1:42
         self._write(f"  {samples:,} training windows ready in {format_duration(elapsed)}")
 
     def on_batch_end(self, fold: "FoldInfo", batch: int, total_batches: int, logs: dict) -> None:
-        """One in-place line so a long epoch visibly advances."""
-        fraction = (batch + 1) / total_batches if total_batches else 1.0
-        parts = [f"    batch {batch + 1:>6,}/{total_batches:,}"]
-        for key in ("loss", "accuracy", "mae"):
+        """Show that a long epoch is advancing, without flooding the log.
+
+        Phase 42: this used to write one line per reported batch. On a
+        real dataset that is hundreds of lines per epoch, and the
+        dashboard only reads the last 200 — so the batch chatter pushed
+        the epoch results (the numbers the operator actually wants) out
+        of the visible window entirely. Worse, the ``\r`` trick that made
+        it a single updating line only works on a terminal; through a
+        pipe every update became a permanent new line.
+
+        Now at most :attr:`BATCH_LINES_PER_EPOCH` lines are emitted per
+        epoch, evenly spaced, and each is a normal line that survives
+        being read back from a file.
+        """
+        if total_batches <= 0:
+            return
+
+        # Report at a fixed number of checkpoints, plus the final batch.
+        stride = max(1, total_batches // self.BATCH_LINES_PER_EPOCH)
+        is_last = batch + 1 >= total_batches
+        if not is_last and batch % stride:
+            return
+
+        fraction = (batch + 1) / total_batches
+        parts = []
+        for key in ("loss", "accuracy", "mae", "val_loss"):
             if key in logs:
                 parts.append(f"{key} {float(logs[key]):.4f}")
-        self._stream.write(
-            f"\r    [{_bar(fraction, 20)}] {fraction * 100:5.1f}% | "
-            + " | ".join(parts[1:] or ["running"])
-            + f" | {parts[0].strip()}   "
+
+        self._write(
+            f"    [{_bar(fraction, 20)}] {fraction * 100:5.1f}% | "
+            f"batch {batch + 1:,}/{total_batches:,}" + (" | " + " | ".join(parts) if parts else "")
         )
-        self._stream.flush()
 
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
         self._plan = plan
@@ -268,8 +294,7 @@ elapsed 0:14 | eta 1:42
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
         if not self._show_epochs:
             return
-        # Close the in-place batch line before writing a permanent one.
-        self._stream.write("\r" + " " * 100 + "\r")
+
         parts = [
             f"  epoch {metrics.human_epoch}/{metrics.total_epochs}",
             f"loss {_fmt(metrics.loss)}",

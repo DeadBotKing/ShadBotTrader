@@ -147,7 +147,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         return render_dashboard(
             view,
             points,
-            commands=descriptors() if (self.allow_commands and bus) else (),
+            commands=descriptors(self.storage_root) if (self.allow_commands and bus) else (),
             result=bus.last_result() if bus else None,
             history=bus.history()[:8] if bus else (),
             busy=bus.running if bus else None,
@@ -258,7 +258,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "busy": bus.is_busy,
             "running": running.value if running else None,
             "running_for_seconds": round(bus.running_for_seconds, 1),
-            "available": [item.action for item in descriptors()],
+            "available": [item.action for item in descriptors(self.storage_root)],
             "history": [item.to_dict() for item in bus.history()],
         }
 

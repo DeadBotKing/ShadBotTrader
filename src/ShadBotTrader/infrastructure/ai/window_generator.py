@@ -228,7 +228,13 @@ class WindowGenerator:
         return x, y
 
     # ---------------------------------------------------------- tf.data --
-    def to_tf_dataset(self, batch_size: int = 32, start: int = 0, stop: Optional[int] = None):
+    def to_tf_dataset(
+        self,
+        batch_size: int = 32,
+        start: int = 0,
+        stop: Optional[int] = None,
+        repeat: bool = False,
+    ):
         """A ``tf.data.Dataset`` streaming the same batches.
 
         Keeps TensorFlow out of the import path for every other caller.
@@ -245,13 +251,20 @@ class WindowGenerator:
         def generator():
             yield from self.iter_batches(batch_size=batch_size, start=start, stop=stop)
 
-        return tf.data.Dataset.from_generator(
+        dataset = tf.data.Dataset.from_generator(
             generator,
             output_signature=(
                 tf.TensorSpec(shape=(None, rows, columns), dtype=tf.float32),
                 label_spec,
             ),
-        ).prefetch(tf.data.AUTOTUNE)
+        )
+        if repeat:
+            # A from_generator dataset is exhausted after one pass, so a
+            # second epoch finds it empty and Keras warns that the input
+            # "ran out of data". Repeating repeats the generator, which
+            # rebuilds each window on demand — the point of streaming.
+            dataset = dataset.repeat()
+        return dataset.prefetch(tf.data.AUTOTUNE)
 
     def last_window(self) -> List[List[float]]:
         """The most recent complete window — what live inference uses.

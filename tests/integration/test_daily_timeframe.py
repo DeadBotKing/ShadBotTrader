@@ -202,10 +202,15 @@ class TestTheDashboardCoversTheDailyTimeframe:
 # --------------------------------------------- choosing what to train ----
 class TestTheOperatorChoosesModelAndDataset:
     def test_the_training_button_exposes_the_choice(self):
+        """Phase 40 replaced the two dataset fields with one dropdown."""
         descriptor = descriptor_for(CommandKind.TRAIN_DUAL_MODELS)
-        names = {field.name for field in descriptor.fields}
+        fields = {field.name: field for field in descriptor.fields}
 
-        assert {"model", "range_timeframes", "signal_timeframe"} <= names
+        assert {"model", "dataset"} <= set(fields)
+        assert fields["model"].kind == "select"
+        assert fields["dataset"].kind == "select"
+        assert "range_timeframes" not in fields
+        assert "signal_timeframe" not in fields
 
     def test_the_choice_reaches_the_script(self, tmp_path, monkeypatch):
         handlers = AccountCommandHandlers(tmp_path / "db.sqlite", tmp_path)
@@ -223,7 +228,7 @@ class TestTheOperatorChoosesModelAndDataset:
             handlers.train_dual_models(
                 Command(
                     CommandKind.TRAIN_DUAL_MODELS,
-                    {"model": "range_1d", "range_timeframes": "1D", "signal_timeframe": "5M"},
+                    {"model": "range", "dataset": "1D"},
                 )
             )
         except Exception:  # pragma: no cover - tensorflow absent
@@ -233,7 +238,7 @@ class TestTheOperatorChoosesModelAndDataset:
         if arguments is None:
             pytest.skip("TensorFlow is not installed in this environment")
         assert "--model" in arguments
-        assert arguments[arguments.index("--model") + 1] == "range_1d"
+        assert arguments[arguments.index("--model") + 1] == "range"
         assert arguments[arguments.index("--range-timeframes") + 1] == "1D"
 
     @pytest.mark.parametrize(

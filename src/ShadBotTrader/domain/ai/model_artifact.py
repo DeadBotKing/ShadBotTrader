@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any, Dict
 
@@ -45,6 +45,16 @@ class ModelArtifact:
             raise ValidationError(
                 f"ModelArtifact checksum mismatch for {self.model_id} v{self.version.number}"
             )
+
+    def with_version(self, number: int) -> "ModelArtifact":
+        """The same artifact under a new version number (Phase 40).
+
+        Retraining produces a new version of the same model rather than
+        overwriting the old one — artifacts are immutable, so the only
+        honest way to keep both is to renumber the new one. The payload
+        and its checksum are untouched, so the bytes stay verifiable.
+        """
+        return replace(self, version=ModelVersion(number))
 
     @classmethod
     def create(

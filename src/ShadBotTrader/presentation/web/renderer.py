@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from ShadBotTrader.presentation.commands.commands import (
     CommandDescriptor,
+    CommandField,
     CommandKind,
     CommandResult,
 )
@@ -116,6 +117,9 @@ button:disabled { background: var(--border); color: var(--muted); cursor: not-al
               border-radius: 4px; color: var(--text); font-size: 11px;
               white-space: pre-wrap; overflow-x: auto; }
 .busy { background: rgba(210,153,34,.12); }
+label select { width: 100%; padding: 6px 8px; margin-top: 4px;
+               border: 1px solid var(--line); border-radius: 4px;
+               background: var(--bg); color: var(--text); font-size: 12px; }
 .runlog { max-height: 320px; overflow-y: auto; font-family: ui-monospace,
           SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px;
           line-height: 1.45; }
@@ -363,6 +367,36 @@ def render_equity_chart(points: Sequence[CashPoint]) -> str:
 
 
 # ------------------------------------------------------------------ actions --
+def _render_field(field: CommandField) -> str:
+    """One form input. A ``select`` field becomes a real dropdown.
+
+    Phase 40: the operator asked to pick the model and the dataset from
+    lists instead of typing them. A free-text field accepts "1h" or
+    "Daily" or a typo and only fails minutes later inside a subprocess;
+    a dropdown can only offer what exists.
+    """
+    title = f" title={_e(field.hint)!r}" if field.hint else ""
+
+    if field.is_select:
+        options = "".join(
+            f'<option value="{_e(option)}"'
+            f'{" selected" if option == field.default else ""}>{_e(option)}</option>'
+            for option in field.options
+        )
+        return (
+            f"<label>{_e(field.label)}"
+            f'<select name="{_e(field.name)}"{title}>{options}</select></label>'
+        )
+
+    kind = "number" if field.kind == "number" else "text"
+    step = "step=any " if field.kind == "number" else ""
+    return (
+        f"<label>{_e(field.label)}"
+        f'<input type="{kind}" name="{_e(field.name)}" '
+        f'value="{_e(field.default)}" {step}{title}></label>'
+    )
+
+
 def render_actions(
     descriptors: Sequence[CommandDescriptor],
     busy: Optional[CommandKind] = None,
@@ -384,14 +418,7 @@ def render_actions(
     for group, items in grouped.items():
         cards = []
         for descriptor in items:
-            inputs = "".join(
-                f"<label>{_e(field.label)}"
-                f'<input type="{"number" if field.kind == "number" else "text"}" '
-                f'name="{_e(field.name)}" value="{_e(field.default)}" '
-                f'{"step=any" if field.kind == "number" else ""}'
-                f'{f" title={_e(field.hint)!r}" if field.hint else ""}></label>'
-                for field in descriptor.fields
-            )
+            inputs = "".join(_render_field(field) for field in descriptor.fields)
             disabled = " disabled" if busy is not None else ""
             notes = []
             if descriptor.slow:

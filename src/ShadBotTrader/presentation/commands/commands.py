@@ -201,5 +201,14 @@ class CommandField:
     name: str
     label: str
     default: str = ""
-    kind: str = "text"  # text | number | checkbox
+    kind: str = "text"  # text | number | checkbox | select
     hint: str = ""
+    #: Allowed values when ``kind`` is ``select``. The view renders these
+    #: as a dropdown so the operator picks from what actually exists
+    #: instead of typing a name and discovering the typo three minutes
+    #: into a training run (Phase 40).
+    options: tuple[str, ...] = ()
+
+    @property
+    def is_select(self) -> bool:
+        return self.kind == "select" and bool(self.options)

@@ -131,7 +131,7 @@ def test_action_buttons_are_rendered(server):
     _, _, body = get(f"{server}/")
     assert "Fetch market data" in body
     assert "Update features" in body
-    assert "Retrain the model" in body
+    assert "Retrain a saved model" in body
     assert 'action="/run"' in body
     assert "<button" in body
 

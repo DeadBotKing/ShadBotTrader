@@ -57,7 +57,7 @@ class TestCommandDefinitions:
         assert command.integer("missing", 3) == 3
 
     def test_descriptor_lookup(self):
-        assert descriptor_for(CommandKind.TRAIN_MODEL).label == "Retrain the model"
+        assert descriptor_for(CommandKind.TRAIN_MODEL).label == "Retrain a saved model"
         with pytest.raises(KeyError):
             descriptor_for("nope")  # type: ignore[arg-type]
 

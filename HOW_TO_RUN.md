@@ -318,7 +318,8 @@ Data  → Update features        ویژگی‌ها برای 5M و 1H، هرکد�
                                ↳ تا دیتاست عوض نشده، از انبار خوانده می‌شود
 Data  → Build training dataset دو دیتاست: 5M و 1H، هرکدام ۱۲۳ ستون
 Data  → Build a higher timeframe  اگر بروکر 1D نداد: از 1H بساز
-AI    → Train models           Model=range_1d یا range_1h یا signal
+AI    → Train a model          Model type و Dataset را از منو انتخاب کن
+AI    → Retrain a saved model  مدل ذخیره‌شده + دیتاست را از منو انتخاب کن
                                ↳ لاگ زنده هر ۲ ثانیه در همان صفحه
 Sim   → Record a replay        تماشای کندل‌به‌کندل در /replay
 Trade → Run one live tick      یک چرخهٔ کامل تصمیم‌گیری
@@ -326,6 +327,13 @@ Ops   → Back up the database   قبل از هر کار مهم
 ```
 
 ---
+
+> **دیتای تست:** پروژه بدون دیتای بازار تحویل داده می‌شود. برای آزمایش
+> سریع، دیتای مصنوعی کوچک بساز (زیر نماد `TESTSYM`، نه XAUUSD):
+> ```
+> python scripts/make_test_data.py --candles 600 --features
+> ```
+> دیتای واقعی از `Data → Fetch market data` می‌آید.
 
 ## گام ۵ — ترتیب پیشنهادی برای اولین اجرا
 

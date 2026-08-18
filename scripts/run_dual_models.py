@@ -193,6 +193,22 @@ def train_one(service, args, role, timeframe: str) -> int:
 
     reporter = NullProgressReporter() if args.quiet else ConsoleProgressReporter()
 
+    # Phase 41: say what this will cost BEFORE starting. A 500-row window
+    # over 50,000 candles is 12 GB if materialised; the operator saw the
+    # machine fill up with no explanation and no output.
+    rows = len(dataset.series)
+    windows = max(rows - role.window_size - role.horizon + 1, 0)
+    naive_gb = windows * role.window_size * dataset.feature_count * 4 / 1e9
+    print(f"\n  windows        : {windows:,} of {role.window_size} x {dataset.feature_count}")
+    print(f"  if materialised: {naive_gb:.1f} GB  (streamed instead when large)")
+    if windows < 1:
+        print(
+            f"\n  [X] Not enough data: {rows:,} rows cannot make a single "
+            f"{role.window_size}-row window."
+        )
+        print("      Use a smaller --window, or fetch more candles.")
+        return 1
+
     print(f"\n  training roll-forward ({args.epochs} epoch(s), {args.folds} fold(s)) ...")
     outcome = service.train(
         candles,
@@ -207,6 +223,7 @@ def train_one(service, args, role, timeframe: str) -> int:
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
     print_quality(outcome, role)
+    save_model(outcome, args, role, timeframe, dataset)
 
     # ---- one live prediction so the output is concrete -----------------
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
@@ -245,6 +262,66 @@ def train_one(service, args, role, timeframe: str) -> int:
         print(f"    actionable (>=60%): {forecast.is_actionable()}")
 
     return 0
+
+
+def save_model(outcome: dict, args, role, timeframe: str, dataset) -> None:
+    """Persist the trained artifact and record what produced it.
+
+    Phase 40: training used to fit a network, print a prediction and
+    exit. Nothing reached datasets/models/, so "Retrain the model" had
+    nothing to retrain and two runs could never be compared. Every run
+    since Phase 29 was thrown away at process exit.
+
+    The sidecar record is what lets the dashboard list models by role
+    and dataset instead of asking the operator to decode a filename.
+    """
+    from pathlib import Path
+
+    from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
+        FilesystemArtifactStore,
+    )
+    from ShadBotTrader.infrastructure.ai.model_catalogue import (
+        ModelCatalogue,
+        ModelRecord,
+    )
+
+    root = Path(args.storage_root)
+    catalogue = ModelCatalogue(root)
+    version = catalogue.next_version(role.model_id)
+
+    artifact = outcome["artifact"]
+    metrics = (outcome.get("fold_metrics") or [{}])[-1]
+
+    try:
+        stored = artifact.with_version(version) if hasattr(artifact, "with_version") else artifact
+        FilesystemArtifactStore(root).save(stored)
+    except FileExistsError:
+        # Artifact immutability is deliberate; fall through to the record
+        # so the run is still described rather than silently unrecorded.
+        print(f"  [!] artifact v{version} already exists; keeping the existing file")
+    except Exception as error:
+        print(f"  [!] could not save the artifact: {type(error).__name__}: {error}")
+        return
+
+    record = ModelRecord(
+        model_id=role.model_id,
+        role=role.name,
+        symbol=args.symbol,
+        timeframe=timeframe,
+        version=version,
+        rows=len(dataset.series),
+        windows=max(len(dataset.series) - role.window_size - role.horizon + 1, 0),
+        window_size=role.window_size,
+        feature_columns=dataset.feature_count,
+        epochs=args.epochs,
+        folds=args.folds,
+        metrics={key: float(value) for key, value in metrics.items()},
+    )
+    path = catalogue.write(record)
+    print(f"\n  SAVED  {role.model_id} v{version}")
+    print(f"    role    : {record.role} trained on {record.symbol} {record.timeframe}")
+    print(f"    quality : {record.headline_metric}")
+    print(f"    record  : {path}")
 
 
 def print_quality(outcome: dict, role) -> None:

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 from ShadBotTrader.domain.ai.inference import InferenceRequest
 from ShadBotTrader.domain.ai.model_artifact import ModelArtifact
@@ -134,6 +134,11 @@ class WavenetTrainer(ModelTrainer):
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self.fold_history: List[float] = []
+        #: Lazily built window generator + the width it assumes (Phase 41).
+        self._window_cache: Any = None
+        self._samples: Any = []
+        self._stream_all: bool = False
+        self._n_features_cache: int = 0
         #: Final-epoch metrics per fold (loss, val_loss, accuracy, mae...).
         self.fold_metrics: List[Dict[str, float]] = []
 
@@ -156,7 +161,23 @@ class WavenetTrainer(ModelTrainer):
         # button. Announce the preparation, then do it.
         _notify(self._progress, "on_prepare_begin", len(self._series), self._window_size)
 
-        if self._target_columns is not None:
+        # Phase 41: decide BEFORE building anything. Materialising every
+        # window is what exhausted the machine — 49,393 windows of
+        # 500x123 float32 is 12.2 GB — and it happened here, at the top
+        # of train(), before a single batch was fitted. When the windows
+        # would be large the samples list is never built at all; the
+        # folds stream straight from the 25 MB flat series instead.
+        dropped_columns = len(self._target_columns) if self._target_columns is not None else 1
+        feature_width = max(len(self._series[0]) - dropped_columns, 1)
+        estimated_bytes = (
+            max(len(self._series) - self._window_size, 0) * self._window_size * feature_width * 4
+        )
+        self._stream_all = estimated_bytes > self.STREAM_THRESHOLD_BYTES
+
+        samples: Any
+        if self._stream_all:
+            samples = _LazySampleCount(max(len(self._series) - self._window_size - 0 + 1, 0))
+        elif self._target_columns is not None:
             samples = build_multi_target_samples(
                 self._series,
                 window_size=self._window_size,
@@ -171,6 +192,7 @@ class WavenetTrainer(ModelTrainer):
                 scale=True,
                 drop_target_column=True,
             )
+        self._samples = samples
         _notify(self._progress, "on_prepare_end", len(samples))
 
         plan = expanding_split(
@@ -193,6 +215,7 @@ class WavenetTrainer(ModelTrainer):
         # model sees fewer columns than the raw series has.
         dropped = len(self._target_columns) if self._target_columns is not None else 1
         n_features = len(self._series[0]) - dropped
+        self._n_features_cache = n_features
         learning_rate = float(definition.hyperparameters.get("learning_rate", 1.5e-4))
         total_folds = len(folds)
 
@@ -214,14 +237,21 @@ class WavenetTrainer(ModelTrainer):
         )
 
         for display_index, fold in enumerate(folds):
-            train_x, train_y = self._arrays(samples[fold.train_start : fold.train_end])
-            val_x, val_y = self._arrays(samples[fold.val_start : fold.val_end])
+            # Phase 41: stream the windows instead of materialising them.
+            # 49,393 windows of 500x123 float32 is 12.2 GB — the machine
+            # runs out of RAM long before the first epoch ends, which is
+            # exactly what the operator saw. tf.data pulls one batch at a
+            # time from the same 25 MB flat matrix.
+            train_size = fold.train_end - fold.train_start
+            val_size = fold.val_end - fold.val_start
+            train_x, train_y, train_steps = self._dataset_for(fold.train_start, fold.train_end)
+            val_x, val_y, val_steps = self._dataset_for(fold.val_start, fold.val_end)
 
             fold_info = FoldInfo(
                 fold_index=display_index,
                 total_folds=total_folds,
-                train_samples=len(train_x),
-                val_samples=len(val_x),
+                train_samples=train_size,
+                val_samples=val_size,
                 train_start=fold.train_start,
                 train_end=fold.train_end,
                 val_start=fold.val_start,
@@ -260,15 +290,28 @@ class WavenetTrainer(ModelTrainer):
                         )
                     )
 
-            history = model.fit(
-                train_x,
-                train_y,
-                validation_data=(val_x, val_y),
-                epochs=self._epochs,
-                batch_size=self._batch_size,
-                verbose=self._verbose,
-                callbacks=callbacks,
-            )
+            if train_y is None:
+                # Streamed: the dataset already carries its labels and
+                # its own batching.
+                history = model.fit(
+                    train_x,
+                    validation_data=val_x,
+                    epochs=self._epochs,
+                    steps_per_epoch=train_steps,
+                    validation_steps=val_steps,
+                    verbose=self._verbose,
+                    callbacks=callbacks,
+                )
+            else:
+                history = model.fit(
+                    train_x,
+                    train_y,
+                    validation_data=(val_x, val_y),
+                    epochs=self._epochs,
+                    batch_size=self._batch_size,
+                    verbose=self._verbose,
+                    callbacks=callbacks,
+                )
             val_loss = float(history.history["val_loss"][-1])
             self.fold_history.append(val_loss)
             # Phase 36: Keras computes accuracy (or MAE) every epoch and
@@ -301,6 +344,52 @@ class WavenetTrainer(ModelTrainer):
             training_run_id=run.run_id,
         )
 
+    #: Above this many windows a fold is streamed rather than materialised.
+    #: 20,000 windows of 500x123 float32 is already 4.9 GB; below it the
+    #: arrays are small enough that the simpler path stays faster.
+    STREAM_THRESHOLD_BYTES = 512 * 1024 * 1024
+
+    def _dataset_for(self, start: int, stop: int) -> tuple:
+        """Training inputs for one fold, streamed when they are large.
+
+        Returns ``(x, y, 0)`` for the in-memory path, or
+        ``(dataset, None, steps_per_epoch)`` when the fold is streamed.
+        The caller branches on ``y is None``.
+        """
+        count = max(stop - start, 0)
+        estimated = count * self._window_size * self._n_features_cache * 4
+
+        if not self._stream_all and estimated <= self.STREAM_THRESHOLD_BYTES:
+            x, y = self._arrays(self._samples[start:stop])
+            return x, y, 0
+
+        generator = self._generator()
+        batch = max(self._batch_size, 1)
+        dataset = generator.to_tf_dataset(batch_size=batch, start=start, stop=stop, repeat=True)
+        # With repeat() the dataset is infinite, so Keras must be told
+        # where an epoch ends.
+        steps = max(1, -(-count // batch))
+        return dataset, None, steps
+
+    def _generator(self):
+        """A lazy window generator over the flat series (Phase 41)."""
+        from ShadBotTrader.infrastructure.ai.window_generator import WindowGenerator
+
+        if self._window_cache is None:
+            targets = (
+                self._target_columns if self._target_columns is not None else [self._target_column]
+            )
+            self._window_cache = WindowGenerator(
+                series=self._series,
+                target_columns=targets,
+                window_size=self._window_size,
+                horizon=0,
+                stride=1,
+                scale=True,
+                classification=self._target_columns is None,
+            )
+        return self._window_cache
+
     def _arrays(self, samples) -> tuple:
         import numpy as np
 
@@ -330,6 +419,31 @@ class WavenetTrainer(ModelTrainer):
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
 
         return _require_tensorflow().__version__
+
+
+class _LazySampleCount:
+    """Stands in for the samples list when the folds are streamed.
+
+    ``expanding_split`` and the progress plan only ever ask how many
+    windows exist. Building the windows to answer that question is what
+    exhausted the machine, so this reports the count arithmetically and
+    refuses to be indexed — anything that tries to slice it is a code
+    path that has not been taught to stream.
+    """
+
+    __slots__ = ("_count",)
+
+    def __init__(self, count: int) -> None:
+        self._count = max(count, 0)
+
+    def __len__(self) -> int:
+        return self._count
+
+    def __getitem__(self, item: object) -> None:  # pragma: no cover - guard
+        raise RuntimeError(
+            "This fold is streamed; its windows were deliberately never "
+            "materialised. Use the tf.data path instead of indexing."
+        )
 
 
 def _notify(reporter: object, hook: str, *args: object) -> None:

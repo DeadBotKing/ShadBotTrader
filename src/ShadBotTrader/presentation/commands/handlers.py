@@ -51,8 +51,49 @@ def run_log_path(action: str, root: "str | Path" = RUN_LOG_DIR) -> Path:
     return Path(root) / f"{safe or 'command'}.log"
 
 
+#: Lines that carry a result rather than progress chatter. When the log
+#: is longer than the window the dashboard shows, these are kept and the
+#: batch ticks are thinned — a batch counter scrolling past is useless if
+#: it hides the epoch's loss (Phase 42).
+_IMPORTANT_MARKERS = (
+    "epoch ",
+    "fold ",
+    "val_loss",
+    "val_mae",
+    "val_accuracy",
+    "SAVED",
+    "QUALITY",
+    "PREDICTION",
+    "[X]",
+    "[!]",
+    "[i]",
+    "TRAINING",
+    "FEATURES",
+    "Traceback",
+    "Error",
+    "error",
+    "$ ",
+)
+
+
+def _is_progress_tick(line: str) -> bool:
+    """True for a batch progress line — safe to drop when space is short."""
+    stripped = line.strip()
+    return stripped.startswith("[") and "batch " in stripped and "%" in stripped
+
+
 def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200) -> List[str]:
-    """The last ``lines`` of a command's live log, or an empty list."""
+    """The tail of a command's live log, or an empty list.
+
+    A naive tail is wrong here. A long training run emits far more batch
+    ticks than result lines, so the plain last-N window filled up with
+    progress bars and pushed every epoch result out of sight — the
+    operator watched a counter scroll and never saw a single loss value.
+
+    So when the log does not fit, the ticks are thinned first and the
+    result lines are kept. The most recent lines always survive,
+    whatever kind they are.
+    """
     path = run_log_path(action, root)
     if not path.exists():
         return []
@@ -60,7 +101,57 @@ def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
-    return text.splitlines()[-lines:]
+
+    all_lines = text.splitlines()
+    if len(all_lines) <= lines:
+        return all_lines
+
+    # Always keep the most recent lines verbatim: whatever is happening
+    # right now matters more than what happened ten minutes ago.
+    recent_size = max(lines // 4, 10)
+    recent = all_lines[-recent_size:]
+    earlier = all_lines[:-recent_size]
+
+    budget = lines - len(recent)
+
+    # Walk backwards so that, when the budget runs out, it is the OLDEST
+    # material that is dropped rather than the newest.
+    important: List[str] = []
+    ticks: List[tuple[int, str]] = []
+    for index in range(len(earlier) - 1, -1, -1):
+        line = earlier[index]
+        if _is_progress_tick(line):
+            ticks.append((index, line))
+        elif any(marker in line for marker in _IMPORTANT_MARKERS):
+            important.append(line)
+
+    # Result lines come first in the budget; they are the answer the
+    # operator is waiting for. Ticks only fill whatever is left.
+    selected_important = list(reversed(important[:budget]))
+    remaining = budget - len(selected_important)
+
+    selected_ticks: List[str] = []
+    if remaining > 0 and ticks:
+        # Spread the surviving ticks across the run instead of taking a
+        # contiguous block, so the shape of the whole epoch stays visible.
+        ordered = list(reversed(ticks))
+        stride = max(1, len(ordered) // remaining)
+        selected_ticks = [
+            line for position, (_, line) in enumerate(ordered) if position % stride == 0
+        ]
+        selected_ticks = selected_ticks[-remaining:]
+
+    # Re-interleave in file order.
+    wanted_important = list(selected_important)
+    wanted_ticks = list(selected_ticks)
+    merged: List[str] = []
+    for line in earlier:
+        if wanted_important and line == wanted_important[0]:
+            merged.append(wanted_important.pop(0))
+        elif wanted_ticks and line == wanted_ticks[0]:
+            merged.append(wanted_ticks.pop(0))
+
+    return merged[-budget:] + recent
 
 
 def parse_timeframes(raw: str) -> List[str]:
@@ -74,8 +165,59 @@ def parse_timeframes(raw: str) -> List[str]:
 
 
 # ---------------------------------------------------------------- registry --
-def descriptors() -> List[CommandDescriptor]:
-    """Every command the dashboard offers, with its form."""
+#: Roles the operator can train, in the words they think in.
+MODEL_ROLE_CHOICES: tuple[str, ...] = ("all", "range", "signal")
+
+
+def stored_dataset_choices(storage_root: "str | Path" = "datasets") -> List[str]:
+    """Timeframes that actually have stored candles, for a dropdown.
+
+    Phase 40: the operator asked to pick a dataset from a list rather
+    than type one. Offering a timeframe with no data would be offering a
+    guaranteed failure, so the list is built from what is on disk and
+    falls back to the training timeframes only when nothing is stored
+    yet (the very first run, where the list would otherwise be empty).
+    """
+    from ShadBotTrader.infrastructure.data.symbol_scope import stored_symbols
+
+    root = Path(storage_root)
+    processed = root / "processed"
+    found: List[str] = []
+    if processed.is_dir():
+        for symbol in stored_symbols(root):
+            directory = processed / symbol
+            if not directory.is_dir():
+                continue
+            for entry in sorted(directory.iterdir()):
+                if entry.is_dir() and entry.name not in found:
+                    found.append(entry.name)
+
+    if not found:
+        return list(TRAINING_TIMEFRAMES)
+
+    order = {name: index for index, name in enumerate(TRAINING_TIMEFRAMES)}
+    return sorted(found, key=lambda name: (order.get(name, 99), name))
+
+
+def trained_model_choices(storage_root: "str | Path" = "datasets") -> List[str]:
+    """Model ids that exist on disk, newest first.
+
+    Empty when nothing has been trained yet — the handler then explains
+    that rather than presenting an empty dropdown as if it were a choice.
+    """
+    from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
+    return ModelCatalogue(storage_root).choices()
+
+
+def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescriptor]:
+    """Every command the dashboard offers, with its form.
+
+    ``storage_root`` is read (never written) so the dropdowns can show
+    the datasets and models that genuinely exist.
+    """
+    datasets = stored_dataset_choices(storage_root)
+    trained = trained_model_choices(storage_root)
     return [
         CommandDescriptor(
             kind=CommandKind.FETCH_MARKET_DATA,
@@ -145,16 +287,34 @@ def descriptors() -> List[CommandDescriptor]:
         ),
         CommandDescriptor(
             kind=CommandKind.TRAIN_MODEL,
-            label="Retrain the model",
+            label="Retrain a saved model",
             description=(
-                "Roll-forward training of the WaveNet direction classifier. "
-                "Needs TensorFlow; each fold trains a fresh model, so keep "
-                "the fold count small."
+                "Continue training a model that already exists. Pick it from "
+                "the list of saved models and choose which stored dataset to "
+                "train it on. Retraining writes a NEW version — the previous "
+                "one is kept so the two can be compared."
             ),
             fields=[
-                CommandField("folds", "Folds", "3", kind="number"),
-                CommandField("epochs", "Epochs per fold", "2", kind="number"),
-                CommandField("window", "Window size", "8", kind="number"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "saved_model",
+                    "Saved model",
+                    trained[0] if trained else "",
+                    kind="select",
+                    options=tuple(trained) if trained else ("(none trained yet)",),
+                    hint="models found in datasets/models",
+                ),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    datasets[0] if datasets else "1H",
+                    kind="select",
+                    options=tuple(datasets),
+                    hint="which stored candles to train on",
+                ),
+                CommandField("epochs", "Epochs", "2", kind="number"),
+                CommandField("folds", "Folds", "2", kind="number"),
+                CommandField("window", "Window rows", "500", kind="number"),
             ],
             slow=True,
             group="AI",
@@ -348,32 +508,30 @@ def descriptors() -> List[CommandDescriptor]:
         # -- AI --------------------------------------------------------------
         CommandDescriptor(
             kind=CommandKind.TRAIN_DUAL_MODELS,
-            label="Train models",
+            label="Train a model",
             description=(
-                "Roll-forward training. Choose WHICH model and WHICH dataset: "
-                "range_1h trains the hourly high/low model on 1H candles, "
-                "range_1d the daily one on 1D candles, signal the 5M "
-                "buy/sell/hold model. 'all' trains every one."
+                "Train one model on one dataset. Pick the kind of model — "
+                "'range' predicts the future high and low, 'signal' predicts "
+                "buy/sell/hold — and the stored dataset it learns from. The "
+                "saved model records both, so it can be found again."
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
                 CommandField(
                     "model",
-                    "Model",
-                    "all",
-                    hint="all | range_1h | range_1d | signal | range | both",
+                    "Model type",
+                    "range",
+                    kind="select",
+                    options=tuple(MODEL_ROLE_CHOICES),
+                    hint="range = future high/low · signal = buy/sell/hold",
                 ),
                 CommandField(
-                    "range_timeframes",
-                    "Range dataset(s)",
-                    "1H,1D",
-                    hint="which candles the range model trains on",
-                ),
-                CommandField(
-                    "signal_timeframe",
-                    "Signal dataset",
-                    "5M",
-                    hint="which candles the signal model trains on",
+                    "dataset",
+                    "Dataset",
+                    datasets[0] if datasets else "1H",
+                    kind="select",
+                    options=tuple(datasets),
+                    hint="which stored candles to train on",
                 ),
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -450,6 +608,103 @@ class CommandHandlers:
     def run_log_path(self, action: str) -> Path:
         """Where this handler streams a script's output while it runs."""
         return run_log_path(action, self._run_log_dir)
+
+    def _run_script(
+        self,
+        command: Command,
+        arguments: List[str],
+        success_message: str,
+        started: float,
+        timeout: int = 900,
+    ) -> CommandResult:
+        """Run a project script, streaming its output to a live log.
+
+        Scripts run in a subprocess so a crash inside one cannot take the
+        dashboard down with it, and so a long run can be time-limited.
+
+        Phase 36: the output is read line by line and appended to
+        ``run_logs/{command}.log`` **as it arrives**, instead of being
+        collected by ``subprocess.run`` and revealed only at the end. A
+        twenty-minute training run that prints nothing until it finishes
+        is indistinguishable from one that has hung, and the operator has
+        no way to tell whether the loss is falling.
+
+        Two details make the stream actually live:
+
+        * ``PYTHONUNBUFFERED=1`` — otherwise Python buffers 8 KB of stdout
+          when the far end is a pipe rather than a terminal, so the log
+          would arrive in bursts long after the epoch produced it.
+        * ``bufsize=1`` with ``text=True`` — line buffering on our side.
+        """
+        import os
+        import subprocess
+        import sys
+
+        log_path = self.run_log_path(command.kind.value)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        environment = dict(os.environ)
+        environment["PYTHONUNBUFFERED"] = "1"
+
+        tail: List[str] = []
+        deadline = time.monotonic() + timeout
+
+        try:
+            with log_path.open("w", encoding="utf-8", errors="replace") as log:
+                log.write(f"$ {' '.join(arguments)}\n")
+                log.flush()
+
+                process = subprocess.Popen(
+                    [sys.executable, *arguments],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    cwd=str(Path.cwd()),
+                    env=environment,
+                )
+
+                assert process.stdout is not None
+                for line in process.stdout:
+                    log.write(line)
+                    log.flush()
+                    stripped = line.rstrip("\n")
+                    if stripped.strip():
+                        tail.append(stripped)
+                        if len(tail) > 400:
+                            del tail[:200]
+                    if time.monotonic() > deadline:
+                        process.kill()
+                        log.write("\n[killed: timeout]\n")
+                        return CommandResult.failure(
+                            command.kind,
+                            f"Timed out after {timeout // 60} minutes",
+                            "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
+                            "from a terminal.",
+                            time.monotonic() - started,
+                        )
+
+                returncode = process.wait()
+        except Exception as error:
+            return CommandResult.failure(
+                command.kind,
+                "Could not start the script",
+                str(error),
+                time.monotonic() - started,
+            )
+
+        if returncode != 0:
+            return CommandResult.failure(
+                command.kind,
+                "The script reported a failure",
+                ("\n".join(tail[-25:]))[-1500:],
+                time.monotonic() - started,
+            )
+
+        interesting = [line for line in tail if not line.startswith("=")]
+        return CommandResult.success(
+            command.kind, success_message, interesting[-25:], time.monotonic() - started
+        )
 
     def registry(self) -> Dict[CommandKind, Handler]:
         registry: Dict[CommandKind, Handler] = {
@@ -766,6 +1021,16 @@ class CommandHandlers:
 
     # -- AI --------------------------------------------------------------------
     def train_model(self, command: Command) -> CommandResult:
+        """Retrain a model that already exists (Phase 40).
+
+        This button used to run ``run_ai.py --quick``, an unrelated demo
+        that trained a throwaway classifier and saved nothing. It now
+        retrains a model the operator picks from the list of saved ones,
+        on the dataset they pick, and writes a NEW version so the old
+        weights survive for comparison.
+        """
+        from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
         started = time.monotonic()
         try:
             import tensorflow  # noqa: F401
@@ -775,56 +1040,64 @@ class CommandHandlers:
                 "TensorFlow is not installed — run: pip install -r requirements-ai.txt",
             )
 
-        import subprocess
+        catalogue = ModelCatalogue(self._storage_root)
+        saved = command.text("saved_model", "").strip()
+        known = catalogue.choices()
 
-        folds = max(command.integer("folds", 3), 1)
-        epochs = max(command.integer("epochs", 2), 1)
-        window = max(command.integer("window", 8), 2)
-
-        try:
-            completed = subprocess.run(
-                [
-                    "python",
-                    "scripts/run_ai.py",
-                    "--quick",
-                    "--folds",
-                    str(folds),
-                    "--epochs",
-                    str(epochs),
-                    "--window-size",
-                    str(window),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=1800,
-                cwd=str(Path.cwd()),
-            )
-        except subprocess.TimeoutExpired:
-            return CommandResult.failure(
+        if not known:
+            return CommandResult.rejected(
                 command.kind,
-                "Training timed out after 30 minutes",
-                "Reduce the fold count or epochs.",
-                time.monotonic() - started,
+                "No trained models yet. Use 'Train a model' first — retraining "
+                "needs something to retrain.",
             )
-
-        if completed.returncode != 0:
-            return CommandResult.failure(
+        if saved in ("", "(none trained yet)"):
+            saved = known[0]
+        if saved not in known:
+            return CommandResult.rejected(
                 command.kind,
-                "Training failed",
-                completed.stderr[-1500:] or completed.stdout[-1500:],
-                time.monotonic() - started,
+                f"Unknown model {saved!r}. Available: {', '.join(known)}",
             )
 
-        interesting = [
-            line
-            for line in completed.stdout.splitlines()
-            if any(word in line for word in ("fold", "val_loss", "accuracy", "run_id"))
-        ]
-        return CommandResult.success(
-            command.kind,
-            f"Retrained over {folds} fold(s)",
-            interesting[-14:],
-            time.monotonic() - started,
+        record = catalogue.read(saved, catalogue.latest_version(saved))
+        role = (record.role if record else "").strip() or (
+            "signal" if "signal" in saved else "range"
+        )
+        dataset = command.text("dataset", "").strip().upper()
+        if not dataset:
+            dataset = (record.timeframe if record else "") or "1H"
+
+        note = []
+        if record is not None and dataset != record.timeframe:
+            # Allowed, but the operator should know: the same model is
+            # being pointed at a different market rhythm.
+            note.append(
+                f"NOTE: {saved} was trained on {record.timeframe}; "
+                f"retraining it on {dataset} changes what it models."
+            )
+
+        return self._run_script(
+            command,
+            [
+                "scripts/run_dual_models.py",
+                "--with-features",
+                "--symbol",
+                command.text("symbol", "XAUUSD"),
+                "--model",
+                role,
+                "--range-timeframes" if role == "range" else "--signal-timeframe",
+                dataset,
+                "--epochs",
+                str(max(command.integer("epochs", 2), 1)),
+                "--folds",
+                str(max(command.integer("folds", 2), 1)),
+                "--window",
+                str(max(command.integer("window", 500), 2)),
+                "--storage-root",
+                str(self._storage_root),
+            ],
+            f"Retrained {saved} on {dataset}" + (f" — {note[0]}" if note else ""),
+            started,
+            timeout=7200,
         )
 
     # -- simulation --------------------------------------------------------------
@@ -1213,12 +1486,18 @@ class CommandHandlers:
         )
 
 
-class AccountCommandHandlers:
+class AccountCommandHandlers(CommandHandlers):
     """Handlers for the Phase 32 account and operations commands.
 
     Separated from :class:`CommandHandlers` so the original class stays
     focused; both are merged into one registry by
     :meth:`CommandHandlers.registry`.
+
+    Phase 40: it now *inherits* rather than duplicates. ``_run_script``
+    used to live only here while ``train_model`` — which calls it — lived
+    on the parent, so retraining would have raised ``AttributeError`` the
+    moment anyone pressed the button. Sharing the helper through
+    inheritance makes that impossible instead of merely fixed.
     """
 
     def __init__(
@@ -1609,6 +1888,7 @@ class AccountCommandHandlers:
 
     # -- AI -------------------------------------------------------------------
     def train_dual_models(self, command: Command) -> CommandResult:
+        """Train one kind of model on one stored dataset (Phase 40)."""
         started = time.monotonic()
         try:
             import tensorflow  # noqa: F401
@@ -1616,6 +1896,23 @@ class AccountCommandHandlers:
             return CommandResult.rejected(
                 command.kind,
                 "TensorFlow is not installed — run: pip install -r requirements-ai.txt",
+            )
+
+        role = command.text("model", "range").strip().lower() or "range"
+        if role not in MODEL_ROLE_CHOICES:
+            return CommandResult.rejected(
+                command.kind,
+                f"Unknown model type {role!r}. Choose one of: " f"{', '.join(MODEL_ROLE_CHOICES)}",
+            )
+
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = available[0] if available else "1H"
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available)}",
             )
         return self._run_script(
             command,
@@ -1625,11 +1922,16 @@ class AccountCommandHandlers:
                 "--symbol",
                 command.text("symbol", "XAUUSD"),
                 "--model",
-                command.text("model", "all").strip() or "all",
+                role,
+                # One dataset choice drives whichever model was picked.
+                # 'all' trains both, so the chosen dataset feeds the range
+                # model and the signal model keeps its own 5M default —
+                # a signal model on daily candles is a different product,
+                # not a variation.
                 "--range-timeframes",
-                command.text("range_timeframes", "1H,1D").strip() or "1H,1D",
+                dataset if role in ("range", "all") else dataset,
                 "--signal-timeframe",
-                command.text("signal_timeframe", "5M").strip() or "5M",
+                dataset if role == "signal" else "5M",
                 "--epochs",
                 str(max(command.integer("epochs", 1), 1)),
                 "--folds",
@@ -1639,7 +1941,7 @@ class AccountCommandHandlers:
                 "--storage-root",
                 str(self._storage_root),
             ],
-            "Training finished",
+            f"Trained {role} on {dataset}",
             started,
             timeout=7200,
         )
@@ -1729,99 +2031,3 @@ class AccountCommandHandlers:
         )
 
     # -- shared ------------------------------------------------------------------
-    def _run_script(
-        self,
-        command: Command,
-        arguments: List[str],
-        success_message: str,
-        started: float,
-        timeout: int = 900,
-    ) -> CommandResult:
-        """Run a project script, streaming its output to a live log.
-
-        Scripts run in a subprocess so a crash inside one cannot take the
-        dashboard down with it, and so a long run can be time-limited.
-
-        Phase 36: the output is read line by line and appended to
-        ``run_logs/{command}.log`` **as it arrives**, instead of being
-        collected by ``subprocess.run`` and revealed only at the end. A
-        twenty-minute training run that prints nothing until it finishes
-        is indistinguishable from one that has hung, and the operator has
-        no way to tell whether the loss is falling.
-
-        Two details make the stream actually live:
-
-        * ``PYTHONUNBUFFERED=1`` — otherwise Python buffers 8 KB of stdout
-          when the far end is a pipe rather than a terminal, so the log
-          would arrive in bursts long after the epoch produced it.
-        * ``bufsize=1`` with ``text=True`` — line buffering on our side.
-        """
-        import os
-        import subprocess
-        import sys
-
-        log_path = self.run_log_path(command.kind.value)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-
-        environment = dict(os.environ)
-        environment["PYTHONUNBUFFERED"] = "1"
-
-        tail: List[str] = []
-        deadline = time.monotonic() + timeout
-
-        try:
-            with log_path.open("w", encoding="utf-8", errors="replace") as log:
-                log.write(f"$ {' '.join(arguments)}\n")
-                log.flush()
-
-                process = subprocess.Popen(
-                    [sys.executable, *arguments],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    cwd=str(Path.cwd()),
-                    env=environment,
-                )
-
-                assert process.stdout is not None
-                for line in process.stdout:
-                    log.write(line)
-                    log.flush()
-                    stripped = line.rstrip("\n")
-                    if stripped.strip():
-                        tail.append(stripped)
-                        if len(tail) > 400:
-                            del tail[:200]
-                    if time.monotonic() > deadline:
-                        process.kill()
-                        log.write("\n[killed: timeout]\n")
-                        return CommandResult.failure(
-                            command.kind,
-                            f"Timed out after {timeout // 60} minutes",
-                            "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
-                            "from a terminal.",
-                            time.monotonic() - started,
-                        )
-
-                returncode = process.wait()
-        except Exception as error:
-            return CommandResult.failure(
-                command.kind,
-                "Could not start the script",
-                str(error),
-                time.monotonic() - started,
-            )
-
-        if returncode != 0:
-            return CommandResult.failure(
-                command.kind,
-                "The script reported a failure",
-                ("\n".join(tail[-25:]))[-1500:],
-                time.monotonic() - started,
-            )
-
-        interesting = [line for line in tail if not line.startswith("=")]
-        return CommandResult.success(
-            command.kind, success_message, interesting[-25:], time.monotonic() - started
-        )
