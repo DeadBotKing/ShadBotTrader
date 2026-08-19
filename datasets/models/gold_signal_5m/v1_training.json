@@ -8,14 +8,14 @@
   "windows": 49793,
   "window_size": 100,
   "feature_columns": 123,
-  "epochs": 9,
+  "epochs": 1,
   "folds": 10,
-  "trained_at": "2026-08-18T15:24:52+00:00",
+  "trained_at": "2026-08-18T15:32:54+00:00",
   "metrics": {
-    "accuracy": 0.868099570274353,
-    "loss": 0.40420281887054443,
-    "val_accuracy": 0.9287863373756409,
-    "val_loss": 0.27066877484321594
+    "accuracy": 0.7551870942115784,
+    "loss": 0.8618195652961731,
+    "val_accuracy": 0.8655967712402344,
+    "val_loss": 0.5922110080718994
   },
-  "note": "checkpoint after epoch 9/10"
+  "note": "checkpoint after epoch 1/10"
 }

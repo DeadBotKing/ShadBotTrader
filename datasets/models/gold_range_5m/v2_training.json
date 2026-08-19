@@ -1,0 +1,21 @@
+{
+  "model_id": "gold_range_5m",
+  "role": "range",
+  "symbol": "XAUUSD",
+  "timeframe": "5M",
+  "version": 2,
+  "rows": 49897,
+  "windows": 49793,
+  "window_size": 100,
+  "feature_columns": 123,
+  "epochs": 5,
+  "folds": 20,
+  "trained_at": "2026-08-18T17:44:59+00:00",
+  "metrics": {
+    "loss": 0.017131494358181953,
+    "mae": 0.0013395620044320822,
+    "val_loss": 0.013695582747459412,
+    "val_mae": 0.0008993946830742061
+  },
+  "note": "checkpoint after epoch 5/20"
+}
