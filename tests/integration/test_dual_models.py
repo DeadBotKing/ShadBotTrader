@@ -75,7 +75,8 @@ class TestModelRoles:
         assert roles["range"].timeframe == "1H"
         assert roles["signal"].timeframe == "5M"
         assert roles["range"].horizon == 5
-        assert roles["signal"].horizon == 5
+        assert roles["signal"].horizon == 0
+        assert roles["signal"].target.threshold == pytest.approx(0.0008)
 
     def test_the_range_head_is_a_two_output_regression(self):
         role = range_model_role()

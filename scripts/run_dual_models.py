@@ -57,15 +57,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--range-timeframe", default="", help="alias of --range-timeframes")
     parser.add_argument("--signal-timeframe", default="5M", help="signal model candles")
-    parser.add_argument("--horizon", type=int, default=5, help="candles to look ahead")
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=5,
+        help="range candles to look ahead; signal searches until threshold hit",
+    )
     parser.add_argument("--window", type=int, default=24, help="input window size")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.0,
-        help="legacy label threshold; binary signal labels ignore the neutral band",
+        default=0.0008,
+        help="signal price-move threshold used by the first-passage BUY/SELL labeler",
     )
     parser.add_argument(
         "--with-features",
@@ -83,6 +88,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 class NoRealData(RuntimeError):
     """Raised when a timeframe has no stored broker candles."""
+
+
+def training_window_count(dataset, role) -> int:
+    """Count ordinary or explicit first-passage training windows."""
+    sample_ends = getattr(dataset, "sample_ends", None)
+    if sample_ends is not None:
+        return len(sample_ends)
+    return max(len(dataset.series) - role.window_size - role.horizon + 1, 0)
 
 
 def load_candles(storage_root: Path, symbol: str, timeframe: str):
@@ -143,14 +156,15 @@ def train_one(service, args, role, timeframe: str) -> int:
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
 
-    rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {role.horizon} ahead)")
+    horizon_text = "until threshold hit" if role.name == "signal" else f"{role.horizon} ahead"
+    rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {horizon_text})")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
     if role.name == "signal":
         # State the binary labelling rule outright.
         print(
-            f"  label rule: positive forward return over {role.horizon} "
-            "candles is BUY; zero/negative return is SELL; no HOLD class"
+            f"  label rule: first future close reaching +/-{role.target.threshold:.4%} "
+            "is BUY/SELL; search continues until a barrier is hit"
         )
     print(f"  {role.description}")
 
@@ -203,7 +217,7 @@ def train_one(service, args, role, timeframe: str) -> int:
     # over 50,000 candles is 12 GB if materialised; the operator saw the
     # machine fill up with no explanation and no output.
     rows = len(dataset.series)
-    windows = max(rows - role.window_size - role.horizon + 1, 0)
+    windows = training_window_count(dataset, role)
     naive_gb = windows * role.window_size * dataset.feature_count * 4 / 1e9
 
     # Phase 48: state the matrix shape outright at the start of every
@@ -422,7 +436,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
                 timeframe=timeframe,
                 version=version,
                 rows=len(dataset.series),
-                windows=max(len(dataset.series) - role.window_size - role.horizon + 1, 0),
+                windows=training_window_count(dataset, role),
                 window_size=role.window_size,
                 feature_columns=dataset.feature_count,
                 epochs=epoch + 1,
@@ -522,7 +536,7 @@ def save_model(outcome: dict, args, role, timeframe: str, dataset, checkpoint=No
         timeframe=timeframe,
         version=version,
         rows=len(dataset.series),
-        windows=max(len(dataset.series) - role.window_size - role.horizon + 1, 0),
+        windows=training_window_count(dataset, role),
         window_size=role.window_size,
         feature_columns=dataset.feature_count,
         epochs=args.epochs,
@@ -630,7 +644,7 @@ def main(argv: list[str] | None = None) -> int:
     if wants_signal:
         role = signal_model_role(
             timeframe=args.signal_timeframe,
-            horizon=args.horizon,
+            horizon=0,
             threshold=args.threshold,
             window_size=args.window,
         )
@@ -638,7 +652,8 @@ def main(argv: list[str] | None = None) -> int:
 
     rule("DONE")
     print("  Both models train roll-forward: no future bar influences a past")
-    print("  prediction. Labels for the final N candles are dropped, never guessed.")
+    print("  prediction. Signal starts without a future threshold hit are dropped;")
+    print("  no HOLD labels or guessed outcomes are added.")
     return status
 
 

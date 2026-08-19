@@ -23,6 +23,7 @@ from ShadBotTrader.domain.ai.training_run import TrainingRun
 from ShadBotTrader.infrastructure.ai.data_windowing import (
     build_multi_target_samples,
     build_samples,
+    build_samples_at,
 )
 from ShadBotTrader.infrastructure.ai.roll_forward import expanding_split
 from ShadBotTrader.infrastructure.ai.training_progress import (
@@ -96,6 +97,7 @@ class WavenetTrainer(ModelTrainer):
         target_columns: Sequence[int] | None = None,
         loss: str | None = None,
         metric: str | None = None,
+        sample_indices: Sequence[int] | None = None,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -114,6 +116,7 @@ class WavenetTrainer(ModelTrainer):
         self._series = [list(row) for row in series]
         self._target_column = target_column
         self._target_columns = list(target_columns) if target_columns is not None else None
+        self._sample_indices = list(sample_indices) if sample_indices is not None else None
         self._loss = loss
         self._metric = metric
         self._window_size = window_size
@@ -176,14 +179,26 @@ class WavenetTrainer(ModelTrainer):
         # folds stream straight from the 25 MB flat series instead.
         dropped_columns = len(self._target_columns) if self._target_columns is not None else 1
         feature_width = max(len(self._series[0]) - dropped_columns, 1)
-        estimated_bytes = (
-            max(len(self._series) - self._window_size, 0) * self._window_size * feature_width * 4
+        sample_count = (
+            len(self._sample_indices)
+            if self._sample_indices is not None
+            else max(len(self._series) - self._window_size + 1, 0)
         )
+        estimated_bytes = sample_count * self._window_size * feature_width * 4
         self._stream_all = estimated_bytes > self.STREAM_THRESHOLD_BYTES
 
         samples: Any
         if self._stream_all:
-            samples = _LazySampleCount(max(len(self._series) - self._window_size - 0 + 1, 0))
+            samples = _LazySampleCount(sample_count)
+        elif self._sample_indices is not None:
+            samples = build_samples_at(
+                self._series,
+                window_size=self._window_size,
+                target_column=self._target_column,
+                sample_ends=self._sample_indices,
+                scale=True,
+                drop_target_column=True,
+            )
         elif self._target_columns is not None:
             samples = build_multi_target_samples(
                 self._series,
@@ -409,6 +424,7 @@ class WavenetTrainer(ModelTrainer):
                 stride=1,
                 scale=True,
                 classification=self._target_columns is None,
+                sample_ends=self._sample_indices,
             )
         return self._window_cache
 

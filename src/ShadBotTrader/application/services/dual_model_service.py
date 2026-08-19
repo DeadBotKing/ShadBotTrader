@@ -55,6 +55,9 @@ class PreparedDataset:
     skipped_features: List[str] = field(default_factory=list)
     label_distribution: Optional[Dict[str, int]] = None
     degenerate: bool = False
+    #: Explicit window ends for sparse first-passage signal labels.
+    #: None means ordinary stride-1 windows (range model).
+    sample_ends: Optional[List[int]] = None
 
     @property
     def row_count(self) -> int:
@@ -72,6 +75,11 @@ class PreparedDataset:
             "skipped_features": len(self.skipped_features),
             "label_distribution": self.label_distribution,
             "degenerate": self.degenerate,
+            "training_windows": (
+                len(self.sample_ends)
+                if self.sample_ends is not None
+                else max(self.row_count - self.role.window_size - self.role.horizon + 1, 0)
+            ),
         }
 
 
@@ -130,6 +138,7 @@ class DualModelService:
 
         distribution: Optional[Dict[str, int]] = None
         degenerate = False
+        sample_ends: Optional[List[int]] = None
 
         if role.target.kind is TargetKind.PRICE_RANGE:
             labels = build_range_labels(candles, horizon=role.horizon)
@@ -138,24 +147,40 @@ class DualModelService:
             ]
             target_names = ["future_high_offset", "future_low_offset"]
             source_index = labels.source_index
+            series, column_names, _ = attach_targets(
+                matrix=matrix,
+                targets=targets,
+                target_source_index=source_index,
+                target_names=target_names,
+            )
         else:
             signal = build_signal_labels(
                 candles,
-                horizon=role.horizon,
+                horizon=0,
                 threshold=role.target.threshold,
+                max_lookahead=None,
             )
-            targets = [[float(value)] for value in signal.labels]
-            target_names = ["signal_class"]
-            source_index = signal.source_index
             distribution = signal.distribution()
             degenerate = signal.is_degenerate()
-
-        series, column_names, _ = attach_targets(
-            matrix=matrix,
-            targets=targets,
-            target_source_index=source_index,
-            target_names=target_names,
-        )
+            target_names = ["signal_class"]
+            target_by_index = dict(zip(signal.source_index, signal.labels, strict=True))
+            original_to_matrix = {
+                original: position for position, original in enumerate(matrix.source_index)
+            }
+            sample_ends = [
+                original_to_matrix[index]
+                for index in signal.source_index
+                if index in original_to_matrix and original_to_matrix[index] >= role.window_size - 1
+            ]
+            if not sample_ends:
+                raise ValidationError(
+                    "No complete signal windows have a first-passage BUY/SELL label."
+                )
+            series = [
+                list(row) + [float(target_by_index.get(original, 0))]
+                for row, original in zip(matrix.rows, matrix.source_index, strict=True)
+            ]
+            column_names = list(matrix.column_names) + target_names
 
         if not series:
             raise ValidationError(
@@ -177,6 +202,7 @@ class DualModelService:
             skipped_features=matrix.skipped_features,
             label_distribution=distribution,
             degenerate=degenerate,
+            sample_ends=sample_ends,
         )
 
     # ------------------------------------------------------ training --
@@ -241,7 +267,8 @@ class DualModelService:
         # 24,976 folds — each one a full model fit. That is not a slow
         # run, it is a run that never finishes, and it was the reason
         # training appeared to hang with no output.
-        rows = len(dataset.series)
+        sample_ends = getattr(dataset, "sample_ends", None)
+        rows = len(sample_ends) if sample_ends is not None else len(dataset.series)
 
         # Phase 44: batch size must scale with the data too. The old
         # fixed 8 was sized for the few-hundred-row demo series; on
@@ -283,6 +310,7 @@ class DualModelService:
             metric=role.metric if is_regression else None,
             max_folds=max_folds,
             progress=progress,
+            sample_indices=getattr(dataset, "sample_ends", None),
         )
 
     def train(

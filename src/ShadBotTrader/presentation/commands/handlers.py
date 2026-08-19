@@ -333,10 +333,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "threshold_pct",
-                    "Legacy signal label threshold (ignored)",
-                    "0",
+                    "Signal movement threshold %",
+                    "",
                     kind="number",
-                    hint="binary signal training has BUY and SELL only; no neutral band",
+                    hint="blank keeps the saved model threshold; binary labels have no HOLD class",
                 ),
                 CommandField("epochs", "Epochs", "2", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -664,10 +664,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "threshold_pct",
-                    "Legacy signal label threshold (ignored)",
-                    "0",
+                    "Signal movement threshold %",
+                    "0.08",
                     kind="number",
-                    hint="binary signal training has BUY and SELL only; no neutral band",
+                    hint="first future +/- threshold hit creates BUY/SELL; no HOLD class",
                 ),
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -1212,10 +1212,15 @@ class CommandHandlers:
         if not dataset:
             dataset = (record.timeframe if record else "") or "1H"
 
-        # Binary signal retraining has no neutral label band. Keep the
-        # legacy command field accepted, but always pass zero so an old
-        # threshold cannot reintroduce a HOLD class.
-        threshold = 0.0
+        # Signal training uses a first-passage price threshold.  The
+        # empty field inherits the saved model's threshold; a range model
+        # does not use this value.
+        inherited = float(getattr(record, "threshold", 0.0) or 0.0008) if role == "signal" else 0.0
+        threshold = (
+            percent_to_fraction(command.text("threshold_pct", ""), inherited)
+            if role == "signal"
+            else 0.0
+        )
 
         note = []
         if record is not None and dataset != record.timeframe:
@@ -2310,10 +2315,12 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
-                # Kept as a CLI compatibility argument; binary labels
-                # ignore it and never create a HOLD class.
                 "--threshold",
-                "0.0",
+                str(
+                    percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
+                    if role == "signal"
+                    else 0.0
+                ),
                 "--storage-root",
                 str(self._storage_root),
             ],

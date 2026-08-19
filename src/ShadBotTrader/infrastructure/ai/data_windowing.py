@@ -96,6 +96,44 @@ def minmax_scale_window(
     return scaled
 
 
+def build_samples_at(
+    series: Sequence[Sequence[float]],
+    window_size: int,
+    target_column: int,
+    sample_ends: Sequence[int],
+    scale: bool = True,
+    horizon: int = 0,
+    drop_target_column: bool = False,
+) -> List[WindowedSample]:
+    """Build windows ending at explicit candle indices.
+
+    This is used by first-passage signal labels: unlabeled starts may be
+    absent, but every selected sample must still contain the real previous
+    candles from the full feature matrix, not the previous labeled rows.
+    """
+    if window_size < 1:
+        raise ValidationError("window_size must be >= 1")
+    width = len(series[0]) if series else 0
+    if target_column < 0 or target_column >= width:
+        raise ValidationError("target_column out of range")
+
+    samples: List[WindowedSample] = []
+    for end in sample_ends:
+        if end < window_size - 1 or end + horizon >= len(series):
+            continue
+        window = [list(row) for row in series[end - window_size + 1 : end + 1]]
+        if drop_target_column:
+            window = [row[:target_column] + row[target_column + 1 :] for row in window]
+        samples.append(
+            WindowedSample(
+                features=minmax_scale_window(window) if scale else window,
+                target=series[end + horizon][target_column],
+                target_index=target_column,
+            )
+        )
+    return samples
+
+
 def build_samples(
     series: Sequence[Sequence[float]],
     window_size: int,

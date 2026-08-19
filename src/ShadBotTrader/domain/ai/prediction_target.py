@@ -53,21 +53,23 @@ class SignalClass(int, Enum):
 class PredictionTarget:
     """Declares what a model predicts and how far ahead.
 
-    ``threshold`` is retained in the serialized contract for compatibility
-    with old training records. Binary signal labels do not use a neutral
-    band; the value is therefore metadata only and may be zero.
+    For the binary signal model, ``threshold`` is the minimum price move
+    used by the first-passage labeler. A signal horizon of ``0`` means
+    search forward until BUY or SELL threshold is hit.
     """
 
     kind: TargetKind
     horizon: int
     timeframe: str
-    threshold: float = 0.0
+    threshold: float = 0.0008
 
     def __post_init__(self) -> None:
-        if self.horizon < 1:
-            raise ValidationError("horizon must be >= 1 candle")
+        if self.horizon < 0 or (self.kind is TargetKind.PRICE_RANGE and self.horizon < 1):
+            raise ValidationError("horizon must be >= 1 for range and >= 0 for signal")
         if not self.timeframe.strip():
             raise ValidationError("timeframe must not be empty")
+        if self.kind is TargetKind.TRADE_SIGNAL and self.threshold <= 0:
+            raise ValidationError("binary signal threshold must be positive")
         if self.threshold < 0:
             raise ValidationError("threshold must not be negative")
 

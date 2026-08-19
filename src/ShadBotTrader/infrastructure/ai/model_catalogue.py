@@ -54,10 +54,10 @@ class ModelRecord:
     feature_columns: int = 0
     epochs: int = 0
     folds: int = 0
-    #: Legacy field retained for old model records. Binary signal models
-    #: have no neutral/HOLD label band, so new records write zero here.
-    #: The inference probability threshold is configured by the
-    #: backtest/strategy and is not a training-label threshold.
+    #: For signal models, the first-passage price-move threshold used to
+    #: build BUY/SELL labels (0.0015 == 0.15%). For range models it is
+    #: zero. This is separate from the probability threshold used by the
+    #: backtest strategy.
     threshold: float = 0.0
     #: How many candles ahead the label looks. Recorded for the same
     #: reason: the evaluator must rebuild the exact question.
@@ -68,9 +68,10 @@ class ModelRecord:
 
     @property
     def threshold_percent(self) -> str:
-        """Legacy label-band field; binary signal records report ``n/a``."""
-        # New binary signal models do not have a label-band threshold.
-        return "n/a"
+        """The binary first-passage price threshold as a human percent."""
+        if self.role != "signal" or self.threshold <= 0:
+            return "n/a"
+        return f"{self.threshold:.4%}"
 
     @property
     def label(self) -> str:
@@ -138,7 +139,10 @@ class ModelRecord:
             f"{self.epochs} epoch(s) x {self.folds} fold(s)",
             f"quality   : {self.headline_metric}",
             *(
-                [f"labels    : binary SELL/BUY, horizon {self.horizon} candle(s)"]
+                [
+                    f"labels    : binary SELL/BUY, first-passage threshold "
+                    f"{self.threshold_percent}, horizon unbounded"
+                ]
                 if self.role == "signal"
                 else []
             ),

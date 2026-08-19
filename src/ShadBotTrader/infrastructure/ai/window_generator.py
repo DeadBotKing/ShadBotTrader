@@ -125,6 +125,7 @@ class WindowGenerator:
         stride: int = 1,
         scale: bool = True,
         classification: bool = False,
+        sample_ends: Optional[Sequence[int]] = None,
     ) -> None:
         if not series:
             raise ValidationError("series must not be empty")
@@ -144,6 +145,12 @@ class WindowGenerator:
         self._stride = stride
         self._scale = scale
         self._classification = classification
+        self._sample_ends = list(sample_ends) if sample_ends is not None else None
+        if self._sample_ends is not None:
+            if any(
+                end < window_size - 1 or end + horizon >= len(series) for end in self._sample_ends
+            ):
+                raise ValidationError("sample_ends contains an incomplete window")
 
         self.plan = plan_windows(
             total_rows=len(series),
@@ -157,7 +164,7 @@ class WindowGenerator:
     # ------------------------------------------------------------ shape --
     @property
     def window_count(self) -> int:
-        return self.plan.window_count
+        return len(self._sample_ends) if self._sample_ends is not None else self.plan.window_count
 
     @property
     def feature_count(self) -> int:
@@ -171,14 +178,19 @@ class WindowGenerator:
     # ------------------------------------------------------------ access --
     def window_at(self, index: int) -> Tuple[List[List[float]], List[float]]:
         """Build exactly one ``(window, label)`` pair."""
-        start = self.plan.start_of(index)
-        stop = start + self._window_size
+        end = (
+            self._sample_ends[index]
+            if self._sample_ends is not None
+            else self.plan.label_row_of(index) - self._horizon
+        )
+        start = end - self._window_size + 1
+        stop = end + 1
 
         window = [[float(row[column]) for column in self._keep] for row in self._series[start:stop]]
         if self._scale:
             window = minmax_scale_window(window)
 
-        label_row = self._series[self.plan.label_row_of(index)]
+        label_row = self._series[end + self._horizon]
         label = [float(label_row[column]) for column in self._targets]
         return window, label
 

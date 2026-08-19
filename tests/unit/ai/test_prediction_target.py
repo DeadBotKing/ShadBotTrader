@@ -27,9 +27,12 @@ class TestPredictionTarget:
         with pytest.raises(ValidationError):
             PredictionTarget(TargetKind.PRICE_RANGE, horizon=0, timeframe="1H")
 
-    def test_binary_signal_allows_zero_legacy_threshold(self):
-        target = PredictionTarget(TargetKind.TRADE_SIGNAL, horizon=5, timeframe="5M")
-        assert target.threshold == 0.0
+    def test_binary_signal_uses_a_positive_move_threshold_and_unbounded_horizon(self):
+        target = PredictionTarget(
+            TargetKind.TRADE_SIGNAL, horizon=0, timeframe="5M", threshold=0.0015
+        )
+        assert target.threshold == pytest.approx(0.0015)
+        assert target.horizon == 0
 
 
 class TestRangeForecast:

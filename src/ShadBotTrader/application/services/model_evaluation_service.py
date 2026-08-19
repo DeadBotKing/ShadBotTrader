@@ -28,9 +28,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-#: Kept for loading old records only. Binary signal labels do not have a
-#: neutral band, so the value is never used as a class boundary.
-DEFAULT_THRESHOLD = 0.0
+#: Default first-passage price move for signal labels when an old record
+#: has no recorded threshold.
+DEFAULT_THRESHOLD = 0.0008
 
 #: The platform default label horizon, used under the same condition.
 DEFAULT_HORIZON = 5
@@ -99,8 +99,8 @@ class EvaluationResult:
             f"windows  : {self.windows:,} of {self.window_size} x {self.feature_columns}",
             *(
                 [
-                    f"labels   : binary SELL/BUY by forward-return sign, "
-                    f"horizon {self.horizon} candle(s)"
+                    f"labels   : binary SELL/BUY, first-passage threshold "
+                    f"{self.threshold:.4%}, horizon unbounded"
                 ]
                 if self.role == "signal"
                 else []
@@ -266,22 +266,20 @@ class ModelEvaluationService:
 
         model = _deserialize_model(artifact.payload)
 
-        # Rebuild the windows exactly as training did.
-        # Phase 49: rebuild the labelling question the model was taught,
-        # not the default one. `threshold` and `horizon` come off the
-        # training record; a model saved before Phase 49 has neither, so
-        # the platform default is used and the result says so out loud.
+        # Rebuild the same first-passage question the model was taught.
+        recorded_threshold = float(getattr(record, "threshold", 0.0) or 0.0)
+        threshold = recorded_threshold if recorded_threshold > 0 else DEFAULT_THRESHOLD
         recorded_horizon = int(getattr(record, "horizon", 0) or 0)
-        result.threshold_assumed = False
+        result.threshold_assumed = result.role == "signal" and recorded_threshold <= 0
 
         if result.role == "signal":
             role = signal_model_role(
                 timeframe=result.timeframe,
                 window_size=result.window_size,
-                threshold=DEFAULT_THRESHOLD,
-                horizon=(recorded_horizon if recorded_horizon > 0 else DEFAULT_HORIZON),
+                threshold=threshold,
+                horizon=0,
             )
-            result.threshold = 0.0
+            result.threshold = float(role.target.threshold)
         else:
             role = range_model_role(
                 timeframe=result.timeframe,
@@ -320,7 +318,7 @@ class ModelEvaluationService:
                 starts,
                 matrix,
                 horizon,
-                threshold=0.0,
+                threshold=float(role.target.threshold),
             )
         else:
             self._score_range(result, predictions, starts, matrix, horizon)
@@ -336,37 +334,43 @@ class ModelEvaluationService:
     ) -> None:
         """Accuracy against binary labels rebuilt from the matrix itself.
 
-        ``threshold`` is retained in the call signature for compatibility
-        with old evaluation records, but binary labels use only the sign
-        of the forward return: positive is BUY, zero/negative is SELL.
+        ``threshold`` is the recorded first-passage price-move threshold;
+        positive barrier hits are BUY and negative barrier hits are SELL.
+        Starts that reach neither barrier are excluded from the score.
         """
-        import math
-
         import numpy as np
+
+        from ShadBotTrader.infrastructure.ai.target_builder import (
+            build_signal_labels_from_closes,
+        )
 
         columns = matrix.column_names
         if "return_1" not in columns:
-            raise ValueError("the matrix has no return_1 column to label from")
+            raise ValueError("the matrix has no return_1 column to rebuild signal labels")
 
-        index = columns.index("return_1")
-        per_bar = [float(row[index]) for row in matrix.rows]
-        # close[t+h]/close[t] - 1, from the per-bar returns.
-        logs = np.cumsum(np.log1p(np.clip(per_bar, -0.99, None)))
+        return_index = columns.index("return_1")
+        closes = [1.0]
+        for row in matrix.rows[1:]:
+            closes.append(closes[-1] * (1.0 + float(row[return_index])))
+        labels = build_signal_labels_from_closes(closes, threshold=threshold)
+        by_start = dict(zip(labels.source_index, labels.labels, strict=True))
 
+        predicted_all = np.argmax(np.asarray(predictions), axis=1).tolist()
         truth: List[int] = []
-        for start in starts:
-            here = start + result.window_size - 1
-            ahead = here + horizon
-            if ahead >= len(logs):
-                truth.append(0)
+        predicted: List[int] = []
+        for start, value in zip(starts, predicted_all, strict=False):
+            target_start = start + result.window_size - 1
+            if target_start not in by_start:
                 continue
-            forward = math.exp(logs[ahead] - logs[here]) - 1.0
-            truth.append(1 if forward > 0 else 0)
+            truth.append(by_start[target_start])
+            predicted.append(int(value))
 
-        predicted = np.argmax(np.asarray(predictions), axis=1).tolist()
-        correct = sum(1 for a, b in zip(truth, predicted, strict=False) if a == b)
-        total = len(truth) or 1
+        if not truth:
+            raise ValueError("No signal windows reached either threshold before the data ended")
 
+        result.windows = len(truth)
+        correct = sum(1 for actual, guess in zip(truth, predicted, strict=True) if actual == guess)
+        total = len(truth)
         result.metrics["accuracy"] = correct / total
         counts = {label: truth.count(label) for label in (0, 1)}
         result.baseline = max(counts.values()) / total

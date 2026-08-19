@@ -22,6 +22,7 @@ from ShadBotTrader.infrastructure.ai.target_builder import (
     align_to_labels,
     build_range_labels,
     build_signal_labels,
+    build_signal_labels_from_candles,
     usable_row_count,
 )
 
@@ -109,66 +110,82 @@ class TestRangeLabels:
 
 # -------------------------------------------------------------- signal ---
 class TestSignalLabels:
-    def test_a_rise_beyond_the_band_is_a_buy(self):
-        labels = build_signal_labels(series([100.0, 100.0, 105.0]), horizon=2, threshold=0.001)
+    def test_buy_is_the_first_future_threshold_hit(self):
+        labels = build_signal_labels(
+            series([100.0, 100.0, 100.01, 100.20]), horizon=0, threshold=0.001
+        )
         assert labels.labels[0] == int(SignalClass.BUY)
+        assert labels.source_index[0] == 0
+        assert labels.hit_index[0] == 3
+        assert labels.bars_to_hit[0] == 3
 
-    def test_a_fall_beyond_the_band_is_a_sell(self):
-        labels = build_signal_labels(series([100.0, 100.0, 95.0]), horizon=2, threshold=0.001)
+    def test_sell_is_the_reverse_first_passage(self):
+        labels = build_signal_labels(
+            series([100.0, 100.0, 99.99, 99.80]), horizon=0, threshold=0.001
+        )
         assert labels.labels[0] == int(SignalClass.SELL)
+        assert labels.hit_index[0] == 3
 
-    def test_a_move_inside_the_old_band_is_still_a_binary_buy(self):
-        """The binary model has no neutral/HOLD class."""
-        labels = build_signal_labels(series([100.0, 100.0, 100.01]), horizon=2, threshold=0.001)
-        assert labels.labels[0] == int(SignalClass.BUY)
+    def test_buy_is_rejected_when_a_future_low_breaks_the_start_low_first(self):
+        candles = [
+            candle(0, 100.0, high=101.0, low=99.0),
+            candle(1, 101.0, high=102.0, low=98.0),
+            candle(2, 101.0, high=103.0, low=100.0),
+        ]
+        labels = build_signal_labels_from_candles(candles, threshold=0.005)
+        assert 0 not in labels.source_index
 
-    def test_a_wider_legacy_band_does_not_create_holds(self):
-        closes = [100.0, 100.0, 100.5]
-        tight = build_signal_labels(series(closes), horizon=2, threshold=0.001)
-        wide = build_signal_labels(series(closes), horizon=2, threshold=0.02)
+    def test_sell_is_rejected_when_a_future_high_breaks_the_start_high_first(self):
+        candles = [
+            candle(0, 100.0, high=101.0, low=99.0),
+            candle(1, 99.0, high=102.0, low=98.0),
+            candle(2, 99.0, high=100.0, low=97.0),
+        ]
+        labels = build_signal_labels_from_candles(candles, threshold=0.005)
+        assert 0 not in labels.source_index
+
+    def test_a_move_inside_the_old_band_has_no_label_until_a_barrier_hits(self):
+        labels = build_signal_labels(series([100.0, 100.0, 100.01]), horizon=0, threshold=0.001)
+        assert labels.is_empty
+
+    def test_a_wider_threshold_changes_the_first_passage_time(self):
+        closes = [100.0, 100.0, 100.5, 102.5]
+        tight = build_signal_labels(series(closes), horizon=0, threshold=0.001)
+        wide = build_signal_labels(series(closes), horizon=0, threshold=0.02)
         assert tight.labels[0] == int(SignalClass.BUY)
         assert wide.labels[0] == int(SignalClass.BUY)
+        assert tight.bars_to_hit[0] < wide.bars_to_hit[0]
 
-    def test_r2_applies_to_signal_labels_too(self):
-        labels = build_signal_labels(series([100.0] * 20), horizon=5)
-        assert len(labels) == 15
-        assert labels.source_index[-1] == 14
-
-    def test_a_flat_market_is_reported_as_degenerate(self):
-        """A flat market becomes one binary class and is degenerate."""
-        labels = build_signal_labels(series([100.0] * 30), horizon=5)
-        assert labels.distribution()["sell"] == 25
-        assert labels.distribution()["buy"] == 0
+    def test_unbounded_search_drops_starts_that_never_hit_a_barrier(self):
+        labels = build_signal_labels(series([100.0] * 20), horizon=0, threshold=0.001)
+        assert labels.is_empty
+        assert labels.distribution() == {"sell": 0, "buy": 0}
         assert labels.is_degenerate()
 
     def test_a_series_with_both_binary_classes_is_not_degenerate(self):
-        """Genuine ups and downs are enough; there is no quiet class."""
         closes = []
         price = 100.0
         for index in range(90):
-            phase = index % 3
-            if phase == 0:
-                price *= 1.01  # clear rise
-            elif phase == 1:
-                price *= 0.99  # clear fall
-            # phase 2: unchanged -> deterministically becomes SELL
+            phase = index % 2
+            price *= 1.01 if phase == 0 else 0.99
             closes.append(price)
 
-        labels = build_signal_labels(series(closes), horizon=1, threshold=0.002)
-
+        labels = build_signal_labels(series(closes), horizon=0, threshold=0.002)
         distribution = labels.distribution()
         assert distribution["buy"] > 0
         assert distribution["sell"] > 0
         assert set(distribution) == {"sell", "buy"}
         assert not labels.is_degenerate()
 
-    def test_the_forward_return_is_kept_for_auditing(self):
-        labels = build_signal_labels(series([100.0, 100.0, 110.0]), horizon=2, threshold=0.001)
+    def test_the_forward_return_and_hit_metadata_are_kept_for_auditing(self):
+        labels = build_signal_labels(series([100.0, 100.0, 110.0]), horizon=0, threshold=0.001)
         assert labels.forward_return[0] == pytest.approx(0.10)
+        assert labels.hit_index[0] == 2
+        assert labels.bars_to_hit[0] == 2
 
-    def test_a_negative_legacy_threshold_is_refused(self):
+    def test_a_non_positive_threshold_is_refused(self):
         with pytest.raises(ValidationError):
-            build_signal_labels(series([100.0] * 10), horizon=2, threshold=-0.1)
+            build_signal_labels(series([100.0] * 10), horizon=0, threshold=0.0)
 
 
 # ------------------------------------------------------------ alignment ---

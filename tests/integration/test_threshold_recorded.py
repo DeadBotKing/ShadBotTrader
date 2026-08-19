@@ -192,7 +192,7 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
         result = service.evaluate("gold_signal_5m", "TESTSYM", "5M", max_windows=40)
 
         assert not result.failed, result.reason
-        assert result.threshold == pytest.approx(0.0)
+        assert result.threshold == pytest.approx(0.0025)
         assert not result.threshold_assumed
         assert any("binary SELL/BUY" in line for line in result.summary_lines())
 
@@ -204,8 +204,8 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
         result = service.evaluate("gold_signal_5m", "TESTSYM", "5M", max_windows=40)
 
         assert not result.failed, result.reason
-        assert result.threshold == pytest.approx(0.0)
-        assert not result.threshold_assumed
+        assert result.threshold == pytest.approx(0.0008)
+        assert result.threshold_assumed
         assert any("binary SELL/BUY" in line for line in result.summary_lines())
 
     def test_the_band_reaches_the_evaluation_log(self, tmp_path):
@@ -229,7 +229,7 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
 
 # -------------------------------------- 4) retraining inherits the band --
 class TestRetrainingInheritsTheBand:
-    def test_the_legacy_field_is_zero_because_signal_labels_are_binary(self, tmp_path):
+    def test_the_field_is_blank_so_the_saved_threshold_can_be_inherited(self, tmp_path):
         ModelCatalogue(tmp_path).write(a_signal_record(threshold=0.0025))
 
         descriptor = next(
@@ -237,8 +237,8 @@ class TestRetrainingInheritsTheBand:
         )
         field = next(item for item in descriptor.fields if item.name == "threshold_pct")
 
-        assert field.default == "0"
-        assert "no neutral band" in field.hint
+        assert field.default == ""
+        assert "saved model threshold" in field.hint
 
     def test_a_blank_field_keeps_the_saved_band(self, tmp_path):
         """0.25% must not silently become 0.08% because a box was empty."""
@@ -263,7 +263,7 @@ class TestRetrainingInheritsTheBand:
         )
 
         argv = captured["argv"]
-        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0)
+        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0025)
 
     def test_an_explicit_percent_still_wins(self, tmp_path):
         pytest.importorskip("tensorflow")
@@ -287,7 +287,7 @@ class TestRetrainingInheritsTheBand:
         )
 
         argv = captured["argv"]
-        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0)
+        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.004)
 
 
 # ------------------------------------------------------------ helpers --
