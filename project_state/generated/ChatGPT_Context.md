@@ -5,20 +5,20 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Python version: 3.13.14
-- Snapshot generated at: 2026-08-17T10:57:37.476744+00:00
+- Python version: 3.12.10
+- Snapshot generated at: 2026-08-19T05:08:56.754319+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 290
-- Test modules: 104
+- Source modules: 295
+- Test modules: 116
 
 ## Current Phase
 
-Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features)
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features) + Phase 39 (the training matrix reads stored features and is proven byte-identical to the computed one; the 1D timeframe has its own candles, features, dataset and range model; the operator chooses which model trains on which dataset) + Phase 40 (model type, dataset and saved model are dropdowns; trained models are persisted with the role and dataset that produced them; retraining adds a version instead of replacing one) + Phases 41-48 (streamed training, capped progress lines, batch count from fold geometry, batch size scaled to the data, a signal threshold field and a live broker spread, per-epoch checkpoints, the best epoch kept rather than the last, and buttons to test a model on a dataset and inspect a dataset) + Phase 49 (a signal model records the neutral band it was trained with, and evaluation rebuilds the labels with that band instead of a hard-coded 0.08%)
 
 ## Implemented Components
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 22e6743c8c948a0916fc4183319e6b123bd6db72
-- Dirty: yes (2395 files)
+- Commit: 75d71d22105b941ee1fe18238ed3bb345c1708a6
+- Dirty: no
 - Recent commits:
-  - 22e6743 NewFixSprint02
-  - 74c72cf Phase 28 — Implementation Foundation (Sprint P2: Feature Platform — full 85-feature catalog)
-  - e9eb8fe Phase 28 — Implementation Foundation (Sprint P2: Feature Platform)
-  - 81751ce Phase 28 — Implementation Foundation (Sprint P1: Data Platform)
-  - 80cbf5a Phase 28 — Implementation Foundation (Sprint P0: Project Intelligence)
-  - e019203 Phase1
-  - 28abd28 Delete SHADBOT_ARCHITECTURE_FREEZE_v1.0.md
-  - ac8c959 Upda
-  - 0ddcbe9 Update Docs From Done To No Done
-  - a7c6b62 Docs
+  - 75d71d2 Model Train Update 1
+  - 8242d55 Update Gui Train Retrain and show model structure
+  - 05c6448 Update Training 1
+  - d14b5f5 Update Web Show Train
+  - 7b4cac6 Update gitignore For Parquet
+  - 6c129ac DeleteDataset
+  - c11471b Update .gitignore
+  - 4656135 Update .gitignore
+  - 3b10dca 1D Features
+  - 5f27e4e Adding 1D TimeFrame
 
 ## Quality Gate
 
@@ -57,17 +57,17 @@ python -m pytest
 
 ## Next Phase
 
-Train on real market data. Every synthetic path into the store is now closed (Phase 35), MT5 is connected, and the platform builds two real datasets — 5M for the signal model and 1H for the range model. What has never happened is a training run on actual broker prices: from the dashboard, Fetch market data (5M,1H) -> Build training dataset -> Train both models — and Phase 36 now shows the loss and accuracy of that run as it happens. Only then does any backtest number mean anything.
+Decide how a simulated trade opens and closes. Phase 49 fixed the signal threshold so evaluation grades a model against its own label rule. What remains unanswered is the trade itself: the backtest still runs on the momentum baseline rather than the two trained models, a position closes only when the direction flips, and there is no stop loss, no take profit and no holding period. The operator is reviewing that chain before the next change is made.
 
 ## Statistics
 
-- Total files: 686
-- Source files: 290
-- Test files: 104
-- Documentation files: 55
-- Legacy files: 175
-- Total Python lines: 96759
-- Modules: 394
-- Classes: 640
-- Functions: 3733
-- External dependencies: 12
+- Total files: 739
+- Source files: 295
+- Test files: 116
+- Documentation files: 66
+- Legacy files: 176
+- Total Python lines: 102967
+- Modules: 411
+- Classes: 719
+- Functions: 4034
+- External dependencies: 13
