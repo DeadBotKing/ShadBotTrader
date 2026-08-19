@@ -49,6 +49,9 @@
 *.temp
 *.tmp
 *.parquet
+*.json
+*.bin
+*.npz
 *~
 .AppleDouble
 .DS_Store
