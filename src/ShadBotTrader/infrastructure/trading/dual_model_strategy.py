@@ -3,7 +3,7 @@
 ``AiDirectionalStrategy`` reads one number. This strategy reads both
 models and only trades when they agree:
 
-    signal model  ->  buy / sell / hold, with probabilities
+    signal model  ->  buy / sell, with probabilities
     range  model  ->  the high and low expected over the horizon
 
 The signal model proposes a direction; the range model decides whether
@@ -39,14 +39,16 @@ RANGE_FORECAST_KEY = "range_forecast"
 class DualModelStrategy(Strategy):
     """Combines the signal and range models into one trading opinion.
 
-    Gates applied in order, each one auditable:
+        Gates applied in order, each one auditable:
 
-    1. both forecasts must be present
-    2. the signal model must not be saying HOLD
-    3. its confidence must clear ``min_confidence``
-    4. the range model must be internally coherent (high above low)
-    5. reward/risk in the signal's direction must clear ``min_reward_risk``
-    6. the predicted move must be big enough to survive costs
+        1. both forecasts must be present
+        2. the binary BUY/SELL confidence must clear ``min_confidence``
+        3. the range model must be internally coherent (high above low)
+        4. reward/risk in the signal's direction must clear ``min_reward_risk``
+        5. the predicted move must be big enough to survive costs
+
+    A HOLD returned by this strategy means "do not trade because a gate
+    rejected the setup"; it is not a third class emitted by the signal model.
     """
 
     def __init__(
@@ -103,16 +105,8 @@ class DualModelStrategy(Strategy):
                 confidence=signal.confidence,
             )
 
-        # --- gate 2: the model itself says stay out -----------------------
+        # --- gate 2: not confident enough ---------------------------------
         predicted = signal.predicted_class.label
-        if predicted == "hold":
-            return self._hold(
-                context,
-                f"signal model says hold ({signal.confidence:.1%})",
-                confidence=signal.confidence,
-            )
-
-        # --- gate 3: not confident enough ---------------------------------
         if signal.confidence < self._min_confidence:
             return self._hold(
                 context,
@@ -125,7 +119,6 @@ class DualModelStrategy(Strategy):
             "signal_class": predicted,
             "confidence": signal.confidence,
             "sell_probability": signal.sell_probability,
-            "hold_probability": signal.hold_probability,
             "buy_probability": signal.buy_probability,
             "directional_confidence": signal.directional_confidence,
         }

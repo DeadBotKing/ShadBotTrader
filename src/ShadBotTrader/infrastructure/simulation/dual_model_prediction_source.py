@@ -21,7 +21,7 @@ from collections import deque
 from datetime import timedelta
 from typing import Any, Deque, Dict, List, Optional, Sequence
 
-from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalClass, SignalForecast
+from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalForecast
 from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.domain.market.candle import Candle
 from ShadBotTrader.domain.market.price import Price
@@ -205,14 +205,15 @@ class DualModelPredictionSource(PredictionSource):
 
         self._last_signal = signal
         self._signal_predictions += 1
+        # Binary signal: buy probability is the directional value.  There
+        # is no HOLD output to pull toward neutral; a low winning
+        # probability is handled by the confidence gate below.
         value = signal.directional_confidence
-        if signal.predicted_class is SignalClass.HOLD:
-            value = 0.5 + (value - 0.5) * (1.0 - self._hold_penalty)
         self._last_value = float(value)
 
-        # This is the explicit signal-confidence gate requested by the
-        # user. HOLD never reaches the range model, even if its probability
-        # is high; HOLD means no trade.
+        # This is the explicit BUY/SELL probability gate requested by the
+        # user. Only a winning binary direction above the threshold reaches
+        # the range model.
         if not signal.is_actionable(self._min_signal_confidence):
             return self._last_value
 
@@ -251,10 +252,7 @@ class DualModelPredictionSource(PredictionSource):
         """Confidence of the latest signal forecast."""
         if self._last_signal is None:
             return 0.0
-        confidence = self._last_signal.confidence
-        if self._last_signal.predicted_class is SignalClass.HOLD:
-            return confidence * (1.0 - self._hold_penalty)
-        return confidence
+        return self._last_signal.confidence
 
     def reset(self) -> None:
         self._signal_candles.clear()

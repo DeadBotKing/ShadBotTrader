@@ -49,9 +49,9 @@ CURRENT_PHASE = (
     "threshold field and a live broker spread, per-epoch checkpoints, "
     "the best epoch kept rather than the last, and buttons to test a "
     "model on a dataset and inspect a dataset) "
-    "+ Phase 49 (a signal model records the neutral band it was trained "
-    "with, and evaluation rebuilds the labels with that band instead of "
-    "a hard-coded 0.08%)"
+    "+ Phase 50 (the signal model is binary SELL/BUY only; the old "
+    "neutral-band/HOLD label is no longer part of the neural-network "
+    "output; no-trade remains a strategy-level decision)"
 )
 
 

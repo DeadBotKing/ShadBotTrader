@@ -73,7 +73,7 @@ def candles(count: int, timeframe: str = "5M", minutes: int = 5):
 class StubSignal:
     """A signal model with a fixed opinion."""
 
-    def __init__(self, vector=(0.05, 0.05, 0.90)):
+    def __init__(self, vector=(0.05, 0.95)):
         self.vector = vector
         self.calls = 0
 
@@ -170,7 +170,7 @@ class TestSuccessfulTick:
 
         assert result.signal_forecast is not None
         assert result.range_forecast is not None
-        assert result.signal_forecast.describe() == "buy 90.0%"
+        assert result.signal_forecast.describe() == "buy 95.0%"
 
     def test_the_summary_is_human_readable(self):
         service, _, _ = build()
@@ -194,7 +194,7 @@ class TestSuccessfulTick:
 # ------------------------------------------------------------- no trade ---
 class TestRefusedTick:
     def test_a_hold_signal_does_not_trade(self):
-        service, ledger, _ = build(signal_stub=StubSignal((0.2, 0.7, 0.1)))
+        service, ledger, _ = build(signal_stub=StubSignal((0.5, 0.5)))
 
         result = service.tick(now=NOW)
 
@@ -247,7 +247,7 @@ class TestResilience:
         assert service.tick(now=NOW + timedelta(minutes=5)).status == "traded"
 
     def test_every_tick_is_recorded_in_history(self):
-        service, _, _ = build(signal_stub=StubSignal((0.2, 0.7, 0.1)))
+        service, _, _ = build(signal_stub=StubSignal((0.3, 0.7)))
 
         for index in range(3):
             service.tick(now=NOW + timedelta(minutes=5 * index))
@@ -278,7 +278,7 @@ class TestBufferMotion:
         assert market.buffer("5M").size == 800
 
     def test_successive_ticks_keep_working_as_candles_arrive(self):
-        service, _, _ = build(signal_stub=StubSignal((0.2, 0.7, 0.1)))
+        service, _, _ = build(signal_stub=StubSignal((0.45, 0.55)))
         history = candles(810, "5M", 5)
 
         statuses = []

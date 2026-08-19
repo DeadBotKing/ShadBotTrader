@@ -6,6 +6,11 @@ SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 PHASE 29 — DUAL PREDICTIVE MODEL ARCHITECTURE
 
+CURRENT CONTRACT UPDATE (2026-08-19):
+    The signal model is binary SELL/BUY only. Any HOLD/no-trade mentioned
+    in the historical design below belongs to the strategy/risk layer,
+    not to the neural-network output.
+
 ================================================================================
 
 STATUS:

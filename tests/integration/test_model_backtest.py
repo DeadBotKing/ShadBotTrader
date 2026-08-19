@@ -54,7 +54,7 @@ def candles(count: int):
 class RecordingPredictor:
     """Returns a fixed forecast and remembers every window it saw."""
 
-    def __init__(self, vector=(0.05, 0.05, 0.90)):
+    def __init__(self, vector=(0.05, 0.95)):
         self.vector = vector
         self.windows = []
 
@@ -124,32 +124,33 @@ class TestCausality:
 # ---------------------------------------------------------------- output ---
 class TestPredictionMapping:
     def test_a_confident_buy_maps_above_neutral(self):
-        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.05, 0.05, 0.90)))
+        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.05, 0.95)))
         values = [value for value in feed(prediction_source, candles(50)) if value is not None]
 
         assert values
         assert all(value > 0.5 for value in values)
 
     def test_a_confident_sell_maps_below_neutral(self):
-        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.90, 0.05, 0.05)))
+        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.90, 0.10)))
         values = [value for value in feed(prediction_source, candles(50)) if value is not None]
 
         assert values
         assert all(value < 0.5 for value in values)
 
-    def test_an_even_split_reads_as_undecided(self):
-        """0.45/0.10/0.45 must not look like a weak buy."""
-        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.45, 0.10, 0.45)))
+    def test_an_even_binary_split_is_below_the_probability_gate(self):
+        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.50, 0.50)))
         values = [value for value in feed(prediction_source, candles(50)) if value is not None]
 
         assert all(value == pytest.approx(0.5, abs=0.01) for value in values)
+        assert prediction_source.confidence(None) == pytest.approx(0.5)
 
-    def test_a_hold_forecast_is_pulled_toward_neutral(self):
-        """The model asked to stay out; the value must not scream buy."""
-        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.05, 0.80, 0.15)))
+    def test_binary_forecast_has_no_hold_probability(self):
+        prediction_source = source(window_size=30, predictor=RecordingPredictor((0.10, 0.90)))
         feed(prediction_source, candles(50))
 
-        assert prediction_source.confidence(None) < 0.80
+        forecast = prediction_source.last_forecast
+        assert forecast is not None
+        assert not hasattr(forecast, "hold_probability")
 
     def test_the_full_forecast_stays_available(self):
         prediction_source = source(window_size=30)
@@ -157,7 +158,7 @@ class TestPredictionMapping:
 
         forecast = prediction_source.last_forecast
         assert forecast is not None
-        assert forecast.describe() == "buy 90.0%"
+        assert forecast.describe() == "buy 95.0%"
 
 
 # ------------------------------------------------------------ efficiency ---

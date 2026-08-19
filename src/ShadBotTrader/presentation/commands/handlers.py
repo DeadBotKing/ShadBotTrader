@@ -333,13 +333,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "threshold_pct",
-                    "Signal threshold %",
-                    "",
+                    "Legacy signal label threshold (ignored)",
+                    "0",
                     kind="number",
-                    hint=(
-                        "leave empty to keep the threshold this model was "
-                        "trained with; only the signal model uses it"
-                    ),
+                    hint="binary signal training has BUY and SELL only; no neutral band",
                 ),
                 CommandField("epochs", "Epochs", "2", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -644,7 +641,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             description=(
                 "Train one model on one dataset. Pick the kind of model — "
                 "'range' predicts the future high and low, 'signal' predicts "
-                "buy/sell/hold — and the stored dataset it learns from. The "
+                "binary buy/sell — and the stored dataset it learns from. The "
                 "saved model records both, so it can be found again."
             ),
             fields=[
@@ -655,7 +652,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "range",
                     kind="select",
                     options=tuple(MODEL_ROLE_CHOICES),
-                    hint="range = future high/low · signal = buy/sell/hold",
+                    hint="range = future high/low · signal = binary buy/sell",
                 ),
                 CommandField(
                     "dataset",
@@ -667,10 +664,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "threshold_pct",
-                    "Signal threshold %",
-                    "0.08",
+                    "Legacy signal label threshold (ignored)",
+                    "0",
                     kind="number",
-                    hint="a move bigger than this is BUY/SELL; smaller is HOLD",
+                    hint="binary signal training has BUY and SELL only; no neutral band",
                 ),
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
@@ -1215,12 +1212,10 @@ class CommandHandlers:
         if not dataset:
             dataset = (record.timeframe if record else "") or "1H"
 
-        # Phase 49: an empty threshold field inherits the model's OWN
-        # neutral band rather than the platform default. Retraining a
-        # 0.25% model must not silently turn it into a 0.08% model
-        # because a form field happened to be blank.
-        inherited = float(getattr(record, "threshold", 0.0) or 0.0) if record else 0.0
-        threshold = percent_to_fraction(command.text("threshold_pct", ""), inherited or 0.0008)
+        # Binary signal retraining has no neutral label band. Keep the
+        # legacy command field accepted, but always pass zero so an old
+        # threshold cannot reintroduce a HOLD class.
+        threshold = 0.0
 
         note = []
         if record is not None and dataset != record.timeframe:
@@ -2315,12 +2310,10 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
-                # The form speaks percent because that is how a trader
-                # thinks about a move; the script speaks fractions
-                # because that is how a return is computed. Convert once,
-                # here, rather than letting both units float around.
+                # Kept as a CLI compatibility argument; binary labels
+                # ignore it and never create a HOLD class.
                 "--threshold",
-                str(percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)),
+                "0.0",
                 "--storage-root",
                 str(self._storage_root),
             ],

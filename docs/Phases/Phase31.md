@@ -6,6 +6,10 @@ SHADBOTTRADER — ENTERPRISE AI TRADING PLATFORM
 
 PHASE 31 — LIVE DECISION LOOP & MODEL-DRIVEN BACKTEST
 
+CURRENT CONTRACT UPDATE (2026-08-19):
+    The signal model is binary SELL/BUY only. HOLD/no-trade is a
+    strategy-level gate outcome, not a third model class.
+
 ================================================================================
 
 STATUS:

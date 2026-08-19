@@ -1,8 +1,8 @@
-"""Label the future for both Phase 29 models.
+"""Label the future for both predictive models.
 
 Every label here looks forward by construction, which is exactly where
 time-series projects leak. Three rules are enforced and individually
-tested (Phase 29 §4):
+tested:
 
 R1  The label for row ``t`` is computed from bars ``t+1 .. t+N``. Row
     ``t`` contributes only ``close[t]``, which is known when the
@@ -44,7 +44,7 @@ class RangeLabels:
 
 @dataclass(frozen=True)
 class SignalLabels:
-    """Three-class labels, aligned to the rows that survived R2."""
+    """Binary SELL/BUY labels, aligned to rows that survived R2."""
 
     labels: List[int]
     source_index: List[int]
@@ -59,7 +59,7 @@ class SignalLabels:
         return not self.labels
 
     def distribution(self) -> dict[str, int]:
-        """How many of each class — the first thing to check on real data."""
+        """How many of each binary class — the first data-quality check."""
         counts = {item.label: 0 for item in SignalClass}
         for value in self.labels:
             counts[SignalClass.from_index(value).label] += 1
@@ -68,9 +68,8 @@ class SignalLabels:
     def is_degenerate(self, minimum_share: float = 0.02) -> bool:
         """True when some class is effectively absent.
 
-        A model trained on a series that is 99% HOLD will learn to
-        answer HOLD forever and score well doing it. Detecting that is
-        more useful than reporting a flattering accuracy.
+        A binary model with one class effectively absent is not useful;
+        detecting that is more useful than reporting a flattering accuracy.
         """
         if not self.labels:
             return True
@@ -121,20 +120,19 @@ def build_range_labels(candles: Sequence[Candle], horizon: int = 5) -> RangeLabe
 def build_signal_labels(
     candles: Sequence[Candle],
     horizon: int = 5,
-    threshold: float = 0.0008,
+    threshold: float = 0.0,
 ) -> SignalLabels:
-    """Label each bar sell / hold / buy over the next ``horizon`` bars.
+    """Label each bar SELL or BUY over the next ``horizon`` bars.
 
-    The label is driven by the forward return of the close. Moves inside
-    the neutral band become HOLD, which is what stops the model from
-    being forced to trade noise.
-
-    ``threshold`` must exceed the round-trip cost, otherwise the model is
-    trained to chase moves that cannot survive spread and commission.
+    The binary boundary is the sign of the forward close return.  A
+    non-positive return is SELL and a positive return is BUY; there is no
+    neutral/HOLD label. ``threshold`` is accepted only for compatibility
+    with older callers and is deliberately ignored by the binary labeler.
+    The trading probability threshold belongs to inference, not labels.
     """
     _validate(candles, horizon)
-    if threshold <= 0:
-        raise ValidationError("threshold must be positive")
+    if threshold < 0:
+        raise ValidationError("threshold must not be negative")
 
     labels: List[int] = []
     indices: List[int] = []
@@ -148,12 +146,9 @@ def build_signal_labels(
         future_close = float(candles[index + horizon].close.amount)
         forward = (future_close - close) / close
 
-        if forward > threshold:
-            label = SignalClass.BUY
-        elif forward < -threshold:
-            label = SignalClass.SELL
-        else:
-            label = SignalClass.HOLD
+        # Binary target: ties/non-positive returns are SELL.  A HOLD
+        # category is intentionally not available to this model.
+        label = SignalClass.BUY if forward > 0 else SignalClass.SELL
 
         labels.append(int(label))
         indices.append(index)

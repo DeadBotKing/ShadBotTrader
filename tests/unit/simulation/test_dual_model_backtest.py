@@ -110,7 +110,7 @@ def build_service(signal_predictor, range_predictor):
 
 
 def test_signal_is_checked_before_range_and_hold_does_not_call_range():
-    signal = FixedSignalPredictor(SignalForecast.from_vector((0.1, 0.8, 0.1), 5, "5M"))
+    signal = FixedSignalPredictor(SignalForecast.from_vector((0.45, 0.55), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
     result = build_service(signal, ranged).run("hold", signal_series(), range_series())
 
@@ -121,7 +121,7 @@ def test_signal_is_checked_before_range_and_hold_does_not_call_range():
 
 
 def test_probability_threshold_blocks_range_model():
-    signal = FixedSignalPredictor(SignalForecast.from_vector((0.2, 0.1, 0.7), 5, "5M"))
+    signal = FixedSignalPredictor(SignalForecast.from_vector((0.3, 0.7), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
     service = DualModelBacktestService(
         symbol=SYMBOL,
@@ -148,7 +148,7 @@ def test_probability_threshold_blocks_range_model():
 
 
 def test_next_open_entry_gets_fixed_model_bracket_and_target_exit():
-    signal = FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.05, 0.90), 5, "5M"))
+    signal = FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.95), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
 
     result = build_service(signal, ranged).run("target", signal_series(), range_series())
@@ -163,7 +163,7 @@ def test_next_open_entry_gets_fixed_model_bracket_and_target_exit():
 
 
 def test_sell_uses_predicted_low_as_target_and_high_as_stop():
-    signal = FixedSignalPredictor(SignalForecast.from_vector((0.90, 0.05, 0.05), 5, "5M"))
+    signal = FixedSignalPredictor(SignalForecast.from_vector((0.90, 0.10), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
     series = signal_series()
     series[4] = make_candle(series[4].open_time.value, SIGNAL_TF, "99", "100", "94", "95")
@@ -176,7 +176,7 @@ def test_sell_uses_predicted_low_as_target_and_high_as_stop():
 
 
 def test_stop_first_is_used_when_both_levels_are_touched():
-    signal = FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.05, 0.90), 5, "5M"))
+    signal = FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.95), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
     series = signal_series()
     # The first future candle after entry touches both 95 and 105.

@@ -42,18 +42,12 @@ class TestTheThresholdIsAPercentField:
     def test_a_fresh_model_starts_at_the_platform_default(self, tmp_path):
         field = field_of(CommandKind.TRAIN_DUAL_MODELS, "threshold_pct", tmp_path)
 
-        assert field.default == "0.08"
+        assert field.default == "0"
 
-    def test_retraining_starts_blank_so_the_model_supplies_it(self, tmp_path):
-        """Phase 49: a blank box means 'keep the band this model has'.
-
-        Pre-filling 0.08 here silently converted a 0.25% model into a
-        0.08% one every time the operator clicked Retrain without
-        touching the field.
-        """
+    def test_retraining_uses_zero_because_binary_labels_have_no_band(self, tmp_path):
         field = field_of(CommandKind.TRAIN_MODEL, "threshold_pct", tmp_path)
 
-        assert field.default == ""
+        assert field.default == "0"
 
     @pytest.mark.parametrize(
         "typed,expected",
@@ -108,10 +102,10 @@ class TestTheThresholdIsAPercentField:
         )
 
         arguments = captured["arguments"]
-        assert arguments[arguments.index("--threshold") + 1] == "0.0015"
+        assert arguments[arguments.index("--threshold") + 1] == "0.0"
 
 
-class TestTheThresholdActuallyChangesTheLabels:
+class TestBinaryLabelsIgnoreTheLegacyThreshold:
     def build(self, threshold):
         import math
         from datetime import datetime, timedelta, timezone
@@ -143,19 +137,17 @@ class TestTheThresholdActuallyChangesTheLabels:
             price = close
         return build_signal_labels(candles, horizon=5, threshold=threshold)
 
-    def test_a_wider_band_produces_more_hold(self):
-        """This is the whole point of the knob."""
+    def test_a_wider_legacy_band_does_not_change_binary_labels(self):
         tight = self.build(0.0008).distribution()
         wide = self.build(0.0050).distribution()
 
-        assert wide["hold"] > tight["hold"]
-        assert wide["buy"] + wide["sell"] < tight["buy"] + tight["sell"]
+        assert set(tight) == {"sell", "buy"}
+        assert set(wide) == {"sell", "buy"}
+        assert tight == wide
 
-    def test_a_zero_threshold_is_refused(self):
-        from ShadBotTrader.domain.common.errors import ValidationError
-
-        with pytest.raises(ValidationError):
-            self.build(0.0)
+    def test_a_zero_threshold_is_allowed_for_binary_labels(self):
+        labels = self.build(0.0)
+        assert set(labels.distribution()) == {"sell", "buy"}
 
 
 # ----------------------------------------------------------- the spread --

@@ -7,7 +7,7 @@
 از این نسخه به بعد، وقتی هر دو مدل و هر دو تایم‌فریم در دسترس باشند، حالت `auto`/`dual` این زنجیره را اجرا می‌کند:
 
 ```text
-5M signal window -> BUY/SELL/HOLD + probability threshold
+5M binary signal window -> BUY/SELL + probability threshold
                 -> 1H range window -> predicted high/low
                 -> next 5M open -> fixed TP/SL -> candle-by-candle exit
 ```

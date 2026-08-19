@@ -35,10 +35,9 @@ class ModelPredictionSource(PredictionSource):
     """Feeds the backtest with the trained signal model's output.
 
     The engine's ``PredictionSource`` contract is a single float in
-    ``[0, 1]``, so the three-class forecast is projected onto that axis
-    using its *directional* confidence: the buy probability renormalised
-    against sell, ignoring hold. A 0.45/0.10/0.45 split therefore reads
-    as 0.5 — genuinely undecided — instead of a weak buy.
+    ``[0, 1]``. For the binary forecast this is simply the BUY
+    probability; SELL is below 0.5. A low winning probability is handled
+    by the strategy confidence gate, not by a HOLD model class.
 
     The full forecast stays available via :meth:`last_forecast` for
     anything that wants the probabilities themselves.
@@ -82,7 +81,7 @@ class ModelPredictionSource(PredictionSource):
     # ------------------------------------------------------------ state --
     @property
     def last_forecast(self) -> Optional[SignalForecast]:
-        """The most recent full three-class forecast, if any."""
+        """The most recent binary forecast, if any."""
         return self._last_forecast
 
     @property
@@ -135,24 +134,18 @@ class ModelPredictionSource(PredictionSource):
         self._last_forecast = forecast
         self._predictions_made += 1
 
-        value = forecast.directional_confidence
-        if forecast.predicted_class.label == "hold":
-            # The model asked to stay out. Pull the value toward neutral
-            # so the strategy's own confidence gate sees an unattractive
-            # signal instead of a directional one.
-            value = 0.5 + (value - 0.5) * (1.0 - self._hold_penalty)
-
-        self._last_value = float(value)
+        # Binary signal model: directional_confidence is the BUY
+        # probability and every prediction is either BUY or SELL.  A low
+        # winning probability is rejected by the confidence gate, not
+        # encoded as a third HOLD class.
+        self._last_value = float(forecast.directional_confidence)
         return self._last_value
 
     def confidence(self, event: MarketEvent) -> float:
         """Confidence of the current forecast; 0 when abstaining."""
         if self._last_forecast is None:
             return 0.0
-        forecast = self._last_forecast
-        if forecast.predicted_class.label == "hold":
-            return forecast.confidence * (1.0 - self._hold_penalty)
-        return forecast.confidence
+        return self._last_forecast.confidence
 
     def reset(self) -> None:
         self._candles.clear()

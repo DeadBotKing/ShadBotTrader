@@ -1,7 +1,7 @@
 """Phase 29 demo — train the two predictive models.
 
     RANGE MODEL   1H candles  ->  highest high + lowest low, next N bars
-    SIGNAL MODEL  5M candles  ->  buy / sell / hold with probabilities
+    SIGNAL MODEL  5M candles  ->  buy / sell with probabilities
 
     python scripts/run_dual_models.py                    # both, quick
     python scripts/run_dual_models.py --model range
@@ -64,8 +64,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.0008,
-        help="neutral band of the signal model, as a price fraction",
+        default=0.0,
+        help="legacy label threshold; binary signal labels ignore the neutral band",
     )
     parser.add_argument(
         "--with-features",
@@ -147,10 +147,10 @@ def train_one(service, args, role, timeframe: str) -> int:
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
     if role.name == "signal":
-        # State the labelling rule outright: it decides what BUY means.
+        # State the binary labelling rule outright.
         print(
-            f"  label rule: a move of more than {args.threshold:.4%} over "
-            f"{role.horizon} candles is BUY/SELL, otherwise HOLD"
+            f"  label rule: positive forward return over {role.horizon} "
+            "candles is BUY; zero/negative return is SELL; no HOLD class"
         )
     print(f"  {role.description}")
 
@@ -281,7 +281,6 @@ def train_one(service, args, role, timeframe: str) -> int:
         )
         print(f"\n  PREDICTION for the next {role.horizon} {timeframe} candles:")
         print(f"    sell : {forecast.sell_probability:6.1%}")
-        print(f"    hold : {forecast.hold_probability:6.1%}")
         print(f"    buy  : {forecast.buy_probability:6.1%}")
         print(f"    -> {forecast.describe()}")
         print(f"    actionable (>=60%): {forecast.is_actionable()}")
@@ -364,7 +363,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
         # exactly the right question about this.
         #
         # val_loss is the judge rather than val_accuracy: accuracy moves
-        # in coarse steps on a 3-class problem and ties constantly, while
+        # in coarse steps on a binary problem and ties constantly, while
         # loss registers every improvement in confidence.
         # Both roles are judged the same way, on their own metric: the
         # signal model reports val_loss, the range model val_mae. Naming
@@ -546,10 +545,10 @@ def print_quality(outcome: dict, role) -> None:
     unitless — 0.31 means nothing on its own — so this prints the metric
     that answers the question the operator is really asking.
 
-    For the signal model that is accuracy against the majority-class
-    baseline: a 3-class problem where one class dominates can reach 70%
-    accuracy by never doing anything, and a model that has not beaten
-    its baseline has learned nothing worth trading.
+    For the binary signal model that is accuracy against the
+    majority-class baseline: a dataset with one direction dominating can
+    reach high accuracy by always predicting it, and a model that has
+    not beaten its baseline has learned nothing worth trading.
     """
     metrics = outcome.get("fold_metrics") or []
     if not metrics:

@@ -172,7 +172,7 @@ class DemoSignalModel:
         from ShadBotTrader.domain.ai.prediction_target import SignalForecast
 
         self.calls += 1
-        vectors = [(0.05, 0.05, 0.90), (0.20, 0.65, 0.15), (0.85, 0.10, 0.05)]
+        vectors = [(0.05, 0.95), (0.45, 0.55), (0.90, 0.10)]
         return SignalForecast.from_vector(
             vectors[self.calls % len(vectors)],
             horizon=5,

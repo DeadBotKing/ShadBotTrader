@@ -3,7 +3,7 @@
 Proves the two models the user asked for actually exist end to end:
 
 * a **range model** that predicts the high and low of the next N candles
-* a **signal model** that predicts buy/sell/hold with probabilities
+* a **binary signal model** that predicts buy/sell with probabilities
 
 The TensorFlow training tests are gated behind ``RUN_TF`` like the rest
 of the AI suite; everything up to the trainer runs unconditionally,
@@ -83,9 +83,9 @@ class TestModelRoles:
         assert role.loss == "mse"
         assert role.output_activation == "linear"
 
-    def test_the_signal_head_is_a_three_class_softmax(self):
+    def test_the_signal_head_is_a_binary_softmax(self):
         role = signal_model_role()
-        assert role.output_units == 3
+        assert role.output_units == 2
         assert role.loss == "sparse_categorical_crossentropy"
         assert role.output_activation == "softmax"
 
@@ -109,7 +109,7 @@ class TestDatasetPreparation:
 
         assert len(dataset.target_columns) == 1
         assert dataset.label_distribution is not None
-        assert set(dataset.label_distribution) == {"sell", "hold", "buy"}
+        assert set(dataset.label_distribution) == {"sell", "buy"}
 
     def test_the_horizon_costs_exactly_that_many_rows(self, service):
         candles = wave(120)
@@ -150,7 +150,7 @@ class TestDatasetPreparation:
         definition = service.definition_for(role, dataset)
 
         assert definition.model_type is ModelType.CLASSIFICATION
-        assert definition.output_schema["units"] == 3
+        assert definition.output_schema["units"] == 2
 
 
 # ------------------------------------------------------------- leakage ---
@@ -209,7 +209,7 @@ class TestTraining:
         assert forecast.predicted_low > 0
         assert forecast.horizon == 5
 
-    def test_the_signal_model_returns_three_probabilities_summing_to_one(self, service):
+    def test_the_signal_model_returns_two_probabilities_summing_to_one(self, service):
         role = signal_model_role(timeframe="1H", window_size=12)
         outcome = service.train(
             wave(140), SYMBOL, HOURLY, role, run_id="signal-test", epochs=1, max_folds=2
@@ -222,9 +222,9 @@ class TestTraining:
 
         forecast = SignalPredictor(horizon=role.horizon).forecast(outcome["artifact"], window)
 
-        total = forecast.sell_probability + forecast.hold_probability + forecast.buy_probability
+        total = forecast.sell_probability + forecast.buy_probability
         assert total == pytest.approx(1.0, abs=0.01)
-        assert forecast.predicted_class.label in {"sell", "hold", "buy"}
+        assert forecast.predicted_class.label in {"sell", "buy"}
         assert 0.0 <= forecast.confidence <= 1.0
 
     def test_regression_uses_mse_not_cross_entropy(self, service):

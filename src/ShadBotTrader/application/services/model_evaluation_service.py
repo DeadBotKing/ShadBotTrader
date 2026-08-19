@@ -28,10 +28,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-#: The platform default neutral band, used only when a model predates
-#: Phase 49 and carries no threshold of its own. The result then says
-#: the number was assumed rather than read.
-DEFAULT_THRESHOLD = 0.0008
+#: Kept for loading old records only. Binary signal labels do not have a
+#: neutral band, so the value is never used as a class boundary.
+DEFAULT_THRESHOLD = 0.0
 
 #: The platform default label horizon, used under the same condition.
 DEFAULT_HORIZON = 5
@@ -56,13 +55,10 @@ class EvaluationResult:
     feature_columns: int = 0
     metrics: Dict[str, float] = field(default_factory=dict)
     baseline: Optional[float] = None
-    #: Phase 49. The neutral band the labels were rebuilt with, copied
-    #: from the model's own training record. Scoring a 0.15% model
-    #: against 0.08% labels marks it against an exam it never sat.
+    #: Legacy field retained for the serialized result. Binary labels
+    #: use the sign of the forward return and have no neutral band.
     threshold: float = 0.0
     horizon: int = 0
-    #: True when the record carried no threshold (a model saved before
-    #: Phase 49). The fallback is stated rather than hidden.
     threshold_assumed: bool = False
     trained_on: str = ""
     evaluated_at: str = ""
@@ -103,13 +99,8 @@ class EvaluationResult:
             f"windows  : {self.windows:,} of {self.window_size} x {self.feature_columns}",
             *(
                 [
-                    f"labels   : neutral band {self.threshold:.4%}, horizon "
-                    f"{self.horizon} candle(s)"
-                    + (
-                        " — ASSUMED, the model has no recorded threshold"
-                        if self.threshold_assumed
-                        else " — taken from the model's training record"
-                    )
+                    f"labels   : binary SELL/BUY by forward-return sign, "
+                    f"horizon {self.horizon} candle(s)"
                 ]
                 if self.role == "signal"
                 else []
@@ -280,18 +271,17 @@ class ModelEvaluationService:
         # not the default one. `threshold` and `horizon` come off the
         # training record; a model saved before Phase 49 has neither, so
         # the platform default is used and the result says so out loud.
-        recorded_threshold = float(getattr(record, "threshold", 0.0) or 0.0)
         recorded_horizon = int(getattr(record, "horizon", 0) or 0)
-        result.threshold_assumed = result.role == "signal" and recorded_threshold <= 0
+        result.threshold_assumed = False
 
         if result.role == "signal":
             role = signal_model_role(
                 timeframe=result.timeframe,
                 window_size=result.window_size,
-                threshold=(recorded_threshold if recorded_threshold > 0 else DEFAULT_THRESHOLD),
+                threshold=DEFAULT_THRESHOLD,
                 horizon=(recorded_horizon if recorded_horizon > 0 else DEFAULT_HORIZON),
             )
-            result.threshold = float(role.target.threshold)
+            result.threshold = 0.0
         else:
             role = range_model_role(
                 timeframe=result.timeframe,
@@ -330,7 +320,7 @@ class ModelEvaluationService:
                 starts,
                 matrix,
                 horizon,
-                threshold=float(role.target.threshold),
+                threshold=0.0,
             )
         else:
             self._score_range(result, predictions, starts, matrix, horizon)
@@ -344,12 +334,11 @@ class ModelEvaluationService:
         horizon: int,
         threshold: float,
     ) -> None:
-        """Accuracy against labels rebuilt from the matrix itself.
+        """Accuracy against binary labels rebuilt from the matrix itself.
 
-        ``threshold`` is the model's OWN neutral band. It is a parameter
-        rather than a constant because the same weights score very
-        differently against 0.08% labels and 0.25% labels, and only one
-        of those numbers describes the model that was actually trained.
+        ``threshold`` is retained in the call signature for compatibility
+        with old evaluation records, but binary labels use only the sign
+        of the forward return: positive is BUY, zero/negative is SELL.
         """
         import math
 
@@ -369,21 +358,20 @@ class ModelEvaluationService:
             here = start + result.window_size - 1
             ahead = here + horizon
             if ahead >= len(logs):
-                truth.append(1)
+                truth.append(0)
                 continue
             forward = math.exp(logs[ahead] - logs[here]) - 1.0
-            truth.append(2 if forward > threshold else 0 if forward < -threshold else 1)
+            truth.append(1 if forward > 0 else 0)
 
         predicted = np.argmax(np.asarray(predictions), axis=1).tolist()
         correct = sum(1 for a, b in zip(truth, predicted, strict=False) if a == b)
         total = len(truth) or 1
 
         result.metrics["accuracy"] = correct / total
-        counts = {label: truth.count(label) for label in (0, 1, 2)}
+        counts = {label: truth.count(label) for label in (0, 1)}
         result.baseline = max(counts.values()) / total
         result.metrics["sell_share"] = counts[0] / total
-        result.metrics["hold_share"] = counts[1] / total
-        result.metrics["buy_share"] = counts[2] / total
+        result.metrics["buy_share"] = counts[1] / total
 
     def _score_range(
         self, result: EvaluationResult, predictions: Any, starts: Any, matrix: Any, horizon: int

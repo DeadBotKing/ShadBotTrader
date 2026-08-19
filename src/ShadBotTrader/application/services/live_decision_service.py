@@ -70,7 +70,6 @@ class TickResult:
             signal = self.signal_forecast
             lines.append(
                 f"  signal : sell {signal.sell_probability:.1%} | "
-                f"hold {signal.hold_probability:.1%} | "
                 f"buy {signal.buy_probability:.1%} -> {signal.describe()}"
             )
         if self.range_forecast is not None:

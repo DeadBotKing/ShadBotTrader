@@ -33,7 +33,6 @@ from pathlib import Path
 import pytest
 
 from ShadBotTrader.application.services.model_evaluation_service import (
-    DEFAULT_THRESHOLD,
     EvaluationResult,
     ModelEvaluationService,
 )
@@ -109,10 +108,10 @@ class TestTheRecordCarriesTheThreshold:
         assert loaded.threshold == 0.0
         assert loaded.horizon == 0
 
-    def test_the_summary_states_the_band_for_a_signal_model(self):
+    def test_the_summary_states_binary_labels_for_a_signal_model(self):
         lines = a_signal_record(threshold=0.0025).summary_lines()
 
-        assert any("0.2500%" in line for line in lines)
+        assert any("binary SELL/BUY" in line for line in lines)
 
     def test_a_range_model_does_not_pretend_to_have_one(self):
         record = ModelRecord(
@@ -172,19 +171,18 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
             ).parameters
         )
 
-    def test_the_labels_change_when_the_threshold_changes(self, tmp_path):
-        """The whole point: two bands, two answer keys, two accuracies."""
+    def test_the_binary_labels_do_not_change_when_legacy_threshold_changes(self, tmp_path):
         forward_returns = [0.0020, -0.0020, 0.0004, -0.0004, 0.0030]
 
         def label(forward, threshold):
-            return 2 if forward > threshold else 0 if forward < -threshold else 1
+            del threshold
+            return 1 if forward > 0 else 0
 
-        loose = [label(value, 0.0008) for value in forward_returns]
-        tight = [label(value, 0.0025) for value in forward_returns]
+        first = [label(value, 0.0008) for value in forward_returns]
+        second = [label(value, 0.0025) for value in forward_returns]
 
-        assert loose == [2, 0, 1, 1, 2]
-        assert tight == [1, 1, 1, 1, 2]
-        assert loose != tight
+        assert first == [1, 0, 1, 0, 1]
+        assert second == first
 
     def test_a_model_with_a_threshold_is_scored_against_its_own_band(self, tmp_path):
         pytest.importorskip("tensorflow")
@@ -194,9 +192,9 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
         result = service.evaluate("gold_signal_5m", "TESTSYM", "5M", max_windows=40)
 
         assert not result.failed, result.reason
-        assert result.threshold == pytest.approx(0.0025)
+        assert result.threshold == pytest.approx(0.0)
         assert not result.threshold_assumed
-        assert any("0.2500%" in line for line in result.summary_lines())
+        assert any("binary SELL/BUY" in line for line in result.summary_lines())
 
     def test_a_pre_phase_49_model_says_the_band_was_assumed(self, tmp_path):
         pytest.importorskip("tensorflow")
@@ -206,9 +204,9 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
         result = service.evaluate("gold_signal_5m", "TESTSYM", "5M", max_windows=40)
 
         assert not result.failed, result.reason
-        assert result.threshold == pytest.approx(DEFAULT_THRESHOLD)
-        assert result.threshold_assumed
-        assert any("ASSUMED" in line for line in result.summary_lines())
+        assert result.threshold == pytest.approx(0.0)
+        assert not result.threshold_assumed
+        assert any("binary SELL/BUY" in line for line in result.summary_lines())
 
     def test_the_band_reaches_the_evaluation_log(self, tmp_path):
         service = ModelEvaluationService(tmp_path, tmp_path / "logs")
@@ -218,20 +216,20 @@ class TestTheEvaluatorUsesTheRecordedThreshold:
                 role="signal",
                 symbol="TESTSYM",
                 timeframe="5M",
-                threshold=0.0025,
+                threshold=0.0,
                 horizon=5,
             )
         )
 
         entry = service.history()[-1]
 
-        assert entry["threshold"] == pytest.approx(0.0025)
+        assert entry["threshold"] == pytest.approx(0.0)
         assert entry["horizon"] == 5
 
 
 # -------------------------------------- 4) retraining inherits the band --
 class TestRetrainingInheritsTheBand:
-    def test_the_field_is_empty_so_the_model_supplies_the_default(self, tmp_path):
+    def test_the_legacy_field_is_zero_because_signal_labels_are_binary(self, tmp_path):
         ModelCatalogue(tmp_path).write(a_signal_record(threshold=0.0025))
 
         descriptor = next(
@@ -239,8 +237,8 @@ class TestRetrainingInheritsTheBand:
         )
         field = next(item for item in descriptor.fields if item.name == "threshold_pct")
 
-        assert field.default == ""
-        assert "keep the threshold" in field.hint
+        assert field.default == "0"
+        assert "no neutral band" in field.hint
 
     def test_a_blank_field_keeps_the_saved_band(self, tmp_path):
         """0.25% must not silently become 0.08% because a box was empty."""
@@ -265,7 +263,7 @@ class TestRetrainingInheritsTheBand:
         )
 
         argv = captured["argv"]
-        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0025)
+        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0)
 
     def test_an_explicit_percent_still_wins(self, tmp_path):
         pytest.importorskip("tensorflow")
@@ -289,7 +287,7 @@ class TestRetrainingInheritsTheBand:
         )
 
         argv = captured["argv"]
-        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.004)
+        assert float(argv[argv.index("--threshold") + 1]) == pytest.approx(0.0)
 
 
 # ------------------------------------------------------------ helpers --

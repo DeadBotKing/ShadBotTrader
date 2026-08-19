@@ -394,10 +394,12 @@ shadbot-backtest sweep --param spread --values 0,2,4,10,20
 
 The model-driven workflow is documented in
 [`docs/DUAL_MODEL_BACKTEST.md`](docs/DUAL_MODEL_BACKTEST.md). It feeds the
-saved signal model first, asks the range model only after the configurable
-probability threshold, enters on the next 5M open, attaches fixed
-high/low-derived TP/SL levels, and walks each future candle until a level
-is touched. The default ambiguous-candle rule is conservative `stop_first`.
+saved binary signal model first (SELL/BUY only), asks the range model only
+after the configurable probability threshold, enters on the next 5M open,
+attaches fixed high/low-derived TP/SL levels, and walks each future candle
+until a level is touched. The default ambiguous-candle rule is conservative
+`stop_first`. A strategy-level no-trade/HOLD decision is still possible when
+the probability or range/risk gates reject a setup; HOLD is not a model class.
 
 ```
 MarketEvent -> PredictionSource -> Strategy -> RiskGate -> Intent

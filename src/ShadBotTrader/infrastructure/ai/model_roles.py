@@ -132,22 +132,26 @@ def range_model_role(
 def signal_model_role(
     timeframe: str = "5M",
     horizon: int = 5,
-    threshold: float = 0.0008,
+    threshold: float = 0.0,
     window_size: int = 32,
 ) -> ModelRole:
     """The direction model. Defaults to 5M bars, 5 candles ahead."""
+    if threshold < 0:
+        raise ValidationError("threshold must not be negative")
     return ModelRole(
         name="signal",
         target=PredictionTarget(
             kind=TargetKind.TRADE_SIGNAL,
             horizon=horizon,
             timeframe=timeframe,
-            threshold=threshold,
+            # Binary labels have no neutral band. Keep the argument only
+            # so old callers fail gracefully while migrating.
+            threshold=0.0,
         ),
         model_id=f"gold_signal_{timeframe.strip().lower()}",
         description=(
-            f"Predicts sell / hold / buy with probabilities over the next "
-            f"{horizon} {timeframe} candles (neutral band {threshold:.4%})."
+            f"Predicts sell / buy with probabilities over the next "
+            f"{horizon} {timeframe} candles; no HOLD output class."
         ),
         window_size=window_size,
     )

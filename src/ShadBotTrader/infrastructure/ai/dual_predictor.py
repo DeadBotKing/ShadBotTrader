@@ -9,7 +9,7 @@ same answer once the vector is gone.
 These predictors keep the full output:
 
 * :class:`RangePredictor`  -> :class:`RangeForecast`  (high/low offsets)
-* :class:`SignalPredictor` -> :class:`SignalForecast` (three probabilities)
+* :class:`SignalPredictor` -> :class:`SignalForecast` (sell/buy probabilities)
 """
 
 from __future__ import annotations
@@ -103,7 +103,7 @@ class RangePredictor:
 
 
 class SignalPredictor:
-    """Predicts sell / hold / buy probabilities."""
+    """Predicts binary sell / buy probabilities."""
 
     def __init__(self, horizon: int = 5, timeframe: str = "5M") -> None:
         self._horizon = horizon
@@ -126,9 +126,10 @@ class SignalPredictor:
         x = _prepare(window, model)
         raw = model.predict(x, verbose=0)[0]
 
-        if len(raw) != 3:
+        if len(raw) != 2:
             raise ValidationError(
-                f"The signal model must emit 3 probabilities " f"(sell, hold, buy); got {len(raw)}."
+                f"The binary signal model must emit 2 probabilities "
+                f"(sell, buy); got {len(raw)}. HOLD is not supported."
             )
 
         values: List[float] = [float(value) for value in raw]
@@ -140,7 +141,7 @@ class SignalPredictor:
         normalised = [value / total for value in values]
 
         return SignalForecast.from_vector(
-            (normalised[0], normalised[1], normalised[2]),
+            (normalised[0], normalised[1]),
             horizon=self._horizon,
             timeframe=self._timeframe,
             generated_at=generated_at,

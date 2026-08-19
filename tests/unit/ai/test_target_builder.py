@@ -117,17 +117,17 @@ class TestSignalLabels:
         labels = build_signal_labels(series([100.0, 100.0, 95.0]), horizon=2, threshold=0.001)
         assert labels.labels[0] == int(SignalClass.SELL)
 
-    def test_a_move_inside_the_band_is_a_hold(self):
-        """This is the class that stops the model trading noise."""
+    def test_a_move_inside_the_old_band_is_still_a_binary_buy(self):
+        """The binary model has no neutral/HOLD class."""
         labels = build_signal_labels(series([100.0, 100.0, 100.01]), horizon=2, threshold=0.001)
-        assert labels.labels[0] == int(SignalClass.HOLD)
+        assert labels.labels[0] == int(SignalClass.BUY)
 
-    def test_a_wider_band_converts_marginal_moves_into_holds(self):
+    def test_a_wider_legacy_band_does_not_create_holds(self):
         closes = [100.0, 100.0, 100.5]
         tight = build_signal_labels(series(closes), horizon=2, threshold=0.001)
         wide = build_signal_labels(series(closes), horizon=2, threshold=0.02)
         assert tight.labels[0] == int(SignalClass.BUY)
-        assert wide.labels[0] == int(SignalClass.HOLD)
+        assert wide.labels[0] == int(SignalClass.BUY)
 
     def test_r2_applies_to_signal_labels_too(self):
         labels = build_signal_labels(series([100.0] * 20), horizon=5)
@@ -135,13 +135,14 @@ class TestSignalLabels:
         assert labels.source_index[-1] == 14
 
     def test_a_flat_market_is_reported_as_degenerate(self):
-        """99% HOLD would train a model that always answers HOLD."""
+        """A flat market becomes one binary class and is degenerate."""
         labels = build_signal_labels(series([100.0] * 30), horizon=5)
-        assert labels.distribution()["hold"] == 25
+        assert labels.distribution()["sell"] == 25
+        assert labels.distribution()["buy"] == 0
         assert labels.is_degenerate()
 
-    def test_a_series_with_all_three_classes_is_not_degenerate(self):
-        """Needs genuine ups, downs AND quiet stretches to qualify."""
+    def test_a_series_with_both_binary_classes_is_not_degenerate(self):
+        """Genuine ups and downs are enough; there is no quiet class."""
         closes = []
         price = 100.0
         for index in range(90):
@@ -150,7 +151,7 @@ class TestSignalLabels:
                 price *= 1.01  # clear rise
             elif phase == 1:
                 price *= 0.99  # clear fall
-            # phase 2: unchanged -> produces HOLD labels
+            # phase 2: unchanged -> deterministically becomes SELL
             closes.append(price)
 
         labels = build_signal_labels(series(closes), horizon=1, threshold=0.002)
@@ -158,16 +159,16 @@ class TestSignalLabels:
         distribution = labels.distribution()
         assert distribution["buy"] > 0
         assert distribution["sell"] > 0
-        assert distribution["hold"] > 0
+        assert set(distribution) == {"sell", "buy"}
         assert not labels.is_degenerate()
 
     def test_the_forward_return_is_kept_for_auditing(self):
         labels = build_signal_labels(series([100.0, 100.0, 110.0]), horizon=2, threshold=0.001)
         assert labels.forward_return[0] == pytest.approx(0.10)
 
-    def test_a_non_positive_threshold_is_refused(self):
+    def test_a_negative_legacy_threshold_is_refused(self):
         with pytest.raises(ValidationError):
-            build_signal_labels(series([100.0] * 10), horizon=2, threshold=0.0)
+            build_signal_labels(series([100.0] * 10), horizon=2, threshold=-0.1)
 
 
 # ------------------------------------------------------------ alignment ---
