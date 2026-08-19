@@ -48,7 +48,7 @@
 *.swp
 *.temp
 *.tmp
-
+*.parquet
 *~
 .AppleDouble
 .DS_Store
