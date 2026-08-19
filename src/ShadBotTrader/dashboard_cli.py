@@ -1,8 +1,12 @@
 """Command-line interface for the dashboard (Phase 19).
 
-python -m ShadBotTrader.dashboard_cli serve --db shadbot.db
-python -m ShadBotTrader.dashboard_cli export --out dashboard.html
-python -m ShadBotTrader.dashboard_cli show
+The single recommended project-run command is::
+
+    python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
+
+After the server starts, the remaining project operations are launched
+from the dashboard buttons. ``export``, ``show`` and ``state`` remain
+available as optional inspection utilities.
 """
 
 from __future__ import annotations

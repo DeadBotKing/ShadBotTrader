@@ -186,18 +186,19 @@ got.
 
 ## Dashboard (Phase 19)
 
-A read-only web view over the persisted state:
+برای اجرای روزمرهٔ پروژه فقط همین یک دستور را اجرا کنید:
 
 ```bash
-python scripts/run_dashboard.py                    # seed + serve on :8080
-python scripts/run_dashboard.py --export out.html  # standalone HTML file
-
-shadbot-dashboard serve --db shadbot.db --port 8080
-shadbot-dashboard show                              # same data as text
-shadbot-dashboard commands                          # list the actions
-shadbot-dashboard run run_backtest --param symbol=XAUUSD_i
-shadbot-dashboard state                             # same data as JSON
+python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
 ```
+
+بعد از بازکردن `http://localhost:8080`، تمام عملیات Data، Feature، AI،
+Simulation، Trading و Operations از داخل دکمه‌های داشبورد اجرا می‌شوند؛
+برای اجرای این عملیات‌ها نیازی به دستورهای جداگانهٔ `run_*.py` نیست.
+دیتابیس در اولین اجرا خودکار ساخته می‌شود.
+
+برای نصب اولیه فقط یک‌بار `pip install -e .` لازم است. دستور بالا باید از
+محیطی اجرا شود که package نصب شده باشد.
 
 ```
 View  ->  ViewModel  ->  Gateway        ->  Application (reads)
@@ -207,7 +208,7 @@ View  ->  Command    ->  Command Bus    ->  Handler -> Application (actions)
 ### Action buttons
 
 The dashboard has buttons for the operations you would otherwise run
-from a terminal:
+from a terminal: 
 
 | button | what it does |
 |---|---|
@@ -229,8 +230,8 @@ set is closed (`CommandKind`), unknown commands are rejected with 400,
 only one runs at a time, and long jobs run in a background thread so the
 page never blocks.
 
-Prefer a strict viewer? `shadbot-dashboard serve --read-only` removes
-every button and makes `POST /run` return 405.
+برای حالت فقط‌خواندنی می‌توانید همان دستور را با `serve --read-only` اجرا
+کنید؛ در این حالت دکمه‌ها حذف و `POST /run` با 405 رد می‌شود.
 
 Panels: portfolio and positions, realised cash-flow chart, decision audit
 trail, execution history, learning memory, refusal reasons, session list
@@ -384,10 +385,19 @@ Replays historical candles through the **production** trading chain on a
 controlled clock:
 
 ```bash
-python scripts/run_backtest.py                     # full report
-python scripts/run_backtest.py --compare           # costs vs no costs
+python scripts/run_backtest.py                     # auto: dual when models + 5M/1H exist
+python scripts/run_backtest.py --mode dual --threshold 0.60
+shadbot-backtest dual --threshold 0.60              # signal 5M -> range 1H -> TP/SL
+python scripts/run_backtest.py --compare           # legacy cost comparison
 shadbot-backtest sweep --param spread --values 0,2,4,10,20
 ```
+
+The model-driven workflow is documented in
+[`docs/DUAL_MODEL_BACKTEST.md`](docs/DUAL_MODEL_BACKTEST.md). It feeds the
+saved signal model first, asks the range model only after the configurable
+probability threshold, enters on the next 5M open, attaches fixed
+high/low-derived TP/SL levels, and walks each future candle until a level
+is touched. The default ambiguous-candle rule is conservative `stop_first`.
 
 ```
 MarketEvent -> PredictionSource -> Strategy -> RiskGate -> Intent

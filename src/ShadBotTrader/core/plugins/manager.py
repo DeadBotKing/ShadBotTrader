@@ -125,7 +125,7 @@ class PluginManager:
         try:
             found = entry_points(group=group)
         except TypeError:  # pragma: no cover - very old importlib
-            found = entry_points().get(group, [])  # type: ignore[attr-defined]
+            found = entry_points().get(group, [])  # type: ignore[attr-defined, arg-type]
 
         for entry in found:
             try:

@@ -261,16 +261,21 @@ python scripts\run_weekly_update.py
 > اجرا می‌شود و آنجا ترمینال MT5 در دسترس **نیست** — متاتریدر از IPC محلی
 > در session کاربر استفاده می‌کند. این محدودیت واقعی است، نه میان‌بر.
 
-### ز) 🎛 همه‌چیز از داشبورد (فاز ۳۲ — روش توصیه‌شده)
+### ز) 🎛 تنها دستور اجرای پروژه — همه‌چیز از داشبورد
+
+پس از نصب اولیه، برای اجرای روزمرهٔ پروژه فقط همین دستور را اجرا کنید:
 
 ```powershell
 python -m ShadBotTrader.dashboard_cli --db shadbot.db serve
-# مرورگر: http://localhost:8080
 ```
 
-> دیتابیس اگر نباشد **خودش ساخته می‌شود**. هیچ آماده‌سازی دستی لازم نیست.
+مرورگر: `http://localhost:8080`
 
-**۲۱ دکمه در ۶ گروه:** Accounts · Data · AI · Simulation · Trading · Operations
+> دیتابیس اگر نباشد **خودش ساخته می‌شود**. تمام عملیات Data، Feature، AI،
+> Simulation، Trading و Operations از داخل داشبورد در دسترس هستند و برای
+> اجرای آن‌ها نیازی به اجرای جداگانهٔ `run_*.py` نیست.
+
+**دکمه‌ها در ۶ گروه:** Accounts · Data · AI · Simulation · Trading · Operations
 
 **سه صفحه:**
 | صفحه | چه نشان می‌دهد |

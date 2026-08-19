@@ -49,6 +49,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--symbol", default="XAUUSD", help="broker symbol")
     parser.add_argument("--timeframe", default="5M")
+    parser.add_argument("--range-timeframe", default="1H")
+    parser.add_argument("--mode", choices=("auto", "dual", "legacy"), default="auto")
+    parser.add_argument("--threshold", type=float, default=0.60)
     parser.add_argument("--bars", type=int, default=5000)
     parser.add_argument("--capital", type=float, default=100.0)
     parser.add_argument("--spread", type=float, default=4.0)
@@ -173,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     # ---------------------------------------------------------- step 4 ---
     rule("STEP 4/5 - Backtest on real prices")
 
+    symbol = Symbol(args.symbol)
     _, store, _ = build_service(STORAGE_ROOT)
     candles = store.query(symbol, timeframe)
     if not candles:
@@ -185,7 +189,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"       last  : {candles[-1].open_time}  close {candles[-1].close}")
 
     from ShadBotTrader.application.services.backtest_service import BacktestService
+    from ShadBotTrader.application.services.dual_model_backtest_service import (
+        DualModelBacktestService,
+    )
     from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+    from ShadBotTrader.domain.simulation.simulation_types import EntryTiming, SameBarPolicy
     from ShadBotTrader.infrastructure.simulation import (
         ConsoleSimulationReporter,
         MomentumPredictionSource,
@@ -195,22 +203,68 @@ def main(argv: list[str] | None = None) -> int:
         initial_capital=Decimal(str(args.capital)),
         spread=Decimal(str(args.spread)),
         commission_rate=Decimal(str(args.commission)),
-        warmup_bars=20,
+        warmup_bars=0,
+        entry_timing=EntryTiming.NEXT_OPEN,
+        same_bar_policy=SameBarPolicy.STOP_FIRST,
     )
-    backtest = BacktestService(
-        configuration=simulation_config,
-        base_quantity=Decimal(str(args.quantity)),
-    )
-    result = backtest.run(
-        f"real-{args.symbol}-{args.timeframe}",
-        symbol,
-        timeframe,
-        candles,
-        prediction_source=MomentumPredictionSource(lookback=6),
-        reporter=ConsoleSimulationReporter(),
-    )
-    print(f"  bars processed : {result.bars_processed}")
-    print(f"  fills          : {result.fills}")
+    mode = args.mode
+    range_candles = store.query(Symbol(args.symbol), Timeframe(args.range_timeframe))
+    if mode != "legacy" and range_candles:
+        try:
+            dual = DualModelBacktestService.from_storage(
+                storage_root=STORAGE_ROOT,
+                symbol=args.symbol,
+                min_signal_confidence=args.threshold,
+                configuration=simulation_config,
+                base_quantity=Decimal(str(args.quantity)),
+            )
+            result = dual.run(
+                f"real-dual-{args.symbol}-{args.timeframe}",
+                candles,
+                range_candles,
+                reporter=ConsoleSimulationReporter(),
+            )
+            print("  engine         : dual model (signal -> range -> fixed TP/SL)")
+            print(f"  signal window  : {dual.signal_window_size}")
+            print(f"  range window   : {dual.range_window_size}")
+            print(f"  threshold      : {dual.min_signal_confidence:.1%}")
+            print(f"  bars processed : {result.bars_processed}")
+            print(f"  fills          : {result.fills}")
+            print(f"  take profits   : {result.bracket_exit_counts['take_profit']}")
+            print(f"  stop losses    : {result.bracket_exit_counts['stop_loss']}")
+        except Exception as error:
+            if mode == "dual":
+                return fail(f"Dual-model backtest failed: {error}")
+            print(f"  dual mode unavailable ({error}); using legacy baseline")
+            mode = "legacy"
+    elif mode == "dual":
+        return fail(
+            f"No stored {args.symbol} {args.range_timeframe} candles or saved dual models.",
+            "Fetch both 5M and 1H datasets, then train/save both models first.",
+        )
+
+    if mode == "legacy":
+        simulation_config = SimulationConfiguration(
+            initial_capital=Decimal(str(args.capital)),
+            spread=Decimal(str(args.spread)),
+            commission_rate=Decimal(str(args.commission)),
+            warmup_bars=20,
+        )
+        backtest = BacktestService(
+            configuration=simulation_config,
+            base_quantity=Decimal(str(args.quantity)),
+        )
+        result = backtest.run(
+            f"real-{args.symbol}-{args.timeframe}",
+            Symbol(args.symbol),
+            timeframe,
+            candles,
+            prediction_source=MomentumPredictionSource(lookback=6),
+            reporter=ConsoleSimulationReporter(),
+        )
+        print("  engine         : legacy momentum baseline")
+        print(f"  bars processed : {result.bars_processed}")
+        print(f"  fills          : {result.fills}")
 
     # ---------------------------------------------------------- step 5 ---
     if args.skip_optimise:

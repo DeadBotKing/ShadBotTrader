@@ -26,7 +26,7 @@ def _prepare(window: Sequence[Sequence[float]], model: Any) -> Any:
     """Scale a window and shape it into a single-item batch."""
     import numpy as np
 
-    if not window:
+    if len(window) == 0:
         raise ValidationError("Inference window is empty")
 
     scaled = minmax_scale_window([list(row) for row in window])
@@ -61,6 +61,8 @@ class RangePredictor:
     def __init__(self, horizon: int = 5, timeframe: str = "1H") -> None:
         self._horizon = horizon
         self._timeframe = timeframe
+        self._model: Any = None
+        self._model_key: Any = None
 
     def forecast(
         self,
@@ -77,7 +79,11 @@ class RangePredictor:
         if reference_close <= 0:
             raise ValidationError("reference_close must be positive")
 
-        model = _load(artifact)
+        key = (artifact.model_id.value, artifact.version.number, artifact.checksum)
+        if self._model is None or self._model_key != key:
+            self._model = _load(artifact)
+            self._model_key = key
+        model = self._model
         x = _prepare(window, model)
         raw = model.predict(x, verbose=0)[0]
 
@@ -102,6 +108,8 @@ class SignalPredictor:
     def __init__(self, horizon: int = 5, timeframe: str = "5M") -> None:
         self._horizon = horizon
         self._timeframe = timeframe
+        self._model: Any = None
+        self._model_key: Any = None
 
     def forecast(
         self,
@@ -110,7 +118,11 @@ class SignalPredictor:
         generated_at: str = "",
     ) -> SignalForecast:
         """Run the signal model over one window, keeping every probability."""
-        model = _load(artifact)
+        key = (artifact.model_id.value, artifact.version.number, artifact.checksum)
+        if self._model is None or self._model_key != key:
+            self._model = _load(artifact)
+            self._model_key = key
+        model = self._model
         x = _prepare(window, model)
         raw = model.predict(x, verbose=0)[0]
 

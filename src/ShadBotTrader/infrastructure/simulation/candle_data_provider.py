@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Sequence
 from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.domain.execution.market_view import MarketQuote
 from ShadBotTrader.domain.market.candle import Candle
+from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.symbol import Symbol
 from ShadBotTrader.domain.market.timestamp import Timestamp
 from ShadBotTrader.domain.simulation.market_event import MarketEvent
@@ -63,11 +64,16 @@ class CandleMarketDataProvider(SimulationMarketDataProvider):
             return None
         return self.quote_for(candle)
 
-    def quote_for(self, candle: Candle) -> MarketQuote:
-        """Derive a symmetric quote around a candle's close."""
+    def quote_for(self, candle: Candle, mid: Optional[Price] = None) -> MarketQuote:
+        """Derive a symmetric quote around ``mid`` or the candle close.
+
+        The close is the historical default.  The dual-model simulator
+        also uses the candle open for next-open entries and an explicit
+        bracket level for TP/SL exits.
+        """
         return MarketQuote.from_mid(
             symbol=self._symbol,
-            mid=candle.close,
+            mid=mid or candle.close,
             spread=self._spread,
             timestamp=candle.open_time,
         )

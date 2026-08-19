@@ -29,6 +29,21 @@ class SimulationMode(str, Enum):
     SCENARIO = "scenario"
 
 
+class EntryTiming(str, Enum):
+    """When an order created from a candle decision may be filled."""
+
+    SIGNAL_CLOSE = "signal_close"
+    NEXT_OPEN = "next_open"
+
+
+class SameBarPolicy(str, Enum):
+    """How OHLC ambiguity is resolved when TP and SL share one candle."""
+
+    STOP_FIRST = "stop_first"
+    TARGET_FIRST = "target_first"
+    SKIP_AMBIGUOUS = "skip_ambiguous"
+
+
 class MarketEventType(str, Enum):
     """Kinds of market event a simulation can consume (section 16)."""
 

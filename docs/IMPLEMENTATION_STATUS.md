@@ -48,6 +48,7 @@
 | ۲۶ | Freeze v1.0 | ✅ رعایت می‌شود | معماری منجمد دست‌نخورده مانده |
 | ۲۷ | Architecture Implementation | ✅ کامل | bootstrap/runtime/lifecycle |
 | ۲۸ | Implementation Foundation | 🔄 در حال انجام | Sprint P0…P8 + Replay + MT5 |
+| **درخواست 2026-08-19** | **Signal → Range → TP/SL Backtest** | ✅ **کامل (جدید)** | `dual_model_backtest_service.py` + `dual_model_prediction_source.py` + `domain/simulation/bracket.py` — signal-first، پنجره‌های metadata-driven، threshold، ورود next-open، خروج candle-by-candle و گزارش TP/SL | 
 | **۴۸** | **Evaluate & Inspect** | ✅ **کامل (جدید)** | `model_evaluation_service.py` + `model_diagram.py` — تست مدل روی دیتاست با لاگ تجمعی، بازرسی ماتریس، PNG معماری، سقف آرشیو |
 | **۴۷** | **Best-Model Selection** | ✅ **کامل (جدید)** | فقط وقتی نتیجه بهتر شد ذخیره می‌شود — برای **هر دو** نقش (signal با `val_loss`، range با `val_mae`)؛ ذخیرهٔ نهایی بهترین را بازنویسی نمی‌کند |
 | **۴۶** | **Epoch Checkpoints** | ✅ **کامل (جدید)** | ذخیره بعد از هر epoch، ETA بر مبنای epoch نه fold، timeout ۸ ساعته قابل تنظیم |

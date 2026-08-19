@@ -10,7 +10,7 @@ passes here, it exercised production logic.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from ShadBotTrader.application.persistence_context import PersistenceContext
 from ShadBotTrader.application.services.execution_service import ExecutionService
@@ -27,7 +27,8 @@ from ShadBotTrader.domain.simulation.session import (
     SimulationConfiguration,
     SimulationSession,
 )
-from ShadBotTrader.domain.strategy.ports import DecisionJournal
+from ShadBotTrader.domain.simulation.simulation_types import EntryTiming
+from ShadBotTrader.domain.strategy.ports import DecisionJournal, Strategy
 from ShadBotTrader.domain.strategy.risk_policy import RiskPolicy
 from ShadBotTrader.infrastructure.execution import (
     DefaultIntentResolver,
@@ -45,6 +46,7 @@ from ShadBotTrader.infrastructure.simulation.prediction_sources import (
 )
 from ShadBotTrader.infrastructure.trading import (
     AiDirectionalStrategy,
+    BracketExitStrategy,
     DefaultIntentFactory,
     DefaultSignalValidator,
     PolicyRiskGate,
@@ -63,12 +65,18 @@ class BacktestService:
         strategy_min_confidence: float = 0.55,
         allow_reversal: bool = False,
         persistence: Optional[PersistenceContext] = None,
+        strategy: Optional[Strategy] = None,
+        bracket_provider: Any = None,
+        model_id: str = "gold_direction",
     ) -> None:
         self._configuration = configuration or SimulationConfiguration()
         self._risk_policy = risk_policy or RiskPolicy()
         self._base_quantity = base_quantity
         self._strategy_min_confidence = strategy_min_confidence
         self._allow_reversal = allow_reversal
+        self._strategy = strategy
+        self._bracket_provider = bracket_provider
+        self._model_id = model_id
         # Defaults to in-memory: a backtest sweep must not write to disk
         # unless the caller explicitly asked for it.
         self._persistence = persistence or PersistenceContext()
@@ -106,14 +114,39 @@ class BacktestService:
         decision_journal = self._persistence.decision_journal()
         execution_journal = self._persistence.execution_journal()
 
+        chosen_strategy = self._strategy or AiDirectionalStrategy(
+            min_confidence=self._strategy_min_confidence
+        )
+        expiration_seconds = None if config.entry_timing is EntryTiming.NEXT_OPEN else 60.0
+        intent_factory = DefaultIntentFactory(
+            base_quantity=self._base_quantity,
+            expiration_seconds=expiration_seconds,
+        )
         trading = TradingDecisionService(
-            strategies=[AiDirectionalStrategy(min_confidence=self._strategy_min_confidence)],
+            strategies=[chosen_strategy],
             decision_engine=PositionAwareDecisionEngine(allow_reversal=self._allow_reversal),
             risk_gate=PolicyRiskGate(self._risk_policy),
-            intent_factory=DefaultIntentFactory(base_quantity=self._base_quantity),
+            intent_factory=intent_factory,
             validator=DefaultSignalValidator(max_signal_age_seconds=86400),
             journal=decision_journal,
         )
+
+        # Bracket exits use the same decision/risk/intent path as normal
+        # decisions.  The strategy only emits EXIT; the engine supplies the
+        # exact target/stop quote when the candle touches a level.
+        exit_trading = None
+        if self._bracket_provider is not None:
+            exit_trading = TradingDecisionService(
+                strategies=[BracketExitStrategy()],
+                decision_engine=PositionAwareDecisionEngine(allow_reversal=False),
+                risk_gate=PolicyRiskGate(self._risk_policy),
+                intent_factory=DefaultIntentFactory(
+                    base_quantity=self._base_quantity,
+                    expiration_seconds=None,
+                ),
+                validator=DefaultSignalValidator(max_signal_age_seconds=86400),
+                journal=decision_journal,
+            )
 
         execution = ExecutionService(
             resolver=DefaultIntentResolver(),
@@ -131,7 +164,7 @@ class BacktestService:
             configuration=config,
             start_time=start,
             end_time=end,
-            strategy_id="ai_directional",
+            strategy_id=str(getattr(chosen_strategy, "strategy_id", "ai_directional")),
         )
 
         self.ledger = ledger
@@ -146,8 +179,12 @@ class BacktestService:
             execution_service=execution,
             ledger=ledger,
             timeframe=timeframe,
+            model_id=self._model_id,
             reporter=reporter,
             record_replay=record_replay,
+            entry_timing=config.entry_timing,
+            bracket_provider=self._bracket_provider,
+            exit_trading_service=exit_trading,
         )
 
     def run(

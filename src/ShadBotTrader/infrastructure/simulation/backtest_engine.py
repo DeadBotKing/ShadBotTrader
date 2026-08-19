@@ -17,7 +17,7 @@ Guarantees:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -29,6 +29,7 @@ from ShadBotTrader.domain.execution.market_view import ExecutionContext
 from ShadBotTrader.domain.execution.ports import ReportingLedger
 from ShadBotTrader.domain.market.price import Price
 from ShadBotTrader.domain.market.timeframe import Timeframe
+from ShadBotTrader.domain.simulation.bracket import BracketExitReason, TradeBracket
 from ShadBotTrader.domain.simulation.clock import SimulationClock
 from ShadBotTrader.domain.simulation.equity_curve import EquityCurve, EquityPoint
 from ShadBotTrader.domain.simulation.market_event import MarketEvent, SimulationEventQueue
@@ -57,6 +58,7 @@ from ShadBotTrader.domain.simulation.session import (
     SimulationConfiguration,
     SimulationSession,
 )
+from ShadBotTrader.domain.simulation.simulation_types import EntryTiming
 from ShadBotTrader.domain.strategy.strategy_context import (
     PortfolioView,
     PredictionView,
@@ -75,6 +77,8 @@ class BacktestResult:
     bars_processed: int
     intents_created: int
     fills: int
+    #: Count of exits selected by the OHLC bracket policy.
+    bracket_exit_counts: Dict[str, int] = field(default_factory=dict)
     #: Bar-by-bar recording, present only when the run was asked to record
     #: one (``record_replay=True``). A sweep of hundreds of simulations
     #: should not pay for a tape nobody reads.
@@ -87,6 +91,7 @@ class BacktestResult:
             "bars_processed": self.bars_processed,
             "intents_created": self.intents_created,
             "fills": self.fills,
+            "bracket_exit_counts": dict(self.bracket_exit_counts),
             **self.metrics.to_dict(),
         }
 
@@ -106,6 +111,9 @@ class BacktestEngine:
         model_id: str = "gold_direction",
         reporter: Optional[SimulationReporter] = None,
         record_replay: bool = False,
+        entry_timing: EntryTiming = EntryTiming.SIGNAL_CLOSE,
+        bracket_provider: Any = None,
+        exit_trading_service: Optional[TradingDecisionService] = None,
     ) -> None:
         self._session = session
         self._data = data_provider
@@ -116,6 +124,17 @@ class BacktestEngine:
         self._timeframe = timeframe
         self._model_id = model_id
         self._reporter = reporter or NullSimulationReporter()
+        self._entry_timing = (
+            entry_timing if isinstance(entry_timing, EntryTiming) else EntryTiming(entry_timing)
+        )
+        self._bracket_provider = bracket_provider
+        self._exit_trading = exit_trading_service
+        self._pending_entry: Optional[Dict[str, Any]] = None
+        self._bracket: Optional[TradeBracket] = None
+        self._bracket_exit_counts: Dict[str, int] = {
+            BracketExitReason.TAKE_PROFIT.value: 0,
+            BracketExitReason.STOP_LOSS.value: 0,
+        }
 
         events = data_provider.events()
         start = events[0].event_time if events else session.start_time
@@ -210,6 +229,7 @@ class BacktestEngine:
             bars_processed=self._bars,
             intents_created=self._intents,
             fills=self._fills,
+            bracket_exit_counts=dict(self._bracket_exit_counts),
             tape=self.tape,
         )
 
@@ -224,21 +244,47 @@ class BacktestEngine:
         if callable(observe):
             observe(event)
 
-        position = self._ledger.position(event.symbol)
+        self._last_prediction = None
         warmup_done = self._bars > self._session.configuration.warmup_bars
 
-        self._last_prediction = None
-        if warmup_done:
-            value = self._predictions.predict(event)
-            self._last_prediction = value
-            if value is not None:
-                self._trade_bar(event, value, position)
+        if self._bracket_provider is not None:
+            # A bracketed run is position-led: an open trade is managed by
+            # its fixed TP/SL and later model signals are ignored until the
+            # position is closed.  This is the requested HOLD/TP/SL flow.
+            self._execute_pending_entry(event)
+            if self._check_bracket(event):
+                self._record_equity(event, candle.close)
+                self._record_replay_bar(event)
+                return
+
+            position = self._ledger.position(event.symbol)
+            if position.is_flat and warmup_done:
+                value = self._predictions.predict(event)
+                self._last_prediction = value
+                if value is not None:
+                    self._trade_bar(event, value, position)
+        else:
+            # Backward-compatible single-model baseline path.
+            position = self._ledger.position(event.symbol)
+            if warmup_done:
+                value = self._predictions.predict(event)
+                self._last_prediction = value
+                if value is not None:
+                    self._trade_bar(event, value, position)
 
         self._record_equity(event, candle.close)
         self._record_replay_bar(event)
 
     def _trade_bar(self, event: MarketEvent, value: float, position: Any) -> None:
+        """Evaluate a signal and either fill it or schedule next-open entry."""
         now = self._clock.current_time
+        metadata: Dict[str, Any] = {}
+        signal_forecast = getattr(self._predictions, "last_signal_forecast", None)
+        range_forecast = getattr(self._predictions, "last_range_forecast", None)
+        if signal_forecast is not None:
+            metadata["signal_forecast"] = signal_forecast
+        if range_forecast is not None:
+            metadata["range_forecast"] = range_forecast
 
         strategy_context = StrategyContext(
             timestamp=now,
@@ -251,6 +297,7 @@ class BacktestEngine:
                     value=value,
                     confidence=self._predictions.confidence(event),
                     generated_at=now,
+                    metadata=metadata,
                 )
             ],
             portfolio=PortfolioView(
@@ -265,27 +312,159 @@ class BacktestEngine:
             return
 
         self._intents += 1
-
-        quote = self._data.quote_at(event.symbol, event.event_time)
-        if quote is None:
+        if (
+            self._entry_timing is EntryTiming.NEXT_OPEN
+            and outcome.intent.intent_type.value == "enter_position"
+        ):
+            # Keep the already-approved intent and the model's already-made
+            # range forecast.  Re-running the model on the next bar would
+            # change the trade it is meant to explain.
+            self._pending_entry = {"outcome": outcome, "event": event}
             return
 
+        quote = self._quote_for_event(event, opening=False)
+        if quote is None:
+            return
+        bracket = None
+        if self._bracket_provider is not None and event.candle is not None:
+            entry_price = quote.ask if outcome.intent.side.value == "buy" else quote.bid
+            bracket = self._bracket_provider.bracket_for(event, outcome.intent.side, entry_price)
+            if bracket is None:
+                return
+        if self._execute_outcome(event, outcome, position, quote) and bracket is not None:
+            self._bracket = bracket
+
+    def _execute_outcome(
+        self,
+        event: MarketEvent,
+        outcome: Any,
+        position: Any,
+        quote: Any,
+    ) -> bool:
+        """Execute one approved outcome and record its fill."""
         execution_context = ExecutionContext(
-            timestamp=now,
+            timestamp=self._clock.current_time,
             quote=quote,
             position=position,
             equity=self._ledger.cash.amount,
             currency=self._session.configuration.base_currency,
         )
-
         was_flat = position.is_flat
         result = self._execution.execute(outcome.intent, execution_context)
         if not result.executed:
-            return
+            return False
 
         self._fills += 1
         realized_delta, fee_delta = self._capture_trade(event, was_flat)
         self._mark_fill(event, outcome=result, realized=realized_delta, fees=fee_delta)
+        return True
+
+    def _quote_for_event(
+        self,
+        event: MarketEvent,
+        opening: bool = False,
+        explicit_mid: Optional[Price] = None,
+    ) -> Any:
+        """Ask a candle provider for close/open/explicit-level pricing."""
+        if explicit_mid is not None:
+            quote_for = getattr(self._data, "quote_for", None)
+            if callable(quote_for) and event.candle is not None:
+                return quote_for(event.candle, mid=explicit_mid)
+            return self._data.quote_at(event.symbol, event.event_time)
+
+        if opening and event.candle is not None:
+            quote_for = getattr(self._data, "quote_for", None)
+            if callable(quote_for):
+                return quote_for(event.candle, mid=event.candle.open)
+        return self._data.quote_at(event.symbol, event.event_time)
+
+    def _execute_pending_entry(self, event: MarketEvent) -> None:
+        """Fill an intent created on the preceding signal bar at this open."""
+        pending = self._pending_entry
+        if pending is None:
+            return
+        self._pending_entry = None
+        outcome = pending["outcome"]
+        intent = outcome.intent
+        position = self._ledger.position(event.symbol)
+        if not position.is_flat:
+            return
+        quote = self._quote_for_event(event, opening=True)
+        if quote is None:
+            return
+        # The bracket is attached only after the actual entry fill, but a
+        # next-open gap that invalidates both levels must not create an
+        # unprotected position.
+        provider = self._bracket_provider
+        bracket = None
+        if provider is not None and event.candle is not None:
+            bracket = provider.bracket_for(
+                event, intent.side, quote.ask if intent.side.value == "buy" else quote.bid
+            )
+            if bracket is None:
+                return
+        if self._execute_outcome(event, outcome, position, quote) and bracket is not None:
+            self._bracket = bracket
+
+    def _check_bracket(self, event: MarketEvent) -> bool:
+        """Close the open position when its TP/SL is touched."""
+        bracket = self._bracket
+        if bracket is None or event.candle is None:
+            return False
+        position = self._ledger.position(event.symbol)
+        if position.is_flat:
+            self._bracket = None
+            return False
+
+        reason = bracket.trigger(event.candle, self._session.configuration.same_bar_policy)
+        if reason is None:
+            return False
+
+        exit_service = self._exit_trading
+        if exit_service is None:
+            return False
+        timestamp = self._clock.current_time
+        context = StrategyContext(
+            timestamp=timestamp,
+            symbol=event.symbol,
+            timeframe=self._timeframe,
+            portfolio=PortfolioView(
+                equity=self._ledger.cash.amount,
+                open_position_quantity=position.signed_quantity,
+                open_position_count=1,
+            ),
+            metadata={
+                "bracket_exit_reason": reason.value,
+                "take_profit": str(bracket.take_profit.amount),
+                "stop_loss": str(bracket.stop_loss.amount),
+            },
+        )
+        outcome = exit_service.evaluate(context)
+        if outcome.intent is None:
+            return False
+        self._intents += 1
+
+        level = bracket.exit_price(reason)
+        # Make the executable side's touch equal the bracket level.  The
+        # venue may still apply configured slippage and commission.
+        spread = getattr(self._data, "_spread", Decimal("0"))
+        half = spread / Decimal("2")
+        if position.is_long:
+            mid = Price(level.amount + half)  # sell hits bid == level
+        else:
+            mid_amount = level.amount - half  # buy lifts ask == level
+            if mid_amount <= 0:
+                return False
+            mid = Price(mid_amount)
+        quote = self._quote_for_event(event, explicit_mid=mid)
+        if quote is None:
+            return False
+
+        if self._execute_outcome(event, outcome, position, quote):
+            self._bracket_exit_counts[reason.value] += 1
+            self._bracket = None
+            return True
+        return False
 
     def _mark_fill(
         self,

@@ -1,5 +1,22 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-08-19 — بک‌تست دومدلی سیگنال → رنج → TP/SL
+
+درخواست کاربر برای بک‌تست causal پیاده شد:
+
+- مدل signal روی 5M، با پنجره و horizon قابل‌خواندن از training metadata؛
+- آستانهٔ احتمال BUY/SELL قابل تنظیم، با HOLD واقعی و بدون فراخوانی مدل range؛
+- مدل range روی 1H فقط بعد از عبور signal از آستانه؛
+- تعیین TP/SL از high/low پیش‌بینی‌شده؛ BUY = high/low و SELL = low/high؛
+- ورود پیش‌فرض روی open کندل 5M بعدی؛
+- خروج candle-by-candle، با قانون پیش‌فرض stop-first برای لمس هم‌زمان؛
+- نادیده‌گرفتن سیگنال‌های جدید تا بسته‌شدن bracket؛
+- گزارش جداگانهٔ تعداد take-profit و stop-loss؛
+- ماتریس feature هر تایم‌فریم یک بار ساخته و برای roll-forward slice می‌شود.
+
+مسیرهای اصلی: `dual_model_backtest_service.py`، `dual_model_prediction_source.py`، `domain/simulation/bracket.py` و `docs/DUAL_MODEL_BACKTEST.md`.
+
+
 **هدف:** هر تغییر معنادار اینجا ثبت می‌شود تا اگر گفت‌وگو عوض شد، ایجنت دیگری
 آمد، یا چند هفته بعد برگشتیم، بشود ادامه داد.
 

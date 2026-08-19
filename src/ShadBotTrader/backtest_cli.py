@@ -15,12 +15,16 @@ from pathlib import Path
 from typing import List, Sequence
 
 from ShadBotTrader.application.services.backtest_service import BacktestService
+from ShadBotTrader.application.services.dual_model_backtest_service import (
+    DualModelBacktestService,
+)
 from ShadBotTrader.data_cli import build_service as build_data_service
 from ShadBotTrader.data_cli import generate_sample
 from ShadBotTrader.domain.market.candle import Candle
 from ShadBotTrader.domain.market.symbol import Symbol
 from ShadBotTrader.domain.market.timeframe import Timeframe
 from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+from ShadBotTrader.domain.simulation.simulation_types import EntryTiming, SameBarPolicy
 from ShadBotTrader.domain.strategy.risk_policy import RiskPolicy
 from ShadBotTrader.infrastructure.simulation import (
     ConsoleReplayPlayer,
@@ -46,6 +50,12 @@ def _load_candles(args: argparse.Namespace) -> Sequence[Candle]:
     return candles
 
 
+def _load_timeframe(args: argparse.Namespace, timeframe: str) -> Sequence[Candle]:
+    """Read one stored timeframe without generating synthetic dual data."""
+    _, store, _ = build_data_service(Path(args.storage_root))
+    return store.query(Symbol(args.symbol), Timeframe(timeframe))
+
+
 def _service(args: argparse.Namespace, **overrides) -> BacktestService:
     spread = overrides.get("spread", args.spread)
     commission = overrides.get("commission", args.commission)
@@ -64,6 +74,58 @@ def _service(args: argparse.Namespace, **overrides) -> BacktestService:
         risk_policy=RiskPolicy(max_open_positions=3, min_confidence=0.5),
         base_quantity=Decimal(str(quantity)),
     )
+
+
+def cmd_dual(args: argparse.Namespace) -> int:
+    """Run signal-first inference with fixed 1H TP/SL brackets."""
+    signal_candles = _load_timeframe(args, args.signal_timeframe)
+    range_candles = _load_timeframe(args, args.range_timeframe)
+    if not signal_candles or not range_candles:
+        print(
+            "dual backtest needs both stored series: "
+            f"{args.symbol} {args.signal_timeframe} and "
+            f"{args.symbol} {args.range_timeframe}"
+        )
+        return 1
+
+    configuration = SimulationConfiguration(
+        initial_capital=Decimal(str(args.capital)),
+        base_currency="USD",
+        spread=Decimal(str(args.spread)),
+        slippage_rate=Decimal(str(args.slippage)),
+        commission_rate=Decimal(str(args.commission)),
+        seed=args.seed,
+        warmup_bars=0,
+        entry_timing=EntryTiming.NEXT_OPEN,
+        same_bar_policy=SameBarPolicy(args.same_bar),
+    )
+    service = DualModelBacktestService.from_storage(
+        storage_root=Path(args.storage_root),
+        symbol=args.symbol,
+        signal_model_id=args.signal_model,
+        range_model_id=args.range_model,
+        min_signal_confidence=args.threshold,
+        signal_window_size=args.signal_window or None,
+        range_window_size=args.range_window or None,
+        configuration=configuration,
+        base_quantity=Decimal(str(args.quantity)),
+    )
+    result = service.run(
+        "dual-cli",
+        signal_candles,
+        range_candles,
+        reporter=ConsoleSimulationReporter(show_steps=args.steps, step_every=100),
+    )
+    print(f"  signal window    : {service.signal_window_size}")
+    print(f"  range window     : {service.range_window_size}")
+    print(f"  threshold        : {service.min_signal_confidence:.1%}")
+    print(f"  bars processed   : {result.bars_processed}")
+    print(f"  fills            : {result.fills}")
+    print(f"  closed trades    : {result.metrics.trade_count}")
+    print(f"  take profits     : {result.bracket_exit_counts['take_profit']}")
+    print(f"  stop losses      : {result.bracket_exit_counts['stop_loss']}")
+    print(f"  return           : {result.metrics.total_return_percent:.3f}%")
+    return 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -183,6 +245,31 @@ def main(argv: List[str] | None = None) -> int:
         sub.add_argument("--warmup", type=int, default=10)
         sub.add_argument("--lookback", type=int, default=6)
         sub.add_argument("--seed", type=int, default=42)
+
+    dual = subparsers.add_parser(
+        "dual",
+        help="signal 5M -> range 1H -> fixed TP/SL backtest",
+    )
+    dual.add_argument("--symbol", default="XAUUSD")
+    dual.add_argument("--signal-timeframe", default="5M")
+    dual.add_argument("--range-timeframe", default="1H")
+    dual.add_argument("--signal-model", default="gold_signal_5m")
+    dual.add_argument("--range-model", default="gold_range_1h")
+    dual.add_argument("--threshold", type=float, default=0.60)
+    dual.add_argument("--signal-window", type=int, default=0)
+    dual.add_argument("--range-window", type=int, default=0)
+    dual.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))
+    dual.add_argument("--capital", type=float, default=100.0)
+    dual.add_argument("--spread", type=float, default=0.35)
+    dual.add_argument("--slippage", type=float, default=0.0)
+    dual.add_argument("--commission", type=float, default=0.0001)
+    dual.add_argument("--quantity", type=float, default=0.01)
+    dual.add_argument("--seed", type=int, default=42)
+    dual.add_argument(
+        "--same-bar", choices=[item.value for item in SameBarPolicy], default="stop_first"
+    )
+    dual.add_argument("--steps", action="store_true")
+    dual.set_defaults(func=cmd_dual)
 
     run = subparsers.add_parser("run", help="run one backtest")
     common(run)

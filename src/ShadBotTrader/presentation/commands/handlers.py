@@ -364,9 +364,29 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
-                CommandField("timeframe", "Timeframe", "5M"),
+                CommandField("timeframe", "Signal timeframe", "5M"),
+                CommandField(
+                    "mode",
+                    "Engine",
+                    "auto",
+                    kind="select",
+                    options=("auto", "dual", "legacy"),
+                    hint="auto uses signal -> range -> TP/SL when both models and timeframes exist",
+                ),
+                CommandField("range_timeframe", "Range timeframe", "1H"),
+                CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
+                CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
+                CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
                 CommandField("capital", "Capital", "100", kind="number"),
-                CommandField("spread", "Spread", "4", kind="number"),
+                CommandField("quantity", "Quantity", "0.01", kind="number"),
+                CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "If TP and SL share a candle",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "target_first", "skip_ambiguous"),
+                ),
             ],
             group="Simulation",
         ),
@@ -380,9 +400,28 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             ),
             fields=[
                 CommandField("symbol", "Symbol", "XAUUSD"),
-                CommandField("timeframe", "Timeframe", "5M"),
+                CommandField("timeframe", "Signal timeframe", "5M"),
+                CommandField(
+                    "mode",
+                    "Engine",
+                    "auto",
+                    kind="select",
+                    options=("auto", "dual", "legacy"),
+                ),
+                CommandField("range_timeframe", "Range timeframe", "1H"),
+                CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
+                CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
+                CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
                 CommandField("capital", "Capital", "100", kind="number"),
-                CommandField("spread", "Spread", "4", kind="number"),
+                CommandField("quantity", "Quantity", "0.01", kind="number"),
+                CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "If TP and SL share a candle",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "target_first", "skip_ambiguous"),
+                ),
             ],
             group="Simulation",
         ),
@@ -1220,43 +1259,117 @@ class CommandHandlers:
         )
 
     # -- simulation --------------------------------------------------------------
-    def run_backtest(self, command: Command) -> CommandResult:
+    def _run_simulation(self, command: Command, record_replay: bool = False):
+        """Run the model-driven simulation when its prerequisites exist.
+
+        ``mode=auto`` is deliberately explicit about the compatibility
+        fallback: old demo data may contain only one timeframe or no saved
+        models. In that case the legacy momentum baseline is used and the
+        result carries a warning. With both model/data sets present, the
+        signal-first dual workflow is always selected.
+        """
         from ShadBotTrader.application.services.backtest_service import BacktestService
+        from ShadBotTrader.application.services.dual_model_backtest_service import (
+            DualModelBacktestService,
+        )
         from ShadBotTrader.data_cli import build_service
         from ShadBotTrader.domain.market.symbol import Symbol
         from ShadBotTrader.domain.market.timeframe import Timeframe
         from ShadBotTrader.domain.simulation.session import SimulationConfiguration
+        from ShadBotTrader.domain.simulation.simulation_types import EntryTiming, SameBarPolicy
         from ShadBotTrader.infrastructure.simulation import MomentumPredictionSource
 
-        started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD")
-        timeframe = command.text("timeframe", "5M")
+        symbol_text = command.text("symbol", "XAUUSD")
+        signal_timeframe = command.text("timeframe", "5M")
+        symbol = Symbol(symbol_text)
+        signal_tf = Timeframe(signal_timeframe)
+        mode = command.text("mode", "auto").strip().lower()
+        if mode not in {"auto", "dual", "legacy"}:
+            raise ValueError("mode must be auto, dual or legacy")
 
         _, store, _ = build_service(self._storage_root)
-        candles = store.query(Symbol(symbol), Timeframe(timeframe))
-        if not candles:
-            return CommandResult.rejected(
-                command.kind,
-                f"No stored candles for {symbol} {timeframe}. Fetch data first.",
+        signal_candles = store.query(symbol, signal_tf)
+        if not signal_candles:
+            raise LookupError(
+                f"No stored candles for {symbol_text} {signal_timeframe}. Fetch data first."
             )
 
-        try:
-            service = BacktestService(
-                configuration=SimulationConfiguration(
+        dual_note = ""
+        range_timeframe = command.text("range_timeframe", "1H")
+        range_candles = store.query(symbol, Timeframe(range_timeframe))
+        if mode != "legacy" and range_candles:
+            try:
+                configuration = SimulationConfiguration(
                     initial_capital=Decimal(str(command.number("capital", 100.0))),
-                    spread=Decimal(str(command.number("spread", 4.0))),
+                    spread=Decimal(str(command.number("spread", 0.35))),
                     commission_rate=Decimal("0.0001"),
-                    warmup_bars=20,
-                ),
-                base_quantity=Decimal("0.01"),
+                    warmup_bars=0,
+                    entry_timing=EntryTiming.NEXT_OPEN,
+                    same_bar_policy=SameBarPolicy(
+                        command.text("same_bar_policy", SameBarPolicy.STOP_FIRST.value)
+                    ),
+                )
+                dual = DualModelBacktestService.from_storage(
+                    storage_root=self._storage_root,
+                    symbol=symbol_text,
+                    signal_model_id=command.text("signal_model", "gold_signal_5m"),
+                    range_model_id=command.text("range_model", "gold_range_1h"),
+                    min_signal_confidence=command.number("threshold_pct", 60.0) / 100.0,
+                    signal_window_size=command.integer("signal_window", 0) or None,
+                    range_window_size=command.integer("range_window", 0) or None,
+                    configuration=configuration,
+                    base_quantity=Decimal(str(command.number("quantity", 0.01))),
+                )
+                result = dual.run(
+                    session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
+                    signal_candles=signal_candles,
+                    range_candles=range_candles,
+                    record_replay=record_replay,
+                )
+                return result, "dual", ""
+            except Exception:
+                if mode == "dual":
+                    raise
+                dual_note = (
+                    "Dual-model prerequisites were present but could not be loaded; "
+                    "legacy baseline was used."
+                )
+        elif mode == "dual":
+            raise LookupError(
+                f"Dual mode needs stored {symbol_text} {range_timeframe} candles "
+                "as well as the saved signal and range models."
             )
-            result = service.run(
-                f"dashboard-{symbol}",
-                Symbol(symbol),
-                Timeframe(timeframe),
-                candles,
-                prediction_source=MomentumPredictionSource(lookback=6),
+        elif mode == "auto":
+            dual_note = (
+                f"Dual mode unavailable: store {symbol_text} {range_timeframe} candles "
+                "and both saved models to enable signal -> range -> TP/SL."
             )
+
+        legacy = BacktestService(
+            configuration=SimulationConfiguration(
+                initial_capital=Decimal(str(command.number("capital", 100.0))),
+                spread=Decimal(str(command.number("spread", 4.0))),
+                commission_rate=Decimal("0.0001"),
+                warmup_bars=20,
+            ),
+            base_quantity=Decimal(str(command.number("quantity", 0.01))),
+        )
+        result = legacy.run(
+            f"legacy-{'replay' if record_replay else 'dashboard'}-{symbol_text}",
+            symbol,
+            signal_tf,
+            signal_candles,
+            prediction_source=MomentumPredictionSource(lookback=6),
+            record_replay=record_replay,
+        )
+        return result, "legacy", dual_note
+
+    def run_backtest(self, command: Command) -> CommandResult:
+        started = time.monotonic()
+        try:
+            result, mode, note = self._run_simulation(command, record_replay=False)
+        except LookupError as error:
+            return CommandResult.rejected(command.kind, str(error))
         except Exception as error:
             return CommandResult.failure(
                 command.kind, "Backtest failed", str(error), time.monotonic() - started
@@ -1264,60 +1377,39 @@ class CommandHandlers:
 
         metrics = result.metrics
         hit = metrics.hit_rate
+        lines = [
+            f"engine      : {mode}",
+            f"trades      : {metrics.trade_count}",
+            f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
+            f"max drawdown: {metrics.max_drawdown_percent:.2f}%",
+            f"hit rate    : {f'{hit:.3f}' if hit is not None else 'n/a'}",
+            f"fees        : {metrics.total_fees:.4f}",
+        ]
+        if mode == "dual":
+            lines.extend(
+                [
+                    f"take profits: {result.bracket_exit_counts['take_profit']}",
+                    f"stop losses : {result.bracket_exit_counts['stop_loss']}",
+                ]
+            )
+        if note:
+            lines.append(f"note        : {note}")
         return CommandResult.success(
             command.kind,
-            f"Backtested {result.bars_processed} bars",
-            [
-                f"trades      : {metrics.trade_count}",
-                f"return      : {metrics.total_return:.4f} "
-                f"({metrics.total_return_percent:.2f}%)",
-                f"max drawdown: {metrics.max_drawdown_percent:.2f}%",
-                f"hit rate    : {f'{hit:.3f}' if hit is not None else 'n/a'}",
-                f"fees        : {metrics.total_fees:.4f}",
-            ],
+            f"Backtested {result.bars_processed} bars ({mode})",
+            lines,
             time.monotonic() - started,
         )
 
     def record_replay(self, command: Command) -> CommandResult:
         """Run a recorded backtest and write the player to disk."""
-        from ShadBotTrader.application.services.backtest_service import BacktestService
-        from ShadBotTrader.data_cli import build_service
-        from ShadBotTrader.domain.market.symbol import Symbol
-        from ShadBotTrader.domain.market.timeframe import Timeframe
-        from ShadBotTrader.domain.simulation.session import SimulationConfiguration
-        from ShadBotTrader.infrastructure.simulation import MomentumPredictionSource
         from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
         started = time.monotonic()
-        symbol = command.text("symbol", "XAUUSD")
-        timeframe = command.text("timeframe", "5M")
-
-        _, store, _ = build_service(self._storage_root)
-        candles = store.query(Symbol(symbol), Timeframe(timeframe))
-        if not candles:
-            return CommandResult.rejected(
-                command.kind,
-                f"No stored candles for {symbol} {timeframe}. Fetch data first.",
-            )
-
         try:
-            service = BacktestService(
-                configuration=SimulationConfiguration(
-                    initial_capital=Decimal(str(command.number("capital", 100.0))),
-                    spread=Decimal(str(command.number("spread", 4.0))),
-                    commission_rate=Decimal("0.0001"),
-                    warmup_bars=20,
-                ),
-                base_quantity=Decimal("0.01"),
-            )
-            result = service.run(
-                f"replay-{symbol}",
-                Symbol(symbol),
-                Timeframe(timeframe),
-                candles,
-                prediction_source=MomentumPredictionSource(lookback=6),
-                record_replay=True,
-            )
+            result, mode, note = self._run_simulation(command, record_replay=True)
+        except LookupError as error:
+            return CommandResult.rejected(command.kind, str(error))
         except Exception as error:
             return CommandResult.failure(
                 command.kind, "Replay run failed", str(error), time.monotonic() - started
@@ -1335,16 +1427,27 @@ class CommandHandlers:
 
         trips = tape.round_trips()
         wins = sum(1 for trip in trips if trip["result"] == "win")
+        lines = [
+            f"engine        : {mode}",
+            f"fills         : {len(tape.markers)}",
+            f"closed trades : {len(trips)} ({wins} win / {len(trips) - wins} loss)",
+            f"return        : {result.metrics.total_return:.4f} "
+            f"({result.metrics.total_return_percent:.2f}%)",
+            f"written to    : {self._replay_path}",
+        ]
+        if mode == "dual":
+            lines.extend(
+                [
+                    f"take profits  : {result.bracket_exit_counts['take_profit']}",
+                    f"stop losses   : {result.bracket_exit_counts['stop_loss']}",
+                ]
+            )
+        if note:
+            lines.append(f"note          : {note}")
         return CommandResult.success(
             command.kind,
             f"Recorded {len(tape.bars)} bars — open /replay to watch it",
-            [
-                f"fills         : {len(tape.markers)}",
-                f"closed trades : {len(trips)} ({wins} win / {len(trips) - wins} loss)",
-                f"return        : {result.metrics.total_return:.4f} "
-                f"({result.metrics.total_return_percent:.2f}%)",
-                f"written to    : {self._replay_path}",
-            ],
+            lines,
             time.monotonic() - started,
         )
 

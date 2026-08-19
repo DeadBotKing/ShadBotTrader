@@ -7,7 +7,12 @@ from typing import Any, Dict, Mapping, Optional
 
 from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.domain.market.timestamp import Timestamp
-from ShadBotTrader.domain.simulation.simulation_types import SessionStatus, SimulationMode
+from ShadBotTrader.domain.simulation.simulation_types import (
+    EntryTiming,
+    SameBarPolicy,
+    SessionStatus,
+    SimulationMode,
+)
 
 
 class SimulationConfiguration:
@@ -27,6 +32,8 @@ class SimulationConfiguration:
         seed: int = 42,
         mode: SimulationMode = SimulationMode.BACKTEST,
         warmup_bars: int = 0,
+        entry_timing: EntryTiming = EntryTiming.SIGNAL_CLOSE,
+        same_bar_policy: SameBarPolicy = SameBarPolicy.STOP_FIRST,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
         if initial_capital <= 0:
@@ -39,6 +46,18 @@ class SimulationConfiguration:
             raise ValidationError("commission_rate must not be negative")
         if warmup_bars < 0:
             raise ValidationError("warmup_bars must not be negative")
+        try:
+            mode = mode if isinstance(mode, SimulationMode) else SimulationMode(mode)
+            entry_timing = (
+                entry_timing if isinstance(entry_timing, EntryTiming) else EntryTiming(entry_timing)
+            )
+            same_bar_policy = (
+                same_bar_policy
+                if isinstance(same_bar_policy, SameBarPolicy)
+                else SameBarPolicy(same_bar_policy)
+            )
+        except (TypeError, ValueError) as error:
+            raise ValidationError(f"Invalid simulation enum configuration: {error}") from error
 
         self._initial_capital = initial_capital
         self._base_currency = base_currency.strip().upper()
@@ -48,6 +67,8 @@ class SimulationConfiguration:
         self._seed = seed
         self._mode = mode
         self._warmup_bars = warmup_bars
+        self._entry_timing = entry_timing
+        self._same_bar_policy = same_bar_policy
         self._metadata: Dict[str, Any] = dict(metadata or {})
 
     @property
@@ -84,6 +105,16 @@ class SimulationConfiguration:
         return self._warmup_bars
 
     @property
+    def entry_timing(self) -> EntryTiming:
+        """Whether entries fill on the signal bar or the next bar open."""
+        return self._entry_timing
+
+    @property
+    def same_bar_policy(self) -> SameBarPolicy:
+        """Intrabar ambiguity rule for bracket exits."""
+        return self._same_bar_policy
+
+    @property
     def metadata(self) -> Dict[str, Any]:
         return dict(self._metadata)
 
@@ -97,6 +128,8 @@ class SimulationConfiguration:
             "seed": self._seed,
             "mode": self._mode.value,
             "warmup_bars": self._warmup_bars,
+            "entry_timing": self._entry_timing.value,
+            "same_bar_policy": self._same_bar_policy.value,
         }
 
 

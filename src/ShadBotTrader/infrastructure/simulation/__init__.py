@@ -25,6 +25,9 @@ from ShadBotTrader.infrastructure.simulation.console_replay import (
 from ShadBotTrader.infrastructure.simulation.console_reporter import (
     ConsoleSimulationReporter,
 )
+from ShadBotTrader.infrastructure.simulation.dual_model_prediction_source import (
+    DualModelPredictionSource,
+)
 from ShadBotTrader.infrastructure.simulation.model_prediction_source import (
     ModelPredictionSource,
 )
@@ -39,6 +42,7 @@ __all__ = [
     "CandleMarketDataProvider",
     "ConsoleReplayPlayer",
     "ConsoleSimulationReporter",
+    "DualModelPredictionSource",
     "ModelPredictionSource",
     "MomentumPredictionSource",
     "ScriptedPredictionSource",

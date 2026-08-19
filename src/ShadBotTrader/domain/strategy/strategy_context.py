@@ -131,6 +131,7 @@ class StrategyContext:
         portfolio: Optional[PortfolioView] = None,
         risk_state: Optional[RiskState] = None,
         regime: MarketRegime = MarketRegime.UNKNOWN,
+        metadata: Mapping[str, Any] | None = None,
     ) -> None:
         self._timestamp = timestamp
         self._symbol = symbol
@@ -141,6 +142,7 @@ class StrategyContext:
         self._portfolio = portfolio
         self._risk_state = risk_state
         self._regime = regime
+        self._metadata: Dict[str, Any] = dict(metadata or {})
 
     @property
     def timestamp(self) -> Timestamp:
@@ -178,6 +180,11 @@ class StrategyContext:
     @property
     def regime(self) -> MarketRegime:
         return self._regime
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """Non-numeric context supplied by an application service."""
+        return dict(self._metadata)
 
     def feature(self, name: str, default: float | None = None) -> float | None:
         """Return a feature value, or ``default`` when absent."""

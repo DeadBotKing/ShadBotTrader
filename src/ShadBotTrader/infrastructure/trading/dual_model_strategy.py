@@ -52,7 +52,7 @@ class DualModelStrategy(Strategy):
     def __init__(
         self,
         min_confidence: float = 0.60,
-        min_reward_risk: float = 1.2,
+        min_reward_risk: Optional[float] = 1.2,
         min_move_fraction: float = 0.0008,
         require_range_model: bool = True,
         version: int = 1,
@@ -60,15 +60,15 @@ class DualModelStrategy(Strategy):
     ) -> None:
         if not 0.0 <= min_confidence <= 1.0:
             raise ValidationError("min_confidence must be in [0, 1]")
-        if min_reward_risk <= 0:
-            raise ValidationError("min_reward_risk must be positive")
+        if min_reward_risk is not None and min_reward_risk <= 0:
+            raise ValidationError("min_reward_risk must be positive when enabled")
         if min_move_fraction < 0:
             raise ValidationError("min_move_fraction must not be negative")
 
         self._strategy_id = StrategyId("dual_model")
         self._version = StrategyVersion(version)
         self._min_confidence = float(min_confidence)
-        self._min_reward_risk = float(min_reward_risk)
+        self._min_reward_risk = None if min_reward_risk is None else float(min_reward_risk)
         self._min_move = float(min_move_fraction)
         self._require_range = require_range_model
         self._state = state
@@ -158,7 +158,7 @@ class DualModelStrategy(Strategy):
             if risk > 0:
                 ratio = reward / risk
                 details["reward_risk"] = ratio
-                if ratio < self._min_reward_risk:
+                if self._min_reward_risk is not None and ratio < self._min_reward_risk:
                     return self._hold(
                         context,
                         f"reward/risk {ratio:.2f} < {self._min_reward_risk:.2f}",
