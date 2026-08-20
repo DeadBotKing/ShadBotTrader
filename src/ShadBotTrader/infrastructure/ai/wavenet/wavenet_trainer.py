@@ -337,6 +337,7 @@ class WavenetTrainer(ModelTrainer):
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
                     verbose=self._verbose,
+                    shuffle=False,
                     callbacks=callbacks,
                 )
             else:

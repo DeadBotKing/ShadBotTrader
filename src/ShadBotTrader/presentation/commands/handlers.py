@@ -14,7 +14,7 @@ from __future__ import annotations
 import time
 from decimal import Decimal
 from pathlib import Path
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from ShadBotTrader.presentation.commands.commands import (
     Command,
@@ -152,6 +152,23 @@ def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200
             merged.append(wanted_ticks.pop(0))
 
     return merged[-budget:] + recent
+
+
+DEFAULT_LEARNING_RATE = 1.5e-4
+
+
+def saved_learning_rate(storage_root: str | Path, model_id: str) -> float:
+    """Return the last selected LR for a model, or the platform default."""
+    try:
+        from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
+        catalogue = ModelCatalogue(storage_root)
+        version = catalogue.latest_version(model_id)
+        record = catalogue.read(model_id, version) if version else None
+        value = float(record.learning_rate) if record is not None else 0.0
+        return value if value > 0 else DEFAULT_LEARNING_RATE
+    except Exception:
+        return DEFAULT_LEARNING_RATE
 
 
 def percent_to_fraction(raw: str, default: float) -> float:
@@ -404,6 +421,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "auto",
                     kind="select",
                     options=("auto", "dual", "legacy"),
+                ),
+                CommandField(
+                    "use_last_settings",
+                    "Use last backtest settings",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                    hint=(
+                        "1 keeps Run a backtest and Record a replay identical; "
+                        "0 uses this form's values"
+                    ),
                 ),
                 CommandField("range_timeframe", "Range timeframe", "1H"),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
@@ -683,6 +711,52 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             slow=True,
             group="AI",
         ),
+        CommandDescriptor(
+            kind=CommandKind.OPTIMISE_LEARNING_RATE,
+            label="Find best learning rate",
+            description=(
+                "Run a short walk-forward sweep for several learning rates "
+                "separately on the Signal or Range model, select the lowest "
+                "validation score, then train and save the final model with it."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "model",
+                    "Model type",
+                    "signal",
+                    kind="select",
+                    options=("signal", "range"),
+                ),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    datasets[0] if datasets else "5M",
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField(
+                    "learning_rates",
+                    "Candidates",
+                    "1e-5,3e-5,1e-4,3e-4,1e-3",
+                    hint="comma-separated values; lower val_loss/val_mae wins",
+                ),
+                CommandField("threshold_pct", "Signal movement threshold %", "0.08", kind="number"),
+                CommandField("window", "Window rows", "100", kind="number"),
+                CommandField("pilot_epochs", "Pilot epochs", "1", kind="number"),
+                CommandField("pilot_folds", "Pilot folds", "1", kind="number"),
+                CommandField("final_epochs", "Final epochs", "3", kind="number"),
+                CommandField("final_folds", "Final folds", "2", kind="number"),
+                CommandField(
+                    "timeout_minutes",
+                    "Give up after (minutes)",
+                    "480",
+                    kind="number",
+                ),
+            ],
+            slow=True,
+            group="AI",
+        ),
         # -- trading ---------------------------------------------------------
         CommandDescriptor(
             kind=CommandKind.RUN_EXECUTION_DEMO,
@@ -743,6 +817,12 @@ class CommandHandlers:
         # file at /replay, so the two must agree on one location.
         self._replay_path = Path(replay_path)
         self._run_log_dir = RUN_LOG_DIR
+        # The replay button re-runs the most recent backtest settings by
+        # default, so its numbers cannot differ merely because the user
+        # opened a second form with fresh defaults.
+        self._last_backtest_parameters: Optional[Dict[str, Any]] = None
+        self._last_backtest_replay_ready = False
+        self._last_backtest_summary: Dict[str, Any] = {}
 
     @property
     def replay_path(self) -> Path:
@@ -880,6 +960,7 @@ class CommandHandlers:
                 CommandKind.EVALUATE_MODEL: accounts.evaluate_model,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
+                CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
                 CommandKind.RUN_EXECUTION_DEMO: accounts.run_execution_demo,
                 CommandKind.RUN_LIVE_TICK: accounts.run_live_tick,
                 CommandKind.BACKUP_DATABASE: accounts.backup_database,
@@ -1231,6 +1312,7 @@ class CommandHandlers:
                 f"retraining it on {dataset} changes what it models."
             )
 
+        learning_rate = saved_learning_rate(self._storage_root, saved)
         return self._run_script(
             command,
             [
@@ -1250,6 +1332,8 @@ class CommandHandlers:
                 str(max(command.integer("window", 500), 2)),
                 "--threshold",
                 str(threshold),
+                "--learning-rate",
+                str(learning_rate),
                 "--storage-root",
                 str(self._storage_root),
             ],
@@ -1366,8 +1450,11 @@ class CommandHandlers:
 
     def run_backtest(self, command: Command) -> CommandResult:
         started = time.monotonic()
+        self._last_backtest_replay_ready = False
         try:
-            result, mode, note = self._run_simulation(command, record_replay=False)
+            # Record the exact tape here as well. Record a replay can then
+            # serve this completed run verbatim instead of rerunning it.
+            result, mode, note = self._run_simulation(command, record_replay=True)
         except LookupError as error:
             return CommandResult.rejected(command.kind, str(error))
         except Exception as error:
@@ -1375,7 +1462,28 @@ class CommandHandlers:
                 command.kind, "Backtest failed", str(error), time.monotonic() - started
             )
 
+        # Record the exact effective inputs used by this completed run.
+        # Record a replay uses them by default for a like-for-like rerun.
+        self._last_backtest_parameters = dict(command.parameters)
         metrics = result.metrics
+        self._last_backtest_summary = {
+            "engine": mode,
+            "trades": metrics.trade_count,
+            "return": metrics.total_return,
+            "return_percent": metrics.total_return_percent,
+            "fees": metrics.total_fees,
+            "take_profits": result.bracket_exit_counts.get("take_profit", 0),
+            "stop_losses": result.bracket_exit_counts.get("stop_loss", 0),
+        }
+        self._last_backtest_replay_ready = False
+        if result.tape is not None:
+            from ShadBotTrader.presentation.web.replay_renderer import render_replay
+
+            self._replay_path.parent.mkdir(parents=True, exist_ok=True)
+            self._replay_path.write_text(
+                render_replay(result.tape, result.metrics), encoding="utf-8"
+            )
+            self._last_backtest_replay_ready = True
         hit = metrics.hit_rate
         lines = [
             f"engine      : {mode}",
@@ -1392,6 +1500,8 @@ class CommandHandlers:
                     f"stop losses : {result.bracket_exit_counts['stop_loss']}",
                 ]
             )
+        if self._last_backtest_replay_ready:
+            lines.append(f"replay      : exact tape written to {self._replay_path}")
         if note:
             lines.append(f"note        : {note}")
         return CommandResult.success(
@@ -1406,8 +1516,42 @@ class CommandHandlers:
         from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
         started = time.monotonic()
+        effective_command = command
+        used_last_settings = False
+        requested = str(command.get("use_last_settings", "1")).lower()
+        if self._last_backtest_parameters and requested not in {"0", "false", "no", "off"}:
+            effective_command = Command(
+                kind=command.kind,
+                parameters=dict(self._last_backtest_parameters),
+            )
+            used_last_settings = True
+
+        # The normal Run a backtest now records the tape once. Reuse that
+        # exact tape instead of running the models a second time; this is
+        # the strongest guarantee that the numeric report and /replay are
+        # describing the same run.
+        if used_last_settings and self._last_backtest_replay_ready and self._replay_path.exists():
+            summary = self._last_backtest_summary
+            lines = [
+                f"engine        : {summary.get('engine', 'unknown')}",
+                f"trades        : {summary.get('trades', 0)}",
+                f"return        : {summary.get('return', 0)} "
+                f"({summary.get('return_percent', 0):.2f}%)",
+                f"fees          : {summary.get('fees', 0)}",
+                f"take profits  : {summary.get('take_profits', 0)}",
+                f"stop losses   : {summary.get('stop_losses', 0)}",
+                "settings      : exact tape from the last completed Run a backtest",
+                f"written to    : {self._replay_path}",
+            ]
+            return CommandResult.success(
+                command.kind,
+                "Replay is the exact last completed backtest",
+                lines,
+                time.monotonic() - started,
+            )
+
         try:
-            result, mode, note = self._run_simulation(command, record_replay=True)
+            result, mode, note = self._run_simulation(effective_command, record_replay=True)
         except LookupError as error:
             return CommandResult.rejected(command.kind, str(error))
         except Exception as error:
@@ -1442,6 +1586,8 @@ class CommandHandlers:
                     f"stop losses   : {result.bracket_exit_counts['stop_loss']}",
                 ]
             )
+        if used_last_settings:
+            lines.append("settings      : same as the last completed Run a backtest")
         if note:
             lines.append(f"note          : {note}")
         return CommandResult.success(
@@ -2291,6 +2437,8 @@ class AccountCommandHandlers(CommandHandlers):
                 command.kind,
                 f"No stored {dataset} dataset. Available: {', '.join(available)}",
             )
+        model_id = f"gold_{role}_{dataset.lower()}"
+        learning_rate = saved_learning_rate(self._storage_root, model_id)
         return self._run_script(
             command,
             [
@@ -2321,10 +2469,81 @@ class AccountCommandHandlers(CommandHandlers):
                     if role == "signal"
                     else 0.0
                 ),
+                "--learning-rate",
+                str(learning_rate),
                 "--storage-root",
                 str(self._storage_root),
             ],
-            f"Trained {role} on {dataset}",
+            f"Trained {role} on {dataset} (learning rate {learning_rate:.2e})",
+            started,
+            timeout=max(command.integer("timeout_minutes", 480), 5) * 60,
+        )
+
+    # -- AI -------------------------------------------------------------------
+    def optimise_learning_rate(self, command: Command) -> CommandResult:
+        """Sweep candidate learning rates, then train/save the winner."""
+        started = time.monotonic()
+        try:
+            import tensorflow  # noqa: F401
+        except ImportError:
+            return CommandResult.rejected(
+                command.kind,
+                "TensorFlow is not installed — run: pip install -r requirements-ai.txt",
+            )
+
+        role = command.text("model", "signal").strip().lower()
+        if role not in {"signal", "range"}:
+            return CommandResult.rejected(command.kind, "Model type must be signal or range")
+
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            preferred = "5M" if role == "signal" else "1H"
+            dataset = preferred if preferred in available else (available[0] if available else "")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        threshold = (
+            percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
+            if role == "signal"
+            else 0.0
+        )
+        arguments = [
+            "scripts/run_dual_models.py",
+            "--with-features",
+            "--symbol",
+            command.text("symbol", "XAUUSD"),
+            "--model",
+            role,
+            "--range-timeframes",
+            dataset if role == "range" else "1H",
+            "--signal-timeframe",
+            dataset if role == "signal" else "5M",
+            "--threshold",
+            str(threshold),
+            "--window",
+            str(max(command.integer("window", 100), 2)),
+            "--learning-rates",
+            command.text("learning_rates", "1e-5,3e-5,1e-4,3e-4,1e-3"),
+            "--tune-learning-rate",
+            "--lr-search-epochs",
+            str(max(command.integer("pilot_epochs", 1), 1)),
+            "--lr-search-folds",
+            str(max(command.integer("pilot_folds", 1), 1)),
+            "--epochs",
+            str(max(command.integer("final_epochs", 3), 1)),
+            "--folds",
+            str(max(command.integer("final_folds", 2), 1)),
+            "--storage-root",
+            str(self._storage_root),
+        ]
+        return self._run_script(
+            command,
+            arguments,
+            f"Selected and trained the best learning rate for {role} on {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 480), 5) * 60,
         )

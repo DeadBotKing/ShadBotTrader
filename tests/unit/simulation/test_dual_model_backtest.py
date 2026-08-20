@@ -109,10 +109,10 @@ def build_service(signal_predictor, range_predictor):
     )
 
 
-def test_signal_is_checked_before_range_and_hold_does_not_call_range():
+def test_signal_is_checked_before_range_and_low_confidence_does_not_call_range():
     signal = FixedSignalPredictor(SignalForecast.from_vector((0.45, 0.55), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
-    result = build_service(signal, ranged).run("hold", signal_series(), range_series())
+    result = build_service(signal, ranged).run("low-confidence", signal_series(), range_series())
 
     assert signal.calls >= 1
     assert ranged.calls == 0
@@ -153,7 +153,6 @@ def test_next_open_entry_gets_fixed_model_bracket_and_target_exit():
 
     result = build_service(signal, ranged).run("target", signal_series(), range_series())
 
-    # One entry at the next open and one exact target exit.
     assert result.fills == 2
     assert result.bracket_exit_counts["take_profit"] == 1
     assert result.bracket_exit_counts["stop_loss"] == 0
@@ -179,7 +178,6 @@ def test_stop_first_is_used_when_both_levels_are_touched():
     signal = FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.95), 5, "5M"))
     ranged = FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H"))
     series = signal_series()
-    # The first future candle after entry touches both 95 and 105.
     series[4] = make_candle(series[4].open_time.value, SIGNAL_TF, "101", "106", "94", "105")
 
     result = build_service(signal, ranged).run("collision", series, range_series())
@@ -187,3 +185,20 @@ def test_stop_first_is_used_when_both_levels_are_touched():
     assert result.bracket_exit_counts["stop_loss"] == 1
     assert result.bracket_exit_counts["take_profit"] == 0
     assert result.trades[0].realized_pnl == Decimal("-5")
+
+
+def test_recording_does_not_change_dual_model_result():
+    plain = build_service(
+        FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.95), 5, "5M")),
+        FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H")),
+    ).run("plain", signal_series(), range_series(), record_replay=False)
+    recorded = build_service(
+        FixedSignalPredictor(SignalForecast.from_vector((0.05, 0.95), 5, "5M")),
+        FixedRangePredictor(RangeForecast(100.0, 0.05, -0.05, 5, "1H")),
+    ).run("recorded", signal_series(), range_series(), record_replay=True)
+
+    assert recorded.metrics.total_return == plain.metrics.total_return
+    assert recorded.metrics.trade_count == plain.metrics.trade_count
+    assert recorded.bracket_exit_counts == plain.bracket_exit_counts
+    assert recorded.tape is not None
+    assert recorded.tape.final_equity == recorded.metrics.final_equity

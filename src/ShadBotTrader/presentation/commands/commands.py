@@ -54,6 +54,7 @@ class CommandKind(str, Enum):
     # -- AI ---------------------------------------------------------------
     TRAIN_MODEL = "train_model"
     TRAIN_DUAL_MODELS = "train_dual_models"
+    OPTIMISE_LEARNING_RATE = "optimise_learning_rate"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"

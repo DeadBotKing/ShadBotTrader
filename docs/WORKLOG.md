@@ -1,5 +1,10 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-08-20 — جست‌وجوی خودکار Learning Rate در داشبورد
+
+دکمهٔ `Find best learning rate` اضافه شد. برای Signal معیار انتخاب `val_loss` و برای Range معیار `val_mae` است. چند candidate روی pilot walk-forward اجرا می‌شوند، بهترین مقدار انتخاب می‌شود و سپس مدل نهایی با همان Learning Rate آموزش و ذخیره می‌شود. هیچ script جدیدی اضافه نشده و از `run_dual_models.py` موجود استفاده می‌شود.
+
+
 ## 2026-08-19 — Signal binary: فقط BUY / SELL
 
 مدل سیگنال از سه‌کلاسهٔ `SELL/HOLD/BUY` به طبقه‌بندی binary تغییر کرد. خروجی شبکه و labelها فقط `SELL` و `BUY` هستند؛ threshold آموزش، اولین barrier قیمتی مثبت/منفی را تعیین می‌کند و جست‌وجو تا رسیدن به barrier ادامه دارد. اگر probability از آستانهٔ بک‌تست پایین‌تر باشد، strategy تصمیم `no_trade/HOLD` می‌سازد؛ این تصمیم مدل نیست. مدل‌های قدیمی سه‌خروجی باید دوباره آموزش داده شوند.

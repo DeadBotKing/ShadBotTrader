@@ -211,8 +211,11 @@ class DualModelService:
         role: ModelRole,
         dataset: PreparedDataset,
         version: int = 1,
+        learning_rate: float = 1.5e-4,
     ) -> ModelDefinition:
         """The immutable contract the trainer must fulfil."""
+        if learning_rate <= 0:
+            raise ValidationError("learning_rate must be positive")
         is_regression = role.target.kind is TargetKind.PRICE_RANGE
         return ModelDefinition(
             model_id=ModelId(role.model_id),
@@ -227,7 +230,7 @@ class DualModelService:
                 "window_size": role.window_size,
                 "horizon": role.horizon,
                 "timeframe": role.timeframe,
-                "learning_rate": 1.5e-4,
+                "learning_rate": float(learning_rate),
                 "loss": role.loss,
                 "threshold": role.target.threshold,
             },
@@ -324,6 +327,7 @@ class DualModelService:
         max_folds: Optional[int] = 3,
         progress: Any = None,
         on_epoch_model: Any = None,
+        learning_rate: float = 1.5e-4,
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -333,7 +337,7 @@ class DualModelService:
         (Phase 46).
         """
         dataset = self.prepare(candles, symbol, timeframe, role)
-        definition = self.definition_for(role, dataset)
+        definition = self.definition_for(role, dataset, learning_rate=learning_rate)
         trainer = self.build_trainer(dataset, epochs=epochs, max_folds=max_folds, progress=progress)
         trainer.on_epoch_model = on_epoch_model
 

@@ -66,6 +66,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--window", type=int, default=24, help="input window size")
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
+    parser.add_argument("--learning-rate", type=float, default=1.5e-4)
+    parser.add_argument(
+        "--learning-rates",
+        default="1e-5,3e-5,1e-4,3e-4,1e-3",
+        help="comma-separated candidates for --tune-learning-rate",
+    )
+    parser.add_argument(
+        "--tune-learning-rate",
+        action="store_true",
+        help="search candidates on pilot folds, then train/save with the winner",
+    )
+    parser.add_argument("--lr-search-epochs", type=int, default=1)
+    parser.add_argument("--lr-search-folds", type=int, default=1)
+    parser.add_argument(
+        "--lr-search-only",
+        action="store_true",
+        help="search and report only; do not run the final training",
+    )
     parser.add_argument(
         "--threshold",
         type=float,
@@ -152,12 +170,79 @@ def build_service(args: argparse.Namespace):
     )
 
 
-def train_one(service, args, role, timeframe: str) -> int:
+def parse_learning_rates(raw: str) -> list[float]:
+    """Parse positive optimizer candidates from a dashboard/CLI field."""
+    values: list[float] = []
+    for token in (raw or "").replace(";", ",").split(","):
+        token = token.strip()
+        if not token:
+            continue
+        value = float(token)
+        if value <= 0:
+            raise ValueError(f"learning rate must be positive: {token}")
+        if value not in values:
+            values.append(value)
+    if not values:
+        raise ValueError("at least one learning-rate candidate is required")
+    return values
+
+
+def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
+    """Select the lowest validation loss/MAE on a short walk-forward pilot."""
+    from ShadBotTrader.domain.market.symbol import Symbol
+    from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.infrastructure.ai.training_progress import NullProgressReporter
+
+    candidates = parse_learning_rates(args.learning_rates)
+    metric_name = "val_loss" if role.name == "signal" else "val_mae"
+    results: list[tuple[float, float]] = []
+    rule(f"LEARNING RATE SEARCH — {role.name.upper()} / {timeframe}")
+    print(f"  candidates : {', '.join(f'{rate:.2e}' for rate in candidates)}")
+    print(f"  pilot      : {args.lr_search_epochs} epoch(s), {args.lr_search_folds} fold(s)")
+
+    for rate in candidates:
+        print(f"  testing    {rate:.2e} ...", flush=True)
+        try:
+            outcome = service.train(
+                candles,
+                Symbol(args.symbol),
+                Timeframe(timeframe),
+                role,
+                run_id=f"lr-search-{role.name}-{rate:.2e}",
+                epochs=max(args.lr_search_epochs, 1),
+                max_folds=max(args.lr_search_folds, 1),
+                progress=NullProgressReporter(),
+                learning_rate=rate,
+            )
+            metrics = (outcome.get("fold_metrics") or [{}])[-1]
+            score = metrics.get(metric_name)
+            if score is None:
+                score = metrics.get("val_loss")
+            if score is None:
+                raise ValueError(f"training did not report {metric_name}")
+            score = float(score)
+            results.append((rate, score))
+            print(f"  {rate:.2e} -> {metric_name}={score:.6f}")
+        except Exception as error:
+            print(f"  {rate:.2e} -> FAILED: {type(error).__name__}: {error}")
+
+    if not results:
+        raise RuntimeError("every learning-rate candidate failed")
+    winner, score = min(results, key=lambda item: item[1])
+    print(f"  SELECTED   {winner:.2e} ({metric_name}={score:.6f})")
+    return winner
+
+
+def train_one(service, args, role, timeframe: str, learning_rate: float | None = None) -> int:
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
 
+    learning_rate = float(learning_rate or args.learning_rate)
+    if learning_rate <= 0:
+        raise ValueError("learning rate must be positive")
     horizon_text = "until threshold hit" if role.name == "signal" else f"{role.horizon} ahead"
     rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {horizon_text})")
+    print(f"  learning rate: {learning_rate:.2e}")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
     if role.name == "signal":
@@ -246,7 +331,7 @@ def train_one(service, args, role, timeframe: str) -> int:
     # Phase 46: checkpoint after every epoch. The operator lost 18
     # completed epochs to a 2-hour timeout because nothing was written
     # until train() returned.
-    checkpoint = make_epoch_checkpoint(args, role, timeframe, dataset)
+    checkpoint = make_epoch_checkpoint(args, role, timeframe, dataset, learning_rate)
 
     outcome = service.train(
         candles,
@@ -258,11 +343,12 @@ def train_one(service, args, role, timeframe: str) -> int:
         max_folds=args.folds,
         progress=reporter,
         on_epoch_model=checkpoint,
+        learning_rate=learning_rate,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
     print_quality(outcome, role)
-    save_model(outcome, args, role, timeframe, dataset, checkpoint)
+    save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
     # ---- one live prediction so the output is concrete -----------------
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
@@ -302,7 +388,7 @@ def train_one(service, args, role, timeframe: str) -> int:
     return 0
 
 
-def make_epoch_checkpoint(args, role, timeframe: str, dataset):
+def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: float = 1.5e-4):
     """A callback that writes the model after every epoch.
 
     Hours of training used to live only in RAM until the very last line
@@ -445,6 +531,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
                 # it, testing a 0.15%-trained model rebuilds 0.08% labels
                 # and reports an accuracy that belongs to no model at all.
                 threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
+                learning_rate=float(learning_rate),
                 horizon=int(role.horizon),
                 metrics={k: float(v) for k, v in logs.items()},
                 note=(f"best epoch {epoch + 1}/{total_epochs} " f"({metric_name} {score:.6f})"),
@@ -459,7 +546,15 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset):
     return checkpoint
 
 
-def save_model(outcome: dict, args, role, timeframe: str, dataset, checkpoint=None) -> None:
+def save_model(
+    outcome: dict,
+    args,
+    role,
+    timeframe: str,
+    dataset,
+    checkpoint=None,
+    learning_rate: float = 1.5e-4,
+) -> None:
     """Persist the trained artifact and record what produced it.
 
     Phase 40: training used to fit a network, print a prediction and
@@ -542,6 +637,7 @@ def save_model(outcome: dict, args, role, timeframe: str, dataset, checkpoint=No
         epochs=args.epochs,
         folds=args.folds,
         threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
+        learning_rate=float(learning_rate),
         horizon=int(role.horizon),
         metrics={key: float(value) for key, value in metrics.items()},
     )
@@ -632,23 +728,46 @@ def main(argv: list[str] | None = None) -> int:
         planned.append(f"signal({args.signal_timeframe})")
     print(f"training: {', '.join(planned) or 'nothing'}")
 
+    def run_role(role, timeframe: str) -> None:
+        nonlocal status
+        rate = args.learning_rate
+        if args.tune_learning_rate:
+            try:
+                candles = load_candles(Path(args.storage_root), args.symbol, timeframe)
+                rate = search_learning_rate(service, args, role, timeframe, candles)
+            except Exception as error:
+                print(f"\n  [X] Learning-rate search failed: {type(error).__name__}: {error}")
+                status |= 1
+                return
+            if args.lr_search_only:
+                return
+        try:
+            status |= train_one(service, args, role, timeframe, learning_rate=rate)
+        except Exception as error:
+            print(f"\n  [X] Training failed: {type(error).__name__}: {error}")
+            status |= 1
+
     if wants_range:
         for timeframe in range_timeframes:
-            role = range_model_role(
-                timeframe=timeframe,
-                horizon=args.horizon,
-                window_size=args.window,
+            run_role(
+                range_model_role(
+                    timeframe=timeframe,
+                    horizon=args.horizon,
+                    window_size=args.window,
+                ),
+                timeframe,
             )
-            status |= train_one(service, args, role, timeframe)
 
     if wants_signal:
-        role = signal_model_role(
-            timeframe=args.signal_timeframe,
-            horizon=0,
-            threshold=args.threshold,
-            window_size=args.window,
+        run_role(
+            signal_model_role(
+                timeframe=args.signal_timeframe,
+                horizon=0,
+                threshold=args.threshold,
+                window_size=args.window,
+            ),
+            args.signal_timeframe,
         )
-        status |= train_one(service, args, role, args.signal_timeframe)
 
     rule("DONE")
     print("  Both models train roll-forward: no future bar influences a past")

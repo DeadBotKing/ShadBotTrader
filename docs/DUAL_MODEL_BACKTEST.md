@@ -102,9 +102,12 @@ python scripts/run_real_data.py --symbol XAUUSD --mode auto --skip-ingest --skip
 - `Signal probability % = 60`
 - `Range timeframe = 1H`
 - `Signal window` و `Range window` با مقدار `0` یعنی «از training metadata بخوان»
+- در گروه AI دکمهٔ `Find best learning rate` چند مقدار را روی pilot walk-forward تست می‌کند، کمترین `val_loss` برای Signal یا `val_mae` برای Range را انتخاب می‌کند و سپس مدل نهایی را با همان مقدار آموزش و ذخیره می‌کند.
 - قانون کندل مبهم به‌صورت پیش‌فرض `stop_first` است
 
 وقتی حالت dual اجرا شود، خروجی تعداد `take profits` و `stop losses` را نیز گزارش می‌کند.
+
+برای یکسان‌بودن نتیجه، `Record a replay` به‌صورت پیش‌فرض تنظیمات آخرین `Run a backtest` را دوباره استفاده می‌کند. اگر گزینهٔ `Use last backtest settings` را روی `0` بگذاری، Replay با تنظیمات فرم خودش اجرا می‌شود و ممکن است نتیجهٔ متفاوتی داشته باشد.
 
 ## اجزای کد
 
