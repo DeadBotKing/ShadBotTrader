@@ -241,6 +241,10 @@ def _metrics_from_payload(data: Dict[str, Any]) -> PerformanceMetrics:
         raw = data.get(key)
         return Decimal(str(raw)) if raw not in (None, "") else Decimal(default)
 
+    def optional_number(key: str) -> Optional[Decimal]:
+        raw = data.get(key)
+        return Decimal(str(raw)) if raw not in (None, "") else None
+
     return PerformanceMetrics(
         starting_equity=number("starting_equity"),
         final_equity=number("final_equity"),
@@ -252,6 +256,10 @@ def _metrics_from_payload(data: Dict[str, Any]) -> PerformanceMetrics:
         win_count=int(data.get("win_count") or 0),
         loss_count=int(data.get("loss_count") or 0),
         total_fees=number("total_fees"),
+        spread_cost=number("spread_cost"),
+        slippage_cost=number("slippage_cost"),
+        net_profit=optional_number("net_profit"),
+        net_loss=optional_number("net_loss"),
     )
 
 

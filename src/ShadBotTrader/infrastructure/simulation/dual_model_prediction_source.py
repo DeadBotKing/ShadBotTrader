@@ -285,6 +285,7 @@ class DualModelPredictionSource(PredictionSource):
                 predicted_high=forecast.predicted_high,
                 predicted_low=forecast.predicted_low,
                 created_at=event.event_time,
+                model_reference=forecast.reference_close,
             )
         except ValidationError:
             # A gap between the model reference close and the entry can put

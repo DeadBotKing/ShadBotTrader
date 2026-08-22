@@ -69,7 +69,12 @@ class TradeRecord(ValueObject):
 
 
 class PerformanceMetrics(ValueObject):
-    """Aggregated performance of a simulation session."""
+    """Aggregated performance of a simulation session.
+
+    ``gross_profit``/``gross_loss`` are realized PnL before commission.
+    ``net_profit``/``net_loss`` are classified after every round-trip
+    fee. Spread and slippage remain separately decomposed by the engine.
+    """
 
     def __init__(
         self,
@@ -87,6 +92,8 @@ class PerformanceMetrics(ValueObject):
         total_fees: Decimal = Decimal("0"),
         spread_cost: Decimal = Decimal("0"),
         slippage_cost: Decimal = Decimal("0"),
+        net_profit: Optional[Decimal] = None,
+        net_loss: Optional[Decimal] = None,
         sharpe: Optional[Decimal] = None,
         volatility: Optional[Decimal] = None,
     ) -> None:
@@ -104,6 +111,8 @@ class PerformanceMetrics(ValueObject):
         self._total_fees = total_fees
         self._spread_cost = spread_cost
         self._slippage_cost = slippage_cost
+        self._net_profit = net_profit
+        self._net_loss = net_loss
         self._sharpe = sharpe
         self._volatility = volatility
 
@@ -196,7 +205,7 @@ class PerformanceMetrics(ValueObject):
         """Average net PnL per trade."""
         if self._trade_count == 0:
             return None
-        return (self._gross_profit - self._gross_loss) / Decimal(self._trade_count)
+        return (self.net_profit - self.net_loss) / Decimal(self._trade_count)
 
     @property
     def gross_profit(self) -> Decimal:
@@ -205,6 +214,23 @@ class PerformanceMetrics(ValueObject):
     @property
     def gross_loss(self) -> Decimal:
         return self._gross_loss
+
+    @property
+    def net_profit(self) -> Decimal:
+        """Sum of profitable trades after their complete round-trip fees."""
+        return self._net_profit if self._net_profit is not None else self._gross_profit
+
+    @property
+    def net_loss(self) -> Decimal:
+        """Sum of losing trades after their complete round-trip fees."""
+        return self._net_loss if self._net_loss is not None else self._gross_loss
+
+    @property
+    def net_profit_factor(self) -> Optional[Decimal]:
+        """Net winning PnL divided by net losing PnL."""
+        if self.net_loss == 0:
+            return None
+        return self.net_profit / self.net_loss
 
     @property
     def total_fees(self) -> Decimal:
@@ -243,6 +269,9 @@ class PerformanceMetrics(ValueObject):
             "total_fees": str(self._total_fees),
             "spread_cost": str(self._spread_cost),
             "slippage_cost": str(self._slippage_cost),
+            "net_profit": str(self.net_profit),
+            "net_loss": str(self.net_loss),
+            "net_profit_factor": show(self.net_profit_factor),
         }
 
     def _value(self) -> tuple[Any, ...]:
@@ -256,26 +285,35 @@ class PerformanceMetrics(ValueObject):
 
 
 def summarise_trades(trades: Sequence[TradeRecord]) -> Dict[str, Decimal]:
-    """Aggregate gross profit, gross loss and fees over ``trades``."""
+    """Aggregate gross and complete-round-trip net PnL over ``trades``."""
     gross_profit = Decimal("0")
     gross_loss = Decimal("0")
+    net_profit = Decimal("0")
+    net_loss = Decimal("0")
     fees = Decimal("0")
     wins = 0
     losses = 0
 
     for trade in trades:
         fees += trade.fees
+        gross = trade.realized_pnl
         net = trade.net_pnl
+        if gross > 0:
+            gross_profit += gross
+        elif gross < 0:
+            gross_loss += -gross
         if net > 0:
-            gross_profit += net
+            net_profit += net
             wins += 1
         elif net < 0:
-            gross_loss += -net
+            net_loss += -net
             losses += 1
 
     return {
         "gross_profit": gross_profit,
         "gross_loss": gross_loss,
+        "net_profit": net_profit,
+        "net_loss": net_loss,
         "fees": fees,
         "wins": Decimal(wins),
         "losses": Decimal(losses),

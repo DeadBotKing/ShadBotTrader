@@ -72,7 +72,11 @@ class TotalReturnObjective(LearningObjective):
 class RiskAdjustedObjective(LearningObjective):
     """Return per unit of drawdown, with a minimum activity requirement.
 
-    score = net_return / max(max_drawdown, floor)
+    score = equity_return / max(max_drawdown, floor)
+
+    ``PerformanceMetrics.total_return`` is already the change in marked
+    equity, so it already includes commissions and execution costs. The
+    objective must not subtract ``total_fees`` a second time.
 
     A candidate with fewer than ``min_trades`` completed round trips is
     scored at a large negative value: a "perfect" result from two trades
@@ -105,8 +109,7 @@ class RiskAdjustedObjective(LearningObjective):
         if metrics.trade_count < self._min_trades:
             return self._penalty
         drawdown = max(metrics.max_drawdown, self._drawdown_floor)
-        net_return = metrics.total_return - metrics.total_fees
-        return net_return / drawdown
+        return metrics.total_return / drawdown
 
 
 class SharpeObjective(LearningObjective):

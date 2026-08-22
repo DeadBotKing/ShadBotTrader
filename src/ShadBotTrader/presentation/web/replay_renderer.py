@@ -41,6 +41,14 @@ def _metric_payload(metrics: Optional[PerformanceMetrics]) -> Dict[str, Any]:
         "losses": metrics.loss_count,
         "hit_rate": None if hit is None else float(hit),
         "profit_factor": None if profit_factor is None else float(profit_factor),
+        "net_profit_factor": (
+            None if metrics.net_profit_factor is None else float(metrics.net_profit_factor)
+        ),
+        "gross_profit": float(metrics.gross_profit),
+        "gross_loss": float(metrics.gross_loss),
+        "net_profit": float(metrics.net_profit),
+        "net_loss": float(metrics.net_loss),
+        "expectancy": None if metrics.expectancy is None else float(metrics.expectancy),
         "total_return": float(metrics.total_return),
         "total_return_percent": float(metrics.total_return_percent),
         "max_drawdown_percent": float(metrics.max_drawdown_percent),
@@ -291,6 +299,10 @@ function rowFor(trip, n) {
     ['muted', '#' + trip.exit_bar + ' ' + trip.exit_time.replace('T', ' ').slice(5, 16)],
     ['', fmt(trip.exit_price)],
     ['muted', String(trip.bars_held)],
+    ['muted', trip.bracket && trip.bracket.take_profit !== undefined
+      ? fmt(trip.bracket.take_profit) : 'n/a'],
+    ['muted', trip.bracket && trip.bracket.stop_loss !== undefined
+      ? fmt(trip.bracket.stop_loss) : 'n/a'],
     ['muted', fmt(trip.fees, 4)],
     [cls, (trip.net_pnl >= 0 ? '+' : '') + fmt(trip.net_pnl, 4)],
     [cls, win ? 'WIN' : 'LOSS'],
@@ -416,6 +428,10 @@ def render_replay(
 
     summary = ""
     if metrics is not None:
+        net_profit_factor = (
+            metrics.net_profit_factor if metrics.net_profit_factor is not None else "n/a"
+        )
+        net_expectancy = metrics.expectancy if metrics.expectancy is not None else "n/a"
         summary = f"""
   <div class="stats">
     <div class="stat"><div class="k">Return</div>
@@ -425,6 +441,10 @@ def render_replay(
       <div class="v">{metrics.max_drawdown_percent:.2f}%</div></div>
     <div class="stat"><div class="k">Hit rate</div><div class="v" id="m-hit">n/a</div></div>
     <div class="stat"><div class="k">Profit factor</div><div class="v" id="m-pf">n/a</div></div>
+    <div class="stat"><div class="k">Net profit factor</div>
+      <div class="v">{net_profit_factor}</div></div>
+    <div class="stat"><div class="k">Net expectancy</div>
+      <div class="v">{net_expectancy}</div></div>
     <div class="stat"><div class="k">Fees</div><div class="v">{metrics.total_fees:.4f}</div></div>
     <div class="stat"><div class="k">Spread cost</div>
       <div class="v">{metrics.spread_cost:.4f}</div></div>
@@ -495,7 +515,7 @@ def render_replay(
     <table>
       <thead><tr>
         <th>#</th><th>Side</th><th>Opened</th><th>Entry</th><th>Closed</th><th>Exit</th>
-        <th>Bars</th><th>Fees</th><th>Net P&amp;L</th><th>Result</th>
+        <th>Bars</th><th>TP</th><th>SL</th><th>Fees</th><th>Net P&amp;L</th><th>Result</th>
       </tr></thead>
       <tbody id="log-body"></tbody>
     </table>

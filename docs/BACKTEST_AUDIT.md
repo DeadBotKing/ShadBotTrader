@@ -51,7 +51,22 @@ Bracket triggers account for executable bid/ask around candle mid high/low. Repo
 - spread cost;
 - adverse slippage cost.
 
-The dashboard and replay show initial equity, final equity, gross profit/loss, profit factor, expectancy, fees, spread and slippage.
+The dashboard and replay show initial equity, final equity, gross profit/loss before commission, net profit/loss after the complete round-trip commission, profit factor, net profit factor, expectancy, fees, spread and slippage. Entry and exit commissions are now both attached to the same `TradeRecord` and replay round-trip, so the trade statistics reconcile with final equity.
+
+## Accounting reconciliation
+
+A round trip pays commission on both the entry and the exit. The engine now
+keeps both amounts on the same `TradeRecord` and the same replay round trip.
+Therefore, when the tape ends flat:
+
+```text
+sum(net trade PnL) == final_equity - initial_equity
+```
+
+The dashboard reports gross PnL before commission, net PnL after complete
+commission, and cost decomposition separately. An old result generated before
+this correction must be rerun; its old expectancy/profit-factor fields may have
+omitted entry commission.
 
 ## Replay consistency
 

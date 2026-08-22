@@ -272,6 +272,22 @@ class TestOrchestrationInvariants:
         assert final_point.realized_pnl == backtest.ledger.realized_pnl.amount
         assert final_point.cash == backtest.ledger.cash.amount
 
+    def test_trade_statistics_include_entry_and_exit_commission(self):
+        source = ScriptedPredictionSource({5: 0.95, 11: 0.05}, default_confidence=0.9)
+        backtest = service()
+        result = backtest.run(
+            "commission-round-trip",
+            XAU,
+            TF,
+            rising(20),
+            prediction_source=source,
+        )
+
+        assert result.metrics.trade_count == 1
+        assert result.metrics.total_fees > 0
+        trade_net = sum((trade.net_pnl for trade in result.trades), d("0"))
+        assert float(trade_net) == pytest.approx(float(result.metrics.total_return), abs=1e-9)
+
     def test_no_lookahead_the_clock_never_precedes_the_bar(self):
         candles = rising(20)
         engine = service().build("causal", XAU, TF, candles)

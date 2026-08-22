@@ -1683,11 +1683,19 @@ class CommandHandlers:
             "return_percent": metrics.total_return_percent,
             "gross_profit": metrics.gross_profit,
             "gross_loss": metrics.gross_loss,
+            "net_profit": metrics.net_profit,
+            "net_loss": metrics.net_loss,
             "profit_factor": metrics.profit_factor,
+            "net_profit_factor": metrics.net_profit_factor,
             "expectancy": metrics.expectancy,
             "fees": metrics.total_fees,
             "spread_cost": metrics.spread_cost,
             "slippage_cost": metrics.slippage_cost,
+            "quantity": command.number("quantity", 0.01),
+            "spread": command.number("spread", 0.35 if mode == "dual" else 4.0),
+            "commission_rate": 0.0001,
+            "slippage_rate": command.number("slippage", 0.0),
+            "entry_timing": "next_open" if mode == "dual" else "signal_close",
             "take_profits": result.bracket_exit_counts.get("take_profit", 0),
             "stop_losses": result.bracket_exit_counts.get("stop_loss", 0),
         }
@@ -1726,16 +1734,27 @@ class CommandHandlers:
             self._last_backtest_replay_ready = True
         hit = metrics.hit_rate
         profit_factor = metrics.profit_factor if metrics.profit_factor is not None else "n/a"
+        net_profit_factor = (
+            metrics.net_profit_factor if metrics.net_profit_factor is not None else "n/a"
+        )
         expectancy = metrics.expectancy if metrics.expectancy is not None else "n/a"
         lines = [
             f"engine      : {mode}",
             f"trades      : {metrics.trade_count}",
             f"initial eq  : {metrics.starting_equity:.4f}",
             f"final eq    : {metrics.final_equity:.4f}",
+            f"quantity    : {command.number('quantity', 0.01):g}",
+            f"spread      : {command.number('spread', 0.35 if mode == 'dual' else 4.0):g}",
+            "commission  : 0.0001",
+            f"slip rate   : {command.number('slippage', 0.0):g}",
+            f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
             f"gross profit: {metrics.gross_profit:.4f}",
             f"gross loss  : {metrics.gross_loss:.4f}",
+            f"net profit  : {metrics.net_profit:.4f}",
+            f"net loss    : {metrics.net_loss:.4f}",
             f"profit fact.: {profit_factor}",
+            f"net PF      : {net_profit_factor}",
             f"expectancy  : {expectancy}",
             f"max drawdown: {metrics.max_drawdown_percent:.2f}%",
             f"hit rate    : {f'{hit:.3f}' if hit is not None else 'n/a'}",

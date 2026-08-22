@@ -151,6 +151,12 @@ class BacktestEngine:
         self._fills = 0
         self._last_realized = Decimal("0")
         self._last_fees = Decimal("0")
+        # Fees belong to the whole round trip.  The old implementation
+        # attached only the closing-fill fee to TradeRecord, so opening
+        # commissions disappeared from gross/net trade statistics even
+        # though they were deducted from cash and final equity.
+        self._open_trade_fees = Decimal("0")
+        self._open_trade_realized = Decimal("0")
         self._spread_cost = Decimal("0")
         self._slippage_cost = Decimal("0")
         self._open_bar: Optional[str] = None
@@ -333,7 +339,7 @@ class BacktestEngine:
             bracket = self._bracket_provider.bracket_for(event, outcome.intent.side, entry_price)
             if bracket is None:
                 return
-        if self._execute_outcome(event, outcome, position, quote) and bracket is not None:
+        if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
 
     def _execute_outcome(
@@ -342,6 +348,7 @@ class BacktestEngine:
         outcome: Any,
         position: Any,
         quote: Any,
+        bracket: Optional[TradeBracket] = None,
     ) -> bool:
         """Execute one approved outcome and record its fill."""
         execution_context = ExecutionContext(
@@ -359,7 +366,13 @@ class BacktestEngine:
         self._capture_execution_costs(result, quote)
         self._fills += 1
         realized_delta, fee_delta = self._capture_trade(event, was_flat)
-        self._mark_fill(event, outcome=result, realized=realized_delta, fees=fee_delta)
+        self._mark_fill(
+            event,
+            outcome=result,
+            realized=realized_delta,
+            fees=fee_delta,
+            bracket=bracket,
+        )
         return True
 
     def _capture_execution_costs(self, outcome: Any, quote: Any) -> None:
@@ -416,7 +429,7 @@ class BacktestEngine:
             )
             if bracket is None:
                 return
-        if self._execute_outcome(event, outcome, position, quote) and bracket is not None:
+        if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
 
     def _check_bracket(self, event: MarketEvent) -> bool:
@@ -477,7 +490,7 @@ class BacktestEngine:
         if quote is None:
             return False
 
-        if self._execute_outcome(event, outcome, position, quote):
+        if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket_exit_counts[reason.value] += 1
             self._bracket = None
             return True
@@ -489,6 +502,7 @@ class BacktestEngine:
         outcome: Any,
         realized: Decimal,
         fees: Decimal,
+        bracket: Optional[TradeBracket] = None,
     ) -> None:
         """Record the fill on the replay tape, if one is being recorded."""
         recorder = self._recorder
@@ -511,6 +525,34 @@ class BacktestEngine:
         else:
             kind = MARKER_ENTRY
 
+        bracket_metadata: Dict[str, Any] = {}
+        if bracket is not None:
+            bracket_metadata = {
+                "side": bracket.side.value,
+                "entry_reference": str(bracket.entry_reference.amount),
+                "take_profit": str(bracket.take_profit.amount),
+                "stop_loss": str(bracket.stop_loss.amount),
+                "model_high": str(bracket.model_high.amount),
+                "model_low": str(bracket.model_low.amount),
+                "model_reference": (
+                    None if bracket.model_reference is None else str(bracket.model_reference.amount)
+                ),
+                "high_offset": (
+                    None
+                    if bracket.model_reference is None
+                    else str(
+                        bracket.model_high.amount / bracket.model_reference.amount - Decimal("1")
+                    )
+                ),
+                "low_offset": (
+                    None
+                    if bracket.model_reference is None
+                    else str(
+                        bracket.model_low.amount / bracket.model_reference.amount - Decimal("1")
+                    )
+                ),
+            }
+
         recorder.mark(
             TradeMarker(
                 bar_index=self._bars - 1,
@@ -523,6 +565,7 @@ class BacktestEngine:
                 realized_pnl=realized if kind != MARKER_ENTRY else None,
                 fees=fees,
                 reason=outcome.intent.reason if outcome.intent is not None else "",
+                metadata=bracket_metadata,
             )
         )
 
@@ -562,17 +605,34 @@ class BacktestEngine:
         delta = realized - self._last_realized
         fee_delta = fees - self._last_fees
 
-        if delta != 0:
+        # The entry fill has no realised PnL yet, but its commission must
+        # stay attached to this trade until the eventual exit.  Otherwise
+        # total equity includes the fee while TradeRecord/expectancy do
+        # not, creating the exact gap seen in the dashboard report.
+        if was_flat:
+            self._open_trade_fees = fee_delta
+            self._open_trade_realized = Decimal("0")
+        else:
+            self._open_trade_fees += fee_delta
+            self._open_trade_realized += delta
+
+        position_after = self._ledger.position(event.symbol)
+        if not was_flat and position_after.is_flat:
+            # A zero-PnL close is still a completed trade and must be
+            # counted.  For the normal full-fill path this is one entry
+            # plus one exit, with both commissions included.
             self._trades.append(
                 TradeRecord(
                     symbol=str(event.symbol),
-                    realized_pnl=delta,
-                    fees=fee_delta,
+                    realized_pnl=self._open_trade_realized,
+                    fees=self._open_trade_fees,
                     opened_at=self._open_bar or "",
                     closed_at=str(self._clock.current_time),
                 )
             )
             self._open_bar = None
+            self._open_trade_fees = Decimal("0")
+            self._open_trade_realized = Decimal("0")
 
         self._last_realized = realized
         self._last_fees = fees
@@ -621,6 +681,8 @@ class BacktestEngine:
             total_fees=self._ledger.total_fees.amount,
             spread_cost=self._spread_cost,
             slippage_cost=self._slippage_cost,
+            net_profit=summary["net_profit"],
+            net_loss=summary["net_loss"],
             sharpe=sharpe_ratio(returns),
             volatility=standard_deviation(returns),
         )

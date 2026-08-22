@@ -45,6 +45,9 @@ class TradeBracket:
     created_at: Timestamp
     model_high: Price
     model_low: Price
+    #: The 1H Range model's reference close. It is distinct from the
+    #: actual executable entry and is kept so replay can audit offsets.
+    model_reference: Optional[Price] = None
 
     def __post_init__(self) -> None:
         for name, price in (
@@ -59,6 +62,8 @@ class TradeBracket:
 
         if self.model_high.amount < self.model_low.amount:
             raise ValidationError("A bracket cannot be built from high below low")
+        if self.model_reference is not None and self.model_reference.amount <= 0:
+            raise ValidationError("Bracket model_reference must be positive")
 
         if self.side is OrderSide.BUY:
             valid = self.stop_loss.amount < self.entry_reference.amount < self.take_profit.amount
@@ -78,10 +83,12 @@ class TradeBracket:
         predicted_high: float,
         predicted_low: float,
         created_at: Timestamp,
+        model_reference: Optional[float] = None,
     ) -> "TradeBracket":
         """Build a bracket from the absolute high/low model forecast."""
         high = Price(Decimal(str(predicted_high)))
         low = Price(Decimal(str(predicted_low)))
+        reference = None if model_reference is None else Price(Decimal(str(model_reference)))
         target = high if side is OrderSide.BUY else low
         stop = low if side is OrderSide.BUY else high
         return cls(
@@ -92,6 +99,7 @@ class TradeBracket:
             created_at=created_at,
             model_high=high,
             model_low=low,
+            model_reference=reference,
         )
 
     def trigger(
@@ -150,5 +158,18 @@ class TradeBracket:
             "stop_loss": str(self.stop_loss.amount),
             "model_high": str(self.model_high.amount),
             "model_low": str(self.model_low.amount),
+            "model_reference": (
+                None if self.model_reference is None else str(self.model_reference.amount)
+            ),
+            "high_offset": (
+                None
+                if self.model_reference is None
+                else str(self.model_high.amount / self.model_reference.amount - Decimal("1"))
+            ),
+            "low_offset": (
+                None
+                if self.model_reference is None
+                else str(self.model_low.amount / self.model_reference.amount - Decimal("1"))
+            ),
             "created_at": str(self.created_at),
         }

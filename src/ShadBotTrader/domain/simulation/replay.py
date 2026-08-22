@@ -54,6 +54,7 @@ class TradeMarker(ValueObject):
         realized_pnl: Optional[Decimal] = None,
         fees: Decimal = Decimal("0"),
         reason: str = "",
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         if bar_index < 0:
             raise ValidationError("bar_index must not be negative")
@@ -72,6 +73,12 @@ class TradeMarker(ValueObject):
         self._realized_pnl = realized_pnl
         self._fees = fees
         self._reason = reason
+        self._metadata = dict(metadata or {})
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        """Structured audit fields such as bracket TP/SL levels."""
+        return dict(self._metadata)
 
     @property
     def bar_index(self) -> int:
@@ -138,6 +145,7 @@ class TradeMarker(ValueObject):
             "net_pnl": _number(self.net_pnl),
             "fees": float(self._fees),
             "reason": self._reason,
+            "metadata": dict(self._metadata),
         }
 
     def _value(self) -> Tuple[Any, ...]:
@@ -323,7 +331,15 @@ class ReplayTape(ValueObject):
                 continue
             if marker.kind == MARKER_EXIT and open_marker is not None:
                 direction = "long" if open_marker.side == "buy" else "short"
-                net = marker.net_pnl
+                # A round trip pays commission on both entry and exit.
+                # ``TradeMarker.net_pnl`` is intentionally per-fill, so
+                # combine the two marker fees here for the trade-level
+                # replay result.
+                total_fees = open_marker.fees + marker.fees
+                net = None if marker.realized_pnl is None else marker.realized_pnl - total_fees
+                bracket = dict(open_marker.metadata)
+                if not bracket:
+                    bracket = dict(marker.metadata)
                 trips.append(
                     {
                         "direction": direction,
@@ -336,8 +352,11 @@ class ReplayTape(ValueObject):
                         "quantity": float(marker.quantity),
                         "bars_held": marker.bar_index - open_marker.bar_index,
                         "realized_pnl": _number(marker.realized_pnl),
-                        "fees": float(marker.fees),
+                        "fees": float(total_fees),
+                        "entry_fees": float(open_marker.fees),
+                        "exit_fees": float(marker.fees),
                         "net_pnl": _number(net),
+                        "bracket": bracket,
                         "result": (
                             "win"
                             if (net is not None and net > 0)

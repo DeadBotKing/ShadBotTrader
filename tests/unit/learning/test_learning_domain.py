@@ -101,11 +101,11 @@ class TestObjectives:
         objective = TotalReturnObjective()
         assert objective.score(make_metrics(total_return="250")) == d("250")
 
-    def test_risk_adjusted_divides_net_return_by_drawdown(self):
-        """(200 return - 10 fees) / 20 drawdown = 9.5"""
+    def test_risk_adjusted_uses_equity_return_once(self):
+        """Equity return already includes fees; they must not be subtracted twice."""
         objective = RiskAdjustedObjective(min_trades=1)
         metrics = make_metrics(total_return="200", max_drawdown="20", total_fees="10")
-        assert objective.score(metrics) == d("9.5")
+        assert objective.score(metrics) == d("10")
 
     def test_risk_adjusted_penalises_too_few_trades(self):
         """A great result from 2 trades is noise, not evidence."""

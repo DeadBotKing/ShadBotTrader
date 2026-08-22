@@ -120,6 +120,47 @@ def test_round_trip_pairs_the_entry_with_its_exit():
     assert trip["result"] == "win"
 
 
+def test_round_trip_net_pnl_includes_entry_and_exit_fees():
+    rec = recorder()
+    rec.mark(marker(0, "buy", MARKER_ENTRY, "2000", position_after="1", fees="0.5"))
+    record(rec, 0, "2000", "100", position="1")
+    rec.mark(marker(1, "sell", MARKER_EXIT, "2010", realized="10", fees="0.5"))
+    record(rec, 1, "2010", "109")
+
+    trip = rec.build().round_trips()[0]
+
+    assert trip["fees"] == pytest.approx(1.0)
+    assert trip["entry_fees"] == pytest.approx(0.5)
+    assert trip["exit_fees"] == pytest.approx(0.5)
+    assert trip["net_pnl"] == pytest.approx(9.0)
+
+
+def test_round_trip_preserves_bracket_levels_for_audit():
+    levels = {"take_profit": "2010", "stop_loss": "1990", "model_high": "2010"}
+    # Metadata is attached at construction to mirror the engine's entry
+    # marker. The small test helper has no metadata argument.
+    rec = recorder()
+    rec.mark(
+        TradeMarker(
+            bar_index=0,
+            timestamp="2026-01-01T00:00:00+00:00",
+            side="buy",
+            kind=MARKER_ENTRY,
+            price=d("2000"),
+            quantity=d("1"),
+            position_after=d("1"),
+            metadata=levels,
+        )
+    )
+    record(rec, 0, "2000", "100", position="1")
+    rec.mark(marker(1, "sell", MARKER_EXIT, "2010", realized="10"))
+    record(rec, 1, "2010", "110")
+
+    trip = rec.build().round_trips()[0]
+
+    assert trip["bracket"] == levels
+
+
 def test_a_losing_round_trip_is_reported_as_a_loss():
     rec = recorder()
     rec.mark(marker(0, "sell", MARKER_ENTRY, "2000", position_after="-1"))

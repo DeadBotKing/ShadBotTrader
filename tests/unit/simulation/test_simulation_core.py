@@ -290,6 +290,11 @@ class TestPerformanceMetrics:
     def test_expectancy_is_net_per_trade(self):
         assert self._metrics().expectancy == d("25")  # (150 - 50) / 4
 
+    def test_net_expectancy_uses_complete_round_trip_values(self):
+        metrics = self._metrics(net_profit=d("120"), net_loss=d("40"))
+        assert metrics.expectancy == d("20")
+        assert metrics.net_profit_factor == d("3")
+
     def test_recovery_factor(self):
         assert self._metrics().recovery_factor == d("2")  # 100 / 50
         assert self._metrics(max_drawdown=d("0")).recovery_factor is None
@@ -310,8 +315,10 @@ class TestTradeStatistics:
         summary = summarise_trades(trades)
         assert summary["wins"] == d("2")
         assert summary["losses"] == d("1")
-        assert summary["gross_profit"] == d("127")
-        assert summary["gross_loss"] == d("42")
+        assert summary["gross_profit"] == d("130")
+        assert summary["gross_loss"] == d("40")
+        assert summary["net_profit"] == d("127")
+        assert summary["net_loss"] == d("42")
         assert summary["fees"] == d("5")
 
     def test_fees_can_flip_a_win_into_a_loss(self):
