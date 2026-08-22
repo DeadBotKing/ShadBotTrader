@@ -64,9 +64,12 @@ sum(net trade PnL) == final_equity - initial_equity
 ```
 
 The dashboard reports gross PnL before commission, net PnL after complete
-commission, and cost decomposition separately. An old result generated before
-this correction must be rerun; its old expectancy/profit-factor fields may have
-omitted entry commission.
+commission, and cost decomposition separately. It also writes one flat row per
+completed trade to `run_logs/backtest_trades.csv`. Each row contains the Signal
+BUY/SELL probabilities, Range reference/predicted high/low and offsets, actual
+entry/TP/SL/exit, exit reason, entry/exit fees and net PnL. An old result generated
+before this correction must be rerun; its old expectancy/profit-factor fields may
+have omitted entry commission.
 
 ## Replay consistency
 

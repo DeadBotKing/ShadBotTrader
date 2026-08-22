@@ -291,9 +291,15 @@ function rowFor(trip, n) {
   const tr = document.createElement('tr');
   const win = trip.net_pnl !== null && trip.net_pnl > 0;
   const cls = trip.net_pnl === null ? 'muted' : (win ? 'up' : 'down');
+  const meta = trip.entry_metadata || {};
+  const probability = value => value === undefined || value === null || value === ''
+    ? 'n/a' : fmt(Number(value) * 100, 1) + '%';
   const cells = [
     ['', String(n)],
     [trip.direction === 'long' ? 'up' : 'down', trip.direction],
+    ['muted', probability(meta.sell_probability)],
+    ['muted', probability(meta.buy_probability)],
+    ['muted', probability(meta.confidence)],
     ['muted', '#' + trip.entry_bar + ' ' + trip.entry_time.replace('T', ' ').slice(5, 16)],
     ['', fmt(trip.entry_price)],
     ['muted', '#' + trip.exit_bar + ' ' + trip.exit_time.replace('T', ' ').slice(5, 16)],
@@ -514,7 +520,8 @@ def render_replay(
   <div class="log" id="log">
     <table>
       <thead><tr>
-        <th>#</th><th>Side</th><th>Opened</th><th>Entry</th><th>Closed</th><th>Exit</th>
+        <th>#</th><th>Side</th><th>Sell %</th><th>Buy %</th><th>Conf.</th>
+        <th>Opened</th><th>Entry</th><th>Closed</th><th>Exit</th>
         <th>Bars</th><th>TP</th><th>SL</th><th>Fees</th><th>Net P&amp;L</th><th>Result</th>
       </tr></thead>
       <tbody id="log-body"></tbody>

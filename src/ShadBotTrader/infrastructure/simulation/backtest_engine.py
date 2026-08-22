@@ -525,10 +525,21 @@ class BacktestEngine:
         else:
             kind = MARKER_ENTRY
 
+        # Strategy context contains the exact Signal probabilities and
+        # Range forecast that approved this entry. Keep primitive values
+        # only so the tape remains JSON/CSV serialisable.
+        decision_metadata: Dict[str, Any] = {}
+        if outcome.intent is not None:
+            decision_metadata = {
+                key: value
+                for key, value in outcome.intent.context.items()
+                if isinstance(value, (str, int, float, bool)) or value is None
+            }
+
         bracket_metadata: Dict[str, Any] = {}
         if bracket is not None:
             bracket_metadata = {
-                "side": bracket.side.value,
+                "bracket_side": bracket.side.value,
                 "entry_reference": str(bracket.entry_reference.amount),
                 "take_profit": str(bracket.take_profit.amount),
                 "stop_loss": str(bracket.stop_loss.amount),
@@ -553,6 +564,10 @@ class BacktestEngine:
                 ),
             }
 
+        fill_reason = outcome.intent.reason if outcome.intent is not None else ""
+        if kind == MARKER_EXIT and outcome.intent is not None:
+            fill_reason = str(outcome.intent.context.get("bracket_exit_reason", fill_reason))
+
         recorder.mark(
             TradeMarker(
                 bar_index=self._bars - 1,
@@ -564,8 +579,8 @@ class BacktestEngine:
                 position_after=position_after,
                 realized_pnl=realized if kind != MARKER_ENTRY else None,
                 fees=fees,
-                reason=outcome.intent.reason if outcome.intent is not None else "",
-                metadata=bracket_metadata,
+                reason=fill_reason,
+                metadata={**decision_metadata, **bracket_metadata},
             )
         )
 

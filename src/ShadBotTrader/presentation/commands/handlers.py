@@ -1675,6 +1675,7 @@ class CommandHandlers:
         self._last_backtest_parameters = dict(command.parameters)
         metrics = result.metrics
         self._last_backtest_summary = {
+            "run_id": result.session.session_id,
             "engine": mode,
             "trades": metrics.trade_count,
             "initial_equity": metrics.starting_equity,
@@ -1696,11 +1697,13 @@ class CommandHandlers:
             "commission_rate": 0.0001,
             "slippage_rate": command.number("slippage", 0.0),
             "entry_timing": "next_open" if mode == "dual" else "signal_close",
+            "test_ratio": command.number("test_ratio", 0.0) / 100.0,
             "take_profits": result.bracket_exit_counts.get("take_profit", 0),
             "stop_losses": result.bracket_exit_counts.get("stop_loss", 0),
         }
         self._last_backtest_replay_ready = False
         replay_diagnostics: List[str] = []
+        trade_log_path: Optional[Path] = None
         if result.tape is not None:
             tape = result.tape
             tape_final = tape.final_equity
@@ -1727,10 +1730,19 @@ class CommandHandlers:
                     ),
                     time.monotonic() - started,
                 )
+            from ShadBotTrader.infrastructure.simulation.trade_log import write_trade_log
             from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
             self._replay_path.parent.mkdir(parents=True, exist_ok=True)
             self._replay_path.write_text(render_replay(tape, result.metrics), encoding="utf-8")
+            try:
+                trade_log_path = write_trade_log(
+                    tape,
+                    self._run_log_dir / "backtest_trades.csv",
+                    run_metadata=self._last_backtest_summary,
+                )
+            except Exception as error:  # the numeric backtest must remain usable
+                replay_diagnostics.append(f"trade log : FAILED ({type(error).__name__}: {error})")
             self._last_backtest_replay_ready = True
         hit = metrics.hit_rate
         profit_factor = metrics.profit_factor if metrics.profit_factor is not None else "n/a"
@@ -1740,6 +1752,7 @@ class CommandHandlers:
         expectancy = metrics.expectancy if metrics.expectancy is not None else "n/a"
         lines = [
             f"engine      : {mode}",
+            f"run id      : {result.session.session_id}",
             f"trades      : {metrics.trade_count}",
             f"initial eq  : {metrics.starting_equity:.4f}",
             f"final eq    : {metrics.final_equity:.4f}",
@@ -1771,6 +1784,8 @@ class CommandHandlers:
             )
         if replay_diagnostics:
             lines.extend(replay_diagnostics)
+        if trade_log_path is not None:
+            lines.append(f"trade log   : {trade_log_path} ({len(result.tape.round_trips())} rows)")
         if self._last_backtest_replay_ready:
             lines.append(f"replay      : exact tape written to {self._replay_path}")
         if note:
@@ -1805,6 +1820,7 @@ class CommandHandlers:
             summary = self._last_backtest_summary
             lines = [
                 f"engine        : {summary.get('engine', 'unknown')}",
+                f"run id        : {summary.get('run_id', 'unknown')}",
                 f"trades        : {summary.get('trades', 0)}",
                 f"initial eq    : {summary.get('initial_equity', 0)}",
                 f"final eq      : {summary.get('final_equity', 0)}",
@@ -1843,17 +1859,40 @@ class CommandHandlers:
         markup = render_replay(tape, result.metrics)
         self._replay_path.parent.mkdir(parents=True, exist_ok=True)
         self._replay_path.write_text(markup, encoding="utf-8")
+        trade_log_path: Optional[Path] = None
+        try:
+            from ShadBotTrader.infrastructure.simulation.trade_log import write_trade_log
+
+            trade_log_path = write_trade_log(
+                tape,
+                self._run_log_dir / "backtest_trades.csv",
+                run_metadata={
+                    "engine": mode,
+                    "quantity": command.number("quantity", 0.01),
+                    "spread": command.number("spread", 0.35 if mode == "dual" else 4.0),
+                    "commission_rate": 0.0001,
+                    "slippage_rate": command.number("slippage", 0.0),
+                    "test_ratio": command.number("test_ratio", 0.0) / 100.0,
+                },
+            )
+        except Exception:
+            # Replay rendering remains useful even if a filesystem log
+            # cannot be written.
+            pass
 
         trips = tape.round_trips()
         wins = sum(1 for trip in trips if trip["result"] == "win")
         lines = [
             f"engine        : {mode}",
+            f"run id        : {tape.session_id}",
             f"fills         : {len(tape.markers)}",
             f"closed trades : {len(trips)} ({wins} win / {len(trips) - wins} loss)",
             f"return        : {result.metrics.total_return:.4f} "
             f"({result.metrics.total_return_percent:.2f}%)",
             f"written to    : {self._replay_path}",
         ]
+        if trade_log_path is not None:
+            lines.append(f"trade log     : {trade_log_path} ({len(trips)} rows)")
         if mode == "dual":
             lines.extend(
                 [

@@ -35,6 +35,10 @@ from ShadBotTrader.infrastructure.simulation.prediction_sources import (
     MomentumPredictionSource,
     ScriptedPredictionSource,
 )
+from ShadBotTrader.infrastructure.simulation.trade_log import (
+    trade_log_rows,
+    write_trade_log,
+)
 
 __all__ = [
     "BacktestEngine",
@@ -47,4 +51,6 @@ __all__ = [
     "MomentumPredictionSource",
     "ScriptedPredictionSource",
     "summarise_tape",
+    "trade_log_rows",
+    "write_trade_log",
 ]

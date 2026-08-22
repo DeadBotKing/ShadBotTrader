@@ -356,6 +356,9 @@ class ReplayTape(ValueObject):
                         "entry_fees": float(open_marker.fees),
                         "exit_fees": float(marker.fees),
                         "net_pnl": _number(net),
+                        "exit_reason": marker.metadata.get("bracket_exit_reason", "")
+                        or marker.reason,
+                        "entry_metadata": dict(open_marker.metadata),
                         "bracket": bracket,
                         "result": (
                             "win"

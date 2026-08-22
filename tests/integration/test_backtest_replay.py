@@ -185,6 +185,18 @@ def test_the_html_player_is_self_contained():
     assert "cdn" not in markup.lower()
 
 
+def test_the_player_shows_signal_probabilities_when_recorded():
+    result = run(rising(30))
+    tape = result.tape
+    assert tape is not None
+
+    markup = render_replay(tape, result.metrics)
+
+    assert "Sell %" in markup
+    assert "Buy %" in markup
+    assert "Conf." in markup
+
+
 def test_the_player_embeds_the_recorded_bars_as_data():
     result = run(rising(30))
     tape = result.tape

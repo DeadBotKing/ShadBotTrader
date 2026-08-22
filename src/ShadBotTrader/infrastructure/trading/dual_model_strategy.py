@@ -121,6 +121,9 @@ class DualModelStrategy(Strategy):
             "sell_probability": signal.sell_probability,
             "buy_probability": signal.buy_probability,
             "directional_confidence": signal.directional_confidence,
+            "signal_horizon": signal.horizon,
+            "signal_timeframe": signal.timeframe,
+            "signal_generated_at": signal.generated_at,
         }
 
         if isinstance(range_forecast, RangeForecast):
@@ -142,6 +145,12 @@ class DualModelStrategy(Strategy):
                 {
                     "predicted_high": range_forecast.predicted_high,
                     "predicted_low": range_forecast.predicted_low,
+                    "range_reference_close": range_forecast.reference_close,
+                    "range_high_offset": range_forecast.high_offset,
+                    "range_low_offset": range_forecast.low_offset,
+                    "range_horizon": range_forecast.horizon,
+                    "range_timeframe": range_forecast.timeframe,
+                    "range_generated_at": range_forecast.generated_at,
                     "reward": reward,
                     "risk": risk,
                 }

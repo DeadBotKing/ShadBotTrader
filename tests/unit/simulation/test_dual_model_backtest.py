@@ -204,3 +204,4 @@ def test_recording_does_not_change_dual_model_result():
     assert recorded.tape.final_equity == recorded.metrics.final_equity
     trips = recorded.tape.round_trips()
     assert trips and trips[0]["bracket"]["take_profit"] == "105.0"
+    assert trips[0]["exit_reason"] == "take_profit"
