@@ -115,6 +115,7 @@ def cmd_dual(args: argparse.Namespace) -> int:
         signal_candles,
         range_candles,
         reporter=ConsoleSimulationReporter(show_steps=args.steps, step_every=100),
+        test_ratio=args.test_ratio / 100.0,
     )
     print(f"  signal window    : {service.signal_window_size}")
     print(f"  range window     : {service.range_window_size}")
@@ -258,6 +259,7 @@ def main(argv: List[str] | None = None) -> int:
     dual.add_argument("--threshold", type=float, default=0.60)
     dual.add_argument("--signal-window", type=int, default=0)
     dual.add_argument("--range-window", type=int, default=0)
+    dual.add_argument("--test-ratio", type=float, default=0.0, help="trade only final percentage")
     dual.add_argument("--storage-root", default=str(DEFAULT_STORAGE_ROOT))
     dual.add_argument("--capital", type=float, default=100.0)
     dual.add_argument("--spread", type=float, default=0.35)

@@ -122,6 +122,7 @@ class TrainingDataService:
             include_features=self._feature_set is not None
             and (self._resolver is not None or source is not None),
             source=source,
+            causal_only=True,
         )
         if source is not None and not source.is_complete:
             # A partial cache would quietly narrow the model input.
@@ -134,6 +135,7 @@ class TrainingDataService:
                 feature_set=self._feature_set,
                 resolver=self._resolver,
                 include_features=self._resolver is not None,
+                causal_only=True,
             )
         if matrix.is_empty:
             raise ValidationError(

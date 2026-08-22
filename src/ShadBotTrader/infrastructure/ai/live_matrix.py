@@ -94,6 +94,7 @@ class LiveMatrixBuilder:
             feature_set=self._feature_set,
             resolver=self._resolver,
             include_features=self._feature_set is not None and self._resolver is not None,
+            causal_only=True,
         )
 
         if len(matrix) < self._window_rows:

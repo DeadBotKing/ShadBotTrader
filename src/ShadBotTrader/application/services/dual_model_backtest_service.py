@@ -217,12 +217,15 @@ class DualModelBacktestService:
         range_candles: Sequence[Candle],
         reporter: Any = None,
         record_replay: bool = False,
+        test_ratio: float = 0.0,
     ) -> Any:
         """Execute the signal-first, fixed-bracket backtest."""
         if not signal_candles:
             raise ValueError("A dual-model backtest needs signal candles")
         if not range_candles:
             raise ValueError("A dual-model backtest needs range candles")
+        if not 0.0 <= test_ratio < 1.0:
+            raise ValidationError("test_ratio must be in [0, 1)")
 
         from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
 
@@ -237,6 +240,7 @@ class DualModelBacktestService:
             resolver=self._resolver,
             include_features=include_features,
             source=self._signal_feature_source,
+            causal_only=True,
         )
         range_matrix = build_feature_matrix(
             candles=ordered_range,
@@ -246,6 +250,7 @@ class DualModelBacktestService:
             resolver=self._resolver,
             include_features=include_features,
             source=self._range_feature_source,
+            causal_only=True,
         )
         if (
             self._expected_signal_features is not None
@@ -285,6 +290,27 @@ class DualModelBacktestService:
             signal_candles=ordered_signal,
         )
 
+        configuration = self._configuration
+        if test_ratio > 0:
+            test_start = int(len(ordered_signal) * (1.0 - test_ratio))
+            configuration = SimulationConfiguration(
+                initial_capital=self._configuration.initial_capital,
+                base_currency=self._configuration.base_currency,
+                spread=self._configuration.spread,
+                slippage_rate=self._configuration.slippage_rate,
+                commission_rate=self._configuration.commission_rate,
+                seed=self._configuration.seed,
+                mode=self._configuration.mode,
+                warmup_bars=max(self._configuration.warmup_bars, test_start),
+                entry_timing=self._configuration.entry_timing,
+                same_bar_policy=self._configuration.same_bar_policy,
+                metadata={
+                    **self._configuration.metadata,
+                    "test_ratio": test_ratio,
+                    "test_start_index": test_start,
+                },
+            )
+
         strategy = DualModelStrategy(
             min_confidence=self._min_signal_confidence,
             min_reward_risk=self._min_reward_risk,
@@ -292,7 +318,7 @@ class DualModelBacktestService:
             require_range_model=True,
         )
         service = BacktestService(
-            configuration=self._configuration,
+            configuration=configuration,
             risk_policy=self._risk_policy,
             base_quantity=self._base_quantity,
             allow_reversal=False,

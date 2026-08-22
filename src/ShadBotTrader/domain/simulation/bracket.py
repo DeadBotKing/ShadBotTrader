@@ -98,19 +98,30 @@ class TradeBracket:
         self,
         candle: Candle,
         policy: SameBarPolicy = SameBarPolicy.STOP_FIRST,
+        spread: Decimal = Decimal("0"),
     ) -> Optional[BracketExitReason]:
         """Return the first known exit touched by ``candle``.
 
-        OHLC data does not reveal the intrabar path.  If both levels are
-        touched, ``policy`` makes that uncertainty explicit instead of
-        silently choosing a profitable interpretation.
+        OHLC data does not reveal the intrabar path. If both levels are
+        touched, ``policy`` makes that uncertainty explicit. The candle
+        high/low are treated as mid prices, so the executable bid/ask
+        includes half the configured spread.
         """
+        if spread < 0:
+            raise ValidationError("spread must not be negative")
+        half = spread / Decimal("2")
         if self.side is OrderSide.BUY:
-            hit_target = candle.high.amount >= self.take_profit.amount
-            hit_stop = candle.low.amount <= self.stop_loss.amount
+            # Closing a long sells at bid.
+            bid_high = candle.high.amount - half
+            bid_low = candle.low.amount - half
+            hit_target = bid_high >= self.take_profit.amount
+            hit_stop = bid_low <= self.stop_loss.amount
         else:
-            hit_target = candle.low.amount <= self.take_profit.amount
-            hit_stop = candle.high.amount >= self.stop_loss.amount
+            # Closing a short buys at ask.
+            ask_high = candle.high.amount + half
+            ask_low = candle.low.amount + half
+            hit_target = ask_low <= self.take_profit.amount
+            hit_stop = ask_high >= self.stop_loss.amount
 
         if hit_target and hit_stop:
             if policy is SameBarPolicy.STOP_FIRST:

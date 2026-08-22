@@ -58,6 +58,8 @@ class FoldInfo:
     train_end: int
     val_start: int
     val_end: int
+    purged_train_samples: int = 0
+    validation_input_start: Optional[int] = None
 
     @property
     def human_index(self) -> int:
@@ -319,11 +321,13 @@ elapsed 0:14 | eta 1:42
         self._epoch_start = time.monotonic()
         self._last_batch_line = time.monotonic()
         if self._show_epochs:
+            purge = f" | purged {fold.purged_train_samples}" if fold.purged_train_samples else ""
             self._write(
                 f"fold {fold.human_index:>3}/{fold.total_folds} | "
                 f"train[{fold.train_start}:{fold.train_end}] "
                 f"({fold.train_samples} samples) -> "
                 f"val[{fold.val_start}:{fold.val_end}] ({fold.val_samples} samples)"
+                f"{purge}"
             )
 
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:

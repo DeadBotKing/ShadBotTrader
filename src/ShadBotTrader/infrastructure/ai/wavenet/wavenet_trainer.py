@@ -20,6 +20,7 @@ from ShadBotTrader.domain.ai.model_types import PredictionType
 from ShadBotTrader.domain.ai.ports import ModelPredictor, ModelTrainer
 from ShadBotTrader.domain.ai.prediction import Confidence, Prediction
 from ShadBotTrader.domain.ai.training_run import TrainingRun
+from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.infrastructure.ai.data_windowing import (
     build_multi_target_samples,
     build_samples,
@@ -98,6 +99,8 @@ class WavenetTrainer(ModelTrainer):
         loss: str | None = None,
         metric: str | None = None,
         sample_indices: Sequence[int] | None = None,
+        sample_label_ends: Sequence[int] | None = None,
+        purge_gap: int = 0,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -117,6 +120,13 @@ class WavenetTrainer(ModelTrainer):
         self._target_column = target_column
         self._target_columns = list(target_columns) if target_columns is not None else None
         self._sample_indices = list(sample_indices) if sample_indices is not None else None
+        self._sample_label_ends = list(sample_label_ends) if sample_label_ends is not None else None
+        if self._sample_indices is not None and self._sample_label_ends is not None:
+            if len(self._sample_indices) != len(self._sample_label_ends):
+                raise ValidationError("sample_label_ends must have one entry per sample")
+        if purge_gap < 0:
+            raise ValidationError("purge_gap must be >= 0")
+        self._purge_gap = purge_gap
         self._loss = loss
         self._metric = metric
         self._window_size = window_size
@@ -217,11 +227,22 @@ class WavenetTrainer(ModelTrainer):
         self._samples = samples
         _notify(self._progress, "on_prepare_end", len(samples))
 
+        sample_end_indices = self._sample_indices
+        if sample_end_indices is None:
+            sample_end_indices = [self._window_size - 1 + index for index in range(len(samples))]
+        if self._sample_label_ends is not None and len(self._sample_label_ends) != len(samples):
+            raise ValidationError("sample_label_ends must have one entry per sample")
         plan = expanding_split(
             total_length=len(samples),
             val_size=self._val_size,
             step=self._step,
             min_train_size=self._min_train_size,
+            purge_gap=self._purge_gap,
+            sample_end_indices=(
+                sample_end_indices if self._sample_label_ends is not None else None
+            ),
+            label_end_indices=self._sample_label_ends,
+            window_size=self._window_size,
         )
 
         folds = plan.folds
@@ -278,6 +299,8 @@ class WavenetTrainer(ModelTrainer):
                 train_end=fold.train_end,
                 val_start=fold.val_start,
                 val_end=fold.val_end,
+                purged_train_samples=fold.purged_train_samples,
+                validation_input_start=fold.validation_input_start,
             )
             self._progress.on_fold_begin(fold_info)
 
@@ -357,9 +380,21 @@ class WavenetTrainer(ModelTrainer):
             # loss. "Is the model any good?" then had no answer anywhere
             # in the system. The final-epoch value of every metric is
             # kept per fold.
-            self.fold_metrics.append(
-                {name: float(values[-1]) for name, values in history.history.items() if values}
-            )
+            fold_metrics = {
+                name: float(values[-1]) for name, values in history.history.items() if values
+            }
+            if self._target_columns is not None:
+                fold_metrics.update(
+                    self._range_validation_metrics(
+                        model,
+                        val_x,
+                        val_y,
+                        val_steps,
+                        fold.val_start,
+                        fold.val_end,
+                    )
+                )
+            self.fold_metrics.append(fold_metrics)
             last_model = model
             self._progress.on_fold_end(fold_info, val_loss)
 
@@ -386,6 +421,59 @@ class WavenetTrainer(ModelTrainer):
     #: 20,000 windows of 500x123 float32 is already 4.9 GB; below it the
     #: arrays are small enough that the simpler path stays faster.
     STREAM_THRESHOLD_BYTES = 512 * 1024 * 1024
+
+    def _range_validation_metrics(
+        self,
+        model: Any,
+        validation_x: Any,
+        validation_y: Any,
+        validation_steps: int,
+        start: int,
+        stop: int,
+    ) -> Dict[str, float]:
+        """Report high/low error separately from the aggregate MAE.
+
+        Keras' multi-output MAE averages both bounds, which can hide a
+        badly biased low or high prediction.  The validation labels are
+        regenerated from the same flat series for streamed folds, so this
+        diagnostic never changes the training data or the selected loss.
+        """
+        import numpy as np
+
+        predictions = model.predict(
+            validation_x,
+            steps=validation_steps if validation_y is None else None,
+            verbose=0,
+        )
+        if validation_y is None:
+            labels: List[Any] = []
+            for _, batch_y in self._generator().iter_batches(
+                batch_size=self._batch_size,
+                start=start,
+                stop=stop,
+            ):
+                labels.append(batch_y)
+            if not labels:
+                return {}
+            actual = np.concatenate(labels, axis=0)
+        else:
+            actual = np.asarray(validation_y)
+
+        predicted = np.asarray(predictions)
+        count = min(len(actual), len(predicted))
+        if count < 1 or actual.shape[-1] < 2 or predicted.shape[-1] < 2:
+            return {}
+        actual = actual[:count, :2].astype(np.float64)
+        predicted = predicted[:count, :2].astype(np.float64)
+        error = predicted - actual
+        return {
+            "val_high_mae": float(np.mean(np.abs(error[:, 0]))),
+            "val_low_mae": float(np.mean(np.abs(error[:, 1]))),
+            "val_high_rmse": float(np.sqrt(np.mean(error[:, 0] ** 2))),
+            "val_low_rmse": float(np.sqrt(np.mean(error[:, 1] ** 2))),
+            "val_high_bias": float(np.mean(error[:, 0])),
+            "val_low_bias": float(np.mean(error[:, 1])),
+        }
 
     def _dataset_for(self, start: int, stop: int) -> tuple:
         """Training inputs for one fold, streamed when they are large.

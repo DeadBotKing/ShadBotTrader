@@ -181,6 +181,7 @@ def describe_input_matrix(
     window_size: int,
     horizon: int,
     candle_columns: int = 14,
+    labels_already_aligned: bool = False,
 ) -> List[str]:
     """Plain lines describing the matrix a model is about to train on.
 
@@ -188,12 +189,20 @@ def describe_input_matrix(
     feeding this thing" is the first question, and it used to require
     reading three files to answer.
     """
-    windows = max(rows - window_size - horizon + 1, 0)
+    # DualModelService joins complete future labels before handing the
+    # matrix to the trainer. In that path the range horizon has already
+    # removed the tail, so subtracting it here again under-counts the
+    # actual WindowGenerator by exactly ``horizon`` windows.
+    effective_horizon = 0 if labels_already_aligned else horizon
+    windows = max(rows - window_size - effective_horizon + 1, 0)
     catalogue = max(columns - candle_columns, 0)
+    horizon_text = (
+        f"{horizon} already applied to labels" if labels_already_aligned else str(horizon)
+    )
     return [
         f"dataset matrix : {rows:,} rows x {columns} columns",
         f"                 {candle_columns} candle-derived + {catalogue} catalogue features",
         f"model input    : {window_size} rows x {columns} columns per window",
-        f"windows        : {windows:,} (stride 1, horizon {horizon})",
+        f"windows        : {windows:,} (stride 1, horizon {horizon_text})",
         f"tensor shape   : ({windows:,}, {window_size}, {columns})",
     ]

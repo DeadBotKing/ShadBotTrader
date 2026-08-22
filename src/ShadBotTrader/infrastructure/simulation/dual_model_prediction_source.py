@@ -322,6 +322,7 @@ class DualModelPredictionSource(PredictionSource):
                 resolver=self._resolver,
                 include_features=self._feature_set is not None and self._resolver is not None,
                 source=feature_source,
+                causal_only=True,
             )
         except Exception as error:
             self._last_error = f"feature window failed: {type(error).__name__}: {error}"

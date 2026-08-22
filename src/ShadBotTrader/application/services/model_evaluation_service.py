@@ -380,38 +380,77 @@ class ModelEvaluationService:
     def _score_range(
         self, result: EvaluationResult, predictions: Any, starts: Any, matrix: Any, horizon: int
     ) -> None:
-        """Mean absolute error of the predicted high/low offsets."""
+        """Score high and low offsets against the real future price path.
+
+        ``high_rel`` and ``low_rel`` are each relative to *their own
+        candle's close*.  Taking their maximum directly is not the range
+        target, because the model target is measured from the current
+        close.  Reconstruct the relative close path from ``return_1``
+        first, then convert every future high/low to the current-close
+        reference.  This keeps the independent test aligned with the
+        training labels.
+        """
         import numpy as np
 
         columns = matrix.column_names
-        needed = ("high_rel", "low_rel")
+        needed = ("return_1", "high_rel", "low_rel")
         if not all(name in columns for name in needed):
-            raise ValueError("the matrix has no high_rel/low_rel columns to score against")
+            raise ValueError("the matrix has no return_1/high_rel/low_rel columns to score against")
 
+        return_index = columns.index("return_1")
         high_index = columns.index("high_rel")
         low_index = columns.index("low_rel")
+
+        # Absolute scale is irrelevant: all targets are fractions. Starting
+        # at one avoids requiring raw prices in the persisted feature matrix.
+        closes = [1.0]
+        for row in matrix.rows[1:]:
+            closes.append(closes[-1] * (1.0 + float(row[return_index])))
 
         truth = []
         for start in starts:
             here = start + result.window_size - 1
-            window = matrix.rows[here + 1 : here + 1 + horizon]
-            if not window:
+            if here >= len(closes):
                 truth.append([0.0, 0.0])
                 continue
+            reference = closes[here]
+            future_indices = range(here + 1, min(here + 1 + horizon, len(matrix.rows)))
+            if reference <= 0:
+                truth.append([0.0, 0.0])
+                continue
+            future_highs = [
+                closes[index] * (1.0 + float(matrix.rows[index][high_index]))
+                for index in future_indices
+            ]
+            future_lows = [
+                closes[index] * (1.0 + float(matrix.rows[index][low_index]))
+                for index in range(here + 1, min(here + 1 + horizon, len(matrix.rows)))
+            ]
             truth.append(
                 [
-                    max(float(row[high_index]) for row in window),
-                    min(float(row[low_index]) for row in window),
+                    max(future_highs) / reference - 1.0 if future_highs else 0.0,
+                    min(future_lows) / reference - 1.0 if future_lows else 0.0,
                 ]
             )
 
         expected = np.asarray(truth, dtype=np.float64)
         actual = np.asarray(predictions, dtype=np.float64)[:, : expected.shape[1]]
+        count = min(len(actual), len(expected))
+        if count < 1:
+            raise ValueError("No complete range targets were available for the independent test")
+        actual = actual[:count]
+        expected = expected[:count]
+        error = actual - expected
 
-        result.metrics["mae"] = float(np.mean(np.abs(actual - expected)))
-        result.metrics["mse"] = float(np.mean((actual - expected) ** 2))
-        result.metrics["high_mae"] = float(np.mean(np.abs(actual[:, 0] - expected[:, 0])))
-        result.metrics["low_mae"] = float(np.mean(np.abs(actual[:, 1] - expected[:, 1])))
+        result.metrics["mae"] = float(np.mean(np.abs(error)))
+        result.metrics["mse"] = float(np.mean(error**2))
+        result.metrics["rmse"] = float(np.sqrt(np.mean(error**2)))
+        result.metrics["high_mae"] = float(np.mean(np.abs(error[:, 0])))
+        result.metrics["low_mae"] = float(np.mean(np.abs(error[:, 1])))
+        result.metrics["high_rmse"] = float(np.sqrt(np.mean(error[:, 0] ** 2)))
+        result.metrics["low_rmse"] = float(np.sqrt(np.mean(error[:, 1] ** 2)))
+        result.metrics["high_bias"] = float(np.mean(error[:, 0]))
+        result.metrics["low_bias"] = float(np.mean(error[:, 1]))
 
     # ------------------------------------------------------------- log --
     def append_to_log(self, result: EvaluationResult) -> Path:

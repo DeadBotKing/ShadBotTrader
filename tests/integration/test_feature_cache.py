@@ -263,7 +263,7 @@ class TestTheModelActuallyReceivesTheCatalogue:
         for feature_id in ("atr_14", "rsi_14", "macd_12_26_9", "bollinger_20_2", "tenkan"):
             assert feature_id in matrix.column_names, feature_id
 
-    def test_the_prepared_training_dataset_is_123_columns_wide(self):
+    def test_the_prepared_training_dataset_is_causal_70_columns_wide(self):
         service = DualModelService(
             feature_set=standard_feature_set(),
             resolver=CalculatorRegistry(),
@@ -277,7 +277,7 @@ class TestTheModelActuallyReceivesTheCatalogue:
             signal_model_role(window_size=40),
         )
 
-        assert prepared.summary()["feature_columns"] == 123
+        assert prepared.summary()["feature_columns"] == 70
 
     def test_without_the_catalogue_it_is_only_14_columns(self):
         """The reduced path exists; this pins the difference."""

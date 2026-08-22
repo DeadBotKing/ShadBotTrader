@@ -45,6 +45,8 @@ def _metric_payload(metrics: Optional[PerformanceMetrics]) -> Dict[str, Any]:
         "total_return_percent": float(metrics.total_return_percent),
         "max_drawdown_percent": float(metrics.max_drawdown_percent),
         "fees": float(metrics.total_fees),
+        "spread_cost": float(metrics.spread_cost),
+        "slippage_cost": float(metrics.slippage_cost),
     }
 
 
@@ -424,6 +426,10 @@ def render_replay(
     <div class="stat"><div class="k">Hit rate</div><div class="v" id="m-hit">n/a</div></div>
     <div class="stat"><div class="k">Profit factor</div><div class="v" id="m-pf">n/a</div></div>
     <div class="stat"><div class="k">Fees</div><div class="v">{metrics.total_fees:.4f}</div></div>
+    <div class="stat"><div class="k">Spread cost</div>
+      <div class="v">{metrics.spread_cost:.4f}</div></div>
+    <div class="stat"><div class="k">Slippage</div>
+      <div class="v">{metrics.slippage_cost:.4f}</div></div>
   </div>"""
 
     return f"""<!DOCTYPE html>

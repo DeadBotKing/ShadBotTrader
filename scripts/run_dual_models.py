@@ -64,6 +64,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="range candles to look ahead; signal searches until threshold hit",
     )
     parser.add_argument("--window", type=int, default=24, help="input window size")
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=100.0,
+        help="percentage of chronological candles used for training (100 = all)",
+    )
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
     parser.add_argument("--learning-rate", type=float, default=1.5e-4)
@@ -113,7 +119,10 @@ def training_window_count(dataset, role) -> int:
     sample_ends = getattr(dataset, "sample_ends", None)
     if sample_ends is not None:
         return len(sample_ends)
-    return max(len(dataset.series) - role.window_size - role.horizon + 1, 0)
+    # PreparedDataset is already joined to complete labels. For a range
+    # role, the horizon was consumed by attach_targets before this point;
+    # subtracting it again under-counts the real generator by ``horizon``.
+    return max(len(dataset.series) - role.window_size + 1, 0)
 
 
 def load_candles(storage_root: Path, symbol: str, timeframe: str):
@@ -193,6 +202,7 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
     from ShadBotTrader.domain.market.timeframe import Timeframe
     from ShadBotTrader.infrastructure.ai.training_progress import NullProgressReporter
 
+    candles = training_prefix(candles, args, role)
     candidates = parse_learning_rates(args.learning_rates)
     metric_name = "val_loss" if role.name == "signal" else "val_mae"
     results: list[tuple[float, float]] = []
@@ -233,6 +243,20 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
     return winner
 
 
+def training_prefix(candles, args, role):
+    """Keep only the chronological training prefix for OOS evaluation."""
+    ratio = float(args.train_ratio)
+    if not 0 < ratio <= 100:
+        raise ValueError("train_ratio must be in (0, 100]")
+    if ratio >= 100:
+        return candles
+    cutoff = max(role.window_size + 2, int(len(candles) * ratio / 100.0))
+    if cutoff >= len(candles):
+        return candles
+    print(f"  train prefix    : {cutoff:,}/{len(candles):,} candles ({ratio:.1f}%)")
+    return candles[:cutoff]
+
+
 def train_one(service, args, role, timeframe: str, learning_rate: float | None = None) -> int:
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
@@ -259,6 +283,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         print(f"\n  [X] {error}")
         return 1
     print(f"\n  candles loaded : {len(candles)}")
+    candles = training_prefix(candles, args, role)
 
     try:
         dataset = service.prepare(candles, Symbol(args.symbol), Timeframe(timeframe), role)
@@ -270,6 +295,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     print(f"  usable rows    : {summary['rows']}")
     print(f"  feature columns: {summary['feature_columns']}")
     print(f"  dropped warmup : {summary['dropped_warmup']}")
+    print(
+        f"  causal input  : {summary.get('feature_columns', 0)} features; "
+        f"excluded {summary.get('excluded_features', 0)} non-causal/unknown"
+    )
     if summary["skipped_features"]:
         print(f"  skipped feats  : {summary['skipped_features']}")
     if dataset.label_distribution:
@@ -316,6 +345,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         columns=dataset.feature_count,
         window_size=role.window_size,
         horizon=role.horizon,
+        labels_already_aligned=True,
     ):
         print(f"  {line}")
     print(f"  if materialised: {naive_gb:.1f} GB  (streamed instead when large)")
@@ -347,7 +377,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
-    print_quality(outcome, role)
+    print_quality(outcome, role, reference_price=float(candles[-1].close.amount))
     save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
     # ---- one live prediction so the output is concrete -----------------
@@ -648,7 +678,7 @@ def save_model(
     print(f"    record  : {path}")
 
 
-def print_quality(outcome: dict, role) -> None:
+def print_quality(outcome: dict, role, reference_price: float | None = None) -> None:
     """Report how good the model actually is, not just that it ran.
 
     Phase 36: the run printed fold losses and nothing else. A loss is
@@ -692,7 +722,25 @@ def print_quality(outcome: dict, role) -> None:
                 f"\n    val_mae {mae:.6f} — average error of the predicted "
                 f"high/low offsets, as a fraction of price."
             )
-            print(f"    On gold at 2,000 that is about {mae * 2000:.2f} USD per bound.")
+            if reference_price is not None and reference_price > 0:
+                print(
+                    f"    At {reference_price:.2f} on {getattr(role, 'timeframe', 'the market')}, "
+                    f"that is about {mae * reference_price:.2f} USD per bound."
+                )
+            else:
+                print("    USD translation skipped: no reference close was supplied.")
+
+            bound_labels = (
+                ("val_high_mae", "high MAE"),
+                ("val_low_mae", "low MAE"),
+                ("val_high_rmse", "high RMSE"),
+                ("val_low_rmse", "low RMSE"),
+                ("val_high_bias", "high bias"),
+                ("val_low_bias", "low bias"),
+            )
+            for key, label in bound_labels:
+                if key in final:
+                    print(f"    {label:<10}: {final[key]:+.6f}")
 
 
 def main(argv: list[str] | None = None) -> int:

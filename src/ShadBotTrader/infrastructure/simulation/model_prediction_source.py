@@ -169,6 +169,7 @@ class ModelPredictionSource(PredictionSource):
                 feature_set=self._feature_set,
                 resolver=self._resolver,
                 include_features=self._feature_set is not None and self._resolver is not None,
+                causal_only=True,
             )
         except Exception:
             # A malformed window must not abort a 100k-bar backtest; the

@@ -1,16 +1,16 @@
-gold_range_5m — 100 x 123 input
+gold_signal_5m — 100 x 70 input
 
 Model: "wavenet"
 +--------------------------------------------------------------------------+
 | Layer (type)        | Output Shape      |    Param # | Connected to      |
 |---------------------+-------------------+------------+-------------------|
-| input_layer         | (None, 100, 123)  |          0 | -                 |
+| input_layer         | (None, 100, 70)   |          0 | -                 |
 | (InputLayer)        |                   |            |                   |
 |---------------------+-------------------+------------+-------------------|
-| zero_padding1d      | (None, 109, 123)  |          0 | input_layer[0][0] |
+| zero_padding1d      | (None, 109, 70)   |          0 | input_layer[0][0] |
 | (ZeroPadding1D)     |                   |            |                   |
 |---------------------+-------------------+------------+-------------------|
-| separable_conv1d    | (None, 100, 32)   |    103,352 | zero_padding1d[0… |
+| separable_conv1d    | (None, 100, 32)   |     58,832 | zero_padding1d[0… |
 | (SeparableConv1D)   |                   |            |                   |
 |---------------------+-------------------+------------+-------------------|
 | dropout (Dropout)   | (None, 100, 32)   |          0 | separable_conv1d… |
@@ -153,8 +153,8 @@ Model: "wavenet"
 |---------------------+-------------------+------------+-------------------|
 | dense (Dense)       | (None, 2)         |      6,402 | flatten[0][0]     |
 +--------------------------------------------------------------------------+
- Total params: 673,040 (2.57 MB)
- Trainable params: 224,346 (876.35 KB)
+ Total params: 539,480 (2.06 MB)
+ Trainable params: 179,826 (702.45 KB)
  Non-trainable params: 0 (0.00 B)
- Optimizer params: 448,694 (1.71 MB)
+ Optimizer params: 359,654 (1.37 MB)
 

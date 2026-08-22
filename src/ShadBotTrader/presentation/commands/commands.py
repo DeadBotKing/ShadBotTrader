@@ -45,6 +45,8 @@ class CommandKind(str, Enum):
     # -- data and features ----------------------------------------------
     FETCH_MARKET_DATA = "fetch_market_data"
     COMPUTE_FEATURES = "compute_features"
+    AUDIT_CAUSAL_FEATURES = "audit_causal_features"
+    AUDIT_CAUSAL_INVARIANCE = "audit_causal_invariance"
     BUILD_DATASET = "build_dataset"
     WEEKLY_UPDATE = "weekly_update"
     BUILD_TIMEFRAME = "build_timeframe"

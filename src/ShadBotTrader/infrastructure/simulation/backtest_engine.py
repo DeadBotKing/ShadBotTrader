@@ -151,6 +151,8 @@ class BacktestEngine:
         self._fills = 0
         self._last_realized = Decimal("0")
         self._last_fees = Decimal("0")
+        self._spread_cost = Decimal("0")
+        self._slippage_cost = Decimal("0")
         self._open_bar: Optional[str] = None
 
         self._recorder: Optional[ReplayRecorder] = None
@@ -354,10 +356,21 @@ class BacktestEngine:
         if not result.executed:
             return False
 
+        self._capture_execution_costs(result, quote)
         self._fills += 1
         realized_delta, fee_delta = self._capture_trade(event, was_flat)
         self._mark_fill(event, outcome=result, realized=realized_delta, fees=fee_delta)
         return True
+
+    def _capture_execution_costs(self, outcome: Any, quote: Any) -> None:
+        """Separate spread and adverse slippage from commission fees."""
+        execution = outcome.result
+        if execution is None:
+            return
+        for fill in execution.fills:
+            touch = quote.ask if fill.side.value == "buy" else quote.bid
+            self._spread_cost += fill.quantity * abs(touch.amount - quote.mid.amount)
+            self._slippage_cost += fill.quantity * abs(fill.price.amount - touch.amount)
 
     def _quote_for_event(
         self,
@@ -416,7 +429,11 @@ class BacktestEngine:
             self._bracket = None
             return False
 
-        reason = bracket.trigger(event.candle, self._session.configuration.same_bar_policy)
+        reason = bracket.trigger(
+            event.candle,
+            self._session.configuration.same_bar_policy,
+            spread=self._session.configuration.spread,
+        )
         if reason is None:
             return False
 
@@ -602,6 +619,8 @@ class BacktestEngine:
             gross_profit=summary["gross_profit"],
             gross_loss=summary["gross_loss"],
             total_fees=self._ledger.total_fees.amount,
+            spread_cost=self._spread_cost,
+            slippage_cost=self._slippage_cost,
             sharpe=sharpe_ratio(returns),
             volatility=standard_deviation(returns),
         )

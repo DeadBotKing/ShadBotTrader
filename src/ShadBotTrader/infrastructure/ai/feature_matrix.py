@@ -139,6 +139,8 @@ class FeatureMatrix:
     #: Rows cut from the tail because a forward-looking column has no
     #: value there. Contiguity-safe, exactly like the warm-up cut.
     dropped_tail: int = 0
+    #: Features intentionally blocked by the Stage 1 causality audit.
+    excluded_features: Dict[str, str] = field(default_factory=dict)
 
     @property
     def is_contiguous(self) -> bool:
@@ -171,6 +173,8 @@ class FeatureMatrix:
             "skipped_features": len(self.skipped_features),
             "dropped_tail": self.dropped_tail,
             "holed_features": len(self.holed_features),
+            "excluded_features": len(self.excluded_features),
+            "excluded_reasons": dict(self.excluded_features),
             "contiguous": self.is_contiguous,
         }
 
@@ -276,6 +280,8 @@ def build_feature_matrix(
     resolver=None,
     include_features: bool = True,
     source: Optional["FeatureSource"] = None,
+    #: When true, non-causal or unknown features never enter model input.
+    causal_only: bool = False,
 ) -> FeatureMatrix:
     """Build the model input matrix for ``candles``.
 
@@ -294,6 +300,10 @@ def build_feature_matrix(
     else: the scaling, the warm-up trim, the tail trim and the column
     order below are shared by both paths, which is what makes a loaded
     matrix byte-identical to a computed one.
+
+    ``causal_only=True`` is the model/live path. It enforces the feature
+    contract and records every excluded feature with its leakage reason;
+    the broader feature catalogue remains available for research.
     """
     if not candles:
         raise ValidationError("Cannot build a feature matrix from zero candles")
@@ -301,19 +311,30 @@ def build_feature_matrix(
     column_names: List[str] = list(CANDLE_COLUMNS)
     feature_columns: Dict[str, List[Optional[float]]] = {}
     skipped: List[str] = []
+    excluded: Dict[str, str] = {}
     warmup = 0
 
     if include_features and feature_set is not None:
         context = FeatureInputContext(symbol=symbol, timeframe=timeframe, candles=list(candles))
         for definition in feature_set.definitions:
             feature_id = definition.feature_id.value
+            if causal_only and not definition.is_live_compatible:
+                excluded[feature_id] = (
+                    definition.leakage_reason or f"causality={definition.causality.value}"
+                )
+                continue
 
             if source is not None:
                 result = source.get(feature_id)
             elif resolver is not None:
                 calculator = resolver.resolve(definition.calculator_family)
                 if calculator is None:
-                    skipped.append(feature_id)
+                    if causal_only:
+                        excluded[feature_id] = (
+                            f"UNKNOWN_CALCULATOR_FAMILY:{definition.calculator_family}"
+                        )
+                    else:
+                        skipped.append(feature_id)
                     continue
                 try:
                     result = calculator.compute(definition, context)
@@ -393,6 +414,7 @@ def build_feature_matrix(
         skipped_features=skipped,
         holed_features=holed,
         dropped_tail=max(len(candles) - max(stop, start), 0),
+        excluded_features=excluded,
     )
 
 

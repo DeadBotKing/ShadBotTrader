@@ -85,6 +85,8 @@ class PerformanceMetrics(ValueObject):
         gross_profit: Decimal = Decimal("0"),
         gross_loss: Decimal = Decimal("0"),
         total_fees: Decimal = Decimal("0"),
+        spread_cost: Decimal = Decimal("0"),
+        slippage_cost: Decimal = Decimal("0"),
         sharpe: Optional[Decimal] = None,
         volatility: Optional[Decimal] = None,
     ) -> None:
@@ -100,6 +102,8 @@ class PerformanceMetrics(ValueObject):
         self._gross_profit = gross_profit
         self._gross_loss = gross_loss
         self._total_fees = total_fees
+        self._spread_cost = spread_cost
+        self._slippage_cost = slippage_cost
         self._sharpe = sharpe
         self._volatility = volatility
 
@@ -206,6 +210,14 @@ class PerformanceMetrics(ValueObject):
     def total_fees(self) -> Decimal:
         return self._total_fees
 
+    @property
+    def spread_cost(self) -> Decimal:
+        return self._spread_cost
+
+    @property
+    def slippage_cost(self) -> Decimal:
+        return self._slippage_cost
+
     def to_dict(self) -> Dict[str, Any]:
         """A flat, serialisable view for reporting."""
 
@@ -229,6 +241,8 @@ class PerformanceMetrics(ValueObject):
             "sharpe": show(self._sharpe),
             "volatility": show(self._volatility),
             "total_fees": str(self._total_fees),
+            "spread_cost": str(self._spread_cost),
+            "slippage_cost": str(self._slippage_cost),
         }
 
     def _value(self) -> tuple[Any, ...]:

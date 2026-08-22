@@ -2,9 +2,9 @@
 
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
-- **آخرین به‌روزرسانی:** 2026-08-18
-- **آخرین کار انجام‌شده:** **فاز ۴۹** — آستانهٔ سیگنال با مدل ذخیره می‌شود و ارزیابی همان را می‌خواند
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy (295 files)` · `pytest 1458 passed, 12 skipped`
+- **آخرین به‌روزرسانی:** 2026-08-20
+- **آخرین کار انجام‌شده:** **Integrity Layer** — آزمون runtime invariance، transformer audit contract، purged target endpoints، شمارش صحیح window و گزارش جداگانهٔ high/low range metrics
+- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy`؛ عدد نهایی pytest را فقط بعد از اجرای کامل همین نسخه ثبت کنید
 - **تعداد فایل منبع:** ۲۹۵ · **فایل تست:** ۱۱۶
 - ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
@@ -52,6 +52,7 @@
 | **درخواست 2026-08-19** | **Binary Signal Model** | ✅ **کامل (جدید)** | `prediction_target.py` + `target_builder.py` + `dual_predictor.py` — خروجی و label فقط SELL/BUY؛ HOLD فقط تصمیم داخلی strategy است |
 | **۴۸** | **Evaluate & Inspect** | ✅ **کامل (جدید)** | `model_evaluation_service.py` + `model_diagram.py` — تست مدل روی دیتاست با لاگ تجمعی، بازرسی ماتریس، PNG معماری، سقف آرشیو |
 | **۴۷** | **Best-Model Selection** | ✅ **کامل (جدید)** | فقط وقتی نتیجه بهتر شد ذخیره می‌شود — برای **هر دو** نقش (signal با `val_loss`، range با `val_mae`)؛ ذخیرهٔ نهایی بهترین را بازنویسی نمی‌کند |
+| **۵۰** | **Integrity Layer** | ✅ **کامل (جدید)** | `invariance_audit.py` برای 109 feature، اثبات prefix برای 56 feature causal و ماتریس 70 ستونی، audit fit روی full-series در برابر train-prefix، purge endpoint برای targetهای variable، اصلاح window count و high/low MAE/RMSE/bias |
 | **۴۶** | **Epoch Checkpoints** | ✅ **کامل (جدید)** | ذخیره بعد از هر epoch، ETA بر مبنای epoch نه fold، timeout ۸ ساعته قابل تنظیم |
 | **۴۵** | **Threshold & Live Spread** | ✅ **کامل (جدید)** | `Signal threshold %` در فرم، `live_quote()` که اسپرد را از تیک متاتریدر می‌خواند، حذف اسپرد ۴ دلاری ضررده |
 | **۴۴** | **Training Pace** | ✅ **کامل (جدید)** | batch_size با حجم دیتا مقیاس می‌گیرد (۵٬۹۸۶→۷۴۸ قدم)، حداکثر ۳۰ ثانیه سکوت، ETA |

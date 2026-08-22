@@ -58,6 +58,11 @@ class PreparedDataset:
     #: Explicit window ends for sparse first-passage signal labels.
     #: None means ordinary stride-1 windows (range model).
     sample_ends: Optional[List[int]] = None
+    #: Raw matrix positions where each sample's future label ends. Signal
+    #: labels are variable-horizon first-passage events, so a fixed purge
+    #: gap alone cannot prove that a training label stayed before validation.
+    sample_label_ends: Optional[List[int]] = None
+    excluded_features: Dict[str, str] = field(default_factory=dict)
 
     @property
     def row_count(self) -> int:
@@ -75,10 +80,12 @@ class PreparedDataset:
             "skipped_features": len(self.skipped_features),
             "label_distribution": self.label_distribution,
             "degenerate": self.degenerate,
+            "excluded_features": len(self.excluded_features),
+            "excluded_feature_reasons": dict(self.excluded_features),
             "training_windows": (
                 len(self.sample_ends)
                 if self.sample_ends is not None
-                else max(self.row_count - self.role.window_size - self.role.horizon + 1, 0)
+                else max(self.row_count - self.role.window_size + 1, 0)
             ),
         }
 
@@ -129,6 +136,7 @@ class DualModelService:
             feature_set=self._feature_set,
             resolver=self._resolver,
             include_features=self._include_features,
+            causal_only=True,
         )
         if matrix.is_empty:
             raise ValidationError(
@@ -139,6 +147,7 @@ class DualModelService:
         distribution: Optional[Dict[str, int]] = None
         degenerate = False
         sample_ends: Optional[List[int]] = None
+        sample_label_ends: Optional[List[int]] = None
 
         if role.target.kind is TargetKind.PRICE_RANGE:
             labels = build_range_labels(candles, horizon=role.horizon)
@@ -164,14 +173,29 @@ class DualModelService:
             degenerate = signal.is_degenerate()
             target_names = ["signal_class"]
             target_by_index = dict(zip(signal.source_index, signal.labels, strict=True))
+            hit_by_index = dict(zip(signal.source_index, signal.hit_index, strict=True))
             original_to_matrix = {
                 original: position for position, original in enumerate(matrix.source_index)
             }
-            sample_ends = [
-                original_to_matrix[index]
+            selected_signal_indices = [
+                index
                 for index in signal.source_index
                 if index in original_to_matrix and original_to_matrix[index] >= role.window_size - 1
             ]
+            sample_ends = [original_to_matrix[index] for index in selected_signal_indices]
+            sample_label_ends = [
+                original_to_matrix[hit_by_index[index]]
+                for index in selected_signal_indices
+                if hit_by_index[index] in original_to_matrix
+            ]
+            if len(sample_label_ends) != len(sample_ends):
+                # A causal feature matrix should cover the whole available
+                # candle history. Refuse an ambiguous label alignment rather
+                # than silently training a variable-horizon target with a
+                # guessed endpoint.
+                raise ValidationError(
+                    "Some first-passage label endpoints are outside the feature matrix"
+                )
             if not sample_ends:
                 raise ValidationError(
                     "No complete signal windows have a first-passage BUY/SELL label."
@@ -203,6 +227,8 @@ class DualModelService:
             label_distribution=distribution,
             degenerate=degenerate,
             sample_ends=sample_ends,
+            sample_label_ends=sample_label_ends,
+            excluded_features=dict(matrix.excluded_features),
         )
 
     # ------------------------------------------------------ training --
@@ -297,6 +323,17 @@ class DualModelService:
         if not min_train_size:
             min_train_size = max(8, min(rows // 4, 20 * role.window_size))
 
+        # Range labels are already joined to the usable feature rows, so
+        # the trainer's ordinary sample index is the input-window end and
+        # the target ends ``role.horizon`` candles later. Signal labels
+        # carry their exact, variable first-passage endpoint from prepare().
+        sample_label_ends = getattr(dataset, "sample_label_ends", None)
+        if sample_label_ends is None and is_regression:
+            sample_count = max(len(dataset.series) - role.window_size + 1, 0)
+            sample_label_ends = [
+                role.window_size - 1 + index + role.horizon for index in range(sample_count)
+            ]
+
         return WavenetTrainer(
             series=dataset.series,
             target_column=dataset.target_columns[0],
@@ -314,6 +351,8 @@ class DualModelService:
             max_folds=max_folds,
             progress=progress,
             sample_indices=getattr(dataset, "sample_ends", None),
+            sample_label_ends=sample_label_ends,
+            purge_gap=max(role.window_size - 1, 0) + (role.horizon if is_regression else 0),
         )
 
     def train(

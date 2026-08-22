@@ -152,13 +152,16 @@ The set mirrors the legacy feature catalog: wavelet-filtered prices,
 SMA/EMA (5-35), ATR (Wilder + TR), Bollinger bands, Ichimoku, RSI,
 MACD, Stochastic, per-column returns, target lags (past + future),
 Fourier resonance sin/cos, candle balance (color/extension/power),
-7 PCA components and 12 classic price/oscillator divergence features. Future-looking features (targets +1,
-Fourier) are flagged research-only (non-causal) and never enter live
-trading. Every feature is deterministic and causal where marked (warmup
-respected), passes a
-quality engine (NaN/Inf/range/alignment) and a leakage check
-(availability-time <= decision-time). Results are stored immutably as
-Parquet under `datasets/features/{feature_id}/v{version}.parquet`.
+7 PCA components and 12 classic price/oscillator divergence features. The full
+catalogue remains available for research, but the production audit blocks 53
+non-causal definitions (full-series Wavelet/Fourier/PCA, future shifts,
+`chikou`, and centered divergence). The causal model/live input is 56 catalogue
+features plus 14 candle-derived columns: 70 columns. Future-looking and
+full-series features never enter live trading. Every feature is deterministic
+and causal where marked (warmup respected), passes a quality engine
+(NaN/Inf/range/alignment) and the runtime unchanged-prefix invariance audit.
+Results are stored immutably as Parquet under
+`datasets/features/{feature_id}/v{version}.parquet`.
 
 ## Saving results (`--persist`)
 

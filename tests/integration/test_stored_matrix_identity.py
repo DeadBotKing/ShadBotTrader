@@ -262,5 +262,5 @@ class TestTheStoreIsRefusedWhenItDoesNotMatch:
         )
         record, *_ = service.build_slice(candles, "XAUUSD", "1H", len(candles))
 
-        assert record.feature_columns == 123
+        assert record.feature_columns == 70
         assert "computed" in service.last_source

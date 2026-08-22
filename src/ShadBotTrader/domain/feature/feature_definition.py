@@ -58,12 +58,20 @@ class FeatureDefinition:
     causality: Causality = Causality.CAUSAL
     description: str = ""
     family: str = ""
+    #: Explicit future dependency, in candles.  This is metadata for
+    #: auditing; a non-causal family can still have zero here (for example
+    #: a full-series PCA fit).
+    forward_lookahead: int = 0
+    #: Human-readable reason a feature is unsafe for live/model input.
+    leakage_reason: str = ""
 
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise ValidationError("FeatureDefinition name must not be empty")
         if self.lookback < 0:
             raise ValidationError("FeatureDefinition lookback must be >= 0")
+        if self.forward_lookahead < 0:
+            raise ValidationError("FeatureDefinition forward_lookahead must be >= 0")
         if not self.computation_version.strip():
             raise ValidationError("FeatureDefinition computation_version must not be empty")
         if not self.parameters:
@@ -72,8 +80,17 @@ class FeatureDefinition:
 
     @property
     def is_live_compatible(self) -> bool:
-        """False for non-causal features, which must not enter live trading."""
-        return self.causality is Causality.CAUSAL
+        """True only when the definition has no future dependency."""
+        return (
+            self.causality is Causality.CAUSAL
+            and self.forward_lookahead == 0
+            and not self.leakage_reason
+        )
+
+    @property
+    def is_causal(self) -> bool:
+        """Alias used by the Stage 1 causality audit."""
+        return self.is_live_compatible
 
     @property
     def calculator_family(self) -> str:

@@ -37,6 +37,8 @@ def _definition(
     family: str,
     causality: Causality = Causality.CAUSAL,
     description: str = "",
+    forward_lookahead: int = 0,
+    leakage_reason: str = "",
 ) -> FeatureDefinition:
     return FeatureDefinition(
         feature_id=FeatureId(feature_id),
@@ -49,6 +51,8 @@ def _definition(
         causality=causality,
         description=description,
         family=family,
+        forward_lookahead=forward_lookahead,
+        leakage_reason=leakage_reason,
     )
 
 
@@ -70,7 +74,9 @@ def _build_definitions() -> List[FeatureDefinition]:
                 parameters={"column": column},
                 lookback=0,
                 family="noise_filter",
-                description="Wavelet (haar/db6/dmey) denoised price",
+                causality=Causality.NON_CAUSAL,
+                leakage_reason="FULL_SERIES_WAVELET",
+                description="Wavelet (haar/db6/dmey) denoised price; research only",
             )
         )
 
@@ -162,6 +168,9 @@ def _build_definitions() -> List[FeatureDefinition]:
                 parameters={"line": line, "tenkan": 9, "kijun": 26, "senkou": 52},
                 lookback=51,
                 family="ichimoku",
+                causality=(Causality.NON_CAUSAL if line == "chikou" else Causality.CAUSAL),
+                forward_lookahead=26 if line == "chikou" else 0,
+                leakage_reason="FUTURE_SHIFT" if line == "chikou" else "",
                 description=f"Ichimoku {line} line (9/26/52)",
             )
         )
@@ -237,6 +246,8 @@ def _build_definitions() -> List[FeatureDefinition]:
                 lookback=0,
                 family="target",
                 causality=Causality.NON_CAUSAL,
+                forward_lookahead=1,
+                leakage_reason="FUTURE_VALUE",
                 description=f"{column} shifted one candle forward (research only)",
             )
         )
@@ -253,9 +264,10 @@ def _build_definitions() -> List[FeatureDefinition]:
                     lookback=0,
                     family="fourier",
                     causality=Causality.NON_CAUSAL,
+                    leakage_reason="FULL_SERIES_FOURIER_FIT",
                     description=(
                         f"{function} of the dominant {column} cycle "
-                        "(frequency fitted on the full series)"
+                        "(frequency fitted on the full series; research only)"
                     ),
                 )
             )
@@ -307,7 +319,10 @@ def _build_definitions() -> List[FeatureDefinition]:
                 lookback=0,
                 family="pca",
                 causality=Causality.NON_CAUSAL,
-                description=f"{component}-th principal component of OHLCV (batch SVD)",
+                leakage_reason="FULL_SERIES_PCA_FIT",
+                description=(
+                    f"{component}-th principal component of OHLCV " "(batch SVD; research only)"
+                ),
             )
         )
 
@@ -349,7 +364,11 @@ def _build_definitions() -> List[FeatureDefinition]:
                 parameters={"indicator": indicator, "signaltype": signaltype},
                 lookback=0,
                 family="divergence",
-                description=(f"Classic {signaltype} divergence of {indicator} vs price"),
+                causality=Causality.NON_CAUSAL,
+                leakage_reason="CENTERED_FUTURE_EXTREMA",
+                description=(
+                    f"Classic {signaltype} divergence of {indicator} vs price; research only"
+                ),
             )
         )
 

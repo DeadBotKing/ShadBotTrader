@@ -322,6 +322,48 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="Data",
         ),
         CommandDescriptor(
+            kind=CommandKind.AUDIT_CAUSAL_FEATURES,
+            label="Audit causal features",
+            description=(
+                "Report which standard features are allowed into model/live "
+                "input and which are blocked for future leakage."
+            ),
+            fields=[],
+            group="Data",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_CAUSAL_INVARIANCE,
+            label="Run causality invariance test",
+            description=(
+                "Change only the future part of a stored candle series and "
+                "prove that every causal feature and the causal model matrix "
+                "keep the earlier prefix identical. Full-series PCA, Fourier, "
+                "wavelet and centered-extrema features remain research-only."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "timeframe", "Timeframe", "5M", kind="select", options=("5M", "1H", "1D")
+                ),
+                CommandField(
+                    "split_pct",
+                    "Unchanged prefix %",
+                    "70",
+                    kind="number",
+                    hint="future candles after this point are deliberately mutated",
+                ),
+                CommandField(
+                    "max_bars",
+                    "Audit at most",
+                    "2000",
+                    kind="number",
+                    hint="limits runtime; use the full dataset only when needed",
+                ),
+            ],
+            slow=True,
+            group="Data",
+        ),
+        CommandDescriptor(
             kind=CommandKind.TRAIN_MODEL,
             label="Retrain a saved model",
             description=(
@@ -359,6 +401,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
                 CommandField(
+                    "train_ratio",
+                    "Training prefix %",
+                    "100",
+                    kind="number",
+                    hint="keep 20% unseen for a genuine test",
+                ),
+                CommandField(
                     "timeout_minutes",
                     "Give up after (minutes)",
                     "480",
@@ -391,9 +440,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
+                CommandField(
+                    "test_ratio",
+                    "Test holdout % (0 = all)",
+                    "0",
+                    kind="number",
+                    hint="trade only the final percentage; train the model on the earlier prefix",
+                ),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("quantity", "Quantity", "0.01", kind="number"),
                 CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField("slippage", "Slippage rate", "0", kind="number"),
                 CommandField(
                     "same_bar_policy",
                     "If TP and SL share a candle",
@@ -437,9 +494,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
+                CommandField(
+                    "test_ratio",
+                    "Test holdout % (0 = all)",
+                    "0",
+                    kind="number",
+                    hint="trade only the final percentage; train the model on the earlier prefix",
+                ),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("quantity", "Quantity", "0.01", kind="number"),
                 CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField("slippage", "Slippage rate", "0", kind="number"),
                 CommandField(
                     "same_bar_policy",
                     "If TP and SL share a candle",
@@ -701,6 +766,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
                 CommandField(
+                    "train_ratio",
+                    "Training prefix %",
+                    "100",
+                    kind="number",
+                    hint="keep 20% unseen for a genuine test",
+                ),
+                CommandField(
                     "timeout_minutes",
                     "Give up after (minutes)",
                     "480",
@@ -743,6 +815,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("threshold_pct", "Signal movement threshold %", "0.08", kind="number"),
                 CommandField("window", "Window rows", "100", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "100", kind="number"),
                 CommandField("pilot_epochs", "Pilot epochs", "1", kind="number"),
                 CommandField("pilot_folds", "Pilot folds", "1", kind="number"),
                 CommandField("final_epochs", "Final epochs", "3", kind="number"),
@@ -934,6 +1007,8 @@ class CommandHandlers:
         registry: Dict[CommandKind, Handler] = {
             CommandKind.FETCH_MARKET_DATA: self.fetch_market_data,
             CommandKind.COMPUTE_FEATURES: self.compute_features,
+            CommandKind.AUDIT_CAUSAL_FEATURES: self.audit_causal_features,
+            CommandKind.AUDIT_CAUSAL_INVARIANCE: self.audit_causal_invariance,
             CommandKind.TRAIN_MODEL: self.train_model,
             CommandKind.RUN_BACKTEST: self.run_backtest,
             CommandKind.RECORD_REPLAY: self.record_replay,
@@ -1116,6 +1191,134 @@ class CommandHandlers:
         )
 
     # -- features ------------------------------------------------------------
+    def audit_causal_features(self, command: Command) -> CommandResult:
+        """Run the fail-closed Stage 1 feature causality audit."""
+        from ShadBotTrader.infrastructure.feature.calculator_registry import CalculatorRegistry
+        from ShadBotTrader.infrastructure.feature.causality_audit import audit_feature_set
+        from ShadBotTrader.infrastructure.feature.standard_catalog import standard_feature_set
+
+        started = time.monotonic()
+        report = audit_feature_set(standard_feature_set(), CalculatorRegistry())
+        lines = [
+            f"catalog features : {len(report.rows)}",
+            f"allowed model    : {len(report.allowed)}",
+            f"excluded         : {len(report.excluded)}",
+            "",
+            "EXCLUDED FEATURES:",
+            *[f"  {feature}: {reason}" for feature, reason in report.excluded.items()],
+        ]
+        return CommandResult.success(
+            command.kind,
+            f"Causality audit complete: {len(report.excluded)} feature(s) blocked",
+            lines,
+            time.monotonic() - started,
+        )
+
+    def audit_causal_invariance(self, command: Command) -> CommandResult:
+        """Run the runtime unchanged-prefix causality proof on stored data."""
+        from ShadBotTrader.data_cli import build_service
+        from ShadBotTrader.domain.market.symbol import Symbol
+        from ShadBotTrader.domain.market.timeframe import Timeframe
+        from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
+        from ShadBotTrader.infrastructure.data.symbol_scope import resolve_stored_symbol
+        from ShadBotTrader.infrastructure.feature.calculator_registry import CalculatorRegistry
+        from ShadBotTrader.infrastructure.feature.invariance_audit import (
+            audit_feature_set_invariance,
+            audit_matrix_invariance,
+        )
+        from ShadBotTrader.infrastructure.feature.standard_catalog import standard_feature_set_v1
+
+        started = time.monotonic()
+        symbol_text = command.text("symbol", "XAUUSD").strip().upper()
+        timeframe_text = command.text("timeframe", "5M").strip().upper()
+        split_pct = command.number("split_pct", 70.0)
+        max_bars = max(120, min(command.integer("max_bars", 2000), 5000))
+        if not 1.0 < split_pct < 100.0:
+            return CommandResult.rejected(command.kind, "split_pct must be between 1 and 100")
+
+        _, store, _ = build_service(self._storage_root)
+        resolved = resolve_stored_symbol(store, symbol_text, timeframe_text)
+        if not resolved.found:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored candles for {symbol_text} {timeframe_text}. Fetch market data first.",
+            )
+        all_candles = store.query(Symbol(resolved.resolved), Timeframe(timeframe_text))
+        candles = list(all_candles[-max_bars:])
+        if len(candles) < 120:
+            return CommandResult.rejected(
+                command.kind,
+                f"Need at least 120 candles for the audit; found {len(candles)}.",
+            )
+        split_index = max(1, min(len(candles) - 1, int(len(candles) * split_pct / 100.0)))
+        feature_set = standard_feature_set_v1()
+        resolver = CalculatorRegistry()
+        symbol = Symbol(symbol_text)
+        timeframe = Timeframe(timeframe_text)
+
+        feature_report = audit_feature_set_invariance(
+            feature_set,
+            resolver,
+            candles,
+            symbol,
+            timeframe,
+            split_index=split_index,
+        )
+
+        def build(values):
+            return build_feature_matrix(
+                values,
+                symbol,
+                timeframe,
+                feature_set=feature_set,
+                resolver=resolver,
+                include_features=True,
+                causal_only=True,
+            )
+
+        matrix_report = audit_matrix_invariance(build, candles, split_index=split_index)
+        result_label = "PASS" if feature_report.is_clean and matrix_report.passed else "FAIL"
+        lines = [
+            f"candles checked   : {len(candles):,} ({symbol_text} {timeframe_text})",
+            f"unchanged prefix  : {split_index:,} rows ({split_pct:.1f}%)",
+            f"catalog            : {len(feature_set.definitions)} definitions",
+            f"runtime definitions: {len(feature_report.rows) - len(feature_report.errors)} checked",
+            f"declared causal   : {sum(row.declared_causal for row in feature_report.rows)}",
+            f"causal failures   : {len(feature_report.causal_failures)}",
+            f"matrix prefix     : {matrix_report.compared_rows:,} rows",
+            f"matrix invariant  : {'PASS' if matrix_report.passed else 'FAIL'}",
+            "",
+            f"RESULT             : {result_label}",
+        ]
+        if feature_report.causal_failures:
+            lines.extend(
+                [
+                    "",
+                    "CAUSAL FAILURES:",
+                    *[
+                        f"  {row.feature_id}: {row.error or f'changed at {row.first_difference}'}"
+                        for row in feature_report.causal_failures
+                    ],
+                ]
+            )
+        if not matrix_report.passed:
+            lines.append(f"  matrix: {matrix_report.error or matrix_report.first_difference}")
+
+        clean = feature_report.is_clean and matrix_report.passed
+        if clean:
+            return CommandResult.success(
+                command.kind,
+                "Causality invariance PASS: causal features and model matrix are prefix-stable",
+                lines,
+                time.monotonic() - started,
+            )
+        return CommandResult.failure(
+            command.kind,
+            "Causality invariance FAILED: future mutation changed production input",
+            "\\n".join(lines),
+            time.monotonic() - started,
+        )
+
     def compute_features(self, command: Command) -> CommandResult:
         """Compute the feature catalogue for every requested timeframe.
 
@@ -1330,6 +1533,8 @@ class CommandHandlers:
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                "--train-ratio",
+                str(command.number("train_ratio", 100.0)),
                 "--threshold",
                 str(threshold),
                 "--learning-rate",
@@ -1386,6 +1591,7 @@ class CommandHandlers:
                 configuration = SimulationConfiguration(
                     initial_capital=Decimal(str(command.number("capital", 100.0))),
                     spread=Decimal(str(command.number("spread", 0.35))),
+                    slippage_rate=Decimal(str(command.number("slippage", 0.0))),
                     commission_rate=Decimal("0.0001"),
                     warmup_bars=0,
                     entry_timing=EntryTiming.NEXT_OPEN,
@@ -1409,6 +1615,7 @@ class CommandHandlers:
                     signal_candles=signal_candles,
                     range_candles=range_candles,
                     record_replay=record_replay,
+                    test_ratio=command.number("test_ratio", 0.0) / 100.0,
                 )
                 return result, "dual", ""
             except Exception:
@@ -1433,6 +1640,7 @@ class CommandHandlers:
             configuration=SimulationConfiguration(
                 initial_capital=Decimal(str(command.number("capital", 100.0))),
                 spread=Decimal(str(command.number("spread", 4.0))),
+                slippage_rate=Decimal(str(command.number("slippage", 0.0))),
                 commission_rate=Decimal("0.0001"),
                 warmup_bars=20,
             ),
@@ -1469,29 +1677,71 @@ class CommandHandlers:
         self._last_backtest_summary = {
             "engine": mode,
             "trades": metrics.trade_count,
+            "initial_equity": metrics.starting_equity,
+            "final_equity": metrics.final_equity,
             "return": metrics.total_return,
             "return_percent": metrics.total_return_percent,
+            "gross_profit": metrics.gross_profit,
+            "gross_loss": metrics.gross_loss,
+            "profit_factor": metrics.profit_factor,
+            "expectancy": metrics.expectancy,
             "fees": metrics.total_fees,
+            "spread_cost": metrics.spread_cost,
+            "slippage_cost": metrics.slippage_cost,
             "take_profits": result.bracket_exit_counts.get("take_profit", 0),
             "stop_losses": result.bracket_exit_counts.get("stop_loss", 0),
         }
         self._last_backtest_replay_ready = False
+        replay_diagnostics: List[str] = []
         if result.tape is not None:
+            tape = result.tape
+            tape_final = tape.final_equity
+            tape_closed = len(tape.round_trips())
+            replay_diagnostics = [
+                f"replay bars : {len(tape.bars)}",
+                f"replay fills: {len(tape.markers)}",
+                f"replay closed: {tape_closed}",
+                f"replay final : {tape_final}",
+            ]
+            if tape_final != metrics.final_equity or tape_closed != metrics.trade_count:
+                return CommandResult.failure(
+                    command.kind,
+                    "Backtest/replay consistency check failed",
+                    "\\n".join(
+                        [
+                            f"engine final equity : {metrics.final_equity}",
+                            f"replay final equity : {tape_final}",
+                            f"engine trades       : {metrics.trade_count}",
+                            f"replay closed       : {tape_closed}",
+                            "The replay was not published because it does not describe "
+                            "the same run.",
+                        ]
+                    ),
+                    time.monotonic() - started,
+                )
             from ShadBotTrader.presentation.web.replay_renderer import render_replay
 
             self._replay_path.parent.mkdir(parents=True, exist_ok=True)
-            self._replay_path.write_text(
-                render_replay(result.tape, result.metrics), encoding="utf-8"
-            )
+            self._replay_path.write_text(render_replay(tape, result.metrics), encoding="utf-8")
             self._last_backtest_replay_ready = True
         hit = metrics.hit_rate
+        profit_factor = metrics.profit_factor if metrics.profit_factor is not None else "n/a"
+        expectancy = metrics.expectancy if metrics.expectancy is not None else "n/a"
         lines = [
             f"engine      : {mode}",
             f"trades      : {metrics.trade_count}",
+            f"initial eq  : {metrics.starting_equity:.4f}",
+            f"final eq    : {metrics.final_equity:.4f}",
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
+            f"gross profit: {metrics.gross_profit:.4f}",
+            f"gross loss  : {metrics.gross_loss:.4f}",
+            f"profit fact.: {profit_factor}",
+            f"expectancy  : {expectancy}",
             f"max drawdown: {metrics.max_drawdown_percent:.2f}%",
             f"hit rate    : {f'{hit:.3f}' if hit is not None else 'n/a'}",
             f"fees        : {metrics.total_fees:.4f}",
+            f"spread cost : {metrics.spread_cost:.4f}",
+            f"slippage    : {metrics.slippage_cost:.4f}",
         ]
         if mode == "dual":
             lines.extend(
@@ -1500,6 +1750,8 @@ class CommandHandlers:
                     f"stop losses : {result.bracket_exit_counts['stop_loss']}",
                 ]
             )
+        if replay_diagnostics:
+            lines.extend(replay_diagnostics)
         if self._last_backtest_replay_ready:
             lines.append(f"replay      : exact tape written to {self._replay_path}")
         if note:
@@ -1535,9 +1787,13 @@ class CommandHandlers:
             lines = [
                 f"engine        : {summary.get('engine', 'unknown')}",
                 f"trades        : {summary.get('trades', 0)}",
+                f"initial eq    : {summary.get('initial_equity', 0)}",
+                f"final eq      : {summary.get('final_equity', 0)}",
                 f"return        : {summary.get('return', 0)} "
                 f"({summary.get('return_percent', 0):.2f}%)",
                 f"fees          : {summary.get('fees', 0)}",
+                f"spread cost   : {summary.get('spread_cost', 0)}",
+                f"slippage      : {summary.get('slippage_cost', 0)}",
                 f"take profits  : {summary.get('take_profits', 0)}",
                 f"stop losses   : {summary.get('stop_losses', 0)}",
                 "settings      : exact tape from the last completed Run a backtest",
@@ -2463,6 +2719,8 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                "--train-ratio",
+                str(command.number("train_ratio", 100.0)),
                 "--threshold",
                 str(
                     percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
@@ -2526,6 +2784,8 @@ class AccountCommandHandlers(CommandHandlers):
             str(threshold),
             "--window",
             str(max(command.integer("window", 100), 2)),
+            "--train-ratio",
+            str(command.number("train_ratio", 100.0)),
             "--learning-rates",
             command.text("learning_rates", "1e-5,3e-5,1e-4,3e-4,1e-3"),
             "--tune-learning-rate",
