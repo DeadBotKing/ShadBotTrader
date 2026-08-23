@@ -62,6 +62,8 @@ TRADE_LOG_FIELDS = (
     "configured_slippage_rate",
     "configured_quantity",
     "test_ratio",
+    "reward_risk_multiplier",
+    "filter_zero_bar",
 )
 
 
@@ -145,6 +147,8 @@ def trade_log_rows(
                 "configured_slippage_rate": metadata.get("slippage_rate", ""),
                 "configured_quantity": metadata.get("quantity", ""),
                 "test_ratio": metadata.get("test_ratio", ""),
+                "reward_risk_multiplier": metadata.get("reward_risk_multiplier", ""),
+                "filter_zero_bar": metadata.get("filter_zero_bar", ""),
             }
         )
 

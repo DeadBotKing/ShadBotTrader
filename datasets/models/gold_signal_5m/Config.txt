@@ -1,0 +1,26 @@
+Find best learning rate
+Run a short walk-forward sweep for several learning rates separately on the Signal or Range model, select the lowest validation score, then train and save the final model with it.
+
+Symbol
+XAUUSD
+Model type
+signal
+Dataset
+5M
+Candidates
+1e-8,3e-7,1e-7,3e-6,1e-6,1e-5,3e-5,1e-4,3e-4,1e-3
+Signal movement threshold %
+0.8
+Window rows
+200
+Training prefix %
+80
+Pilot epochs
+5
+Pilot folds
+2
+Final epochs
+5
+Final folds
+2
+Give up after (minutes)

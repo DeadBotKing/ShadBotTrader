@@ -441,6 +441,21 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
                 CommandField(
+                    "reward_risk_multiplier",
+                    "Reward/Risk multiplier",
+                    "1.5",
+                    kind="number",
+                    hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                ),
+                CommandField(
+                    "filter_zero_bar",
+                    "Filter 0-bar trades",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                    hint="1 = skip trades that open and close on the same bar",
+                ),
+                CommandField(
                     "test_ratio",
                     "Test holdout % (0 = all)",
                     "0",
@@ -494,6 +509,21 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
+                CommandField(
+                    "reward_risk_multiplier",
+                    "Reward/Risk multiplier",
+                    "1.5",
+                    kind="number",
+                    hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                ),
+                CommandField(
+                    "filter_zero_bar",
+                    "Filter 0-bar trades",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                    hint="1 = skip trades that open and close on the same bar",
+                ),
                 CommandField(
                     "test_ratio",
                     "Test holdout % (0 = all)",
@@ -1609,6 +1639,8 @@ class CommandHandlers:
                     range_window_size=command.integer("range_window", 0) or None,
                     configuration=configuration,
                     base_quantity=Decimal(str(command.number("quantity", 0.01))),
+                    reward_risk_multiplier=command.number("reward_risk_multiplier", 1.5),
+                    filter_zero_bar=command.text("filter_zero_bar", "0").strip() == "1",
                 )
                 result = dual.run(
                     session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
@@ -1698,6 +1730,8 @@ class CommandHandlers:
             "slippage_rate": command.number("slippage", 0.0),
             "entry_timing": "next_open" if mode == "dual" else "signal_close",
             "test_ratio": command.number("test_ratio", 0.0) / 100.0,
+            "reward_risk_multiplier": command.number("reward_risk_multiplier", 1.5),
+            "filter_zero_bar": command.text("filter_zero_bar", "0").strip() == "1",
             "take_profits": result.bracket_exit_counts.get("take_profit", 0),
             "stop_losses": result.bracket_exit_counts.get("stop_loss", 0),
         }
@@ -1761,6 +1795,8 @@ class CommandHandlers:
             "commission  : 0.0001",
             f"slip rate   : {command.number('slippage', 0.0):g}",
             f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
+            f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
+            f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
             f"gross profit: {metrics.gross_profit:.4f}",
             f"gross loss  : {metrics.gross_loss:.4f}",
@@ -1826,6 +1862,8 @@ class CommandHandlers:
                 f"final eq      : {summary.get('final_equity', 0)}",
                 f"return        : {summary.get('return', 0)} "
                 f"({summary.get('return_percent', 0):.2f}%)",
+                f"R/R mult.     : {summary.get('reward_risk_multiplier', 1.5):g}",
+                f"filter 0-bar  : {'yes' if summary.get('filter_zero_bar', False) else 'no'}",
                 f"fees          : {summary.get('fees', 0)}",
                 f"spread cost   : {summary.get('spread_cost', 0)}",
                 f"slippage      : {summary.get('slippage_cost', 0)}",
@@ -1873,6 +1911,8 @@ class CommandHandlers:
                     "commission_rate": 0.0001,
                     "slippage_rate": command.number("slippage", 0.0),
                     "test_ratio": command.number("test_ratio", 0.0) / 100.0,
+                    "reward_risk_multiplier": command.number("reward_risk_multiplier", 1.5),
+                    "filter_zero_bar": command.text("filter_zero_bar", "0").strip() == "1",
                 },
             )
         except Exception:

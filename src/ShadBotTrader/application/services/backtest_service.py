@@ -68,6 +68,7 @@ class BacktestService:
         strategy: Optional[Strategy] = None,
         bracket_provider: Any = None,
         model_id: str = "gold_direction",
+        filter_zero_bar: bool = False,
     ) -> None:
         self._configuration = configuration or SimulationConfiguration()
         self._risk_policy = risk_policy or RiskPolicy()
@@ -77,6 +78,7 @@ class BacktestService:
         self._strategy = strategy
         self._bracket_provider = bracket_provider
         self._model_id = model_id
+        self._filter_zero_bar = filter_zero_bar
         # Defaults to in-memory: a backtest sweep must not write to disk
         # unless the caller explicitly asked for it.
         self._persistence = persistence or PersistenceContext()
@@ -185,6 +187,7 @@ class BacktestService:
             entry_timing=config.entry_timing,
             bracket_provider=self._bracket_provider,
             exit_trading_service=exit_trading,
+            filter_zero_bar=self._filter_zero_bar,
         )
 
     def run(

@@ -84,13 +84,36 @@ class TradeBracket:
         predicted_low: float,
         created_at: Timestamp,
         model_reference: Optional[float] = None,
+        reward_risk_multiplier: Optional[float] = None,
     ) -> "TradeBracket":
-        """Build a bracket from the absolute high/low model forecast."""
+        """Build a bracket from the absolute high/low model forecast.
+
+        When ``reward_risk_multiplier`` is given, the take-profit distance
+        must be at least ``reward_risk_multiplier`` times the stop-loss
+        distance. If the raw forecast already satisfies the condition, it
+        is used unchanged; otherwise a ``ValidationError`` is raised so
+        the caller can skip the trade entirely (TP is never pushed up).
+        """
         high = Price(Decimal(str(predicted_high)))
         low = Price(Decimal(str(predicted_low)))
         reference = None if model_reference is None else Price(Decimal(str(model_reference)))
         target = high if side is OrderSide.BUY else low
         stop = low if side is OrderSide.BUY else high
+
+        # Apply reward/risk condition: TP_distance >= multiplier * SL_distance
+        # If the raw forecast does NOT satisfy the condition, the trade is
+        # REJECTED (ValidationError) rather than moving TP artificially.
+        if reward_risk_multiplier is not None and reward_risk_multiplier > 0:
+            entry_amount = entry_reference.amount
+            tp_distance = abs(target.amount - entry_amount)
+            sl_distance = abs(entry_amount - stop.amount)
+            min_tp_distance = sl_distance * Decimal(str(reward_risk_multiplier))
+            if tp_distance < min_tp_distance:
+                raise ValidationError(
+                    f"R/R condition not met: TP distance {tp_distance} < "
+                    f"{reward_risk_multiplier} x SL distance {sl_distance}"
+                )
+
         return cls(
             side=side,
             entry_reference=entry_reference,

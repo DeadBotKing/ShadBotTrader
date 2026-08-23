@@ -114,6 +114,7 @@ class BacktestEngine:
         entry_timing: EntryTiming = EntryTiming.SIGNAL_CLOSE,
         bracket_provider: Any = None,
         exit_trading_service: Optional[TradingDecisionService] = None,
+        filter_zero_bar: bool = False,
     ) -> None:
         self._session = session
         self._data = data_provider
@@ -131,6 +132,8 @@ class BacktestEngine:
         self._exit_trading = exit_trading_service
         self._pending_entry: Optional[Dict[str, Any]] = None
         self._bracket: Optional[TradeBracket] = None
+        self._filter_zero_bar = filter_zero_bar
+        self._open_bar_index: Optional[int] = None
         self._bracket_exit_counts: Dict[str, int] = {
             BracketExitReason.TAKE_PROFIT.value: 0,
             BracketExitReason.STOP_LOSS.value: 0,
@@ -614,6 +617,7 @@ class BacktestEngine:
         """
         if was_flat:
             self._open_bar = str(self._clock.current_time)
+            self._open_bar_index = self._bars
 
         realized = self._ledger.realized_pnl.amount
         fees = self._ledger.total_fees.amount
@@ -633,9 +637,23 @@ class BacktestEngine:
 
         position_after = self._ledger.position(event.symbol)
         if not was_flat and position_after.is_flat:
+            # Calculate bars held for this trade
+            bars_held = self._bars - (self._open_bar_index or self._bars)
             # A zero-PnL close is still a completed trade and must be
             # counted.  For the normal full-fill path this is one entry
             # plus one exit, with both commissions included.
+            # When filter_zero_bar is enabled, skip trades that were
+            # opened and closed on the same bar (0-bar trades).
+            if self._filter_zero_bar and bars_held == 0:
+                # Skip recording this trade but still update accounting
+                self._open_bar = None
+                self._open_bar_index = None
+                self._open_trade_fees = Decimal("0")
+                self._open_trade_realized = Decimal("0")
+                self._last_realized = realized
+                self._last_fees = fees
+                return delta, fee_delta
+
             self._trades.append(
                 TradeRecord(
                     symbol=str(event.symbol),
@@ -646,6 +664,7 @@ class BacktestEngine:
                 )
             )
             self._open_bar = None
+            self._open_bar_index = None
             self._open_trade_fees = Decimal("0")
             self._open_trade_realized = Decimal("0")
 

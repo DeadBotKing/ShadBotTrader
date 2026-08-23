@@ -62,11 +62,15 @@ class DualModelBacktestService:
         min_move_fraction: float = 0.0,
         expected_signal_features: Optional[int] = None,
         expected_range_features: Optional[int] = None,
+        reward_risk_multiplier: Optional[float] = None,
+        filter_zero_bar: bool = False,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
+        if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
+            raise ValidationError("reward_risk_multiplier must be positive")
 
         self._symbol = symbol
         self._signal_artifact = signal_artifact
@@ -91,6 +95,8 @@ class DualModelBacktestService:
             entry_timing=EntryTiming.NEXT_OPEN,
             same_bar_policy=SameBarPolicy.STOP_FIRST,
         )
+        self._reward_risk_multiplier = reward_risk_multiplier
+        self._filter_zero_bar = filter_zero_bar
 
     @classmethod
     def from_storage(
@@ -110,6 +116,8 @@ class DualModelBacktestService:
         persistence: Optional[PersistenceContext] = None,
         feature_set: Any = None,
         resolver: Any = None,
+        reward_risk_multiplier: Optional[float] = None,
+        filter_zero_bar: bool = False,
     ) -> "DualModelBacktestService":
         """Load both artifacts and their ``training.json`` metadata.
 
@@ -196,6 +204,8 @@ class DualModelBacktestService:
             persistence=persistence,
             expected_signal_features=signal_record.feature_columns or None,
             expected_range_features=range_record.feature_columns or None,
+            reward_risk_multiplier=reward_risk_multiplier,
+            filter_zero_bar=filter_zero_bar,
         )
 
     @property
@@ -288,6 +298,7 @@ class DualModelBacktestService:
             signal_matrix=signal_matrix,
             range_matrix=range_matrix,
             signal_candles=ordered_signal,
+            reward_risk_multiplier=self._reward_risk_multiplier,
         )
 
         configuration = self._configuration
@@ -326,6 +337,7 @@ class DualModelBacktestService:
             strategy=strategy,
             bracket_provider=source,
             model_id="dual_model",
+            filter_zero_bar=self._filter_zero_bar,
         )
         return service.run(
             session_id=session_id,

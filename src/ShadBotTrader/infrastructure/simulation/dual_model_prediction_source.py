@@ -57,6 +57,7 @@ class DualModelPredictionSource(PredictionSource):
         signal_matrix: Any = None,
         range_matrix: Any = None,
         signal_candles: Sequence[Candle] = (),
+        reward_risk_multiplier: Optional[float] = None,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -64,6 +65,8 @@ class DualModelPredictionSource(PredictionSource):
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if not 0.0 <= hold_confidence_penalty <= 1.0:
             raise ValidationError("hold_confidence_penalty must be in [0, 1]")
+        if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
+            raise ValidationError("reward_risk_multiplier must be positive")
 
         self._signal_artifact = signal_artifact
         self._signal_predictor = signal_predictor
@@ -81,6 +84,7 @@ class DualModelPredictionSource(PredictionSource):
         self._range_feature_source = range_feature_source
         self._signal_matrix = signal_matrix
         self._range_matrix = range_matrix
+        self._reward_risk_multiplier = reward_risk_multiplier
         self._signal_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(signal_candles)
         }
@@ -286,6 +290,7 @@ class DualModelPredictionSource(PredictionSource):
                 predicted_low=forecast.predicted_low,
                 created_at=event.event_time,
                 model_reference=forecast.reference_close,
+                reward_risk_multiplier=self._reward_risk_multiplier,
             )
         except ValidationError:
             # A gap between the model reference close and the entry can put

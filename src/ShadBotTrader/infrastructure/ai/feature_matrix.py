@@ -70,8 +70,12 @@ CANDLE_COLUMNS: Tuple[str, ...] = RAW_PRICE_COLUMNS + BASE_COLUMNS
 
 #: Feature id fragments whose values live on the price scale and must be
 #: converted to a ratio against the close. Matched as substrings so the
-#: whole moving-average / band family is covered without listing 109 ids.
+#: whole moving-average / band family is covered without listing every id.
+#:
+#: Extended in Phase 50 to cover the new adaptive-filter and Ehlers families
+#: added alongside the 180-feature causal catalogue.
 _PRICE_SCALED = (
+    # ── Original MA / band families ──────────────────────────────────────
     "sma_",
     "ema_",
     "wma_",
@@ -86,17 +90,63 @@ _PRICE_SCALED = (
     "bollinger_lower",
     "bollinger_middle",
     "keltner",
-    "donchian",
+    "donchian_upper",
+    "donchian_lower",
+    "donchian_mid",
     "envelope",
     "ichimoku",
+    "spana",
+    "spanb",
+    "tenkan",
+    "kijun",
     "psar",
     "pivot",
     "vwap",
     "supertrend",
+    # ── Adaptive filters (Phase 50) ───────────────────────────────────────
+    "kalman_price",     # absolute price level from Kalman filter
+    "sg_smooth",        # Savitzky-Golay smoothed price
+    "supersmoother",    # Ehlers SuperSmoother output (price level)
+    "gaussian1",        # Gaussian 1-pole output (price level)
+    "gaussian2",        # Gaussian 2-pole output (price level)
+    "gaussian3",        # Gaussian 3-pole output (price level)
+    "frama_",           # FRAMA output (price level); frama_distance is excluded below
+    "hull_ma",          # Hull MA output (price level); hull_distance excluded below
+    "mcginley",         # McGinley Dynamic output (price level)
+    "vidya_",           # VIDYA output (price level); vidya_distance excluded below
+    "laguerre_filter",  # Laguerre filter output (price level)
+    "decycler",         # Decycler = price - HP component (price level)
+    "chandelier_long",  # Chandelier Exit level (price)
 )
 
-#: Explicitly NOT price-scaled even though the name may look like it.
-_NEVER_SCALED = ("percent", "pct", "ratio", "osc", "index", "rsi", "stoch")
+#: Explicitly NOT price-scaled: these are already dimensionless ratios,
+#: oscillators, or distances expressed as a fraction of price.
+#:
+#: Suffix "_distance" marks features that output (price - filter) / filter,
+#: i.e. already a ratio. Scaling them again would divide a ratio by price,
+#: producing a nonsense unit.
+_NEVER_SCALED = (
+    # ── Original exclusions ───────────────────────────────────────────────
+    "percent",
+    "pct",
+    "ratio",
+    "osc",
+    "index",
+    "rsi",
+    "stoch",
+    # ── Distance / relative features (already ratios) ─────────────────────
+    "_distance",        # e.g. kama_distance, frama_distance, hull_distance …
+    "kalman_gain",      # Kalman gain ∈ [0, 1]
+    "kalman_residual",  # innovation = price - prediction (already Δprice, small)
+    "sg_slope",         # slope of SG polynomial (Δprice/bar, already relative)
+    # ── Width / position features (already dimensionless) ─────────────────
+    "donchian_width",   # (high - low) / close → already ratio
+    "keltner_width",    # keltner channel width / close → already ratio
+    "bb_width",         # Bollinger width / close → already ratio
+    "squeeze_intensity",# bb_width - keltner_width → ratio
+    # ── Decycler oscillator (% difference) ────────────────────────────────
+    "decycler_osc",     # 100 × (fast_dec - slow_dec) / slow_dec → ratio
+)
 
 
 def is_price_scaled(feature_id: str) -> bool:
