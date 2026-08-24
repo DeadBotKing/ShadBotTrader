@@ -92,7 +92,9 @@ class WavenetTrainer(ModelTrainer):
         kernel_size: int = 5,
         n_layers_per_block: int = 4,
         n_blocks: int = 2,
-        depth_multiplier: int = 20,
+        depth_multiplier: int = 8,
+        l2: float = 2.5e-4,
+        dropout: float = 0.10,
         progress: TrainingProgressReporter | None = None,
         max_folds: int | None = None,
         target_columns: Sequence[int] | None = None,
@@ -144,6 +146,8 @@ class WavenetTrainer(ModelTrainer):
         self._n_layers_per_block = n_layers_per_block
         self._n_blocks = n_blocks
         self._depth_multiplier = depth_multiplier
+        self._l2 = float(l2)
+        self._dropout = float(dropout)
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         #: Called as ``(model, epoch, logs)`` after each epoch so the
@@ -318,6 +322,8 @@ class WavenetTrainer(ModelTrainer):
                 depth_multiplier=self._depth_multiplier,
                 loss=self._loss,
                 metric=self._metric,
+                l2=getattr(self, "_l2", 2.5e-4),
+                dropout=getattr(self, "_dropout", 0.10),
             )
 
             callbacks = []
@@ -621,9 +627,11 @@ def _build_compiled(
     kernel_size: int = 5,
     n_layers_per_block: int = 4,
     n_blocks: int = 2,
-    depth_multiplier: int = 20,
+    depth_multiplier: int = 8,
     loss: str | None = None,
     metric: str | None = None,
+    l2: float = 2.5e-4,
+    dropout: float = 0.10,
 ):
     """Build and compile the network for the requested task.
 
@@ -662,6 +670,10 @@ def _build_compiled(
         output_units=output_units,
         output_activation=output_activation,
         depth_multiplier=depth_multiplier,
+        l2=l2,
+        dropout=dropout,
+        # regression head (GlobalAvgPool) vs classification head (last timestep)
+        is_regression=loss in ("mse", "mean_squared_error", "mae", "mean_absolute_error"),
     )
 
     if loss in ("mse", "mean_squared_error"):

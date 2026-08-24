@@ -251,6 +251,7 @@ class DualModelBacktestService:
             include_features=include_features,
             source=self._signal_feature_source,
             causal_only=True,
+            model_role="signal",
         )
         range_matrix = build_feature_matrix(
             candles=ordered_range,
@@ -261,6 +262,7 @@ class DualModelBacktestService:
             include_features=include_features,
             source=self._range_feature_source,
             causal_only=True,
+            model_role="range",
         )
         if (
             self._expected_signal_features is not None

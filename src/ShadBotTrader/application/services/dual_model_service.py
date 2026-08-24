@@ -129,6 +129,8 @@ class DualModelService:
                 f"got {len(candles)}."
             )
 
+        # model_role فیلتر می‌کنه که فیچرهای مناسب هر مدل وارد بشن
+        _model_role = role.name  # "signal" یا "range"
         matrix = build_feature_matrix(
             candles=candles,
             symbol=symbol,
@@ -137,6 +139,7 @@ class DualModelService:
             resolver=self._resolver,
             include_features=self._include_features,
             causal_only=True,
+            model_role=_model_role,
         )
         if matrix.is_empty:
             raise ValidationError(
@@ -259,6 +262,14 @@ class DualModelService:
                 "learning_rate": float(learning_rate),
                 "loss": role.loss,
                 "threshold": role.target.threshold,
+                # Architecture — stored so the artifact can be rebuilt identically
+                "n_filters": getattr(role, "n_filters", 32),
+                "kernel_size": getattr(role, "kernel_size", 5),
+                "n_layers_per_block": getattr(role, "n_layers_per_block", 4),
+                "n_blocks": getattr(role, "n_blocks", 2),
+                "depth_multiplier": getattr(role, "depth_multiplier", 8),
+                "l2": float(getattr(role, "l2", 2.5e-4)),
+                "dropout": float(getattr(role, "dropout", 0.10)),
             },
             input_schema={
                 "window_size": role.window_size,
@@ -353,6 +364,14 @@ class DualModelService:
             sample_indices=getattr(dataset, "sample_ends", None),
             sample_label_ends=sample_label_ends,
             purge_gap=max(role.window_size - 1, 0) + (role.horizon if is_regression else 0),
+            # Role-specific architecture hyperparameters
+            n_filters=getattr(role, "n_filters", 32),
+            kernel_size=getattr(role, "kernel_size", 5),
+            n_layers_per_block=getattr(role, "n_layers_per_block", 4),
+            n_blocks=getattr(role, "n_blocks", 2),
+            depth_multiplier=getattr(role, "depth_multiplier", 8),
+            l2=getattr(role, "l2", 2.5e-4),
+            dropout=getattr(role, "dropout", 0.10),
         )
 
     def train(

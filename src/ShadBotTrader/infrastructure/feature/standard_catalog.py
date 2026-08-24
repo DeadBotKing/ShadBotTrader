@@ -20,12 +20,19 @@ from ShadBotTrader.domain.feature.feature_types import (
     Causality,
     FeatureType,
     FeatureValueType,
+    ModelScope,
 )
 
+S = ModelScope.SIGNAL   # فقط signal model (5M)
+R = ModelScope.RANGE    # فقط range model (1D)
+B = ModelScope.BOTH     # هر دو مدل
+
 PRICE_COLUMNS = ("open", "close", "low", "high", "HL/2", "HLC/3", "HLCC/4", "OHLC/4")
-_SMA_PERIODS = (5, 10, 15, 20, 25, 30, 35)
-_EMA_PERIODS = (5, 10, 15, 20, 25, 30, 35)
-_ATR_PERIODS = (5, 10, 15, 20, 25, 30, 35)
+# window=100 compatible — max lookback باید < 30 باشه
+# SMA/EMA تا 25 (lb=24) — 30 و 35 حذف شدن
+_SMA_PERIODS = (5, 10, 15, 20, 25)
+_EMA_PERIODS = (5, 10, 15, 20, 25)
+_ATR_PERIODS = (5, 10, 15, 20, 25)
 
 
 def _definition(
@@ -39,6 +46,7 @@ def _definition(
     description: str = "",
     forward_lookahead: int = 0,
     leakage_reason: str = "",
+    model_scope: ModelScope = ModelScope.BOTH,
 ) -> FeatureDefinition:
     return FeatureDefinition(
         feature_id=FeatureId(feature_id),
@@ -53,6 +61,7 @@ def _definition(
         family=family,
         forward_lookahead=forward_lookahead,
         leakage_reason=leakage_reason,
+        model_scope=model_scope,
     )
 
 
@@ -159,6 +168,10 @@ def _build_definitions() -> List[FeatureDefinition]:
     )
 
     # 6) Ichimoku (legacy: spana/spanb/tenkan/kijun/chikou)
+    # spana/spanb/tenkan/kijun: فقط Range (1D) — این اندیکاتور برای روزانه طراحی شده
+    _ichimoku_scope = {
+        "spana": R, "spanb": R, "tenkan": R, "kijun": R, "chikou": R,
+    }
     for line in ("spana", "spanb", "tenkan", "kijun", "chikou"):
         definitions.append(
             _definition(
@@ -172,6 +185,7 @@ def _build_definitions() -> List[FeatureDefinition]:
                 forward_lookahead=26 if line == "chikou" else 0,
                 leakage_reason="FUTURE_SHIFT" if line == "chikou" else "",
                 description=f"Ichimoku {line} line (9/26/52)",
+                model_scope=_ichimoku_scope[line],
             )
         )
 
@@ -192,10 +206,11 @@ def _build_definitions() -> List[FeatureDefinition]:
             feature_id="macd_12_26_9",
             name="MACD 12/26/9",
             feature_type=FeatureType.MOMENTUM,
-            parameters={"fast": 12, "slow": 26, "signal": 9},
-            lookback=33,
+            # پارامتر کوچیک‌تر: fast=8, slow=21, signal=5 → lb=25
+            parameters={"fast": 8, "slow": 21, "signal": 5},
+            lookback=25,
             family="macd",
-            description="MACD line (12/26/9)",
+            description="MACD line (8/21/5) — window=100 compatible",
         )
     )
     definitions.append(
@@ -405,29 +420,30 @@ def _build_definitions() -> List[FeatureDefinition]:
         _definition("force_index",   "Force Index",            FeatureType.VOLUME,       {"kind": "force_index"},               1,  "volume_analysis", description="Elder Force Index = Δclose × volume"),
         _definition("volume_roc_14", "Volume ROC 14",          FeatureType.VOLUME,       {"kind": "volume_roc", "period": 14},  14, "volume_analysis", description="نرخ تغییر حجم"),
         _definition("volume_zscore", "Volume Z-Score 20",      FeatureType.STATISTICAL,  {"kind": "volume_zscore","period":20}, 20, "volume_analysis", description="Z-Score حجم در پنجره 20"),
-        _definition("volume_ratio",  "Volume Ratio (short/long)", FeatureType.VOLUME,    {"kind": "volume_ratio","period":14},  42, "volume_analysis", description="نسبت میانگین حجم کوتاه به بلندمدت"),
+        _definition("volume_ratio",  "Volume Ratio (short/long)", FeatureType.VOLUME,    {"kind": "volume_ratio","period":8},   24, "volume_analysis", description="نسبت میانگین حجم کوتاه به بلندمدت — window=100 compatible"),
     ]
 
     # ── 16) Advanced Momentum Oscillators ────────────────────────────────
     definitions += [
         _definition("stoch_rsi_14",   "Stochastic RSI 14",     FeatureType.MOMENTUM,  {"kind": "stoch_rsi",    "period": 14},              28, "momentum_advanced", description="Stochastic روی RSI — حساس‌تر از RSI معمولی"),
-        _definition("macd_hist",      "MACD Histogram",        FeatureType.MOMENTUM,  {"kind": "macd_hist",    "fast":12,"slow":26,"signal":9}, 34, "momentum_advanced", description="هیستوگرام MACD — شتاب تغییر"),
-        _definition("macd_signal",    "MACD Signal Line",      FeatureType.MOMENTUM,  {"kind": "macd_signal",  "fast":12,"slow":26,"signal":9}, 34, "momentum_advanced", description="خط سیگنال MACD"),
+        _definition("macd_hist",      "MACD Histogram",        FeatureType.MOMENTUM,  {"kind": "macd_hist",    "fast":8,"slow":21,"signal":5}, 25, "momentum_advanced", description="هیستوگرام MACD (8/21/5) — window=100 compatible"),
+        _definition("macd_signal",    "MACD Signal Line",      FeatureType.MOMENTUM,  {"kind": "macd_signal",  "fast":8,"slow":21,"signal":5}, 25, "momentum_advanced", description="خط سیگنال MACD (8/21/5)"),
         _definition("roc_14",         "Rate of Change 14",     FeatureType.MOMENTUM,  {"kind": "roc",          "period": 14},              14, "momentum_advanced", description="بازده درصدی 14 کندل"),
         _definition("momentum_14",    "Momentum 14",           FeatureType.MOMENTUM,  {"kind": "momentum",     "period": 14},              14, "momentum_advanced", description="مومنتوم خام: close[t] - close[t-14]"),
-        _definition("tsi",            "True Strength Index",   FeatureType.MOMENTUM,  {"kind": "tsi",          "fast": 25, "slow": 13},    38, "momentum_advanced", description="TSI — دو بار smooth‌شده، نویز کم"),
-        _definition("awesome_osc",    "Awesome Oscillator",    FeatureType.MOMENTUM,  {"kind": "awesome_osc",  "ao_fast":5,"ao_slow":34},  34, "momentum_advanced", description="Awesome Oscillator = SMA5 - SMA34 از midpoint"),
+        _definition("tsi",            "True Strength Index",   FeatureType.MOMENTUM,  {"kind": "tsi",          "fast": 13, "slow": 8},     20, "momentum_advanced", description="TSI (13/8) — window=100 compatible"),
+        _definition("awesome_osc",    "Awesome Oscillator",    FeatureType.MOMENTUM,  {"kind": "awesome_osc",  "ao_fast":5,"ao_slow":20},  20, "momentum_advanced", description="Awesome Oscillator = SMA5 - SMA20"),
         _definition("vortex_diff",    "Vortex Diff (+VM - -VM)", FeatureType.TREND,   {"kind": "vortex_diff",  "period": 14},              14, "momentum_advanced", description="تفاضل Vortex: جهت و قوت حرکت"),
     ]
 
     # ── 17) Session & Time ────────────────────────────────────────────────
     definitions += [
-        _definition("session_asian",   "Asian Session",      FeatureType.TIME, {"kind": "session_asian"},   0, "session_time", description="1 = Asian session (00-08 UTC)"),
-        _definition("session_london",  "London Session",     FeatureType.TIME, {"kind": "session_london"},  0, "session_time", description="1 = London session (08-16 UTC)"),
-        _definition("session_ny",      "NY Session",         FeatureType.TIME, {"kind": "session_ny"},      0, "session_time", description="1 = NY session (13-21 UTC)"),
-        _definition("session_overlap", "London-NY Overlap",  FeatureType.TIME, {"kind": "session_overlap"}, 0, "session_time", description="1 = overlap لندن-NY (13-16 UTC) — پرنوسان‌ترین"),
-        _definition("hour_sin",        "Hour Sin",           FeatureType.TIME, {"kind": "hour_sin"},        0, "session_time", description="sin ساعت UTC — فرم چرخه‌ای برای ML"),
-        _definition("hour_cos",        "Hour Cos",           FeatureType.TIME, {"kind": "hour_cos"},        0, "session_time", description="cos ساعت UTC"),
+        # Session / Hour → فقط Signal (5M): در 1D هر کندل همه sessionها رو داره
+        _definition("session_asian",   "Asian Session",      FeatureType.TIME, {"kind": "session_asian"},   0, "session_time", description="1 = Asian session (00-08 UTC)", model_scope=S),
+        _definition("session_london",  "London Session",     FeatureType.TIME, {"kind": "session_london"},  0, "session_time", description="1 = London session (08-16 UTC)", model_scope=S),
+        _definition("session_ny",      "NY Session",         FeatureType.TIME, {"kind": "session_ny"},      0, "session_time", description="1 = NY session (13-21 UTC)", model_scope=S),
+        _definition("session_overlap", "London-NY Overlap",  FeatureType.TIME, {"kind": "session_overlap"}, 0, "session_time", description="1 = overlap لندن-NY (13-16 UTC) — پرنوسان‌ترین", model_scope=S),
+        _definition("hour_sin",        "Hour Sin",           FeatureType.TIME, {"kind": "hour_sin"},        0, "session_time", description="sin ساعت UTC — فرم چرخه‌ای برای ML", model_scope=S),
+        _definition("hour_cos",        "Hour Cos",           FeatureType.TIME, {"kind": "hour_cos"},        0, "session_time", description="cos ساعت UTC", model_scope=S),
         _definition("day_sin",         "Day Sin",            FeatureType.TIME, {"kind": "day_sin"},         0, "session_time", description="sin روز هفته — فرم چرخه‌ای"),
         _definition("day_cos",         "Day Cos",            FeatureType.TIME, {"kind": "day_cos"},         0, "session_time", description="cos روز هفته"),
         _definition("is_monday",       "Is Monday",          FeatureType.TIME, {"kind": "is_monday"},       0, "session_time", description="1 = دوشنبه (شروع هفته)"),
@@ -441,7 +457,8 @@ def _build_definitions() -> List[FeatureDefinition]:
         _definition("supersmoother_10",    "Ehlers SuperSmoother (10)",       FeatureType.TREND,       {"kind": "supersmoother",    "period": 10},                        10, "adaptive_filters", description="Ehlers 2-pole IIR — بهترین جایگزین MA"),
         _definition("ss_distance",         "Price vs SuperSmoother",          FeatureType.MOMENTUM,    {"kind": "ss_distance",      "period": 10},                        10, "adaptive_filters", description="فاصله نسبی قیمت از SuperSmoother"),
         _definition("gaussian2_14",        "Gaussian Filter 2-pole (14)",     FeatureType.TREND,       {"kind": "gaussian2",        "period": 14, "poles": 2},            14, "adaptive_filters", description="Ehlers Gaussian 2-pole — نویز کم"),
-        _definition("gaussian3_14",        "Gaussian Filter 3-pole (14)",     FeatureType.TREND,       {"kind": "gaussian3",        "period": 14, "poles": 3},            14, "adaptive_filters", description="Ehlers Gaussian 3-pole — نویز خیلی کم"),
+        # Gaussian 3-pole: خیلی smooth → برای 5M اطلاعات لحظه‌ای رو از بین می‌بره
+        _definition("gaussian3_14",        "Gaussian Filter 3-pole (14)",     FeatureType.TREND,       {"kind": "gaussian3",        "period": 14, "poles": 3},            14, "adaptive_filters", description="Ehlers Gaussian 3-pole — نویز خیلی کم", model_scope=R),
         _definition("frama_16",            "FRAMA 16",                        FeatureType.TREND,       {"kind": "frama",            "period": 16},                        16, "adaptive_filters", description="Fractal Adaptive MA — بر اساس بُعد فراکتال"),
         _definition("frama_distance",      "Price vs FRAMA",                  FeatureType.MOMENTUM,    {"kind": "frama_distance",   "period": 16},                        16, "adaptive_filters", description="فاصله نسبی قیمت از FRAMA"),
         _definition("hull_ma_14",          "Hull MA (14)",                    FeatureType.TREND,       {"kind": "hull_ma",          "period": 14},                        14, "adaptive_filters", description="Hull MA — سریع‌ترین MA با نویز کم"),
@@ -455,19 +472,20 @@ def _build_definitions() -> List[FeatureDefinition]:
 
     # ── 19) Ehlers DSP / Cycle features ───────────────────────────────────
     definitions += [
-        _definition("roofing_filter",      "Roofing Filter (Ehlers)",         FeatureType.TREND,       {"kind": "roofing_filter",    "period": 10, "hp_period": 48},  58, "ehlers_cycle", description="HP + SS: فقط سیکل‌های بازار — ترند و نویز حذف"),
-        _definition("cyber_cycle",         "Cyber Cycle (Ehlers)",            FeatureType.MOMENTUM,    {"kind": "cyber_cycle",       "period": 10, "hp_period": 48},  58, "ehlers_cycle", description="فاز سیکل بازار — اشباع خرید/فروش"),
+        _definition("roofing_filter",      "Roofing Filter (Ehlers)",         FeatureType.TREND,       {"kind": "roofing_filter",    "period": 8, "hp_period": 20},  28, "ehlers_cycle", description="HP + SS: فقط سیکل‌های بازار — window=100 compatible"),
+        _definition("cyber_cycle",         "Cyber Cycle (Ehlers)",            FeatureType.MOMENTUM,    {"kind": "cyber_cycle",       "period": 8, "hp_period": 20},  28, "ehlers_cycle", description="فاز سیکل بازار — window=100 compatible"),
         _definition("fisher_transform",    "Fisher Transform",                FeatureType.MOMENTUM,    {"kind": "fisher_transform",  "period": 10},                    10, "ehlers_cycle", description="قیمت در توزیع Gaussian — نقاط اشباع واضح"),
         _definition("inverse_fisher_rsi",  "Inverse Fisher RSI",              FeatureType.MOMENTUM,    {"kind": "inverse_fisher",    "rsi_period": 14},                15, "ehlers_cycle", description="RSI در توزیع Gaussian — بهتر از RSI معمولی"),
         _definition("center_of_gravity",   "Center of Gravity (Ehlers)",      FeatureType.MOMENTUM,    {"kind": "center_of_gravity", "cog_period": 10},                10, "ehlers_cycle", description="مرکز ثقل قیمت — پیش‌بینی نقاط بازگشت"),
         _definition("laguerre_rsi",        "Laguerre RSI (Ehlers)",           FeatureType.MOMENTUM,    {"kind": "laguerre_rsi",      "gamma": 0.5},                    4,  "ehlers_cycle", description="RSI با Laguerre — lag خیلی کمتر"),
-        _definition("cybernetic_osc",      "Cybernetic Oscillator (2025)",    FeatureType.MOMENTUM,    {"kind": "cybernetic_osc",    "period": 20, "hp_period": 30, "rms_period": 50}, 80, "ehlers_cycle", description="جدیدترین اوسیلاتور Ehlers (TASC 2025) — نرمال‌شده"),
+        _definition("cybernetic_osc",      "Cybernetic Oscillator (2025)",    FeatureType.MOMENTUM,    {"kind": "cybernetic_osc",    "period": 10, "hp_period": 20, "rms_period": 20}, 40, "ehlers_cycle", description="Cybernetic Oscillator Ehlers — window=100 compatible"),
     ]
 
     # ── 20) Fractal & Statistical features ───────────────────────────────
     definitions += [
-        _definition("hurst_20",            "Hurst Exponent (20)",             FeatureType.STATISTICAL,  {"kind": "hurst",              "period": 20},  20, "fractal_stats", description="H<0.5 = mean-rev | H=0.5 = رندوم | H>0.5 = trending"),
-        _definition("fractal_dim_20",      "Fractal Dimension (20)",          FeatureType.STATISTICAL,  {"kind": "fractal_dimension",  "period": 20},  20, "fractal_stats", description="بُعد فراکتال سری قیمت = 2 - Hurst"),
+        # Hurst/Fractal: در 5M (window=200) خیلی نویزی، در 1D (window=100 روز) معنادار
+        _definition("hurst_20",            "Hurst Exponent (20)",             FeatureType.STATISTICAL,  {"kind": "hurst",              "period": 20},  20, "fractal_stats", description="H<0.5 = mean-rev | H=0.5 = رندوم | H>0.5 = trending", model_scope=R),
+        _definition("fractal_dim_20",      "Fractal Dimension (20)",          FeatureType.STATISTICAL,  {"kind": "fractal_dimension",  "period": 20},  20, "fractal_stats", description="بُعد فراکتال سری قیمت = 2 - Hurst", model_scope=R),
         _definition("rolling_skew",        "Rolling Skewness (20)",           FeatureType.STATISTICAL,  {"kind": "rolling_skew",       "period": 20},  20, "fractal_stats", description="چولگی بازده — ریسک دنباله"),
         _definition("rolling_kurt",        "Rolling Kurtosis (20)",           FeatureType.STATISTICAL,  {"kind": "rolling_kurt",       "period": 20},  20, "fractal_stats", description="کشیدگی بازده — دم‌پهنی توزیع"),
         _definition("rolling_entropy",     "Shannon Entropy (20)",            FeatureType.STATISTICAL,  {"kind": "rolling_entropy",    "period": 20},  20, "fractal_stats", description="بی‌نظمی سری — بالا = رندوم‌تر"),
@@ -476,7 +494,8 @@ def _build_definitions() -> List[FeatureDefinition]:
         _definition("parkinson_vol",       "Parkinson Volatility (20)",       FeatureType.VOLATILITY,   {"kind": "parkinson_vol",      "period": 20},  20, "fractal_stats", description="Parkinson (1980): σ از High-Low — دقیق‌تر از close-to-close"),
         _definition("garman_klass_vol",    "Garman-Klass Volatility (20)",    FeatureType.VOLATILITY,   {"kind": "garman_klass_vol",   "period": 20},  20, "fractal_stats", description="Garman-Klass (1980): σ از OHLC"),
         _definition("yang_zhang_vol",      "Yang-Zhang Volatility (20)",      FeatureType.VOLATILITY,   {"kind": "yang_zhang_vol",     "period": 20},  21, "fractal_stats", description="Yang-Zhang (2000): بهترین تخمین σ از OHLC + overnight"),
-        _definition("vol_of_vol",          "Volatility of Volatility (20)",   FeatureType.VOLATILITY,   {"kind": "vol_of_vol",         "period": 20},  40, "fractal_stats", description="نوسان ATR — ناپایداری بازار"),
+        # VoV: lookback=40 → در 5M window=200 کندل اطلاعات ارزشمند، ولی در 1D ساختاری‌تر
+        _definition("vol_of_vol",          "Volatility of Volatility (20)",   FeatureType.VOLATILITY,   {"kind": "vol_of_vol",         "period": 20},  40, "fractal_stats", description="نوسان ATR — ناپایداری بازار", model_scope=R),
     ]
 
     # ── 21) Volatility Breakout (Squeeze) ─────────────────────────────────
@@ -699,10 +718,10 @@ def _build_definitions() -> List[FeatureDefinition]:
             feature_id="vol_regime",
             name="Volatility Regime",
             feature_type=FeatureType.VOLATILITY,
-            parameters={"kind": "vol_regime", "period": 14, "long_period": 50},
-            lookback=51,
+            parameters={"kind": "vol_regime", "period": 7, "long_period": 25},
+            lookback=26,
             family="market_regime",
-            description="نسبت ATR کوتاه به بلند — بالای 1 = volatility در حال افزایش",
+            description="نسبت ATR کوتاه به بلند — window=100 compatible",
         ),
         _definition(
             feature_id="choppiness_14",
@@ -717,10 +736,10 @@ def _build_definitions() -> List[FeatureDefinition]:
             feature_id="trend_score",
             name="Trend Score",
             feature_type=FeatureType.TREND,
-            parameters={"kind": "trend_score", "period": 14},
-            lookback=42,
+            parameters={"kind": "trend_score", "period": 9},
+            lookback=27,
             family="market_regime",
-            description="امتیاز ترکیبی روند: EMA slope × Efficiency Ratio",
+            description="امتیاز ترکیبی روند — window=100 compatible",
         ),
     ]
 
@@ -728,10 +747,11 @@ def _build_definitions() -> List[FeatureDefinition]:
     definitions += [
         _definition("reflex_20",       "ReFlex (20)",              FeatureType.MOMENTUM,    {"kind": "reflex",        "period": 20},                    23, "ehlers_advanced", description="ReFlex: انحراف قیمت از روند پیش‌بینی‌شده (Cycle Analytics 2013)"),
         _definition("trendflex_20",    "TrendFlex (20)",           FeatureType.TREND,       {"kind": "trendflex",     "period": 20},                    23, "ehlers_advanced", description="TrendFlex: قوت روند نرمال‌شده (Cycle Analytics 2013)"),
-        _definition("ebsw",            "Even Better Sinewave",     FeatureType.MOMENTUM,    {"kind": "ebsw",          "period": 10, "hp_period": 36},   46, "ehlers_advanced", description="EBSW: بازار cyclic یا trending؟ (Cycle Analytics 2013)"),
+        _definition("ebsw",            "Even Better Sinewave",     FeatureType.MOMENTUM,    {"kind": "ebsw",          "period": 8, "hp_period": 20},    28, "ehlers_advanced", description="EBSW — window=100 compatible"),
         _definition("rvi",             "Relative Vigor Index",     FeatureType.MOMENTUM,    {"kind": "rvi"},                                            10, "ehlers_advanced", description="RVI: قدرت نسبی close vs open (Cybernetic Analysis 2004)"),
         _definition("rvi_signal",      "RVI Signal",               FeatureType.MOMENTUM,    {"kind": "rvi_signal"},                                     10, "ehlers_advanced", description="RVI Signal: خط سیگنال RVI"),
-        _definition("decycler",        "Decycler",                 FeatureType.TREND,       {"kind": "decycler",      "hp_period": 40},                 40, "ehlers_advanced", description="Decycler: ترند خالص بدون سیکل (Cycle Analytics 2013)"),
+        # Decycler: ترند بلندمدت — در 1D معنادار، در 5M خیلی کند
+        _definition("decycler",        "Decycler",                 FeatureType.TREND,       {"kind": "decycler",      "hp_period": 40},                 40, "ehlers_advanced", description="Decycler: ترند خالص بدون سیکل (Cycle Analytics 2013)", model_scope=R),
         _definition("decycler_osc",    "Decycler Oscillator",      FeatureType.MOMENTUM,    {"kind": "decycler_osc",  "fast_hp": 10, "slow_hp": 20},    20, "ehlers_advanced", description="Decycler Osc: تفاضل دو Decycler — جهت و قوت"),
     ]
 
@@ -741,8 +761,9 @@ def _build_definitions() -> List[FeatureDefinition]:
         _definition("frac_diff_ret",   "Frac. Diff. Returns",      FeatureType.MOMENTUM,    {"kind": "frac_diff_ret",   "d": 0.3, "threshold": 1e-2},   8, "prado_features", description="Fractional Diff روی log-returns (d=0.3)"),
         _definition("cusum_pos",       "CUSUM Positive",           FeatureType.MOMENTUM,    {"kind": "cusum_pos"},                     1, "prado_features", description="CUSUM مثبت: انباشت حرکت صعودی (Lopez de Prado)"),
         _definition("cusum_neg",       "CUSUM Negative",           FeatureType.MOMENTUM,    {"kind": "cusum_neg"},                     1, "prado_features", description="CUSUM منفی: انباشت حرکت نزولی"),
-        _definition("rolling_sharpe",  "Rolling Sharpe (20)",      FeatureType.STATISTICAL, {"kind": "rolling_sharpe",  "period": 20}, 20, "prado_features", description="Sharpe ratio rolling: کیفیت بازده"),
-        _definition("rolling_calmar",  "Rolling Calmar (20)",      FeatureType.STATISTICAL, {"kind": "rolling_calmar",  "period": 20}, 20, "prado_features", description="Calmar ratio rolling: return/drawdown"),
+        # Sharpe/Calmar: در 5M با 200 کندل بی‌معنیه، در 1D با 100 روز معنادار
+        _definition("rolling_sharpe",  "Rolling Sharpe (20)",      FeatureType.STATISTICAL, {"kind": "rolling_sharpe",  "period": 20}, 20, "prado_features", description="Sharpe ratio rolling: کیفیت بازده", model_scope=R),
+        _definition("rolling_calmar",  "Rolling Calmar (20)",      FeatureType.STATISTICAL, {"kind": "rolling_calmar",  "period": 20}, 20, "prado_features", description="Calmar ratio rolling: return/drawdown", model_scope=R),
         _definition("kyles_lambda",    "Kyle's Lambda",            FeatureType.STATISTICAL, {"kind": "kyles_lambda",    "period": 20}, 21, "prado_features", description="Kyle's Lambda: market impact — بازار کم‌عمق = بالا"),
         _definition("amihud_illiq",    "Amihud Illiquidity",       FeatureType.STATISTICAL, {"kind": "amihud_illiq",    "period": 20}, 21, "prado_features", description="Amihud (2002): |r|/volume — نقدشوندگی"),
         _definition("bid_ask_spread",  "Bid-Ask Spread (Roll)",    FeatureType.STATISTICAL, {"kind": "bid_ask_spread",  "period": 20}, 22, "prado_features", description="Roll (1984): تخمین spread از serial covariance"),

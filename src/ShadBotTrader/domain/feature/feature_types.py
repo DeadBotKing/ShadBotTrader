@@ -49,3 +49,18 @@ class ExecutionMode(str, Enum):
     ONLINE = "online"
     INCREMENTAL = "incremental"
     REPLAY = "replay"
+
+
+class ModelScope(str, Enum):
+    """Which model(s) a feature is appropriate for.
+
+    BOTH   — مناسب هر دو مدل signal و range
+    SIGNAL — فقط مدل signal (5M): ویژگی‌های کوتاه‌مدت/لحظه‌ای
+             مثل: session، ساعت، oscillator سریع
+    RANGE  — فقط مدل range (1D): ویژگی‌های بلندمدت/ساختاری
+             مثل: Ichimoku Cloud، Hurst، vol_of_vol
+    """
+
+    BOTH = "both"
+    SIGNAL = "signal"
+    RANGE = "range"

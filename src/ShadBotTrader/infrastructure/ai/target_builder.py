@@ -255,6 +255,27 @@ def build_signal_labels_from_closes(
     )
 
 
+def build_signal_labels_from_ohlc(
+    closes: Sequence[float],
+    highs: Sequence[float],
+    lows: Sequence[float],
+    threshold: float = 0.0008,
+    max_lookahead: Optional[int] = None,
+) -> SignalLabels:
+    """Build path-aware first-passage labels from reconstructed OHLC series.
+
+    مثل training: از high و low واقعی هر کندل استفاده میکنه.
+    برای evaluate که matrix داره (high_rel, low_rel).
+    """
+    return _build_first_passage_labels(
+        closes,
+        highs=highs,
+        lows=lows,
+        threshold=threshold,
+        max_lookahead=max_lookahead,
+    )
+
+
 def build_signal_labels(
     candles: Sequence[Candle],
     horizon: int = 0,

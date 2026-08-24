@@ -401,6 +401,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
                 CommandField(
+                    "learning_rate",
+                    "Learning rate (0 = auto)",
+                    "0",
+                    kind="number",
+                    hint="0 = آخرین LR ذخیره‌شده | مقدار دستی مثلاً 0.001 یا 1e-3",
+                ),
+                CommandField(
                     "train_ratio",
                     "Training prefix %",
                     "100",
@@ -795,6 +802,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("epochs", "Epochs", "1", kind="number"),
                 CommandField("folds", "Folds", "2", kind="number"),
                 CommandField("window", "Window rows", "500", kind="number"),
+                CommandField(
+                    "learning_rate",
+                    "Learning rate (0 = auto)",
+                    "0",
+                    kind="number",
+                    hint="0 = آخرین LR ذخیره‌شده | مقدار دستی مثلاً 0.001 یا 1e-3",
+                ),
                 CommandField(
                     "train_ratio",
                     "Training prefix %",
@@ -1545,7 +1559,13 @@ class CommandHandlers:
                 f"retraining it on {dataset} changes what it models."
             )
 
-        learning_rate = saved_learning_rate(self._storage_root, saved)
+        # LR: اگه کاربر عدد داده از همون استفاده کن، وگرنه از saved
+        _lr_manual = command.number("learning_rate", 0.0)
+        learning_rate = (
+            float(_lr_manual)
+            if _lr_manual and _lr_manual > 0
+            else saved_learning_rate(self._storage_root, saved)
+        )
         return self._run_script(
             command,
             [
@@ -1572,7 +1592,10 @@ class CommandHandlers:
                 "--storage-root",
                 str(self._storage_root),
             ],
-            f"Retrained {saved} on {dataset}" + (f" — {note[0]}" if note else ""),
+            f"Retrained {saved} on {dataset} "
+            f"(LR {learning_rate:.2e}"
+            f"{' — manual' if (_lr_manual and _lr_manual > 0) else ' — auto/saved'})"
+            + (f" — {note[0]}" if note else ""),
             started,
             timeout=7200,
         )
@@ -2792,7 +2815,13 @@ class AccountCommandHandlers(CommandHandlers):
                 f"No stored {dataset} dataset. Available: {', '.join(available)}",
             )
         model_id = f"gold_{role}_{dataset.lower()}"
-        learning_rate = saved_learning_rate(self._storage_root, model_id)
+        # LR: اگه کاربر عدد داده از همون استفاده کن، وگرنه از saved
+        _lr_manual = command.number("learning_rate", 0.0)
+        learning_rate = (
+            float(_lr_manual)
+            if _lr_manual and _lr_manual > 0
+            else saved_learning_rate(self._storage_root, model_id)
+        )
         return self._run_script(
             command,
             [
@@ -2830,7 +2859,9 @@ class AccountCommandHandlers(CommandHandlers):
                 "--storage-root",
                 str(self._storage_root),
             ],
-            f"Trained {role} on {dataset} (learning rate {learning_rate:.2e})",
+            f"Trained {role} on {dataset} "
+            f"(LR {learning_rate:.2e}"
+            f"{' — manual' if (_lr_manual and _lr_manual > 0) else ' — auto/saved'})",
             started,
             timeout=max(command.integer("timeout_minutes", 480), 5) * 60,
         )

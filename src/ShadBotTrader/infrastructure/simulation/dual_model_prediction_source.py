@@ -191,6 +191,7 @@ class DualModelPredictionSource(PredictionSource):
             self._signal_window_size,
             matrix=self._signal_matrix,
             original_index=self._signal_candle_index.get(event.event_time.value),
+            model_role="signal",
         )
         if signal_window is None:
             self._abstentions += 1
@@ -233,6 +234,7 @@ class DualModelPredictionSource(PredictionSource):
             self._range_window_size,
             matrix=self._range_matrix,
             original_index=self._range_candle_index.get(latest_range.open_time.value),
+            model_role="range",
         )
         if range_window is None:
             self._abstentions += 1
@@ -307,6 +309,7 @@ class DualModelPredictionSource(PredictionSource):
         window_size: int,
         matrix: Any = None,
         original_index: Optional[int] = None,
+        model_role: Optional[str] = None,
     ) -> Optional[List[List[float]]]:
         if matrix is not None and original_index is not None:
             # The full-series matrix is computed once by the application
@@ -329,6 +332,7 @@ class DualModelPredictionSource(PredictionSource):
                 include_features=self._feature_set is not None and self._resolver is not None,
                 source=feature_source,
                 causal_only=True,
+                model_role=model_role,
             )
         except Exception as error:
             self._last_error = f"feature window failed: {type(error).__name__}: {error}"

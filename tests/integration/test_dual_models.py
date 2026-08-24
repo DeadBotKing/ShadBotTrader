@@ -81,7 +81,7 @@ class TestModelRoles:
     def test_the_range_head_is_a_two_output_regression(self):
         role = range_model_role()
         assert role.output_units == 2
-        assert role.loss == "mse"
+        assert role.loss == "mae"  # MAE: outlier-robust برای high/low
         assert role.output_activation == "linear"
 
     def test_the_signal_head_is_a_binary_softmax(self):
@@ -228,13 +228,13 @@ class TestTraining:
         assert forecast.predicted_class.label in {"sell", "buy"}
         assert 0.0 <= forecast.confidence <= 1.0
 
-    def test_regression_uses_mse_not_cross_entropy(self, service):
+    def test_regression_uses_mae_not_cross_entropy(self, service):
         """The bug this phase fixes: the loss used to be hardcoded."""
         role = range_model_role(window_size=12)
         dataset = service.prepare(wave(140), SYMBOL, HOURLY, role)
         trainer = service.build_trainer(dataset)
 
-        assert trainer._loss == "mse"
+        assert trainer._loss == "mae"  # MAE replaces MSE for range model
         assert trainer._target_columns == dataset.target_columns
 
     def test_the_two_models_produce_independent_artifacts(self, service):

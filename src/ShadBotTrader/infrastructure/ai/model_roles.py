@@ -23,11 +23,17 @@ from ShadBotTrader.domain.common.errors import ValidationError
 
 #: Loss + activation per task. Regression must NOT use a bounded
 #: activation: a sigmoid output can never express a -3% low offset.
+#:
+#: Range model uses MAE instead of MSE because:
+#:   - high/low series have outliers (sudden large moves)
+#:   - MSE heavily penalises these → predictions shrink toward mean
+#:   - MAE is outlier-robust → predictions closer to true median
+#:   - This directly reduces the low_bias seen with MSE
 _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
     TargetKind.PRICE_RANGE: {
         "activation": "linear",
-        "loss": "mse",
-        "metric": "mae",
+        "loss": "mae",    # MAE: outlier-robust، low_bias رو کم میکنه
+        "metric": "mse",  # MSE رو به عنوان متریک نگه میداریم برای مقایسه
     },
     TargetKind.TRADE_SIGNAL: {
         "activation": "softmax",
@@ -39,13 +45,40 @@ _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
 
 @dataclass(frozen=True)
 class ModelRole:
-    """One of the two models, fully specified."""
+    """One of the two models, fully specified.
+
+    Architecture hyperparameters (n_filters, depth_multiplier, …) are
+    carried here so the dashboard, CLI and trainer always agree on the
+    same defaults — no magic numbers scattered across layers.
+
+    Signal defaults  (5M / window=100):
+      n_layers_per_block=3 — RF = 1+(5-1)*(1+2+4)*2 = 57 < 100 ✅
+      depth_multiplier=8   — fewer params in the wide input layer
+      dropout=0.15         — stronger regularisation for 118+ features
+      l2=2.5e-4
+      n_filters=32
+
+    Range defaults  (1D / window=100):
+      n_layers_per_block=3 — RF=57 < 100 ✅
+      depth_multiplier=6   — regression needs capacity
+      dropout=0.10
+      l2=2.0e-4
+      n_filters=48
+    """
 
     name: str
     target: PredictionTarget
     model_id: str
     description: str
     window_size: int = 32
+    # ── WaveNet architecture knobs ─────────────────────────────────────
+    n_filters: int = 32
+    kernel_size: int = 5
+    n_layers_per_block: int = 3   # RF=57 — window=100 compatible
+    n_blocks: int = 2
+    depth_multiplier: int = 8
+    l2: float = 2.5e-4
+    dropout: float = 0.10
 
     def __post_init__(self) -> None:
         if self.window_size < 2:
@@ -86,6 +119,14 @@ class ModelRole:
             "activation": self.output_activation,
             "loss": self.loss,
             "target": self.target.to_dict(),
+            # architecture
+            "n_filters": self.n_filters,
+            "kernel_size": self.kernel_size,
+            "n_layers_per_block": self.n_layers_per_block,
+            "n_blocks": self.n_blocks,
+            "depth_multiplier": self.depth_multiplier,
+            "l2": self.l2,
+            "dropout": self.dropout,
         }
 
 
@@ -110,9 +151,19 @@ def range_model_id(timeframe: str) -> str:
 def range_model_role(
     timeframe: str = "1H",
     horizon: int = 5,
-    window_size: int = 32,
+    window_size: int = 100,
 ) -> ModelRole:
-    """The price-extremes model for one timeframe (1H or 1D)."""
+    """The price-extremes model for one timeframe (1H or 1D).
+
+    window_size=100:
+      • RF=57 (n_layers=3) < 100 ✅ — no blind neurons
+      • 100 daily candles ≈ 5 months of data
+      • All features have lookback ≤ 50 after catalog adjustment
+    Architecture:
+      n_layers_per_block=3 → RF=57
+      n_filters=48  — regression benefits from more capacity
+      depth_multiplier=6, dropout=0.10, l2=2.0e-4
+    """
     return ModelRole(
         name="range",
         target=PredictionTarget(
@@ -126,6 +177,12 @@ def range_model_role(
             f"{horizon} {timeframe} candles, as offsets from the current close."
         ),
         window_size=window_size,
+        # Architecture knobs — range-specific
+        n_filters=48,
+        n_layers_per_block=4,  # RF=121 → 81% of window=150 ✅
+        depth_multiplier=6,
+        dropout=0.10,
+        l2=2.0e-4,
     )
 
 
@@ -133,9 +190,18 @@ def signal_model_role(
     timeframe: str = "5M",
     horizon: int = 0,
     threshold: float = 0.0008,
-    window_size: int = 32,
+    window_size: int = 100,
 ) -> ModelRole:
-    """The binary direction model. Defaults to 5M bars and unbounded first-passage labels."""
+    """The binary direction model. Defaults to 5M bars and unbounded first-passage labels.
+
+    window_size=100:
+      • 100 × 5M = ~8 hours of data
+      • RF=57 (n_layers=3) < 100 ✅ — no blind neurons
+      • All features have lookback ≤ 50 after catalog adjustment
+    Architecture:
+      n_layers_per_block=3 → RF=57
+      n_filters=32, depth_multiplier=8, dropout=0.15, l2=2.5e-4
+    """
     if threshold < 0:
         raise ValidationError("threshold must not be negative")
     return ModelRole(
@@ -153,6 +219,12 @@ def signal_model_role(
             "price move is reached; no HOLD output class."
         ),
         window_size=window_size,
+        # Architecture knobs — signal-specific
+        n_filters=32,
+        n_layers_per_block=3,
+        depth_multiplier=8,
+        dropout=0.15,
+        l2=2.5e-4,
     )
 
 

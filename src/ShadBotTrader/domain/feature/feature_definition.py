@@ -11,6 +11,7 @@ from ShadBotTrader.domain.feature.feature_types import (
     Causality,
     FeatureType,
     FeatureValueType,
+    ModelScope,
 )
 
 
@@ -64,6 +65,9 @@ class FeatureDefinition:
     forward_lookahead: int = 0
     #: Human-readable reason a feature is unsafe for live/model input.
     leakage_reason: str = ""
+    #: Which model(s) this feature is appropriate for.
+    #: BOTH = هر دو، SIGNAL = فقط 5M signal، RANGE = فقط 1D range
+    model_scope: ModelScope = ModelScope.BOTH
 
     def __post_init__(self) -> None:
         if not self.name.strip():

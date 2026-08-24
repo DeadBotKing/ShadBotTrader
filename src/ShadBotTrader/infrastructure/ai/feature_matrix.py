@@ -332,6 +332,8 @@ def build_feature_matrix(
     source: Optional["FeatureSource"] = None,
     #: When true, non-causal or unknown features never enter model input.
     causal_only: bool = False,
+    #: Filter features by model role: "signal", "range", or None (= all).
+    model_role: Optional[str] = None,
 ) -> FeatureMatrix:
     """Build the model input matrix for ``candles``.
 
@@ -358,6 +360,17 @@ def build_feature_matrix(
     if not candles:
         raise ValidationError("Cannot build a feature matrix from zero candles")
 
+    # Resolve which ModelScope values are allowed for this role.
+    # None → accept everything; "signal" → BOTH + SIGNAL; "range" → BOTH + RANGE.
+    _allowed_scopes: Optional[frozenset] = None
+    if model_role is not None:
+        from ShadBotTrader.domain.feature.feature_types import ModelScope
+        role_lower = model_role.strip().lower()
+        if role_lower == "signal":
+            _allowed_scopes = frozenset({ModelScope.BOTH, ModelScope.SIGNAL})
+        elif role_lower == "range":
+            _allowed_scopes = frozenset({ModelScope.BOTH, ModelScope.RANGE})
+
     column_names: List[str] = list(CANDLE_COLUMNS)
     feature_columns: Dict[str, List[Optional[float]]] = {}
     skipped: List[str] = []
@@ -373,6 +386,13 @@ def build_feature_matrix(
                     definition.leakage_reason or f"causality={definition.causality.value}"
                 )
                 continue
+
+            # Filter by model role when requested.
+            if _allowed_scopes is not None:
+                scope = getattr(definition, "model_scope", None)
+                if scope is not None and scope not in _allowed_scopes:
+                    excluded[feature_id] = f"model_scope={scope.value}_not_for_{model_role}"
+                    continue
 
             if source is not None:
                 result = source.get(feature_id)
