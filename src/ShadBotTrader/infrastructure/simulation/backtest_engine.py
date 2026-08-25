@@ -368,14 +368,17 @@ class BacktestEngine:
 
         self._capture_execution_costs(result, quote)
         self._fills += 1
-        realized_delta, fee_delta = self._capture_trade(event, was_flat)
-        self._mark_fill(
-            event,
-            outcome=result,
-            realized=realized_delta,
-            fees=fee_delta,
-            bracket=bracket,
-        )
+        realized_delta, fee_delta, was_filtered = self._capture_trade(event, was_flat)
+        # اگه trade توسط filter_zero_bar فیلتر شد،
+        # marker هم نباید در tape ثبت بشه — وگرنه round_trips != trades
+        if not was_filtered:
+            self._mark_fill(
+                event,
+                outcome=result,
+                realized=realized_delta,
+                fees=fee_delta,
+                bracket=bracket,
+            )
         return True
 
     def _capture_execution_costs(self, outcome: Any, quote: Any) -> None:
@@ -609,7 +612,7 @@ class BacktestEngine:
             prediction=self._last_prediction,
         )
 
-    def _capture_trade(self, event: MarketEvent, was_flat: bool) -> tuple[Decimal, Decimal]:
+    def _capture_trade(self, event: MarketEvent, was_flat: bool) -> tuple[Decimal, Decimal, bool]:
         """Turn a realised PnL change into a completed TradeRecord.
 
         Returns the realised PnL and the fees this fill alone produced, so
@@ -645,14 +648,16 @@ class BacktestEngine:
             # When filter_zero_bar is enabled, skip trades that were
             # opened and closed on the same bar (0-bar trades).
             if self._filter_zero_bar and bars_held == 0:
-                # Skip recording this trade but still update accounting
+                # Skip recording this trade but still update accounting.
+                # was_filtered=True signals _execute_outcome to skip _mark_fill
+                # so tape.round_trips() stays in sync with self._trades.
                 self._open_bar = None
                 self._open_bar_index = None
                 self._open_trade_fees = Decimal("0")
                 self._open_trade_realized = Decimal("0")
                 self._last_realized = realized
                 self._last_fees = fees
-                return delta, fee_delta
+                return delta, fee_delta, True   # ← filtered
 
             self._trades.append(
                 TradeRecord(
@@ -670,7 +675,7 @@ class BacktestEngine:
 
         self._last_realized = realized
         self._last_fees = fees
-        return delta, fee_delta
+        return delta, fee_delta, False   # ← not filtered
 
     def _record_equity(self, event: MarketEvent, close: Price) -> None:
         prices = {str(event.symbol): close}

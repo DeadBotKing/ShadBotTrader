@@ -480,6 +480,28 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="select",
                     options=("stop_first", "target_first", "skip_ambiguous"),
                 ),
+                CommandField(
+                    "last_n_candles",
+                    "Last N candles (0 = all)",
+                    "0",
+                    kind="number",
+                    hint="0 = کل تاریخچه | مثلاً 10000 = فقط ۱۰۰۰۰ کندل آخر (تست سریع)",
+                ),
+                CommandField(
+                    "session_filter",
+                    "Session filter (hours UTC)",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                    hint="1 = فقط ساعت‌های خوب: 2,5,6,10,14,15,16,18 UTC (WR=45.7% بجای 33.5%)",
+                ),
+                CommandField(
+                    "min_sl_distance",
+                    "Min SL distance ($)",
+                    "0",
+                    kind="number",
+                    hint="حداقل فاصله SL از entry (دلار). 0=غیرفعال. پیشنهاد: 3",
+                ),
             ],
             group="Simulation",
         ),
@@ -548,6 +570,28 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "stop_first",
                     kind="select",
                     options=("stop_first", "target_first", "skip_ambiguous"),
+                ),
+                CommandField(
+                    "last_n_candles",
+                    "Last N candles (0 = all)",
+                    "0",
+                    kind="number",
+                    hint="0 = کل تاریخچه | مثلاً 10000 = فقط ۱۰۰۰۰ کندل آخر (تست سریع)",
+                ),
+                CommandField(
+                    "session_filter",
+                    "Session filter (hours UTC)",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                    hint="1 = فقط ساعت‌های خوب: 2,5,6,10,14,15,16,18 UTC",
+                ),
+                CommandField(
+                    "min_sl_distance",
+                    "Min SL distance ($)",
+                    "0",
+                    kind="number",
+                    hint="حداقل فاصله SL از entry. 0=غیرفعال. پیشنهاد: 3",
                 ),
             ],
             group="Simulation",
@@ -1636,9 +1680,21 @@ class CommandHandlers:
                 f"No stored candles for {symbol_text} {signal_timeframe}. Fetch data first."
             )
 
+        # ── last_n_candles: فقط N کندل آخر برای تست سریع ─────────────────
+        last_n = max(0, command.integer("last_n_candles", 0))
+        if last_n > 0 and len(signal_candles) > last_n:
+            signal_candles = list(signal_candles)[-last_n:]
+
         dual_note = ""
         range_timeframe = command.text("range_timeframe", "1H")
         range_candles = store.query(symbol, Timeframe(range_timeframe))
+
+        # range candles هم به همان نسبت زمانی برش می‌خوره
+        # (نه تعداد ثابت — چون تایم‌فریم فرق داره)
+        if last_n > 0 and signal_candles and range_candles:
+            # اولین زمان signal candle → شروع برش range candles
+            cutoff_time = signal_candles[0].open_time.value
+            range_candles = [c for c in range_candles if c.open_time.value >= cutoff_time]
         if mode != "legacy" and range_candles:
             try:
                 configuration = SimulationConfiguration(
@@ -1652,6 +1708,11 @@ class CommandHandlers:
                         command.text("same_bar_policy", SameBarPolicy.STOP_FIRST.value)
                     ),
                 )
+                # فاز ۵۲: session filter و min_sl_distance
+                _session_filter = command.text("session_filter", "0").strip() == "1"
+                _allowed_hours = list({2, 5, 6, 10, 14, 15, 16, 18}) if _session_filter else None
+                _min_sl = max(0.0, command.number("min_sl_distance", 0.0))
+
                 dual = DualModelBacktestService.from_storage(
                     storage_root=self._storage_root,
                     symbol=symbol_text,
@@ -1664,6 +1725,8 @@ class CommandHandlers:
                     base_quantity=Decimal(str(command.number("quantity", 0.01))),
                     reward_risk_multiplier=command.number("reward_risk_multiplier", 1.5),
                     filter_zero_bar=command.text("filter_zero_bar", "0").strip() == "1",
+                    allowed_hours_utc=_allowed_hours,
+                    min_sl_distance=_min_sl,
                 )
                 result = dual.run(
                     session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
@@ -1820,6 +1883,9 @@ class CommandHandlers:
             f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
             f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
             f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
+            f"session filt: {'yes — hours 2,5,6,10,14,15,16,18 UTC' if command.text('session_filter','0').strip()=='1' else 'no'}",
+            f"min SL dist : {command.number('min_sl_distance', 0.0):g}$" if command.number('min_sl_distance', 0.0) > 0 else "min SL dist : off",
+            f"last N bars : {command.integer('last_n_candles', 0):,} کندل آخر" if command.integer('last_n_candles', 0) > 0 else "last N bars : all (کل تاریخچه)",
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
             f"gross profit: {metrics.gross_profit:.4f}",
             f"gross loss  : {metrics.gross_loss:.4f}",

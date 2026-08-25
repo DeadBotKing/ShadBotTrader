@@ -231,65 +231,49 @@ elapsed 0:14 | eta 1:42
         self._write(f"  {samples:,} training windows ready in {format_duration(elapsed)}")
 
     def on_batch_end(self, fold: "FoldInfo", batch: int, total_batches: int, logs: dict) -> None:
-        """Show that a long epoch is advancing, without flooding the log.
+        """فاز ۵۲: batch progress — فقط زمان‌بندی + مهم‌ترین metric.
 
-        Phase 42: this used to write one line per reported batch. On a
-        real dataset that is hundreds of lines per epoch, and the
-        dashboard only reads the last 200 — so the batch chatter pushed
-        the epoch results (the numbers the operator actually wants) out
-        of the visible window entirely. Worse, the ``\r`` trick that made
-        it a single updating line only works on a terminal; through a
-        pipe every update became a permanent new line.
-
-        Now at most :attr:`BATCH_LINES_PER_EPOCH` lines are emitted per
-        epoch, evenly spaced, and each is a normal line that survives
-        being read back from a file.
+        قانون: حداکثر ۳ خط در کل epoch (اول / وسط / آخر) + هر ۳۰ ثانیه یه خط.
+        خط epoch_end مهم‌ترینه — batch lines نباید اون رو از صفحه بیرون ببرن.
         """
         if total_batches <= 0:
             return
 
-        # Report at a fixed number of checkpoints, plus the final batch.
-        stride = max(1, total_batches // self.BATCH_LINES_PER_EPOCH)
-        is_last = batch + 1 >= total_batches
-        due_by_count = is_last or not batch % stride
-
-        # Phase 44: a count-based stride alone is not enough. On 5,986
-        # batches it puts eleven minutes between lines, and eleven
-        # minutes of silence is indistinguishable from a hang — which is
-        # the exact complaint this whole reporter exists to answer. So a
-        # line is also emitted whenever too much wall-clock time has
-        # passed, regardless of how few batches have gone by.
         now = time.monotonic()
+        is_last = (batch + 1 >= total_batches)
+
+        # فقط سه نقطه ثابت: اول / وسط / آخر
+        mid = total_batches // 2
+        is_checkpoint = (batch == 0) or (batch == mid) or is_last
+
+        # یا بیش از ۳۰ ثانیه از آخرین خط گذشته
         due_by_time = now - self._last_batch_line >= self.MAX_SECONDS_BETWEEN_LINES
 
-        if not (due_by_count or due_by_time):
+        if not (is_checkpoint or due_by_time):
             return
         self._last_batch_line = now
 
-        fraction = (batch + 1) / total_batches
-        parts = []
-        for key in ("loss", "accuracy", "mae", "val_loss"):
-            if key in logs:
-                parts.append(f"{key} {float(logs[key]):.4f}")
-
-        # Phase 46: measure from the START OF THIS EPOCH, not the fold.
-        # Dividing two hours of fold time by this epoch's 105 batches
-        # produced "eta 2:58:40" when the true answer was four minutes —
-        # an ETA that wrong is worse than none, because the operator
-        # cannot tell a slow run from a stuck one.
         if self._epoch_start <= 0:
             self._epoch_start = now
         elapsed = now - self._epoch_start
-        eta = ""
+        fraction = (batch + 1) / total_batches
+        pct = fraction * 100
+
+        # مهم‌ترین metric: val_mae برای range، loss برای همه
+        metric_str = ""
+        for key in ("mae", "loss", "accuracy"):
+            if key in logs:
+                metric_str = f" | {key}={float(logs[key]):.4f}"
+                break
+
+        eta_str = ""
         if batch > 0 and elapsed > 0:
             remaining = (elapsed / (batch + 1)) * (total_batches - batch - 1)
-            eta = f" | eta {format_duration(remaining)}"
+            eta_str = f" | eta {format_duration(remaining)}"
 
         self._write(
-            f"    [{_bar(fraction, 20)}] {fraction * 100:5.1f}% | "
-            f"batch {batch + 1:,}/{total_batches:,}"
-            + (" | " + " | ".join(parts) if parts else "")
-            + eta
+            f"    {pct:5.1f}% batch {batch+1}/{total_batches}"
+            + metric_str + eta_str
         )
 
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
@@ -334,23 +318,51 @@ elapsed 0:14 | eta 1:42
         if not self._show_epochs:
             return
 
-        parts = [
-            f"  epoch {metrics.human_epoch}/{metrics.total_epochs}",
-            f"loss {_fmt(metrics.loss)}",
-            f"val_loss {_fmt(metrics.val_loss)}",
-        ]
-        if metrics.accuracy is not None:
-            parts.append(f"acc {_fmt(metrics.accuracy)}")
-        if metrics.val_accuracy is not None:
-            parts.append(f"val_acc {_fmt(metrics.val_accuracy)}")
-        if metrics.learning_rate is not None:
-            parts.append(f"lr {metrics.learning_rate:.2e}")
-        self._write(" | ".join(parts))
+        # فاز ۵۲: خلاصه epoch به‌صورت یک خط واضح
+        # برای مدل range: loss + val_loss + mae + val_mae
+        # برای مدل signal: loss + val_loss + acc + val_acc
+        mae      = metrics.extra.get("mae")
+        val_mae  = metrics.extra.get("val_mae")
+        is_range = mae is not None or val_mae is not None
+
+        ep_tag = f"epoch {metrics.human_epoch:>3}/{metrics.total_epochs}"
+
+        if is_range:
+            # مدل range — مهم‌ترین عدد: val_mae
+            loss_str    = f"loss={_fmt(metrics.loss, 6)}"
+            vl_str      = f"val_loss={_fmt(metrics.val_loss, 6)}"
+            mae_str     = f"mae={_fmt(mae, 6)}"
+            vmae_str    = f"val_mae={_fmt(val_mae, 6)}"
+
+            # تبدیل val_mae به دلار (XAUUSD ≈ 3000 فعلاً، قابل تنظیم)
+            usd_hint = ""
+            if val_mae is not None:
+                # از آخرین reference_close اگه موجود بود استفاده کن
+                # وگرنه 2650 (میانگین مناسب)
+                ref = getattr(self, "_last_ref_price", 2650.0)
+                usd = val_mae * ref
+                usd_hint = f"  ≈±{usd:.2f}$"
+
+            self._write(
+                f"  {ep_tag} | {loss_str} | {vl_str} | {mae_str} | {vmae_str}{usd_hint}"
+            )
+        else:
+            # مدل signal — مهم‌ترین عدد: val_acc
+            loss_str = f"loss={_fmt(metrics.loss, 4)}"
+            vl_str   = f"val_loss={_fmt(metrics.val_loss, 4)}"
+            parts    = [f"  {ep_tag}", loss_str, vl_str]
+            if metrics.accuracy is not None:
+                parts.append(f"acc={_fmt(metrics.accuracy, 4)}")
+            if metrics.val_accuracy is not None:
+                parts.append(f"val_acc={_fmt(metrics.val_accuracy, 4)}")
+            self._write(" | ".join(parts))
+
         # The next epoch's ETA must be measured from here, not from the
         # start of the fold.
         self._epoch_start = time.monotonic()
 
     def on_fold_end(self, fold: FoldInfo, val_loss: float) -> None:
+        """فاز ۵۲: خلاصه fold — خط مشخص + اطلاعات کامل."""
         self._completed_folds += 1
         now = time.monotonic()
         elapsed = now - self._run_start
@@ -361,28 +373,38 @@ elapsed 0:14 | eta 1:42
         per_fold = elapsed / self._completed_folds if self._completed_folds else 0.0
         eta = per_fold * (total - self._completed_folds)
 
+        # ─── خلاصه fold ───
+        self._write("  " + "─" * 70)
         self._write(
-            f"[{_bar(fraction, self._bar_width)}] {fraction * 100:5.1f}% | "
-            f"fold {self._completed_folds}/{total} | "
-            f"val_loss {_fmt(val_loss)} | "
-            f"{fold_seconds:.1f}s/fold | "
-            f"elapsed {format_duration(elapsed)} | "
-            f"eta {format_duration(eta)}"
+            f"  ✓ fold {self._completed_folds}/{total} done"
+            f" | val_loss={_fmt(val_loss, 6)}"
+            f" | {fold_seconds:.0f}s"
+            f" | elapsed {format_duration(elapsed)}"
+            f" | eta {format_duration(eta)}"
         )
+        self._write("  " + "─" * 70)
 
     def on_train_end(self, fold_losses: List[float]) -> None:
+        """فاز ۵۲: خلاصه نهایی با اطلاعات کامل."""
         elapsed = time.monotonic() - self._run_start
-        self._write("-" * 74)
+        self._write("=" * 74)
+        self._write("  TRAINING COMPLETE")
+        self._write("=" * 74)
         if fold_losses:
-            best = min(fold_losses)
+            best  = min(fold_losses)
             worst = max(fold_losses)
-            mean = sum(fold_losses) / len(fold_losses)
-            self._write(
-                f"  folds {len(fold_losses)} | "
-                f"val_loss best {best:.4f} / mean {mean:.4f} / worst {worst:.4f}"
-            )
-            self._write(f"  final fold val_loss: {fold_losses[-1]:.4f}")
-        self._write(f"  total training time: {format_duration(elapsed)}")
+            mean  = sum(fold_losses) / len(fold_losses)
+            final = fold_losses[-1]
+            self._write(f"  folds        : {len(fold_losses)}")
+            self._write(f"  val_loss best: {best:.6f}")
+            self._write(f"  val_loss mean: {mean:.6f}")
+            self._write(f"  val_loss last: {final:.6f}")
+            # نمایش به دلار اگه val_mae داریم (از extra metrics)
+            ref = getattr(self, "_last_ref_price", None)
+            if ref and hasattr(self, "_last_val_mae") and self._last_val_mae:
+                usd = self._last_val_mae * ref
+                self._write(f"  val_mae last : {self._last_val_mae:.6f} ≈ ±{usd:.2f}$ (ref={ref:.0f})")
+        self._write(f"  total time   : {format_duration(elapsed)}")
         self._write("=" * 74)
         self._write("")
 
@@ -413,7 +435,17 @@ def keras_progress_callback(
                 except Exception:  # pragma: no cover - optimizer without plain lr
                     learning_rate = None
 
+            # فاز ۵۲: همه metrics (از جمله mae/val_mae) را در extra ذخیره کن
             known = {"loss", "val_loss", "accuracy", "val_accuracy"}
+            extra = {
+                key: float(value)
+                for key, value in logs.items()
+                if _as_float(value) is not None
+            }
+            # ذخیره val_mae برای نمایش نهایی
+            if hasattr(reporter, "_last_val_mae") or "val_mae" in extra:
+                reporter._last_val_mae = extra.get("val_mae")  # type: ignore[attr-defined]
+
             reporter.on_epoch_end(
                 fold,
                 EpochMetrics(
@@ -424,11 +456,7 @@ def keras_progress_callback(
                     accuracy=_as_float(logs.get("accuracy")),
                     val_accuracy=_as_float(logs.get("val_accuracy")),
                     learning_rate=learning_rate,
-                    extra={
-                        key: float(value)
-                        for key, value in logs.items()
-                        if key not in known and _as_float(value) is not None
-                    },
+                    extra=extra,
                 ),
             )
 

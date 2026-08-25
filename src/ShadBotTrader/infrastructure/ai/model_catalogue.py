@@ -61,6 +61,8 @@ class ModelRecord:
     threshold: float = 0.0
     #: Learning rate used by the optimizer for this saved model.
     learning_rate: float = 0.0
+    #: Loss function used during training (e.g. "huber", "mae", "mse").
+    loss_function: str = ""
     #: How many candles ahead the label looks. Recorded for the same
     #: reason: the evaluator must rebuild the exact question.
     horizon: int = 0
@@ -104,6 +106,7 @@ class ModelRecord:
             "folds": self.folds,
             "threshold": self.threshold,
             "learning_rate": self.learning_rate,
+            "loss_function": self.loss_function,
             "horizon": self.horizon,
             "trained_at": self.trained_at,
             "metrics": dict(self.metrics),
@@ -126,6 +129,7 @@ class ModelRecord:
             folds=int(payload.get("folds", 0)),
             threshold=float(payload.get("threshold", 0.0) or 0.0),
             learning_rate=float(payload.get("learning_rate", 0.0) or 0.0),
+            loss_function=str(payload.get("loss_function", "") or ""),
             horizon=int(payload.get("horizon", 0) or 0),
             trained_at=str(payload.get("trained_at", "")),
             metrics={
@@ -143,6 +147,7 @@ class ModelRecord:
             f"{self.epochs} epoch(s) x {self.folds} fold(s)",
             f"quality   : {self.headline_metric}",
             *([f"learning : {self.learning_rate:.2e}"] if self.learning_rate > 0 else []),
+            *([f"loss fn  : {self.loss_function}"] if self.loss_function else []),
             *(
                 [
                     f"labels    : binary SELL/BUY, first-passage threshold "

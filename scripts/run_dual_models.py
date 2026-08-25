@@ -107,6 +107,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="suppress the per-epoch training log",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Load the latest saved checkpoint and continue training from "
+            "where it left off. Use when Colab disconnected mid-training. "
+            "The saved epoch count is read from training.json and used as "
+            "initial_epoch so Keras continues the learning-rate schedule."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -257,6 +267,58 @@ def training_prefix(candles, args, role):
     return candles[:cutoff]
 
 
+def _load_resume_weights(args, role) -> tuple:
+    """Load saved checkpoint weights for resume training (Phase 50).
+
+    Reads the latest training.json to find how many epochs were already
+    completed, then loads the corresponding .bin artifact bytes so the
+    trainer can warm-start the model weights instead of starting random.
+
+    Returns:
+        (weights_bytes, initial_epoch) — weights_bytes is None when no
+        checkpoint exists and the caller should start from scratch.
+    """
+    from pathlib import Path
+
+    from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
+    from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
+        FilesystemArtifactStore,
+    )
+    from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
+    root = Path(args.storage_root)
+    catalogue = ModelCatalogue(root)
+    version = catalogue.latest_version(role.model_id)
+    if not version:
+        print("  [i] RESUME: no saved checkpoint found — starting from scratch")
+        return None, 0
+
+    record = catalogue.read(role.model_id, version)
+    if record is None:
+        print("  [i] RESUME: cannot read training.json — starting from scratch")
+        return None, 0
+
+    initial_epoch = int(record.epochs or 0)
+    if initial_epoch <= 0:
+        print("  [i] RESUME: training.json has epochs=0 — starting from scratch")
+        return None, 0
+
+    store = FilesystemArtifactStore(root)
+    artifact = store.load(ModelId(role.model_id), ModelVersion(version))
+    if artifact is None:
+        print(
+            f"  [!] RESUME: training.json says epoch={initial_epoch} "
+            f"but artifact v{version} not found — starting from scratch"
+        )
+        return None, 0
+
+    print(
+        f"  RESUME: loaded checkpoint v{version} "
+        f"(epoch {initial_epoch}, {record.headline_metric})"
+    )
+    return artifact.payload, initial_epoch
+
+
 def train_one(service, args, role, timeframe: str, learning_rate: float | None = None) -> int:
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
@@ -357,7 +419,28 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         print("      Use a smaller --window, or fetch more candles.")
         return 1
 
-    print(f"\n  training roll-forward ({args.epochs} epoch(s), {args.folds} fold(s)) ...")
+    # Phase 50: --resume — load existing checkpoint weights and continue.
+    resume_weights: bytes | None = None
+    initial_epoch: int = 0
+    if getattr(args, "resume", False):
+        resume_weights, initial_epoch = _load_resume_weights(args, role)
+
+    remaining_epochs = args.epochs - initial_epoch
+    if remaining_epochs <= 0:
+        print(
+            f"\n  [i] RESUME: already trained {initial_epoch} epochs "
+            f"(target={args.epochs}). Nothing to do."
+        )
+        print("      Increase --epochs to train further.")
+        return 0
+
+    if initial_epoch > 0:
+        print(
+            f"\n  RESUME: continuing from epoch {initial_epoch} — "
+            f"{remaining_epochs} epoch(s) remaining"
+        )
+
+    print(f"\n  training roll-forward ({remaining_epochs} epoch(s) remaining, {args.folds} fold(s)) ...")
     # Phase 46: checkpoint after every epoch. The operator lost 18
     # completed epochs to a 2-hour timeout because nothing was written
     # until train() returned.
@@ -374,6 +457,8 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         progress=reporter,
         on_epoch_model=checkpoint,
         learning_rate=learning_rate,
+        initial_epoch=initial_epoch,
+        resume_weights=resume_weights,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
@@ -562,6 +647,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
                 # and reports an accuracy that belongs to no model at all.
                 threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
                 learning_rate=float(learning_rate),
+                loss_function=role.loss,
                 horizon=int(role.horizon),
                 metrics={k: float(v) for k, v in logs.items()},
                 note=(f"best epoch {epoch + 1}/{total_epochs} " f"({metric_name} {score:.6f})"),
@@ -668,6 +754,7 @@ def save_model(
         folds=args.folds,
         threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
         learning_rate=float(learning_rate),
+        loss_function=role.loss,
         horizon=int(role.horizon),
         metrics={key: float(value) for key, value in metrics.items()},
     )
@@ -675,6 +762,7 @@ def save_model(
     print(f"\n  SAVED  {role.model_id} v{version}")
     print(f"    role    : {record.role} trained on {record.symbol} {record.timeframe}")
     print(f"    quality : {record.headline_metric}")
+    print(f"    loss fn : {record.loss_function}")
     print(f"    record  : {path}")
 
 

@@ -64,6 +64,8 @@ class DualModelBacktestService:
         expected_range_features: Optional[int] = None,
         reward_risk_multiplier: Optional[float] = None,
         filter_zero_bar: bool = False,
+        allowed_hours_utc: Optional[Sequence[int]] = None,
+        min_sl_distance: float = 0.0,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -71,6 +73,8 @@ class DualModelBacktestService:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
             raise ValidationError("reward_risk_multiplier must be positive")
+        if min_sl_distance < 0:
+            raise ValidationError("min_sl_distance must not be negative")
 
         self._symbol = symbol
         self._signal_artifact = signal_artifact
@@ -97,6 +101,9 @@ class DualModelBacktestService:
         )
         self._reward_risk_multiplier = reward_risk_multiplier
         self._filter_zero_bar = filter_zero_bar
+        # فاز ۵۲: فیلترهای session و SL
+        self._allowed_hours_utc = allowed_hours_utc
+        self._min_sl_distance = float(min_sl_distance)
 
     @classmethod
     def from_storage(
@@ -118,6 +125,8 @@ class DualModelBacktestService:
         resolver: Any = None,
         reward_risk_multiplier: Optional[float] = None,
         filter_zero_bar: bool = False,
+        allowed_hours_utc: Optional[Sequence[int]] = None,
+        min_sl_distance: float = 0.0,
     ) -> "DualModelBacktestService":
         """Load both artifacts and their ``training.json`` metadata.
 
@@ -206,6 +215,8 @@ class DualModelBacktestService:
             expected_range_features=range_record.feature_columns or None,
             reward_risk_multiplier=reward_risk_multiplier,
             filter_zero_bar=filter_zero_bar,
+            allowed_hours_utc=allowed_hours_utc,
+            min_sl_distance=min_sl_distance,
         )
 
     @property
@@ -329,6 +340,8 @@ class DualModelBacktestService:
             min_reward_risk=self._min_reward_risk,
             min_move_fraction=self._min_move_fraction,
             require_range_model=True,
+            allowed_hours_utc=self._allowed_hours_utc,
+            min_sl_distance=self._min_sl_distance,
         )
         service = BacktestService(
             configuration=configuration,

@@ -292,6 +292,8 @@ class DualModelService:
         min_train_size: int = 0,
         max_folds: Optional[int] = None,
         progress: Any = None,
+        initial_epoch: int = 0,
+        resume_weights: "bytes | None" = None,
     ) -> Any:
         """A roll-forward WaveNet trainer configured for this role."""
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
@@ -372,6 +374,9 @@ class DualModelService:
             depth_multiplier=getattr(role, "depth_multiplier", 8),
             l2=getattr(role, "l2", 2.5e-4),
             dropout=getattr(role, "dropout", 0.10),
+            # Phase 50: resume from checkpoint
+            initial_epoch=initial_epoch,
+            resume_weights=resume_weights,
         )
 
     def train(
@@ -386,6 +391,8 @@ class DualModelService:
         progress: Any = None,
         on_epoch_model: Any = None,
         learning_rate: float = 1.5e-4,
+        initial_epoch: int = 0,
+        resume_weights: "bytes | None" = None,
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -393,10 +400,17 @@ class DualModelService:
         every epoch so the caller can checkpoint. Without it an
         interrupted run — a timeout, a closed lid — loses everything
         (Phase 46).
+
+        ``initial_epoch`` and ``resume_weights`` enable Phase 50 resume:
+        pass the bytes of a saved checkpoint and the epoch count already
+        completed so training continues from that point.
         """
         dataset = self.prepare(candles, symbol, timeframe, role)
         definition = self.definition_for(role, dataset, learning_rate=learning_rate)
-        trainer = self.build_trainer(dataset, epochs=epochs, max_folds=max_folds, progress=progress)
+        trainer = self.build_trainer(
+            dataset, epochs=epochs, max_folds=max_folds, progress=progress,
+            initial_epoch=initial_epoch, resume_weights=resume_weights,
+        )
         trainer.on_epoch_model = on_epoch_model
 
         run = TrainingRun(

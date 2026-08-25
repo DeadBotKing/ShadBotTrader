@@ -17,7 +17,7 @@ than mysterious.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, FrozenSet, Optional, Sequence
 
 from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalForecast
 from ShadBotTrader.domain.common.errors import ValidationError
@@ -30,6 +30,10 @@ from ShadBotTrader.domain.strategy.strategy_types import (
     SignalType,
     StrategyState,
 )
+
+# ساعت‌های UTC که از آنالیز بکتست بهترین نتیجه داشتن
+# (فاز ۵۲): 2,5,6,10,14,15,16,18 UTC → WR=45.7%, net=+2.76
+DEFAULT_GOOD_HOURS_UTC: FrozenSet[int] = frozenset({2, 5, 6, 10, 14, 15, 16, 18})
 
 #: Metadata keys the live service uses to attach the two forecasts.
 SIGNAL_FORECAST_KEY = "signal_forecast"
@@ -59,13 +63,26 @@ class DualModelStrategy(Strategy):
         require_range_model: bool = True,
         version: int = 1,
         state: StrategyState = StrategyState.READY,
+        allowed_hours_utc: Optional[Sequence[int]] = None,
+        min_sl_distance: float = 0.0,
     ) -> None:
+        """Initialise the dual-model strategy.
+
+        Args:
+            allowed_hours_utc: ساعت‌های مجاز UTC برای ورود (فاز ۵۲).
+                None = همه ساعت‌ها مجاز.
+                مثال: [2,5,6,10,14,15,16,18] بهترین ساعت‌های بکتست.
+            min_sl_distance: حداقل فاصله SL از entry_price به دلار (فاز ۵۲).
+                0.0 = غیرفعال. مثال: 3.0 → ترید با SL<3$ رد میشه.
+        """
         if not 0.0 <= min_confidence <= 1.0:
             raise ValidationError("min_confidence must be in [0, 1]")
         if min_reward_risk is not None and min_reward_risk <= 0:
             raise ValidationError("min_reward_risk must be positive when enabled")
         if min_move_fraction < 0:
             raise ValidationError("min_move_fraction must not be negative")
+        if min_sl_distance < 0:
+            raise ValidationError("min_sl_distance must not be negative")
 
         self._strategy_id = StrategyId("dual_model")
         self._version = StrategyVersion(version)
@@ -74,6 +91,12 @@ class DualModelStrategy(Strategy):
         self._min_move = float(min_move_fraction)
         self._require_range = require_range_model
         self._state = state
+        # فاز ۵۲: فیلترهای session و SL
+        self._allowed_hours: Optional[FrozenSet[int]] = (
+            None if allowed_hours_utc is None
+            else frozenset(int(h) for h in allowed_hours_utc)
+        )
+        self._min_sl_distance = float(min_sl_distance)
 
     # -- identity ----------------------------------------------------------
     @property
@@ -92,6 +115,18 @@ class DualModelStrategy(Strategy):
     def evaluate(self, context: StrategyContext) -> Optional[TradingSignal]:
         if self._state in (StrategyState.DISABLED, StrategyState.PAUSED):
             return None
+
+        # --- gate 0: session filter (فاز ۵۲) — ارزون‌ترین گیت اول -------
+        # ساعت‌های بد UTC (1,3,7,9,11,19,20): WR<25% از آنالیز بکتست
+        # ساعت‌های خوب (2,5,6,10,14,15,16,18): WR=45.7%
+        # اجرا قبل از پیش‌بینی مدل چون inference گران‌تره
+        if self._allowed_hours is not None:
+            bar_hour = context.timestamp.value.hour
+            if bar_hour not in self._allowed_hours:
+                return self._hold(
+                    context,
+                    f"session filter: hour {bar_hour:02d} UTC not in allowed hours",
+                )
 
         signal = _forecast(context, SIGNAL_FORECAST_KEY)
         if not isinstance(signal, SignalForecast):
@@ -184,6 +219,21 @@ class DualModelStrategy(Strategy):
                         context,
                         f"predicted move {move_fraction:.4%} below the "
                         f"{self._min_move:.4%} cost floor",
+                        confidence=signal.confidence,
+                    )
+
+            # --- gate 7: SL minimum distance از entry_price (فاز ۵۲) -----
+            # SL < 3$ → WR=15% از آنالیز بکتست (33 ترید، ضررده)
+            # entry_price هنوز نداریم (بعد از signal bar، قبل از fill)،
+            # پس از reference_close + risk_offset تقریب میزنیم.
+            # این گیت فقط وقتی min_sl_distance > 0 فعاله.
+            if self._min_sl_distance > 0 and reference > 0:
+                sl_distance_approx = risk * reference  # risk = offset fraction
+                if sl_distance_approx < self._min_sl_distance:
+                    return self._hold(
+                        context,
+                        f"predicted SL distance {sl_distance_approx:.2f} < "
+                        f"min {self._min_sl_distance:.2f}",
                         confidence=signal.confidence,
                     )
 

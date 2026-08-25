@@ -3,13 +3,13 @@
   "profiles": {
     "alpari-demo": {
       "name": "alpari-demo",
-      "login": 53102853,
+      "login": 53119126,
       "server": "Alpari-MT5-Demo",
       "terminal_path": "",
       "symbol_map": {},
       "is_demo": true,
       "note": "",
-      "created_at": "2026-08-17T06:31:05.386188+00:00",
+      "created_at": "2026-08-25T11:20:26.645440+00:00",
       "last_used_at": "",
       "password_variable": "SHADBOT_MT5_PASSWORD_ALPARI_DEMO",
       "password_set": false

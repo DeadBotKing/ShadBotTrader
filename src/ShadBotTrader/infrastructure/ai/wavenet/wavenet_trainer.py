@@ -103,6 +103,8 @@ class WavenetTrainer(ModelTrainer):
         sample_indices: Sequence[int] | None = None,
         sample_label_ends: Sequence[int] | None = None,
         purge_gap: int = 0,
+        initial_epoch: int = 0,
+        resume_weights: bytes | None = None,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -150,6 +152,8 @@ class WavenetTrainer(ModelTrainer):
         self._dropout = float(dropout)
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
+        self._initial_epoch = max(0, int(initial_epoch))
+        self._resume_weights = resume_weights
         #: Called as ``(model, epoch, logs)`` after each epoch so the
         #: caller can checkpoint. None disables checkpointing.
         self.on_epoch_model: Any = None
@@ -326,6 +330,16 @@ class WavenetTrainer(ModelTrainer):
                 dropout=getattr(self, "_dropout", 0.10),
             )
 
+            # Phase 50: resume — warm-start from a saved checkpoint.
+            # Only the last fold loads resume weights (same architecture,
+            # most recent data). Earlier folds always start from scratch so
+            # the walk-forward structure is preserved: each fold trains on
+            # its own chronological window and resume merely skips epochs
+            # that were already completed on the equivalent last fold.
+            is_last_fold = (display_index == len(folds) - 1)
+            if self._resume_weights and is_last_fold:
+                _load_weights_into(model, self._resume_weights)
+
             callbacks = []
             if self._on_epoch_model is not None:
                 # Phase 46: hand the live model out after every epoch so
@@ -356,6 +370,14 @@ class WavenetTrainer(ModelTrainer):
                         )
                     )
 
+            # Phase 50: for the last fold, continue from initial_epoch
+            # so Keras skips already-completed epochs and the LR schedule
+            # (if any) picks up from the right step count.
+            is_last_fold_for_fit = (display_index == len(folds) - 1)
+            fit_initial_epoch = self._initial_epoch if (
+                is_last_fold_for_fit and self._resume_weights
+            ) else 0
+
             if train_y is None:
                 # Streamed: the dataset already carries its labels and
                 # its own batching.
@@ -363,6 +385,7 @@ class WavenetTrainer(ModelTrainer):
                     train_x,
                     validation_data=val_x,
                     epochs=self._epochs,
+                    initial_epoch=fit_initial_epoch,
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
                     verbose=self._verbose,
@@ -375,6 +398,7 @@ class WavenetTrainer(ModelTrainer):
                     train_y,
                     validation_data=(val_x, val_y),
                     epochs=self._epochs,
+                    initial_epoch=fit_initial_epoch,
                     batch_size=self._batch_size,
                     verbose=self._verbose,
                     callbacks=callbacks,
@@ -616,6 +640,27 @@ def _notify(reporter: object, hook: str, *args: object) -> None:
         method(*args)
 
 
+def _load_weights_into(model: Any, weights_bytes: bytes) -> None:
+    """Warm-start a compiled model from a saved .keras artifact (Phase 50).
+
+    The saved artifact was produced by ``_serialize_model`` (a .keras
+    file serialised to bytes). We deserialise it into a temporary model
+    and copy the weights across. Architecture must match exactly — same
+    number of layers, same shapes — which is guaranteed because the
+    checkpoint was written by the same ``_build_compiled`` call with
+    identical hyperparameters.
+    """
+    try:
+        saved_model = _deserialize_model(weights_bytes)
+        model.set_weights(saved_model.get_weights())
+        print("      [resume] weights loaded from checkpoint ✓")
+        del saved_model
+    except Exception as error:
+        # Mismatched architecture or corrupt file: start from scratch
+        # rather than crashing training entirely.
+        print(f"      [resume] could not load weights: {error} — starting from scratch")
+
+
 def _build_compiled(
     window_size: int,
     n_features: int,
@@ -687,10 +732,22 @@ def _build_compiled(
         compiled_loss = tf.keras.losses.MeanAbsoluteError()
         compiled_metrics = [tf.keras.metrics.MeanSquaredError(name=metric or "mse")]
     elif loss in ("huber", "huber_loss"):
-        # delta=0.001: خطای < 0.1% offset → MSE (smooth)
-        #              خطای > 0.1% offset → MAE (outlier-robust)
-        # همان استراتژی legacy phase-1
-        compiled_loss = tf.keras.losses.Huber(delta=0.001)
+        # فاز ۵۳: delta=0.005
+        #
+        # target magnitude: ±0.002 (±0.2% offset, ~±5$ روی XAUUSD=2650)
+        # val_mae achieved:  0.001754 (±4.65$)
+        #
+        # قانون انتخاب delta:
+        #   delta << val_mae → مدل در MAE mode → gradient ثابت → کند
+        #   delta >> val_mae → مدل در MSE mode → gradient نرم → سریع‌تر
+        #   delta ≈ 2-3× val_mae → بهترین trade-off
+        #
+        # delta=0.001 (قبلی): δ/val_mae=0.57 → زیر threshold → MAE بیشتر
+        # delta=0.005 (جدید): δ/val_mae=2.85 → بالای threshold → MSE smooth ✅
+        #
+        # اگه val_mae در آینده کاهش یافت (مثلاً 0.001):
+        #   delta=0.005: δ/val_mae=5.0 → هنوز MSE mode ✅
+        compiled_loss = tf.keras.losses.Huber(delta=0.005)
         compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:
         compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy()

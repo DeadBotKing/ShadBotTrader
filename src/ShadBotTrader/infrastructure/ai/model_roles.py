@@ -24,20 +24,24 @@ from ShadBotTrader.domain.common.errors import ValidationError
 #: Loss + activation per task. Regression must NOT use a bounded
 #: activation: a sigmoid output can never express a -3% low offset.
 #:
-#: Range model uses Huber loss (identical to legacy phase-1 choice):
-#:   loss = Huber(delta=0.001)
-#:   - for |error| < 0.001 (< 0.1% offset):  MSE  → smooth gradients
-#:   - for |error| > 0.001 (> 0.1% offset):  MAE  → outlier-robust
+#: Range model uses Huber loss (فاز ۵۳):
+#:   loss = Huber(delta=0.005)
+#:
+#:   target magnitude : ±0.002 (±0.2% offset, ~±5$ روی XAUUSD=2650)
+#:   val_mae achieved : 0.001754 (±4.65$)
+#:
+#:   delta=0.005 → δ/val_mae=2.85 → MSE mode برای اکثر predictions ✅
+#:   delta=0.001 (قبلی) → δ/val_mae=0.57 → MAE mode → gradient کند ❌
 #:
 #: Why Huber beats plain MAE or MSE for high/low offsets:
 #:   MSE  → predictions shrink toward mean (large low_bias)
 #:   MAE  → no smooth gradient near zero (slow convergence)
 #:   MAPE → undefined when true ≈ 0 (5% of targets near-zero)
-#:   Huber → combines smooth MSE + robust MAE  ✅
+#:   Huber(delta=0.005) → smooth MSE zone covers most of val_mae range  ✅
 _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
     TargetKind.PRICE_RANGE: {
         "activation": "linear",
-        "loss": "huber",   # Huber(delta=0.001): MSE near-zero + MAE for outliers
+        "loss": "huber",   # Huber(delta=0.005): MSE zone covers ±0.005 → smooth convergence
         "metric": "mae",   # MAE رو به عنوان متریک نگه میداریم — قابل تفسیر
     },
     TargetKind.TRADE_SIGNAL: {
