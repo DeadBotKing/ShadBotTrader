@@ -103,9 +103,9 @@ def make_synthetic_candles(
 
 
 def rule(text: str, width: int = 70) -> None:
-    print(f"\n{'─' * width}")
+    print(f"\n{'-' * width}")
     print(f"  {text}")
-    print(f"{'─' * width}")
+    print(f"{'-' * width}")
 
 
 def search_lr_for_role(
@@ -268,7 +268,7 @@ def search_lr_for_role(
         raise RuntimeError("همه candidate ها شکست خوردن")
 
     best_lr, best_score, _ = min(valid, key=lambda x: x[1])
-    print(f"\n  ✅ بهترین LR: {best_lr:.2e}  ({metric_key}={best_score:.6f})")
+    print(f"\n  [OK] بهترین LR: {best_lr:.2e}  ({metric_key}={best_score:.6f})")
     return best_lr, results
 
 
@@ -278,13 +278,13 @@ def main() -> None:
     print("  با داده synthetic واقع‌گرایانه (XAUUSD-like)")
     print("=" * 70)
 
-    # ── تنظیمات جستجو ────────────────────────────────────────────────────
+    # -- تنظیمات جستجو ----------------------------------------------------
     # candidates: بازه وسیع از خیلی کوچیک تا خیلی بزرگ
     LR_CANDIDATES = [1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3]
 
     # حداقل کندل = max_warmup(~80) + window_size + horizon + min_train + val_size
-    # Signal: 80 + 200 + 0 + 50 + 50 = 380  →  600 کندل برای تست کافیه
-    # Range:  80 + 100 + 5 + 30 + 30 = 245  →  400 کندل روزانه
+    # Signal: 80 + 200 + 0 + 50 + 50 = 380  ->  600 کندل برای تست کافیه
+    # Range:  80 + 100 + 5 + 30 + 30 = 245  ->  400 کندل روزانه
     # pilot_folds=1: فقط یه fold — کافیه برای مقایسه نسبی LR ها
     SIGNAL_CONFIG = {
         "timeframe": "5M",
@@ -304,7 +304,7 @@ def main() -> None:
 
     all_results = {}
 
-    # ── Signal Model ─────────────────────────────────────────────────────
+    # -- Signal Model -----------------------------------------------------
     try:
         best_signal_lr, signal_results = search_lr_for_role(
             role_name="signal",
@@ -317,11 +317,11 @@ def main() -> None:
             "config": SIGNAL_CONFIG,
         }
     except Exception as e:
-        print(f"\n❌ Signal search خطا: {e}")
+        print(f"\n[FAIL] Signal search خطا: {e}")
         best_signal_lr = 1e-4
         all_results["signal"] = {"best_lr": best_signal_lr, "error": str(e)}
 
-    # ── Range Model ───────────────────────────────────────────────────────
+    # -- Range Model -------------------------------------------------------
     try:
         best_range_lr, range_results = search_lr_for_role(
             role_name="range",
@@ -334,15 +334,15 @@ def main() -> None:
             "config": RANGE_CONFIG,
         }
     except Exception as e:
-        print(f"\n❌ Range search خطا: {e}")
+        print(f"\n[FAIL] Range search خطا: {e}")
         best_range_lr = 1e-4
         all_results["range"] = {"best_lr": best_range_lr, "error": str(e)}
 
-    # ── گزارش نهایی ───────────────────────────────────────────────────────
+    # -- گزارش نهایی -------------------------------------------------------
     rule("FINAL REPORT — RECOMMENDED LEARNING RATES")
 
     print(f"\n  {'Model':<12} {'Best LR':<12} {'Config'}")
-    print(f"  {'─'*12} {'─'*12} {'─'*40}")
+    print(f"  {'-'*12} {'-'*12} {'-'*40}")
 
     if "results" in all_results.get("signal", {}):
         sig_config = all_results["signal"]["config"]
@@ -353,8 +353,8 @@ def main() -> None:
         )
         print(f"\n  جدول کامل Signal:")
         for lr, score, status in all_results["signal"]["results"]:
-            marker = " ← BEST" if lr == all_results["signal"]["best_lr"] else ""
-            print(f"    {lr:.1e}  →  {status}{marker}")
+            marker = " <- BEST" if lr == all_results["signal"]["best_lr"] else ""
+            print(f"    {lr:.1e}  ->  {status}{marker}")
 
     if "results" in all_results.get("range", {}):
         rng_config = all_results["range"]["config"]
@@ -365,11 +365,11 @@ def main() -> None:
         )
         print(f"\n  جدول کامل Range:")
         for lr, score, status in all_results["range"]["results"]:
-            marker = " ← BEST" if lr == all_results["range"]["best_lr"] else ""
-            print(f"    {lr:.1e}  →  {status}{marker}")
+            marker = " <- BEST" if lr == all_results["range"]["best_lr"] else ""
+            print(f"    {lr:.1e}  ->  {status}{marker}")
 
     print("\n" + "=" * 70)
-    print("  ✅ خلاصه توصیه:")
+    print("  [OK] خلاصه توصیه:")
     print(f"  Signal Model LR : {all_results.get('signal', {}).get('best_lr', '?'):.2e}")
     print(f"  Range  Model LR : {all_results.get('range',  {}).get('best_lr', '?'):.2e}")
     print()

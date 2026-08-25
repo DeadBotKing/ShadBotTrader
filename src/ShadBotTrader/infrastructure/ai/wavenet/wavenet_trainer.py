@@ -347,6 +347,30 @@ class WavenetTrainer(ModelTrainer):
                 # lost 18 completed epochs to the 2-hour limit because
                 # nothing was persisted until train() returned.
                 callbacks.append(_EpochCheckpoint(self._on_epoch_model, model, self._epochs))
+
+            # Phase 54: ReduceLROnPlateau (ایده از legacy/TimeSeriesPrediction2.py)
+            # LR ثابت در طول training ریسک گیر کردن در local minima داره.
+            # ReduceLROnPlateau وقتی val_loss بهتر نشد LR رو کاهش میده.
+            # فقط برای regression (range model) فعاله:
+            #   factor=0.9: LR × 0.9 هر بار (ملایم، مثل legacy)
+            #   patience=5: 5 epoch صبر میکنه (کوتاه‌تر از legacy=30 چون fold کوتاهه)
+            #   min_lr: حداقل LR
+            if self._loss in ("huber", "huber_loss", "mse", "mean_squared_error",
+                               "mae", "mean_absolute_error"):
+                _min_lr = max(learning_rate * 1e-3, 1e-7)
+                _patience = max(3, self._epochs // 8)  # ~12% epoch ها
+                callbacks.append(
+                    tf.keras.callbacks.ReduceLROnPlateau(
+                        monitor="val_loss",
+                        factor=0.9,
+                        patience=_patience,
+                        verbose=0,  # silent (progress reporter نشون میده)
+                        mode="min",
+                        min_delta=1e-6,
+                        cooldown=1,
+                        min_lr=_min_lr,
+                    )
+                )
             if not isinstance(self._progress, NullProgressReporter):
                 callbacks.append(keras_progress_callback(self._progress, fold_info, self._epochs))
                 # An epoch over 50,000 samples is thousands of batches and
@@ -653,7 +677,7 @@ def _load_weights_into(model: Any, weights_bytes: bytes) -> None:
     try:
         saved_model = _deserialize_model(weights_bytes)
         model.set_weights(saved_model.get_weights())
-        print("      [resume] weights loaded from checkpoint ✓")
+        print("      [resume] weights loaded from checkpoint OK")
         del saved_model
     except Exception as error:
         # Mismatched architecture or corrupt file: start from scratch
@@ -732,29 +756,76 @@ def _build_compiled(
         compiled_loss = tf.keras.losses.MeanAbsoluteError()
         compiled_metrics = [tf.keras.metrics.MeanSquaredError(name=metric or "mse")]
     elif loss in ("huber", "huber_loss"):
-        # فاز ۵۳: delta=0.005
+        # فاز ۵۴: Loss سه‌گانه (ایده از legacy/TimeSeriesPrediction2.py)
         #
-        # target magnitude: ±0.002 (±0.2% offset, ~±5$ روی XAUUSD=2650)
-        # val_mae achieved:  0.001754 (±4.65$)
+        # ایده اصلی: ترکیب Huber + MAE + MSE با وزن‌بندی
+        # legacy: loss_weights=[30, 60, 10] → 30*Huber + 60*MAE + 10*MSE
         #
-        # قانون انتخاب delta:
-        #   delta << val_mae → مدل در MAE mode → gradient ثابت → کند
-        #   delta >> val_mae → مدل در MSE mode → gradient نرم → سریع‌تر
-        #   delta ≈ 2-3× val_mae → بهترین trade-off
+        # چرا این ترکیب بهتره از یک loss تنها؟
+        #   Huber (وزن اصلی): outlier-robust، smooth gradient
+        #   MAE   (وزن بزرگ): انعطاف بیشتر، bias کمتر نسبت به MSE
+        #   MSE   (وزن کوچک): gradient قوی برای خطاهای بزرگ در ابتدا
         #
-        # delta=0.001 (قبلی): δ/val_mae=0.57 → زیر threshold → MAE بیشتر
-        # delta=0.005 (جدید): δ/val_mae=2.85 → بالای threshold → MSE smooth ✅
-        #
-        # اگه val_mae در آینده کاهش یافت (مثلاً 0.001):
-        #   delta=0.005: δ/val_mae=5.0 → هنوز MSE mode ✅
-        compiled_loss = tf.keras.losses.Huber(delta=0.005)
+        # delta Huber:
+        #   target magnitude: +/-0.002 (+/-0.2% offset)
+        #   val_mae ~ 0.0017 → delta=0.005 → δ/val_mae=2.9 → MSE mode [OK]
+        compiled_huber = tf.keras.losses.Huber(delta=0.005)
+        compiled_mae   = tf.keras.losses.MeanAbsoluteError()
+        compiled_mse   = tf.keras.losses.MeanSquaredError()
+
+        # ترکیب سه loss با وزن (الهام از legacy، اما ساده‌تر)
+        # وزن‌ها normalize شدن: huber=37.5%, mae=62.5%, mse=12.5% (مجموع~112%)
+        # legacy: [30, 60, 10] → ما: [3, 6, 1] (نسبت یکسانه)
+        _loss_weights = (3.0, 6.0, 1.0)
+
+        class _RangeLoss(tf.keras.losses.Loss):
+            """Weighted sum of Huber + MAE + MSE (Phase 54)."""
+
+            def call(self, y_true: object, y_pred: object) -> object:
+                h = compiled_huber(y_true, y_pred)
+                m = compiled_mae(y_true, y_pred)
+                s = compiled_mse(y_true, y_pred)
+                total = _loss_weights[0] * h + _loss_weights[1] * m + _loss_weights[2] * s
+                return total / sum(_loss_weights)
+
+        compiled_loss = _RangeLoss(name="range_loss")
         compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:
         compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy()
         compiled_metrics = [tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")]
 
+    # فاز ۵۴: AdamW بجای Adam برای regression (ایده از legacy)
+    # AdamW = Adam + Weight Decay مستقیم روی weights
+    # بهتر از Adam+L2 regularizer چون decay مستقل از gradient scale‌بندی میشه
+    # signal model: Adam ساده کافیه (classification)
+    # range  model: AdamW بهتره (regression + L2 معادل ضمنی)
+    is_regression_loss = loss in (
+        "mse", "mean_squared_error",
+        "mae", "mean_absolute_error",
+        "huber", "huber_loss",
+    )
+    if is_regression_loss:
+        try:
+            # weight_decay=1e-4 معادل L2 ملایم برای کنترل collapse
+            optimizer: object = tf.keras.optimizers.AdamW(
+                learning_rate=learning_rate,
+                weight_decay=1e-4,
+            )
+        except AttributeError:
+            # TF < 2.11 AdamW در experimental
+            try:
+                optimizer = tf.keras.optimizers.experimental.AdamW(
+                    learning_rate=learning_rate,
+                    weight_decay=1e-4,
+                )
+            except AttributeError:
+                # fallback: Adam معمولی
+                optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    else:
+        optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=optimizer,
         loss=compiled_loss,
         metrics=compiled_metrics,
     )

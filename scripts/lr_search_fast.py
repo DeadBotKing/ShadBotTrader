@@ -120,12 +120,12 @@ def train_one(role_name, tf, n_candles, window_size, lr, seed=42, epochs=1, max_
 
 
 def search_two_phase(role_name, tf, n_candles, window_size):
-    """جستجوی دو مرحله‌ای: coarse → fine"""
-    print(f"\n{'═'*60}")
+    """جستجوی دو مرحله‌ای: coarse -> fine"""
+    print(f"\n{'='*60}")
     print(f"  {role_name.upper()} MODEL  ({tf}, window={window_size}, {n_candles} candles)")
-    print(f"{'═'*60}")
+    print(f"{'='*60}")
 
-    # ── Phase 1: Coarse (log-scale) ─────────────────────────────────
+    # -- Phase 1: Coarse (log-scale) ---------------------------------
     coarse = [1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2]
     print(f"\n  Phase 1 — Coarse (1 epoch, 1 fold):")
     coarse_res = []
@@ -136,15 +136,15 @@ def search_two_phase(role_name, tf, n_candles, window_size):
                               seed=42, epochs=1, max_folds=1)
             dt = time.monotonic() - t0
             coarse_res.append((lr, score))
-            print(f"    {lr:.1e}  →  {score:.5f}  ({dt:.0f}s)")
+            print(f"    {lr:.1e}  ->  {score:.5f}  ({dt:.0f}s)")
         except Exception as e:
             dt = time.monotonic() - t0
             coarse_res.append((lr, float("inf")))
-            print(f"    {lr:.1e}  →  FAILED: {str(e)[:60]}  ({dt:.0f}s)")
+            print(f"    {lr:.1e}  ->  FAILED: {str(e)[:60]}  ({dt:.0f}s)")
 
     valid = [(lr, s) for lr, s in coarse_res if math.isfinite(s)]
     if not valid:
-        print("  ❌ همه coarse شکست خوردن")
+        print("  [FAIL] همه coarse شکست خوردن")
         return None, coarse_res, []
 
     # سه تا بهترین coarse
@@ -153,7 +153,7 @@ def search_two_phase(role_name, tf, n_candles, window_size):
     best_coarse_lr = top3_lrs[0]
     print(f"\n  Top-3 coarse: {[f'{lr:.1e}' for lr in top3_lrs]}")
 
-    # ── Phase 2: Fine (دو طرف هر کدام از top-3) ─────────────────────
+    # -- Phase 2: Fine (دو طرف هر کدام از top-3) ---------------------
     fine_cands = set()
     for lr in top3_lrs:
         fine_cands.add(lr)
@@ -185,8 +185,8 @@ def search_two_phase(role_name, tf, n_candles, window_size):
         mean_s = float(np.mean(scores))
         std_s  = float(np.std(scores))
         fine_res.append((lr, mean_s, std_s))
-        status = f"{mean_s:.5f} ±{std_s:.5f}" if math.isfinite(mean_s) else "FAILED"
-        print(f"    {lr:.2e}  →  {status}  ({dt:.0f}s)")
+        status = f"{mean_s:.5f} +/-{std_s:.5f}" if math.isfinite(mean_s) else "FAILED"
+        print(f"    {lr:.2e}  ->  {status}  ({dt:.0f}s)")
 
     # ترکیب همه نتایج
     all_valid = ([(lr, s, 0.0) for lr, s in valid] +
@@ -196,7 +196,7 @@ def search_two_phase(role_name, tf, n_candles, window_size):
 
     best = min(all_valid, key=lambda x: x[1])
     best_lr = best[0]
-    print(f"\n  ✅ بهترین LR: {best_lr:.2e}  (score={best[1]:.5f})")
+    print(f"\n  [OK] بهترین LR: {best_lr:.2e}  (score={best[1]:.5f})")
     return best_lr, coarse_res, fine_res
 
 
@@ -212,10 +212,10 @@ def main():
     best_rng, rng_c, rng_f = search_two_phase(
         "range", "1D", n_candles=400, window_size=100)
 
-    # ── گزارش نهایی ────────────────────────────────────────────────
-    print(f"\n{'═'*60}")
+    # -- گزارش نهایی ------------------------------------------------
+    print(f"\n{'='*60}")
     print("  FINAL RECOMMENDATION")
-    print(f"{'═'*60}")
+    print(f"{'='*60}")
     print(f"\n  Signal Model (5M / window=200):  LR = {best_sig:.2e}"
           if best_sig else "\n  Signal: failed")
     print(f"  Range  Model (1D / window=100):  LR = {best_rng:.2e}"
@@ -225,21 +225,21 @@ def main():
     all_sig = ([(lr, s, 0.0) for lr, s in sig_c] +
                [(lr, m, st) for lr, m, st in sig_f])
     for lr, m, std in sorted(all_sig, key=lambda x: x[0]):
-        mark = " ← BEST" if best_sig and abs(lr - best_sig) < 1e-10 else ""
+        mark = " <- BEST" if best_sig and abs(lr - best_sig) < 1e-10 else ""
         line = f"val_loss={m:.5f}" if math.isfinite(m) else "FAILED"
-        if std > 0: line += f" ±{std:.5f}"
+        if std > 0: line += f" +/-{std:.5f}"
         print(f"    {lr:.2e}  {line}{mark}")
 
     print(f"\n  جدول کامل Range:")
     all_rng = ([(lr, s, 0.0) for lr, s in rng_c] +
                [(lr, m, st) for lr, m, st in rng_f])
     for lr, m, std in sorted(all_rng, key=lambda x: x[0]):
-        mark = " ← BEST" if best_rng and abs(lr - best_rng) < 1e-10 else ""
+        mark = " <- BEST" if best_rng and abs(lr - best_rng) < 1e-10 else ""
         line = f"val_mae={m:.5f}" if math.isfinite(m) else "FAILED"
-        if std > 0: line += f" ±{std:.5f}"
+        if std > 0: line += f" +/-{std:.5f}"
         print(f"    {lr:.2e}  {line}{mark}")
 
-    print("\n  ⚠️  نتایج از داده synthetic — با داده واقعی از OPTIMISE LR استفاده کن.\n")
+    print("\n  [WARN]  نتایج از داده synthetic — با داده واقعی از OPTIMISE LR استفاده کن.\n")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-# ── ساخت کندل synthetic ────────────────────────────────────────────────────
+# -- ساخت کندل synthetic ----------------------------------------------------
 def make_candles(n: int, timeframe: str = "5M", seed: int = 42):
     from ShadBotTrader.domain.market.candle import Candle
     from ShadBotTrader.domain.market.price import Price
@@ -60,7 +60,7 @@ def make_candles(n: int, timeframe: str = "5M", seed: int = 42):
     return candles
 
 
-# ── Registry بدون pywt ─────────────────────────────────────────────────────
+# -- Registry بدون pywt -----------------------------------------------------
 def make_registry():
     from ShadBotTrader.infrastructure.feature.calculators.adaptive_filters    import AdaptiveFiltersCalculator
     from ShadBotTrader.infrastructure.feature.calculators.atr                 import AtrCalculator
@@ -119,7 +119,7 @@ def make_registry():
     return _R()
 
 
-# ── جستجوی LR ──────────────────────────────────────────────────────────────
+# -- جستجوی LR --------------------------------------------------------------
 def search(role_name: str, timeframe: str, n_candles: int,
            window_size: int, candidates: list[float],
            folds: int = 2, epochs: int = 2, seed: int = 42) -> list[tuple[float, float, float]]:
@@ -179,7 +179,7 @@ def search(role_name: str, timeframe: str, n_candles: int,
             mean_s = float(np.mean(fold_scores))
             std_s  = float(np.std(fold_scores))
             results.append((lr, mean_s, std_s))
-            print(f"  {lr:.2e}  {metric_key}={mean_s:.5f} ±{std_s:.5f}  ({dt:.0f}s)")
+            print(f"  {lr:.2e}  {metric_key}={mean_s:.5f} +/-{std_s:.5f}  ({dt:.0f}s)")
         else:
             results.append((lr, float("inf"), 0.0))
             print(f"  {lr:.2e}  FAILED  ({dt:.0f}s)")
@@ -189,9 +189,9 @@ def search(role_name: str, timeframe: str, n_candles: int,
 
 def banner(text: str):
     w = 68
-    print("\n" + "═"*w)
+    print("\n" + "="*w)
     print(f"  {text}")
-    print("═"*w)
+    print("="*w)
 
 
 def main():
@@ -206,9 +206,9 @@ def main():
     # کندیدای اولیه — بازه وسیع
     CANDIDATES_COARSE = [1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2]
 
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     # 1. Signal Model — جستجوی درشت
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     banner("SIGNAL MODEL — جستجوی درشت (5M، window=200، 700 کندل)")
     print(f"  candidates: {[f'{c:.1e}' for c in CANDIDATES_COARSE]}\n")
 
@@ -221,13 +221,13 @@ def main():
 
     valid_sig = [(lr, m, s) for lr, m, s in sig_coarse if math.isfinite(m)]
     if not valid_sig:
-        print("❌ همه Signal candidate ها شکست خوردن")
+        print("[FAIL] همه Signal candidate ها شکست خوردن")
         best_sig_coarse = 1e-4
     else:
         best_sig_coarse = min(valid_sig, key=lambda x: x[1])[0]
         print(f"\n  بهترین اولیه: {best_sig_coarse:.2e}")
 
-    # ── جستجوی ظریف اطراف بهترین ──
+    # -- جستجوی ظریف اطراف بهترین --
     idx = CANDIDATES_COARSE.index(best_sig_coarse) if best_sig_coarse in CANDIDATES_COARSE else 2
     lo  = CANDIDATES_COARSE[max(0, idx-1)]
     hi  = CANDIDATES_COARSE[min(len(CANDIDATES_COARSE)-1, idx+1)]
@@ -256,9 +256,9 @@ def main():
     else:
         best_sig_lr, best_sig_score, best_sig_std = best_sig_coarse, float("inf"), 0.0
 
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     # 2. Range Model — جستجوی درشت
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     banner("RANGE MODEL — جستجوی درشت (1D، window=100، 400 کندل)")
     print(f"  candidates: {[f'{c:.1e}' for c in CANDIDATES_COARSE]}\n")
 
@@ -271,7 +271,7 @@ def main():
 
     valid_rng = [(lr, m, s) for lr, m, s in rng_coarse if math.isfinite(m)]
     if not valid_rng:
-        print("❌ همه Range candidate ها شکست خوردن")
+        print("[FAIL] همه Range candidate ها شکست خوردن")
         best_rng_coarse = 1e-4
     else:
         best_rng_coarse = min(valid_rng, key=lambda x: x[1])[0]
@@ -304,36 +304,36 @@ def main():
     else:
         best_rng_lr, best_rng_score, best_rng_std = best_rng_coarse, float("inf"), 0.0
 
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     # گزارش نهایی
-    # ════════════════════════════════════════════════════════════════
+    # ================================================================
     banner("FINAL REPORT — RECOMMENDED LEARNING RATES")
 
     print(f"""
-  ┌─────────────────────────────────────────────────────────┐
+  ┌---------------------------------------------------------┐
   │  Signal Model (5M / window=200)                          │
   │    LR پیشنهادی:  {best_sig_lr:.2e}                           │
-  │    val_loss:      {best_sig_score:.5f} ± {best_sig_std:.5f}            │
+  │    val_loss:      {best_sig_score:.5f} +/- {best_sig_std:.5f}            │
   │                                                         │
   │  Range Model (1D / window=100)                           │
   │    LR پیشنهادی:  {best_rng_lr:.2e}                           │
-  │    val_mae:       {best_rng_score:.5f} ± {best_rng_std:.5f}            │
-  └─────────────────────────────────────────────────────────┘
+  │    val_mae:       {best_rng_score:.5f} +/- {best_rng_std:.5f}            │
+  └---------------------------------------------------------┘
 
   جدول کامل Signal:""")
     for lr, m, s in sorted(sig_coarse + sig_fine, key=lambda x: x[0]):
-        marker = " ← BEST" if abs(lr - best_sig_lr) < 1e-10 else ""
-        status = f"val_loss={m:.5f} ±{s:.5f}" if math.isfinite(m) else "FAILED"
+        marker = " <- BEST" if abs(lr - best_sig_lr) < 1e-10 else ""
+        status = f"val_loss={m:.5f} +/-{s:.5f}" if math.isfinite(m) else "FAILED"
         print(f"    {lr:.2e}  {status}{marker}")
 
     print(f"\n  جدول کامل Range:")
     for lr, m, s in sorted(rng_coarse + rng_fine, key=lambda x: x[0]):
-        marker = " ← BEST" if abs(lr - best_rng_lr) < 1e-10 else ""
-        status = f"val_mae={m:.5f} ±{s:.5f}" if math.isfinite(m) else "FAILED"
+        marker = " <- BEST" if abs(lr - best_rng_lr) < 1e-10 else ""
+        status = f"val_mae={m:.5f} +/-{s:.5f}" if math.isfinite(m) else "FAILED"
         print(f"    {lr:.2e}  {status}{marker}")
 
     print(f"""
-  ⚠️  این نتایج از داده synthetic هستن.
+  [WARN]  این نتایج از داده synthetic هستن.
   با داده واقعی XAUUSD از OPTIMISE LEARNING RATE در داشبورد استفاده کن.
 """)
 

@@ -19,6 +19,20 @@ import argparse
 import sys
 from pathlib import Path
 
+# ── Windows console UTF-8 fix ──────────────────────────────────────────────
+# Windows cmd/PowerShell default encoding is cp1252 which cannot print
+# Unicode characters like +/- or arrows that appear in training logs.
+# Reconfiguring stdout/stderr to UTF-8 prevents UnicodeEncodeError crashes.
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    except AttributeError:
+        # Python < 3.7 — cannot reconfigure; best-effort replace
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:

@@ -334,14 +334,14 @@ elapsed 0:14 | eta 1:42
             mae_str     = f"mae={_fmt(mae, 6)}"
             vmae_str    = f"val_mae={_fmt(val_mae, 6)}"
 
-            # تبدیل val_mae به دلار (XAUUSD ≈ 3000 فعلاً، قابل تنظیم)
+            # تبدیل val_mae به دلار (XAUUSD ~ 3000 فعلاً، قابل تنظیم)
             usd_hint = ""
             if val_mae is not None:
                 # از آخرین reference_close اگه موجود بود استفاده کن
                 # وگرنه 2650 (میانگین مناسب)
                 ref = getattr(self, "_last_ref_price", 2650.0)
                 usd = val_mae * ref
-                usd_hint = f"  ≈±{usd:.2f}$"
+                usd_hint = f"  ~+-{usd:.2f}$"
 
             self._write(
                 f"  {ep_tag} | {loss_str} | {vl_str} | {mae_str} | {vmae_str}{usd_hint}"
@@ -373,16 +373,16 @@ elapsed 0:14 | eta 1:42
         per_fold = elapsed / self._completed_folds if self._completed_folds else 0.0
         eta = per_fold * (total - self._completed_folds)
 
-        # ─── خلاصه fold ───
-        self._write("  " + "─" * 70)
+        # --- fold summary ---
+        self._write("  " + "-" * 70)
         self._write(
-            f"  ✓ fold {self._completed_folds}/{total} done"
+            f"  OK fold {self._completed_folds}/{total} done"
             f" | val_loss={_fmt(val_loss, 6)}"
             f" | {fold_seconds:.0f}s"
             f" | elapsed {format_duration(elapsed)}"
             f" | eta {format_duration(eta)}"
         )
-        self._write("  " + "─" * 70)
+        self._write("  " + "-" * 70)
 
     def on_train_end(self, fold_losses: List[float]) -> None:
         """فاز ۵۲: خلاصه نهایی با اطلاعات کامل."""
@@ -403,7 +403,7 @@ elapsed 0:14 | eta 1:42
             ref = getattr(self, "_last_ref_price", None)
             if ref and hasattr(self, "_last_val_mae") and self._last_val_mae:
                 usd = self._last_val_mae * ref
-                self._write(f"  val_mae last : {self._last_val_mae:.6f} ≈ ±{usd:.2f}$ (ref={ref:.0f})")
+                self._write(f"  val_mae last : {self._last_val_mae:.6f} ~+-{usd:.2f}$ (ref={ref:.0f})")
         self._write(f"  total time   : {format_duration(elapsed)}")
         self._write("=" * 74)
         self._write("")
