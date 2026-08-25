@@ -673,7 +673,11 @@ def _build_compiled(
         l2=l2,
         dropout=dropout,
         # regression head (GlobalAvgPool) vs classification head (last timestep)
-        is_regression=loss in ("mse", "mean_squared_error", "mae", "mean_absolute_error"),
+        is_regression=loss in (
+            "mse", "mean_squared_error",
+            "mae", "mean_absolute_error",
+            "huber", "huber_loss",
+        ),
     )
 
     if loss in ("mse", "mean_squared_error"):
@@ -682,6 +686,12 @@ def _build_compiled(
     elif loss in ("mae", "mean_absolute_error"):
         compiled_loss = tf.keras.losses.MeanAbsoluteError()
         compiled_metrics = [tf.keras.metrics.MeanSquaredError(name=metric or "mse")]
+    elif loss in ("huber", "huber_loss"):
+        # delta=0.001: خطای < 0.1% offset → MSE (smooth)
+        #              خطای > 0.1% offset → MAE (outlier-robust)
+        # همان استراتژی legacy phase-1
+        compiled_loss = tf.keras.losses.Huber(delta=0.001)
+        compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:
         compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy()
         compiled_metrics = [tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")]

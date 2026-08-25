@@ -24,16 +24,21 @@ from ShadBotTrader.domain.common.errors import ValidationError
 #: Loss + activation per task. Regression must NOT use a bounded
 #: activation: a sigmoid output can never express a -3% low offset.
 #:
-#: Range model uses MAE instead of MSE because:
-#:   - high/low series have outliers (sudden large moves)
-#:   - MSE heavily penalises these → predictions shrink toward mean
-#:   - MAE is outlier-robust → predictions closer to true median
-#:   - This directly reduces the low_bias seen with MSE
+#: Range model uses Huber loss (identical to legacy phase-1 choice):
+#:   loss = Huber(delta=0.001)
+#:   - for |error| < 0.001 (< 0.1% offset):  MSE  → smooth gradients
+#:   - for |error| > 0.001 (> 0.1% offset):  MAE  → outlier-robust
+#:
+#: Why Huber beats plain MAE or MSE for high/low offsets:
+#:   MSE  → predictions shrink toward mean (large low_bias)
+#:   MAE  → no smooth gradient near zero (slow convergence)
+#:   MAPE → undefined when true ≈ 0 (5% of targets near-zero)
+#:   Huber → combines smooth MSE + robust MAE  ✅
 _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
     TargetKind.PRICE_RANGE: {
         "activation": "linear",
-        "loss": "mae",    # MAE: outlier-robust، low_bias رو کم میکنه
-        "metric": "mse",  # MSE رو به عنوان متریک نگه میداریم برای مقایسه
+        "loss": "huber",   # Huber(delta=0.001): MSE near-zero + MAE for outliers
+        "metric": "mae",   # MAE رو به عنوان متریک نگه میداریم — قابل تفسیر
     },
     TargetKind.TRADE_SIGNAL: {
         "activation": "softmax",

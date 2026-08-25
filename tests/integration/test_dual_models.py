@@ -81,7 +81,7 @@ class TestModelRoles:
     def test_the_range_head_is_a_two_output_regression(self):
         role = range_model_role()
         assert role.output_units == 2
-        assert role.loss == "mae"  # MAE: outlier-robust برای high/low
+        assert role.loss == "huber"  # Huber: MSE near-zero + MAE for outliers (like legacy)
         assert role.output_activation == "linear"
 
     def test_the_signal_head_is_a_binary_softmax(self):
@@ -234,7 +234,7 @@ class TestTraining:
         dataset = service.prepare(wave(140), SYMBOL, HOURLY, role)
         trainer = service.build_trainer(dataset)
 
-        assert trainer._loss == "mae"  # MAE replaces MSE for range model
+        assert trainer._loss == "huber"  # Huber replaces MSE (like legacy phase-1)
         assert trainer._target_columns == dataset.target_columns
 
     def test_the_two_models_produce_independent_artifacts(self, service):
