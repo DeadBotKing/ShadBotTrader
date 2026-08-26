@@ -105,6 +105,8 @@ class WavenetTrainer(ModelTrainer):
         purge_gap: int = 0,
         initial_epoch: int = 0,
         resume_weights: bytes | None = None,
+        seq2seq: bool = False,
+        horizon: int = 5,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -154,6 +156,8 @@ class WavenetTrainer(ModelTrainer):
         self._max_folds = max_folds
         self._initial_epoch = max(0, int(initial_epoch))
         self._resume_weights = resume_weights
+        self._seq2seq = bool(seq2seq)
+        self._horizon_s2s = max(1, int(horizon))
         #: Called as ``(model, epoch, logs)`` after each epoch so the
         #: caller can checkpoint. None disables checkpointing.
         self.on_epoch_model: Any = None
@@ -328,16 +332,17 @@ class WavenetTrainer(ModelTrainer):
                 metric=self._metric,
                 l2=getattr(self, "_l2", 2.5e-4),
                 dropout=getattr(self, "_dropout", 0.10),
+                seq2seq=self._seq2seq,
+                horizon=self._horizon_s2s,
             )
 
             # Phase 50: resume — warm-start from a saved checkpoint.
-            # Only the last fold loads resume weights (same architecture,
-            # most recent data). Earlier folds always start from scratch so
-            # the walk-forward structure is preserved: each fold trains on
-            # its own chronological window and resume merely skips epochs
-            # that were already completed on the equivalent last fold.
+            # Phase 57: resume — همه fold ها از checkpoint شروع میکنن
+            # دلیل: کاربر میخواد از جایی که موند ادامه بده
+            # هر fold با وزن‌های checkpoint warm-start میشه
+            # این یعنی هر fold سریع‌تر converge میکنه
             is_last_fold = (display_index == len(folds) - 1)
-            if self._resume_weights and is_last_fold:
+            if self._resume_weights:
                 _load_weights_into(model, self._resume_weights)
 
             callbacks = []
@@ -358,19 +363,47 @@ class WavenetTrainer(ModelTrainer):
             if self._loss in ("huber", "huber_loss", "mse", "mean_squared_error",
                                "mae", "mean_absolute_error"):
                 _min_lr = max(learning_rate * 1e-3, 1e-7)
-                _patience = max(3, self._epochs // 8)  # ~12% epoch ها
+                # ReduceLR patience: 10% epochs (min=5, max=30)
+                _rlr_patience = max(5, min(30, self._epochs // 10))
                 callbacks.append(
                     tf.keras.callbacks.ReduceLROnPlateau(
                         monitor="val_loss",
-                        factor=0.9,
-                        patience=_patience,
-                        verbose=0,  # silent (progress reporter نشون میده)
+                        factor=0.85,        # LR × 0.85 (کمی تندتر از 0.9)
+                        patience=_rlr_patience,
+                        verbose=0,
                         mode="min",
                         min_delta=1e-6,
-                        cooldown=1,
+                        cooldown=2,
                         min_lr=_min_lr,
                     )
                 )
+                # Phase 57: EarlyStopping — وقتی plateau زد متوقف بشه
+                _es_patience = max(10, min(50, self._epochs // 5))
+                _reporter_ref = self._progress
+                _fold_ref = fold_info
+
+                # EarlyStopping ساده — بدون subclass (serialize مشکل نداشته باشه)
+                _es = tf.keras.callbacks.EarlyStopping(
+                    monitor="val_loss",
+                    patience=_es_patience,
+                    mode="min",
+                    min_delta=1e-6,
+                    restore_best_weights=False,
+                    verbose=0,
+                )
+                # wrapper برای گزارش به reporter
+                _rep = _reporter_ref
+                _fld = _fold_ref
+                _orig_end = _es.on_train_end
+                def _es_on_end(logs: Any = None, _es=_es, _rep=_rep, _fld=_fld) -> None:
+                    _orig_end(logs)
+                    if getattr(_es, "stopped_epoch", 0) > 0:
+                        best = float(getattr(_es, "best", 0.0) or 0.0)
+                        fn = getattr(_rep, "on_early_stop", None)
+                        if callable(fn):
+                            fn(_fld, _es.stopped_epoch, best)
+                _es.on_train_end = _es_on_end  # type: ignore[method-assign]
+                callbacks.append(_es)
             if not isinstance(self._progress, NullProgressReporter):
                 callbacks.append(keras_progress_callback(self._progress, fold_info, self._epochs))
                 # An epoch over 50,000 samples is thousands of batches and
@@ -394,13 +427,9 @@ class WavenetTrainer(ModelTrainer):
                         )
                     )
 
-            # Phase 50: for the last fold, continue from initial_epoch
-            # so Keras skips already-completed epochs and the LR schedule
-            # (if any) picks up from the right step count.
-            is_last_fold_for_fit = (display_index == len(folds) - 1)
-            fit_initial_epoch = self._initial_epoch if (
-                is_last_fold_for_fit and self._resume_weights
-            ) else 0
+            # Phase 57: initial_epoch برای همه fold ها
+            # وقتی resume هست، همه fold ها از initial_epoch شروع میکنن
+            fit_initial_epoch = self._initial_epoch if self._resume_weights else 0
 
             if train_y is None:
                 # Streamed: the dataset already carries its labels and
@@ -577,9 +606,16 @@ class WavenetTrainer(ModelTrainer):
         x = np.array([sample.features for sample in samples], dtype=np.float32)
 
         if self._target_columns is not None:
-            # Regression: several continuous targets per row, kept as
-            # float. Casting these to int (the classification path) would
-            # collapse every offset to zero.
+            if self._seq2seq:
+                # فاز ۵۵: seq2seq — Y shape = [batch, window, n_targets]
+                # از هر ROW در window، ستون‌های target رو بگیر
+                # series[t] = [features..., high_off_t, low_off_t]
+                # sample.features = window[:, :feature_count] (scaled)
+                # target در هر row = series_row[target_columns]
+                # ولی samples فقط features دارن — باید از _series بسازیم
+                y = self._build_seq2seq_targets(samples, np)
+                return x, y
+            # Scalar regression
             y = np.array(
                 [
                     [float(value) if value is not None else 0.0 for value in (sample.targets or [])]
@@ -594,6 +630,38 @@ class WavenetTrainer(ModelTrainer):
             dtype=np.int32,
         )
         return x, y
+
+    def _build_seq2seq_targets(self, samples: Any, np: Any) -> Any:
+        """Y tensor [batch, window, n_targets] برای seq2seq.
+
+        هر row از window یه target داره:
+          series[t][target_cols] = target برای کندل t (= high/low فردای t)
+        این کار رو از raw series (نه scaled samples) انجام میدیم.
+        """
+        targets = self._target_columns or []
+        n_t = len(targets)
+        ws = self._window_size
+        batch = []
+        for sample in samples:
+            # پیدا کردن index این window در series
+            # sample.features shape = [ws, n_features]
+            # ما باید target_columns رو از series بگیریم
+            # sample.target_index = آخرین row index
+            end_idx = getattr(sample, "target_index", None)
+            if end_idx is None:
+                # fallback: از target های scalar استفاده کن برای همه rows
+                row_targets = [sample.targets or [0.0] * n_t] * ws
+            else:
+                start_idx = end_idx - ws + 1
+                row_targets = [
+                    [float(self._series[i][col]) for col in targets]
+                    for i in range(max(0, start_idx), end_idx + 1)
+                ]
+                # padding اگه کمتر از ws بود
+                while len(row_targets) < ws:
+                    row_targets.insert(0, [0.0] * n_t)
+            batch.append(row_targets)
+        return np.array(batch, dtype=np.float32)
 
     @staticmethod
     def _tf_version() -> str:
@@ -701,6 +769,8 @@ def _build_compiled(
     metric: str | None = None,
     l2: float = 2.5e-4,
     dropout: float = 0.10,
+    seq2seq: bool = False,
+    horizon: int = 5,
 ):
     """Build and compile the network for the requested task.
 
@@ -729,6 +799,11 @@ def _build_compiled(
     except (ImportError, AttributeError):  # pragma: no cover - legacy TF
         tf.keras.utils.set_random_seed(seed)
 
+    _is_regression = loss in (
+        "mse", "mean_squared_error",
+        "mae", "mean_absolute_error",
+        "huber", "huber_loss",
+    )
     model = build_wavenet(
         window_size=window_size,
         n_features=n_features,
@@ -741,12 +816,9 @@ def _build_compiled(
         depth_multiplier=depth_multiplier,
         l2=l2,
         dropout=dropout,
-        # regression head (GlobalAvgPool) vs classification head (last timestep)
-        is_regression=loss in (
-            "mse", "mean_squared_error",
-            "mae", "mean_absolute_error",
-            "huber", "huber_loss",
-        ),
+        is_regression=_is_regression,
+        seq2seq=seq2seq,
+        horizon=horizon,
     )
 
     if loss in ("mse", "mean_squared_error"):
@@ -769,27 +841,99 @@ def _build_compiled(
         # delta Huber:
         #   target magnitude: +/-0.002 (+/-0.2% offset)
         #   val_mae ~ 0.0017 → delta=0.005 → δ/val_mae=2.9 → MSE mode [OK]
-        compiled_huber = tf.keras.losses.Huber(delta=0.005)
-        compiled_mae   = tf.keras.losses.MeanAbsoluteError()
-        compiled_mse   = tf.keras.losses.MeanSquaredError()
+        # فاز ۵۴/۵۵: Loss سه‌گانه Huber+MAE+MSE
+        # legacy weights: [30, 60, 10] → ما [3, 6, 1] (نسبت یکسان)
+        _w_h, _w_m, _w_s = 3.0, 6.0, 1.0
+        _w_sum = _w_h + _w_m + _w_s
+        _is_seq2seq = seq2seq
 
-        # ترکیب سه loss با وزن (الهام از legacy، اما ساده‌تر)
-        # وزن‌ها normalize شدن: huber=37.5%, mae=62.5%, mse=12.5% (مجموع~112%)
-        # legacy: [30, 60, 10] → ما: [3, 6, 1] (نسبت یکسانه)
-        _loss_weights = (3.0, 6.0, 1.0)
+        _huber_fn = tf.keras.losses.Huber(delta=0.005)
 
+        def _weighted_loss(y_true_t: object, y_pred_t: object) -> object:
+            """3*Huber + 6*MAE + 1*MSE — normalize شده."""
+            h = _huber_fn(y_true_t, y_pred_t)
+            m = tf.reduce_mean(tf.abs(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32)))
+            s = tf.reduce_mean(tf.square(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32)))
+            return (_w_h * h + _w_m * m + _w_s * s) / _w_sum
+
+        try:
+            import keras as _keras_reg
+            _register_loss = _keras_reg.saving.register_keras_serializable
+        except (ImportError, AttributeError):
+            _register_loss = tf.keras.utils.register_keras_serializable
+
+        @_register_loss(package="ShadBotTrader")
         class _RangeLoss(tf.keras.losses.Loss):
-            """Weighted sum of Huber + MAE + MSE (Phase 54)."""
+            """Weighted Huber+MAE+MSE.
+
+            seq2seq (فاز ۵۵):
+              40% loss کل sequence  +  60% loss آخرین timestep
+              -> gradient قوی + focus روی پیش‌بینی فردا
+
+            scalar (فاز ۵۴):
+              loss معمولی روی 2 عدد خروجی
+            """
+            def get_config(self) -> dict:
+                return super().get_config()
 
             def call(self, y_true: object, y_pred: object) -> object:
-                h = compiled_huber(y_true, y_pred)
-                m = compiled_mae(y_true, y_pred)
-                s = compiled_mse(y_true, y_pred)
-                total = _loss_weights[0] * h + _loss_weights[1] * m + _loss_weights[2] * s
-                return total / sum(_loss_weights)
+                if _is_seq2seq:
+                    loss_all = _weighted_loss(y_true, y_pred)
+                    # آخرین timestep: پیش‌بینی فردا
+                    loss_tgt = _weighted_loss(
+                        y_true[:, -1:, :],   # type: ignore[index]
+                        y_pred[:, -1:, :],   # type: ignore[index]
+                    )
+                    return 0.4 * loss_all + 0.6 * loss_tgt
+                return _weighted_loss(y_true, y_pred)
 
         compiled_loss = _RangeLoss(name="range_loss")
-        compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
+        if _is_seq2seq:
+            # متریک MAE روی آخرین timestep خروجی seq2seq
+            # ساده‌ترین حالت: از MeanAbsoluteError استاندارد Keras استفاده کن
+            # ولی فقط روی آخرین timestep محاسبه کن
+            # برای horizon=1: output[-1] = [high, low] فردا
+            @_register_loss(package="ShadBotTrader")
+            class _Seq2SeqMAE(tf.keras.metrics.Metric):
+                """MAE روی آخرین timestep seq2seq.
+
+                get_config/from_config پیاده‌سازی شده تا serialize درست کار کنه.
+                """
+
+                def __init__(self, name: str = "mae", **kw: object) -> None:
+                    # name رو جداگانه می‌گیریم تا conflict نشه
+                    # وقتی Keras از config لود می‌کنه، name رو پاس میده
+                    super().__init__(name=name, **kw)  # type: ignore[call-arg]
+                    self._mae_sum = self.add_weight(
+                        name="s2s_sum", initializer="zeros"
+                    )
+                    self._mae_cnt = self.add_weight(
+                        name="s2s_cnt", initializer="zeros"
+                    )
+
+                def get_config(self) -> dict:
+                    cfg = super().get_config()
+                    return cfg  # name در super().get_config() هست
+
+                def update_state(  # type: ignore[override]
+                    self, y_true: object, y_pred: object, sample_weight: object = None
+                ) -> None:
+                    true_last = y_true[:, -1, :]   # type: ignore[index]
+                    pred_last = y_pred[:, -1, :]   # type: ignore[index]
+                    mae_val = tf.reduce_mean(tf.abs(true_last - pred_last))
+                    self._mae_sum.assign_add(tf.cast(mae_val, self._mae_sum.dtype))
+                    self._mae_cnt.assign_add(1.0)
+
+                def result(self) -> object:
+                    return tf.math.divide_no_nan(self._mae_sum, self._mae_cnt)
+
+                def reset_state(self) -> None:
+                    self._mae_sum.assign(0.0)
+                    self._mae_cnt.assign(0.0)
+
+            compiled_metrics = [_Seq2SeqMAE()]
+        else:
+            compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:
         compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy()
         compiled_metrics = [tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")]

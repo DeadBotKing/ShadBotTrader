@@ -125,12 +125,29 @@ def custom_objects() -> Dict[str, Any]:
     """Custom Keras objects for deserializing a saved WaveNet."""
     gau = _gated_activation_unit_class()
     lt  = _last_timestep_layer_class()
+
+    # فاز ۵۵: _RangeLoss و _Seq2SeqMAE هم باید در load شناخته بشن
+    # اگه موجود نبودن (مدل قدیمی) فقط ignore میشه
+    from ShadBotTrader.infrastructure.ai.wavenet import wavenet_trainer as _wt
+    extra: Dict[str, Any] = {}
+    # جستجوی کلاس‌های register شده در module
+    import sys as _sys
+    for name in ("_RangeLoss", "_Seq2SeqMAE"):
+        # ممکنه بعد از اولین build تعریف شده باشن
+        mod = _sys.modules.get("ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer")
+        if mod is not None:
+            cls = getattr(mod, name, None)
+            if cls is not None:
+                extra[name] = cls
+                extra[f"ShadBotTrader>{name}"] = cls
+
     return {
         "GatedActivationUnit":               gau,
         "ShadBotTrader>GatedActivationUnit": gau,
         "_GatedActivationUnit":              gau,   # backwards compat
         "LastTimestep":                      lt,
         "ShadBotTrader>LastTimestep":        lt,
+        **extra,
     }
 
 
@@ -228,6 +245,8 @@ def build_wavenet(
     l2: float = 2.5e-4,
     dropout: float = 0.10,
     is_regression: bool = False,
+    seq2seq: bool = False,
+    horizon: int = 5,
 ) -> Any:
     """Build WaveNet with sequence-aware head (no Flatten).
 
@@ -235,9 +254,14 @@ def build_wavenet(
       ...residual blocks... -> Conv1x1 -> LastTimestep -> Dense(softmax)
       آخرین timestep در causal conv = خلاصه کل تاریخچه
 
-    Range (regression):
-      ...residual blocks... -> Conv1x1 -> GlobalAvgPool -> Dense(linear)
-      میانگین همه timestepها چون high/low به کل تاریخچه بستگی دارد
+    Range Scalar (is_regression=True, seq2seq=False):
+      ...residual blocks... -> Conv1x1 -> concat(last+avg) -> MLP -> Dense(2, linear)
+
+    Range Seq2Seq (is_regression=True, seq2seq=True):  [فاز ۵۵]
+      ...residual blocks... -> Conv1x1 -> SeparableConv1D(horizon*2, causal) -> output[batch, window, horizon*2]
+      برای هر timestep t: [high_1..high_H, low_1..low_H]
+      Loss فقط روی آخرین H timestep اعمال میشه
+      gradient به همه لایه‌های WaveNet مستقیم میرسه
     """
     tf = _require_tensorflow()
 
@@ -284,16 +308,38 @@ def build_wavenet(
         name="head_conv1x1",
     )(z)
 
-    if is_regression:
-        # ── Range head: concat(last + avg) → MLP → linear ────────────────
-        # آخرین timestep: اطلاعات آخرین روز (مهم‌ترین برای پیش‌بینی)
+    if is_regression and seq2seq:
+        # ── Range Seq2Seq head [فاز ۵۵] ──────────────────────────────────
+        # خروجی: [batch, window, horizon*2]
+        # channel layout: [high_1, low_1, high_2, low_2, ..., high_H, low_H]
+        #
+        # SeparableConv1D causal: هر timestep t فقط از t' <= t اطلاع داره
+        # gradient مستقیم به همه لایه‌های WaveNet میرسه (150× signal)
+        n_out = horizon * 2   # برای هر step: high + low
+        z = causal_separable_conv1d(
+            z,
+            filters=max(n_filters // 2, n_out),
+            kernel_size=3,
+            l2=l2,
+            depth_multiplier=4,
+            activation="relu",
+            name="seq2seq_pre",
+        )
+        output = causal_separable_conv1d(
+            z,
+            filters=n_out,
+            kernel_size=1,
+            l2=l2,
+            depth_multiplier=1,
+            activation="linear",
+            name="seq2seq_out",
+        )
+
+    elif is_regression:
+        # ── Range Scalar head (قدیمی) ─────────────────────────────────────
         last = _last_timestep_layer_class()(name="last_timestep")(z)
-        # GlobalAvgPool: خلاصه کل دوره تاریخی
         avg  = tf.keras.layers.GlobalAveragePooling1D(name="global_avg_pool")(z)
-        # ترکیب هر دو: مدل هم آخرین وضعیت و هم تاریخچه کلی رو می‌بینه
         z = tf.keras.layers.Concatenate(name="last_avg_concat")([last, avg])
-        # MLP: رابطه غیرخطی بین این دو اطلاعات
-        # Dense(32) کوچیکه ولی regression با 2794 sample نیاز به regularize داره
         z = tf.keras.layers.Dense(
             units=32,
             activation="relu",
@@ -301,16 +347,21 @@ def build_wavenet(
             name="mlp_hidden",
         )(z)
         z = tf.keras.layers.Dropout(dropout, name="mlp_dropout")(z)
+        output = tf.keras.layers.Dense(
+            units=output_units,
+            activation=output_activation,
+            kernel_regularizer=tf.keras.regularizers.L2(l2),
+            name="output",
+        )(z)
+
     else:
         # ── Signal head: آخرین timestep → softmax ─────────────────────────
-        # در WaveNet causal، t=-1 = خلاصه کل تاریخچه
         z = _last_timestep_layer_class()(name="last_timestep")(z)
-
-    output = tf.keras.layers.Dense(
-        units=output_units,
-        activation=output_activation,
-        kernel_regularizer=tf.keras.regularizers.L2(l2),
-        name="output",
-    )(z)
+        output = tf.keras.layers.Dense(
+            units=output_units,
+            activation=output_activation,
+            kernel_regularizer=tf.keras.regularizers.L2(l2),
+            name="output",
+        )(z)
 
     return tf.keras.Model(inputs=[inputs], outputs=[output], name="wavenet")

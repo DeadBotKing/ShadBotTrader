@@ -157,6 +157,27 @@ def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200
 DEFAULT_LEARNING_RATE = 1.5e-4
 
 
+
+
+def _parse_spread(command: Any) -> "tuple[Decimal, Optional[Decimal]]":
+    """spread_mode و spread_value رو بخون و (spread_fixed, spread_pct) برگردون.
+
+    pct mode:   spread_fixed=0, spread_pct=0.0006
+    fixed mode: spread_fixed=1.80, spread_pct=None
+    """
+    mode  = command.text("spread_mode", "pct").strip().lower()
+    value = Decimal(str(command.number("spread_value", 0.06)))
+
+    if mode == "pct":
+        # آلپاری: spread به صورت درصد
+        # مثلاً 0.06 → 0.06% → 0.0006 fraction
+        pct = value / Decimal("100")   # 0.06 → 0.0006
+        return Decimal("0"), pct
+    else:
+        # spread ثابت دلاری
+        return value, None
+
+
 def saved_learning_rate(storage_root: str | Path, model_id: str) -> float:
     """Return the last selected LR for a model, or the platform default."""
     try:
@@ -397,22 +418,32 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="number",
                     hint="blank keeps the saved model threshold; binary labels have no HOLD class",
                 ),
-                CommandField("epochs", "Epochs", "2", kind="number"),
-                CommandField("folds", "Folds", "2", kind="number"),
-                CommandField("window", "Window rows", "500", kind="number"),
+                CommandField(
+                    "resume",
+                    "Continue from checkpoint",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                    hint="1 = ادامه از آخرین checkpoint (پیشنهاد) | 0 = از صفر شروع",
+                ),
+                CommandField("epochs", "Target epochs (total)", "100", kind="number",
+                    hint="کل epoch هدف — مثلاً اگه 50 داری و میخوای 100 بشه، اینجا 100 بنویس"),
+                CommandField("folds", "Folds", "3", kind="number"),
+                CommandField("window", "Window rows", "150", kind="number",
+                    hint="باید با مدل ذخیره‌شده یکی باشه (معمولاً 150)"),
                 CommandField(
                     "learning_rate",
                     "Learning rate (0 = auto)",
                     "0",
                     kind="number",
-                    hint="0 = آخرین LR ذخیره‌شده | مقدار دستی مثلاً 0.001 یا 1e-3",
+                    hint="0 = آخرین LR ذخیره‌شده | مقدار دستی مثلاً 0.0001",
                 ),
                 CommandField(
                     "train_ratio",
                     "Training prefix %",
-                    "100",
+                    "80",
                     kind="number",
-                    hint="keep 20% unseen for a genuine test",
+                    hint="همون نسبتی که موقع آموزش اول استفاده شد (معمولاً 80)",
                 ),
                 CommandField(
                     "timeout_minutes",
@@ -443,7 +474,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=("auto", "dual", "legacy"),
                     hint="auto uses signal -> range -> TP/SL when both models and timeframes exist",
                 ),
-                CommandField("range_timeframe", "Range timeframe", "1H"),
+                CommandField("range_timeframe", "Range timeframe", "1D", hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین"),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
@@ -453,6 +484,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "1.5",
                     kind="number",
                     hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                ),
+                CommandField(
+                    "commission",
+                    "Commission rate",
+                    "0",
+                    kind="number",
+                    hint="0 = بدون کمیسیون | مثلاً 0.0001 = 0.01%",
                 ),
                 CommandField(
                     "filter_zero_bar",
@@ -471,7 +509,21 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("quantity", "Quantity", "0.01", kind="number"),
-                CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField(
+                    "spread_mode",
+                    "Spread type",
+                    "pct",
+                    kind="select",
+                    options=("pct", "fixed"),
+                    hint="pct = درصد از قیمت (مثل آلپاری) | fixed = دلار ثابت",
+                ),
+                CommandField(
+                    "spread_value",
+                    "Spread value",
+                    "0.06",
+                    kind="number",
+                    hint="pct mode: 0.06 = 0.06% | fixed mode: 1.80 = $1.80",
+                ),
                 CommandField("slippage", "Slippage rate", "0", kind="number"),
                 CommandField(
                     "same_bar_policy",
@@ -534,7 +586,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                         "0 uses this form's values"
                     ),
                 ),
-                CommandField("range_timeframe", "Range timeframe", "1H"),
+                CommandField("range_timeframe", "Range timeframe", "1D", hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین"),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
@@ -544,6 +596,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "1.5",
                     kind="number",
                     hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                ),
+                CommandField(
+                    "commission",
+                    "Commission rate",
+                    "0",
+                    kind="number",
+                    hint="0 = بدون کمیسیون | مثلاً 0.0001 = 0.01%",
                 ),
                 CommandField(
                     "filter_zero_bar",
@@ -562,7 +621,21 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("capital", "Capital", "100", kind="number"),
                 CommandField("quantity", "Quantity", "0.01", kind="number"),
-                CommandField("spread", "Spread", "0.35", kind="number"),
+                CommandField(
+                    "spread_mode",
+                    "Spread type",
+                    "pct",
+                    kind="select",
+                    options=("pct", "fixed"),
+                    hint="pct = درصد از قیمت (مثل آلپاری) | fixed = دلار ثابت",
+                ),
+                CommandField(
+                    "spread_value",
+                    "Spread value",
+                    "0.06",
+                    kind="number",
+                    hint="pct mode: 0.06 = 0.06% | fixed mode: 1.80 = $1.80",
+                ),
                 CommandField("slippage", "Slippage rate", "0", kind="number"),
                 CommandField(
                     "same_bar_policy",
@@ -843,22 +916,24 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="number",
                     hint="first future +/- threshold hit creates BUY/SELL; no HOLD class",
                 ),
-                CommandField("epochs", "Epochs", "1", kind="number"),
-                CommandField("folds", "Folds", "2", kind="number"),
-                CommandField("window", "Window rows", "500", kind="number"),
+                CommandField("epochs", "Epochs", "50", kind="number",
+                    hint="range 1D: 50 مناسبه | signal 5M: 30"),
+                CommandField("folds", "Folds", "3", kind="number"),
+                CommandField("window", "Window rows", "150", kind="number",
+                    hint="150 = 7 ماه برای 1D | 150 = 12.5 ساعت برای 5M"),
                 CommandField(
                     "learning_rate",
                     "Learning rate (0 = auto)",
                     "0",
                     kind="number",
-                    hint="0 = آخرین LR ذخیره‌شده | مقدار دستی مثلاً 0.001 یا 1e-3",
+                    hint="0 = آخرین LR ذخیره‌شده | range: 1e-4 | signal: 1e-4",
                 ),
                 CommandField(
                     "train_ratio",
                     "Training prefix %",
-                    "100",
+                    "80",
                     kind="number",
-                    hint="keep 20% unseen for a genuine test",
+                    hint="80 = 80% train, 20% validation — پیشنهاد",
                 ),
                 CommandField(
                     "timeout_minutes",
@@ -1610,6 +1685,11 @@ class CommandHandlers:
             if _lr_manual and _lr_manual > 0
             else saved_learning_rate(self._storage_root, saved)
         )
+        # resume flag: ادامه از checkpoint یا از صفر
+        _resume = command.text("resume", "1").strip() == "1"
+        _resume_args = ["--resume"] if _resume else []
+        _mode_label = "resume" if _resume else "from scratch"
+
         return self._run_script(
             command,
             [
@@ -1626,18 +1706,19 @@ class CommandHandlers:
                 "--folds",
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
-                str(max(command.integer("window", 500), 2)),
+                str(max(command.integer("window", 150), 2)),
                 "--train-ratio",
-                str(command.number("train_ratio", 100.0)),
+                str(command.number("train_ratio", 80.0)),
                 "--threshold",
                 str(threshold),
                 "--learning-rate",
                 str(learning_rate),
                 "--storage-root",
                 str(self._storage_root),
+                *_resume_args,
             ],
             f"Retrained {saved} on {dataset} "
-            f"(LR {learning_rate:.2e}"
+            f"({_mode_label}, LR {learning_rate:.2e}"
             f"{' — manual' if (_lr_manual and _lr_manual > 0) else ' — auto/saved'})"
             + (f" — {note[0]}" if note else ""),
             started,
@@ -1686,7 +1767,7 @@ class CommandHandlers:
             signal_candles = list(signal_candles)[-last_n:]
 
         dual_note = ""
-        range_timeframe = command.text("range_timeframe", "1H")
+        range_timeframe = command.text("range_timeframe", "1D")
         range_candles = store.query(symbol, Timeframe(range_timeframe))
 
         # range candles هم به همان نسبت زمانی برش می‌خوره
@@ -1697,11 +1778,13 @@ class CommandHandlers:
             range_candles = [c for c in range_candles if c.open_time.value >= cutoff_time]
         if mode != "legacy" and range_candles:
             try:
+                _spread_fixed, _spread_pct = _parse_spread(command)
                 configuration = SimulationConfiguration(
                     initial_capital=Decimal(str(command.number("capital", 100.0))),
-                    spread=Decimal(str(command.number("spread", 0.35))),
+                    spread=_spread_fixed,
+                    spread_pct=_spread_pct,
                     slippage_rate=Decimal(str(command.number("slippage", 0.0))),
-                    commission_rate=Decimal("0.0001"),
+                    commission_rate=Decimal(str(command.number("commission", 0.0))),
                     warmup_bars=0,
                     entry_timing=EntryTiming.NEXT_OPEN,
                     same_bar_policy=SameBarPolicy(
@@ -1713,11 +1796,14 @@ class CommandHandlers:
                 _allowed_hours = list({2, 5, 6, 10, 14, 15, 16, 18}) if _session_filter else None
                 _min_sl = max(0.0, command.number("min_sl_distance", 0.0))
 
+                # range_model_id از range_timeframe ساخته میشه
+                # gold_range_1h یا gold_range_1d بسته به انتخاب کاربر
+                _default_range_id = f"gold_range_{range_timeframe.lower()}"
                 dual = DualModelBacktestService.from_storage(
                     storage_root=self._storage_root,
                     symbol=symbol_text,
                     signal_model_id=command.text("signal_model", "gold_signal_5m"),
-                    range_model_id=command.text("range_model", "gold_range_1h"),
+                    range_model_id=command.text("range_model", _default_range_id),
                     min_signal_confidence=command.number("threshold_pct", 60.0) / 100.0,
                     signal_window_size=command.integer("signal_window", 0) or None,
                     range_window_size=command.integer("range_window", 0) or None,
@@ -1877,7 +1963,7 @@ class CommandHandlers:
             f"initial eq  : {metrics.starting_equity:.4f}",
             f"final eq    : {metrics.final_equity:.4f}",
             f"quantity    : {command.number('quantity', 0.01):g}",
-            f"spread      : {command.number('spread', 0.35 if mode == 'dual' else 4.0):g}",
+            f"spread      : {command.number('spread_value', 0.06):g}{'%' if command.text('spread_mode','pct')=='pct' else '$'}",
             "commission  : 0.0001",
             f"slip rate   : {command.number('slippage', 0.0):g}",
             f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
@@ -2075,7 +2161,7 @@ class CommandHandlers:
                 simulation_config=SimulationConfiguration(
                     initial_capital=Decimal("100"),
                     spread=Decimal("4"),
-                    commission_rate=Decimal("0.0001"),
+                    commission_rate=Decimal(str(command.number("commission", 0.0))),
                     warmup_bars=10,
                 ),
             )

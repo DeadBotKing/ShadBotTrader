@@ -108,7 +108,10 @@ class BacktestService:
         end: Timestamp = ordered[-1].open_time
 
         data_provider = CandleMarketDataProvider(
-            symbol=symbol, candles=ordered, spread=config.spread
+            symbol=symbol,
+            candles=ordered,
+            spread=config.spread,
+            spread_pct=getattr(config, "spread_pct", None),
         )
 
         self._persistence.currency = config.base_currency

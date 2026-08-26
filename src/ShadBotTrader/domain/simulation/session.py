@@ -27,6 +27,7 @@ class SimulationConfiguration:
         initial_capital: Decimal = Decimal("100000"),
         base_currency: str = "USD",
         spread: Decimal = Decimal("2"),
+        spread_pct: Optional[Decimal] = None,
         slippage_rate: Decimal = Decimal("0"),
         commission_rate: Decimal = Decimal("0"),
         seed: int = 42,
@@ -62,6 +63,7 @@ class SimulationConfiguration:
         self._initial_capital = initial_capital
         self._base_currency = base_currency.strip().upper()
         self._spread = spread
+        self._spread_pct = spread_pct
         self._slippage_rate = slippage_rate
         self._commission_rate = commission_rate
         self._seed = seed
@@ -82,6 +84,11 @@ class SimulationConfiguration:
     @property
     def spread(self) -> Decimal:
         return self._spread
+
+    @property
+    def spread_pct(self) -> Optional[Decimal]:
+        """اسپرد درصدی — None یعنی اسپرد ثابت دلاری استفاده میشه."""
+        return self._spread_pct
 
     @property
     def slippage_rate(self) -> Decimal:

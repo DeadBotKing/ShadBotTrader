@@ -85,17 +85,45 @@ class RangePredictor:
             self._model_key = key
         model = self._model
         x = _prepare(window, model)
-        raw = model.predict(x, verbose=0)[0]
+        raw_out = model.predict(x, verbose=0)
 
-        if len(raw) < 2:
+        # فاز ۵۵: seq2seq output shape = [batch, window, horizon*2]
+        # scalar output shape = [batch, 2]
+        raw = raw_out[0]
+        if raw.ndim == 2 and raw.shape[-1] >= 2 and raw.shape[0] > 2:
+            # seq2seq: shape=[window, horizon*2]
+            # آخرین timestep = پیش‌بینی برای آخرین کندل window
+            # layout: [high_1, low_1, high_2, low_2, ..., high_H, low_H]
+            last_step = raw[-1]                          # [horizon*2]
+            n_pairs = len(last_step) // 2
+
+            if n_pairs == 1:
+                # horizon=1: دقیقاً high و low فردا
+                best_high = float(last_step[0])
+                best_low  = float(last_step[1])
+            else:
+                # horizon>1: worst-case high/low در کل افق
+                highs = [float(last_step[k * 2])     for k in range(n_pairs)]
+                lows  = [float(last_step[k * 2 + 1]) for k in range(n_pairs)]
+                best_high = max(highs)
+                best_low  = min(lows)
+        elif raw.ndim == 1 and len(raw) >= 2:
+            # scalar output (قدیمی)
+            best_high = float(raw[0])
+            best_low  = float(raw[1])
+        elif raw.ndim == 2 and raw.shape[0] == 1:
+            # [1, 2] شکل قدیمی batch=1
+            best_high = float(raw[0, 0])
+            best_low  = float(raw[0, 1])
+        else:
             raise ValidationError(
-                f"The range model must emit 2 values (high, low); got {len(raw)}."
+                f"Unexpected range model output shape: {raw.shape}"
             )
 
         return RangeForecast(
             reference_close=float(reference_close),
-            high_offset=float(raw[0]),
-            low_offset=float(raw[1]),
+            high_offset=best_high,
+            low_offset=best_low,
             horizon=self._horizon,
             timeframe=self._timeframe,
             generated_at=generated_at,

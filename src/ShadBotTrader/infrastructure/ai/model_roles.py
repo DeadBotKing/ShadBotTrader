@@ -88,6 +88,7 @@ class ModelRole:
     depth_multiplier: int = 8
     l2: float = 2.5e-4
     dropout: float = 0.10
+    seq2seq: bool = False   # Phase 55: seq2seq output for range model
 
     def __post_init__(self) -> None:
         if self.window_size < 2:
@@ -158,20 +159,23 @@ def range_model_id(timeframe: str) -> str:
 
 
 def range_model_role(
-    timeframe: str = "1H",
-    horizon: int = 5,
-    window_size: int = 100,
+    timeframe: str = "1D",
+    horizon: int = 1,
+    window_size: int = 150,
 ) -> ModelRole:
-    """The price-extremes model for one timeframe (1H or 1D).
+    """The price-extremes model.
 
-    window_size=100:
-      • RF=57 (n_layers=3) < 100 ✅ — no blind neurons
-      • 100 daily candles ≈ 5 months of data
-      • All features have lookback ≤ 50 after catalog adjustment
+    فاز ۵۵: horizon=1 (فردا) بجای 5
+      - دقت بالاتر: پیش‌بینی یک روز جلوتر
+      - target واضح: high[t+1] و low[t+1]
+      - no accumulation error
+
+    timeframe=1D:
+      150 روز = ~7 ماه context
+      هر کندل = یک روز معاملاتی کامل
     Architecture:
-      n_layers_per_block=3 → RF=57
-      n_filters=48  — regression benefits from more capacity
-      depth_multiplier=6, dropout=0.10, l2=2.0e-4
+      n_layers_per_block=4 -> RF=121 -> 81% of window=150
+      n_filters=48, depth_multiplier=6, dropout=0.10, l2=2.0e-4
     """
     return ModelRole(
         name="range",
@@ -188,10 +192,11 @@ def range_model_role(
         window_size=window_size,
         # Architecture knobs — range-specific
         n_filters=48,
-        n_layers_per_block=4,  # RF=121 → 81% of window=150 ✅
+        n_layers_per_block=4,  # RF=121 -> 81% of window=150
         depth_multiplier=6,
         dropout=0.10,
         l2=2.0e-4,
+        seq2seq=True,   # Phase 55: gradient dense, no collapse
     )
 
 

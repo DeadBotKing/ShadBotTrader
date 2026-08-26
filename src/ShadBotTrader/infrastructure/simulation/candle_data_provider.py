@@ -33,12 +33,21 @@ class CandleMarketDataProvider(SimulationMarketDataProvider):
         symbol: Symbol,
         candles: Sequence[Candle],
         spread: Decimal = Decimal("2"),
+        spread_pct: Optional[Decimal] = None,
     ) -> None:
+        """spread: دلاری ثابت | spread_pct: درصدی (مثلاً 0.0006 = 0.06%)
+
+        اگه spread_pct داده بشه، spread دلاری از قیمت هر کندل محاسبه میشه.
+        این واقعی‌تره چون اسپرد آلپاری درصدی است نه ثابت.
+        """
         if spread < 0:
             raise ValidationError("spread must not be negative")
+        if spread_pct is not None and spread_pct < 0:
+            raise ValidationError("spread_pct must not be negative")
         self._symbol = symbol
         self._candles: List[Candle] = sorted(candles, key=lambda c: c.open_time.value)
         self._spread = spread
+        self._spread_pct = spread_pct   # None = استفاده از spread ثابت
         self._by_time: Dict[object, Candle] = {
             candle.open_time.value: candle for candle in self._candles
         }
@@ -70,10 +79,19 @@ class CandleMarketDataProvider(SimulationMarketDataProvider):
         The close is the historical default.  The dual-model simulator
         also uses the candle open for next-open entries and an explicit
         bracket level for TP/SL exits.
+
+        اگه spread_pct تنظیم شده باشه، اسپرد بر اساس قیمت لحظه‌ای محاسبه
+        میشه — مثل آلپاری که اسپرد درصدی داره نه ثابت.
         """
+        ref = mid or candle.close
+        if self._spread_pct is not None:
+            # spread درصدی: spread = price × spread_pct
+            actual_spread = Decimal(str(float(ref.amount) * float(self._spread_pct)))
+        else:
+            actual_spread = self._spread
         return MarketQuote.from_mid(
             symbol=self._symbol,
-            mid=mid or candle.close,
-            spread=self._spread,
+            mid=ref,
+            spread=actual_spread,
             timestamp=candle.open_time,
         )

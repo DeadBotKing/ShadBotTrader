@@ -38,6 +38,8 @@ from ShadBotTrader.infrastructure.ai.model_roles import (
 )
 from ShadBotTrader.infrastructure.ai.target_builder import (
     build_range_labels,
+    build_range_labels_seq2seq,
+    RangeLabelsSeq2Seq,
     build_signal_labels,
 )
 
@@ -153,12 +155,20 @@ class DualModelService:
         sample_label_ends: Optional[List[int]] = None
 
         if role.target.kind is TargetKind.PRICE_RANGE:
-            labels = build_range_labels(candles, horizon=role.horizon)
-            targets = [
-                [high, low] for high, low in zip(labels.high_offset, labels.low_offset, strict=True)
-            ]
-            target_names = ["future_high_offset", "future_low_offset"]
-            source_index = labels.source_index
+            _use_seq2seq = getattr(role, "seq2seq", False)
+            if _use_seq2seq:
+                # فاز ۵۵: seq2seq labels — برای هر کندل t، offsets تا horizon k
+                labels_s2s = build_range_labels_seq2seq(candles, horizon=role.horizon)
+                targets = labels_s2s.to_flat_targets()
+                target_names = labels_s2s.target_names()
+                source_index = labels_s2s.source_index
+            else:
+                labels = build_range_labels(candles, horizon=role.horizon)
+                targets = [
+                    [high, low] for high, low in zip(labels.high_offset, labels.low_offset, strict=True)
+                ]
+                target_names = ["future_high_offset", "future_low_offset"]
+                source_index = labels.source_index
             series, column_names, _ = attach_targets(
                 matrix=matrix,
                 targets=targets,
@@ -377,6 +387,9 @@ class DualModelService:
             # Phase 50: resume from checkpoint
             initial_epoch=initial_epoch,
             resume_weights=resume_weights,
+            # Phase 55: seq2seq head برای range model
+            seq2seq=getattr(role, "seq2seq", False) if is_regression else False,
+            horizon=role.horizon if is_regression else 5,
         )
 
     def train(

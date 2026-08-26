@@ -407,7 +407,22 @@ class BacktestEngine:
         if opening and event.candle is not None:
             quote_for = getattr(self._data, "quote_for", None)
             if callable(quote_for):
-                return quote_for(event.candle, mid=event.candle.open)
+                # فاز ۵۷: typical price بجای open تنها
+                # entry = (O+H+L+C)/4 واقع‌بینانه‌تره چون:
+                # سرعت اینترنت + محاسبات → ممکنه دقیقاً open نگیریم
+                # typical price میانگین کل کندل = تقریب بهتر
+                candle = event.candle
+                try:
+                    from decimal import Decimal as _D
+                    o = candle.open.amount
+                    h = candle.high.amount
+                    l = candle.low.amount
+                    c = candle.close.amount
+                    typical = (o + h + l + c) / _D("4")
+                    from ShadBotTrader.domain.market.price import Price as _Price
+                    return quote_for(candle, mid=_Price(typical))
+                except Exception:
+                    return quote_for(candle, mid=candle.open)
         return self._data.quote_at(event.symbol, event.event_time)
 
     def _execute_pending_entry(self, event: MarketEvent) -> None:

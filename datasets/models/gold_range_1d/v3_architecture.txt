@@ -152,24 +152,20 @@ Model: "wavenet"
 │ head_conv1x1        │ (None, 150, 48)   │      2,352 │ separable_conv1d… │
 │ (Conv1D)            │                   │            │                   │
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ last_timestep       │ (None, 48)        │          0 │ head_conv1x1[0][… │
-│ (LastTimestep)      │                   │            │                   │
+│ zero_padding1d_10   │ (None, 152, 48)   │          0 │ head_conv1x1[0][… │
+│ (ZeroPadding1D)     │                   │            │                   │
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ global_avg_pool     │ (None, 48)        │          0 │ head_conv1x1[0][… │
-│ (GlobalAveragePool… │                   │            │                   │
+│ seq2seq_pre         │ (None, 150, 24)   │      5,208 │ zero_padding1d_1… │
+│ (SeparableConv1D)   │                   │            │                   │
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ last_avg_concat     │ (None, 96)        │          0 │ last_timestep[0]… │
-│ (Concatenate)       │                   │            │ global_avg_pool[… │
+│ zero_padding1d_11   │ (None, 150, 24)   │          0 │ seq2seq_pre[0][0] │
+│ (ZeroPadding1D)     │                   │            │                   │
 ├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ mlp_hidden (Dense)  │ (None, 32)        │      3,104 │ last_avg_concat[… │
-├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ mlp_dropout         │ (None, 32)        │          0 │ mlp_hidden[0][0]  │
-│ (Dropout)           │                   │            │                   │
-├─────────────────────┼───────────────────┼────────────┼───────────────────┤
-│ output (Dense)      │ (None, 2)         │         66 │ mlp_dropout[0][0] │
+│ seq2seq_out         │ (None, 150, 2)    │         74 │ zero_padding1d_1… │
+│ (SeparableConv1D)   │                   │            │                   │
 └─────────────────────┴───────────────────┴────────────┴───────────────────┘
- Total params: 864,368 (3.30 MB)
- Trainable params: 288,122 (1.10 MB)
+ Total params: 870,704 (3.32 MB)
+ Trainable params: 290,234 (1.11 MB)
  Non-trainable params: 0 (0.00 B)
- Optimizer params: 576,246 (2.20 MB)
+ Optimizer params: 580,470 (2.21 MB)
 

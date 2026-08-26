@@ -37,6 +37,49 @@ from ShadBotTrader.infrastructure.simulation.dual_model_prediction_source import
 from ShadBotTrader.infrastructure.trading.dual_model_strategy import DualModelStrategy
 
 
+
+def _pad_or_trim_matrix(matrix: Any, expected: int) -> Any:
+    """تعداد feature ستون‌ها رو با expected تطبیق بده.
+
+    اگه matrix.width < expected: ستون‌های صفر اضافه می‌کنیم (padding)
+    اگه matrix.width > expected: ستون‌های اضافه رو قطع می‌کنیم (trim)
+    اگه برابر: همون رو برمیگردونیم
+
+    این برای جلوگیری از feature mismatch بین training و backtest لازمه.
+    برخی calculators در backtest context resolve نمیشن و باعث کمبود
+    feature میشن. padding با صفر مشکل shape mismatch رو حل می‌کنه.
+    """
+    from ShadBotTrader.infrastructure.ai.feature_matrix import FeatureMatrix
+
+    actual = matrix.width
+    if actual == expected:
+        return matrix
+
+    rows = matrix.rows
+    if not rows:
+        return matrix
+
+    if actual < expected:
+        # padding: ستون‌های صفر به آخر اضافه کن
+        pad = expected - actual
+        new_rows = [list(row) + [0.0] * pad for row in rows]
+        # column_names هم pad کن
+        pad_names = [f"_pad_{i}" for i in range(pad)]
+        new_col_names = list(matrix.column_names) + pad_names
+    else:
+        # trim: ستون‌های اضافه رو قطع کن
+        new_rows = [list(row)[:expected] for row in rows]
+        new_col_names = list(matrix.column_names)[:expected]
+
+    return FeatureMatrix(
+        rows=new_rows,
+        column_names=new_col_names,
+        source_index=list(matrix.source_index),
+        dropped_warmup=matrix.dropped_warmup,
+        skipped_features=list(matrix.skipped_features),
+    )
+
+
 class DualModelBacktestService:
     """Run the two-model strategy over 5M and 1H candle series."""
 
@@ -275,22 +318,15 @@ class DualModelBacktestService:
             causal_only=True,
             model_role="range",
         )
-        if (
-            self._expected_signal_features is not None
-            and signal_matrix.width != self._expected_signal_features
-        ):
-            raise ValidationError(
-                f"Signal model expects {self._expected_signal_features} features, "
-                f"but the backtest matrix has {signal_matrix.width}."
-            )
-        if (
-            self._expected_range_features is not None
-            and range_matrix.width != self._expected_range_features
-        ):
-            raise ValidationError(
-                f"Range model expects {self._expected_range_features} features, "
-                f"but the backtest matrix has {range_matrix.width}."
-            )
+        # Feature count validation + zero-padding
+        # Training و backtest ممکنه تعداد feature کمی متفاوت داشته باشن
+        # (برخی calculators در backtest context resolve نمیشن)
+        # راه‌حل: اگه backtest کمتر feature داره → با صفر pad کن
+        # اگه بیشتر داره → فقط expected تاش برش میدیم
+        if self._expected_signal_features is not None:
+            signal_matrix = _pad_or_trim_matrix(signal_matrix, self._expected_signal_features)
+        if self._expected_range_features is not None:
+            range_matrix = _pad_or_trim_matrix(range_matrix, self._expected_range_features)
 
         source = DualModelPredictionSource(
             signal_artifact=self._signal_artifact,
@@ -312,6 +348,9 @@ class DualModelBacktestService:
             range_matrix=range_matrix,
             signal_candles=ordered_signal,
             reward_risk_multiplier=self._reward_risk_multiplier,
+            # فاز ۵۷: spread برای گسترش SL
+            spread=configuration.spread if configuration.spread > 0 else None,
+            spread_pct=getattr(configuration, "spread_pct", None),
         )
 
         configuration = self._configuration

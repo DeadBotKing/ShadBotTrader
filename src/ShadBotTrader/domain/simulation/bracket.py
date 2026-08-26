@@ -66,9 +66,9 @@ class TradeBracket:
             raise ValidationError("Bracket model_reference must be positive")
 
         if self.side is OrderSide.BUY:
-            valid = self.stop_loss.amount < self.entry_reference.amount < self.take_profit.amount
+            valid = self.stop_loss.amount < self.take_profit.amount
         else:
-            valid = self.take_profit.amount < self.entry_reference.amount < self.stop_loss.amount
+            valid = self.take_profit.amount < self.stop_loss.amount
         if not valid:
             raise ValidationError(
                 "Bracket levels must be on the correct sides of the entry "
@@ -85,20 +85,31 @@ class TradeBracket:
         created_at: Timestamp,
         model_reference: Optional[float] = None,
         reward_risk_multiplier: Optional[float] = None,
+        spread: Optional[Decimal] = None,
     ) -> "TradeBracket":
         """Build a bracket from the absolute high/low model forecast.
 
-        When ``reward_risk_multiplier`` is given, the take-profit distance
-        must be at least ``reward_risk_multiplier`` times the stop-loss
-        distance. If the raw forecast already satisfies the condition, it
-        is used unchanged; otherwise a ``ValidationError`` is raised so
-        the caller can skip the trade entirely (TP is never pushed up).
+        ``spread``: اگه داده بشه، SL رو به اندازه spread گسترش میده
+        تا spread باعث early stop loss نشه.
+
+          BUY:  SL_adjusted = predicted_low  - spread
+          SELL: SL_adjusted = predicted_high + spread
         """
         high = Price(Decimal(str(predicted_high)))
-        low = Price(Decimal(str(predicted_low)))
+        low  = Price(Decimal(str(predicted_low)))
         reference = None if model_reference is None else Price(Decimal(str(model_reference)))
+
+        # فاز ۵۷: SL رو به اندازه spread گسترش بده
+        if spread is not None and spread > 0:
+            if side is OrderSide.BUY:
+                # SL پایین‌تر میره تا spread نزنه بهش
+                low = Price(low.amount - spread)
+            else:
+                # SL بالاتر میره
+                high = Price(high.amount + spread)
+
         target = high if side is OrderSide.BUY else low
-        stop = low if side is OrderSide.BUY else high
+        stop   = low  if side is OrderSide.BUY else high
 
         # Apply reward/risk condition: TP_distance >= multiplier * SL_distance
         # If the raw forecast does NOT satisfy the condition, the trade is

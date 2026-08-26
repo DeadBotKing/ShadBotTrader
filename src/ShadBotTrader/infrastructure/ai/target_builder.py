@@ -146,6 +146,92 @@ def build_range_labels(candles: Sequence[Candle], horizon: int = 5) -> RangeLabe
     return RangeLabels(high_offset=highs, low_offset=lows, source_index=indices)
 
 
+def build_range_labels_seq2seq(
+    candles: Sequence[Candle],
+    horizon: int = 5,
+) -> "RangeLabelsSeq2Seq":
+    """Seq2seq targets: برای هر کندل t، high و low در t+1 .. t+horizon.
+
+    فاز ۵۵: بجای یک scalar، برای هر کندل در window یه target داریم.
+    این gradient flow رو 75× قوی‌تر می‌کنه و collapse رو جلوگیری می‌کنه.
+
+    horizon=1 (پیشنهاد نهایی):
+      high_seq[t][0] = (high[t+1] - close[t]) / close[t]
+      low_seq[t][0]  = (low[t+1]  - close[t]) / close[t]
+      → پیش‌بینی high و low فردا (دقیق‌ترین حالت)
+      → target واضح، بدون accumulation error
+
+    horizon=N (عمومی):
+      high_seq[t, k] = (high[t+k] - close[t]) / close[t]   k=1..N
+      low_seq[t, k]  = (low[t+k]  - close[t]) / close[t]   k=1..N
+
+    Loss فقط روی آخرین horizon timestep seq اعمال میشه (با وزن بیشتر).
+    """
+    _validate(candles, horizon)
+
+    # برای هر کندل t، offsets تا horizon کندل بعد
+    high_seqs: List[List[float]] = []
+    low_seqs: List[List[float]] = []
+    indices: List[int] = []
+
+    n = len(candles)
+    for t in range(n - horizon):
+        close_t = float(candles[t].close.amount)
+        if close_t <= 0:
+            raise ValidationError(f"Candle {t} has non-positive close")
+        h_seq = []
+        l_seq = []
+        for k in range(1, horizon + 1):
+            future = candles[t + k]
+            h_seq.append((float(future.high.amount)  - close_t) / close_t)
+            l_seq.append((float(future.low.amount)   - close_t) / close_t)
+        high_seqs.append(h_seq)
+        low_seqs.append(l_seq)
+        indices.append(t)
+
+    return RangeLabelsSeq2Seq(
+        high_seq=high_seqs,
+        low_seq=low_seqs,
+        source_index=indices,
+        horizon=horizon,
+    )
+
+
+@dataclass(frozen=True)
+class RangeLabelsSeq2Seq:
+    """Seq2seq range labels: برای هر کندل t، offset هر k=1..horizon."""
+
+    high_seq: List[List[float]]   # shape [N, horizon]
+    low_seq:  List[List[float]]   # shape [N, horizon]
+    source_index: List[int]
+    horizon: int
+
+    def __len__(self) -> int:
+        return len(self.high_seq)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.high_seq
+
+    def to_flat_targets(self) -> List[List[float]]:
+        """[high_1, low_1, high_2, low_2, ..., high_H, low_H] برای هر کندل."""
+        result = []
+        for h_seq, l_seq in zip(self.high_seq, self.low_seq):
+            flat = []
+            for h, l in zip(h_seq, l_seq):
+                flat.append(h)
+                flat.append(l)
+            result.append(flat)
+        return result
+
+    def target_names(self) -> List[str]:
+        names = []
+        for k in range(1, self.horizon + 1):
+            names.append(f"future_high_offset_{k}")
+            names.append(f"future_low_offset_{k}")
+        return names
+
+
 def build_signal_labels_from_candles(
     candles: Sequence[Candle],
     threshold: float = 0.0008,

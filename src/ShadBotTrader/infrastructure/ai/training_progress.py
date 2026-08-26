@@ -384,6 +384,15 @@ elapsed 0:14 | eta 1:42
         )
         self._write("  " + "-" * 70)
 
+    def on_early_stop(self, fold: "FoldInfo", epoch: int, best_val: float) -> None:
+        """Phase 57: EarlyStopping پیش از موعد متوقف شد — به کاربر اطلاع بده."""
+        self._write(
+            f"  [EarlyStopping] fold {fold.human_index}/{fold.total_folds}"
+            f" | stopped at epoch {epoch}"
+            f" | best val_loss={_fmt(best_val, 6)}"
+            f" | plateau detected — no improvement possible"
+        )
+
     def on_train_end(self, fold_losses: List[float]) -> None:
         """فاز ۵۲: خلاصه نهایی با اطلاعات کامل."""
         elapsed = time.monotonic() - self._run_start

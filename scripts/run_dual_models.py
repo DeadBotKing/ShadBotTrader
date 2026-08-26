@@ -66,16 +66,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--range-timeframes",
-        default="1H,1D",
-        help="comma separated timeframes to train a range model for",
+        default="1D",
+        help="comma separated timeframes to train a range model for (default: 1D)",
     )
     parser.add_argument("--range-timeframe", default="", help="alias of --range-timeframes")
     parser.add_argument("--signal-timeframe", default="5M", help="signal model candles")
     parser.add_argument(
         "--horizon",
         type=int,
-        default=5,
-        help="range candles to look ahead; signal searches until threshold hit",
+        default=1,
+        help=(
+            "range candles to look ahead (default: 1 = next candle only). "
+            "horizon=1 روی 1D: پیش‌بینی high/low فردا — دقیق‌ترین حالت. "
+            "signal model searches until threshold hit (ignored for signal)."
+        ),
     )
     parser.add_argument("--window", type=int, default=24, help="input window size")
     parser.add_argument(
@@ -660,7 +664,8 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
                 # it, testing a 0.15%-trained model rebuilds 0.08% labels
                 # and reports an accuracy that belongs to no model at all.
                 threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
-                learning_rate=float(learning_rate),
+                # LR واقعی بعد از ReduceLROnPlateau رو ذخیره کن
+                learning_rate=float(logs.get("learning_rate", learning_rate)),
                 loss_function=role.loss,
                 horizon=int(role.horizon),
                 metrics={k: float(v) for k, v in logs.items()},

@@ -58,6 +58,8 @@ class DualModelPredictionSource(PredictionSource):
         range_matrix: Any = None,
         signal_candles: Sequence[Candle] = (),
         reward_risk_multiplier: Optional[float] = None,
+        spread: Optional[Decimal] = None,
+        spread_pct: Optional[Decimal] = None,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -85,6 +87,8 @@ class DualModelPredictionSource(PredictionSource):
         self._signal_matrix = signal_matrix
         self._range_matrix = range_matrix
         self._reward_risk_multiplier = reward_risk_multiplier
+        self._spread_fixed = spread
+        self._spread_pct_val = spread_pct
         self._signal_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(signal_candles)
         }
@@ -280,10 +284,29 @@ class DualModelPredictionSource(PredictionSource):
         side: OrderSide,
         entry_reference: Price,
     ) -> Optional[TradeBracket]:
-        """Turn the latest range forecast into fixed TP/SL levels."""
+        """Turn the latest range forecast into fixed TP/SL levels.
+
+        فاز ۵۷: spread به from_model_levels پاس میشه
+        تا SL به اندازه spread گسترش پیدا کنه.
+        """
         forecast = self._last_range
         if forecast is None or not forecast.is_coherent:
             return None
+
+        # spread دلاری محاسبه کن
+        spread_amount: Optional[Decimal] = None
+        try:
+            from decimal import Decimal as _D
+            if self._spread_pct_val is not None:
+                # درصدی: spread = قیمت × pct
+                spread_amount = _D(str(
+                    float(entry_reference.amount) * float(self._spread_pct_val)
+                ))
+            elif self._spread_fixed is not None:
+                spread_amount = self._spread_fixed
+        except Exception:
+            pass
+
         try:
             return TradeBracket.from_model_levels(
                 side=side,
@@ -293,11 +316,9 @@ class DualModelPredictionSource(PredictionSource):
                 created_at=event.event_time,
                 model_reference=forecast.reference_close,
                 reward_risk_multiplier=self._reward_risk_multiplier,
+                spread=spread_amount,
             )
         except ValidationError:
-            # A gap between the model reference close and the entry can put
-            # both levels on the wrong side. Refuse the trade rather than
-            # silently moving the user's target or stop.
             return None
 
     # -------------------------------------------------------- internals --

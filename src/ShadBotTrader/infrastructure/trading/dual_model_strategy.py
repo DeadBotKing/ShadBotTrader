@@ -191,23 +191,25 @@ class DualModelStrategy(Strategy):
                 }
             )
 
-            # --- gate 5: the move must pay for the risk -------------------
+            # --- gate 5: range باید معنادار باشه --------------------------
+            # R/R check اینجا حذف شد چون entry_price هنوز معلوم نیست.
+            # entry در کندل بعدی اتفاق میفته و bracket.py با entry_price
+            # واقعی R/R رو enforce میکنه (از reward_risk_multiplier).
+            # اینجا فقط بررسی میکنیم که predicted_high > predicted_low
+            # و range کافی داره.
+            ph = range_forecast.predicted_high
+            pl = range_forecast.predicted_low
+            total_range = ph - pl
+            if total_range <= 0:
+                return self._hold(
+                    context,
+                    "range model: predicted_high <= predicted_low (incoherent)",
+                    confidence=signal.confidence,
+                )
+            # ذخیره R/R برای گزارش (بر اساس reference_close)
             if risk > 0:
                 ratio = reward / risk
                 details["reward_risk"] = ratio
-                if self._min_reward_risk is not None and ratio < self._min_reward_risk:
-                    return self._hold(
-                        context,
-                        f"reward/risk {ratio:.2f} < {self._min_reward_risk:.2f}",
-                        confidence=signal.confidence,
-                    )
-            elif reward <= 0:
-                # No predicted movement in either direction.
-                return self._hold(
-                    context,
-                    "range model predicts no move worth trading",
-                    confidence=signal.confidence,
-                )
 
             # --- gate 6: the move must survive costs ----------------------
             reference = range_forecast.reference_close
