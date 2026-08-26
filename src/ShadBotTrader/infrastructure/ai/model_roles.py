@@ -204,17 +204,17 @@ def signal_model_role(
     timeframe: str = "5M",
     horizon: int = 0,
     threshold: float = 0.0008,
-    window_size: int = 100,
+    window_size: int = 300,
 ) -> ModelRole:
     """The binary direction model. Defaults to 5M bars and unbounded first-passage labels.
 
-    window_size=100:
-      • 100 × 5M = ~8 hours of data
-      • RF=57 (n_layers=3) < 100 ✅ — no blind neurons
-      • All features have lookback ≤ 50 after catalog adjustment
-    Architecture:
-      n_layers_per_block=3 → RF=57
-      n_filters=32, depth_multiplier=8, dropout=0.15, l2=2.5e-4
+    فاز ۵۸: window=300, n_layers=5, n_blocks=2
+      window=300: 300 × 5M = 25 ساعت ≈ یه روز کامل context
+      n_layers=5, n_blocks=2: RF=249 = 20.8h = 83% coverage از window
+        - RF > 200: تقریباً کل روز رو میبینه
+        - n_layers=5: dilation stack [1,2,4,8,16] → pattern‌های بلندمدت‌تر
+        - n_blocks=2: کمتر از 3 → overfitting کمتر
+      n_filters=32, dropout=0.15, l2=2.5e-4 (همون قبلی)
     """
     if threshold < 0:
         raise ValidationError("threshold must not be negative")
@@ -233,9 +233,15 @@ def signal_model_role(
             "price move is reached; no HOLD output class."
         ),
         window_size=window_size,
-        # Architecture knobs — signal-specific
+        # Architecture — فاز ۵۸
+        # window=300 (25h) → نیاز به RF بزرگ‌تر
+        # n_layers=5, n_blocks=2: RF=249 = 20.8h = 83% of window ✅
+        # dilation stack: [1,2,4,8,16] × 2 blocks
+        # n_filters=32: classification نیاز به capacity کمتر داره
+        # dropout=0.15: signal noisy‌تر از range → dropout بیشتر
         n_filters=32,
-        n_layers_per_block=3,
+        n_layers_per_block=5,   # RF=249 با n_blocks=2
+        n_blocks=2,
         depth_multiplier=8,
         dropout=0.15,
         l2=2.5e-4,

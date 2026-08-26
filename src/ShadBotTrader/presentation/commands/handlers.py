@@ -1776,6 +1776,20 @@ class CommandHandlers:
             # اولین زمان signal candle → شروع برش range candles
             cutoff_time = signal_candles[0].open_time.value
             range_candles = [c for c in range_candles if c.open_time.value >= cutoff_time]
+        # configuration رو از قبل تعریف کن تا scoping خطا نده
+        _spread_fixed, _spread_pct = _parse_spread(command)
+        configuration = SimulationConfiguration(
+            initial_capital=Decimal(str(command.number("capital", 100.0))),
+            spread=_spread_fixed,
+            spread_pct=_spread_pct,
+            slippage_rate=Decimal(str(command.number("slippage", 0.0))),
+            commission_rate=Decimal(str(command.number("commission", 0.0))),
+            warmup_bars=0,
+            entry_timing=EntryTiming.NEXT_OPEN,
+            same_bar_policy=SameBarPolicy(
+                command.text("same_bar_policy", SameBarPolicy.STOP_FIRST.value)
+            ),
+        )
         if mode != "legacy" and range_candles:
             try:
                 _spread_fixed, _spread_pct = _parse_spread(command)
@@ -1822,12 +1836,13 @@ class CommandHandlers:
                     test_ratio=command.number("test_ratio", 0.0) / 100.0,
                 )
                 return result, "dual", ""
-            except Exception:
+            except Exception as _dual_err:
                 if mode == "dual":
                     raise
+                import traceback as _tb
+                _err_detail = str(_dual_err)[:300]
                 dual_note = (
-                    "Dual-model prerequisites were present but could not be loaded; "
-                    "legacy baseline was used."
+                    f"Dual-model failed: {_err_detail} — legacy baseline was used."
                 )
         elif mode == "dual":
             raise LookupError(
@@ -1956,6 +1971,31 @@ class CommandHandlers:
             metrics.net_profit_factor if metrics.net_profit_factor is not None else "n/a"
         )
         expectancy = metrics.expectancy if metrics.expectancy is not None else "n/a"
+        # ── لاگ مدل‌های لودشده ────────────────────────────────────────────
+        _model_log_lines: list = []
+        if mode == "dual":
+            try:
+                from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+                _catalogue = ModelCatalogue(self._storage_root)
+                for _mid in [
+                    command.text("signal_model", "gold_signal_5m"),
+                    f"gold_range_{command.text('range_timeframe', '1D').lower()}",
+                ]:
+                    _ver = _catalogue.latest_version(_mid)
+                    _rec = _catalogue.read(_mid, _ver) if _ver else None
+                    if _rec:
+                        _model_log_lines.append(
+                            f"  {_rec.model_id} v{_rec.version}"
+                            f" | {_rec.role}/{_rec.timeframe}"
+                            f" | {_rec.headline_metric}"
+                            f" | epochs={_rec.epochs}"
+                            f" | trained={_rec.trained_at[:10]}"
+                        )
+                    else:
+                        _model_log_lines.append(f"  {_mid} — NOT FOUND!")
+            except Exception as _e:
+                _model_log_lines.append(f"  model info error: {_e}")
+
         lines = [
             f"engine      : {mode}",
             f"run id      : {result.session.session_id}",
@@ -2001,6 +2041,28 @@ class CommandHandlers:
             lines.append(f"replay      : exact tape written to {self._replay_path}")
         if note:
             lines.append(f"note        : {note}")
+        # مدل‌های لودشده رو به ابتدای lines اضافه کن
+        if _model_log_lines:
+            model_header = ["--- models loaded ---"] + _model_log_lines + ["---"]
+            lines = model_header + lines
+
+        # لاگ کامل رو روی disk هم ذخیره کن
+        try:
+            import datetime as _dt
+            _log_dir = self._run_log_dir
+            _log_dir.mkdir(parents=True, exist_ok=True)
+            _log_path = _log_dir / "backtest_run.log"
+            _ts = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            _sep = "=" * 60
+            with open(_log_path, "a", encoding="utf-8") as _lf:
+                _lf.write("\n" + _sep + "\n")
+                _lf.write("BACKTEST RUN @ " + _ts + "\n")
+                _lf.write(_sep + "\n")
+                for _line in lines:
+                    _lf.write(_line + "\n")
+        except Exception:
+            pass   # لاگ fail نباید بکتست رو خراب کنه
+
         return CommandResult.success(
             command.kind,
             f"Backtested {result.bars_processed} bars ({mode})",

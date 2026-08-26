@@ -360,8 +360,12 @@ class WavenetTrainer(ModelTrainer):
             #   factor=0.9: LR × 0.9 هر بار (ملایم، مثل legacy)
             #   patience=5: 5 epoch صبر میکنه (کوتاه‌تر از legacy=30 چون fold کوتاهه)
             #   min_lr: حداقل LR
+            # ReduceLROnPlateau و EarlyStopping برای هر دو regression و classification
             if self._loss in ("huber", "huber_loss", "mse", "mean_squared_error",
-                               "mae", "mean_absolute_error"):
+                               "mae", "mean_absolute_error",
+                               "sparse_categorical_crossentropy",
+                               "categorical_crossentropy",
+                               "focal"):
                 _min_lr = max(learning_rate * 1e-3, 1e-7)
                 # ReduceLR patience: 10% epochs (min=5, max=30)
                 _rlr_patience = max(5, min(30, self._epochs // 10))
@@ -935,7 +939,12 @@ def _build_compiled(
         else:
             compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:
-        compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy()
+        # signal model: SparseCategoricalCrossentropy استاندارد
+        # label_smoothing فقط در CategoricalCrossentropy (one-hot) کار میکنه
+        # نه در Sparse (integer labels) — پس ساده نگه میداریم
+        compiled_loss = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=False,
+        )
         compiled_metrics = [tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")]
 
     # فاز ۵۴: AdamW بجای Adam برای regression (ایده از legacy)
@@ -943,30 +952,28 @@ def _build_compiled(
     # بهتر از Adam+L2 regularizer چون decay مستقل از gradient scale‌بندی میشه
     # signal model: Adam ساده کافیه (classification)
     # range  model: AdamW بهتره (regression + L2 معادل ضمنی)
+    # فاز ۵۷: AdamW برای هر دو regression و classification
+    # weight_decay برای regression: 1e-4 (collapse کنترل)
+    # weight_decay برای classification: 1e-5 (ملایم‌تر، label space محدودتره)
     is_regression_loss = loss in (
         "mse", "mean_squared_error",
         "mae", "mean_absolute_error",
         "huber", "huber_loss",
     )
-    if is_regression_loss:
+    _wd = 1e-4 if is_regression_loss else 1e-5
+    try:
+        optimizer: object = tf.keras.optimizers.AdamW(
+            learning_rate=learning_rate,
+            weight_decay=_wd,
+        )
+    except AttributeError:
         try:
-            # weight_decay=1e-4 معادل L2 ملایم برای کنترل collapse
-            optimizer: object = tf.keras.optimizers.AdamW(
+            optimizer = tf.keras.optimizers.experimental.AdamW(
                 learning_rate=learning_rate,
-                weight_decay=1e-4,
+                weight_decay=_wd,
             )
         except AttributeError:
-            # TF < 2.11 AdamW در experimental
-            try:
-                optimizer = tf.keras.optimizers.experimental.AdamW(
-                    learning_rate=learning_rate,
-                    weight_decay=1e-4,
-                )
-            except AttributeError:
-                # fallback: Adam معمولی
-                optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    else:
-        optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+            optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
     model.compile(
         optimizer=optimizer,

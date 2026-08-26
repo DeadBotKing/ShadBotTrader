@@ -349,14 +349,14 @@ class DualModelBacktestService:
             signal_candles=ordered_signal,
             reward_risk_multiplier=self._reward_risk_multiplier,
             # فاز ۵۷: spread برای گسترش SL
-            spread=configuration.spread if configuration.spread > 0 else None,
-            spread_pct=getattr(configuration, "spread_pct", None),
+            spread=self._configuration.spread if self._configuration.spread > 0 else None,
+            spread_pct=getattr(self._configuration, "spread_pct", None),
         )
 
-        configuration = self._configuration
+        _active_config = self._configuration
         if test_ratio > 0:
             test_start = int(len(ordered_signal) * (1.0 - test_ratio))
-            configuration = SimulationConfiguration(
+            _active_config = SimulationConfiguration(
                 initial_capital=self._configuration.initial_capital,
                 base_currency=self._configuration.base_currency,
                 spread=self._configuration.spread,
@@ -383,7 +383,7 @@ class DualModelBacktestService:
             min_sl_distance=self._min_sl_distance,
         )
         service = BacktestService(
-            configuration=configuration,
+            configuration=_active_config,
             risk_policy=self._risk_policy,
             base_quantity=self._base_quantity,
             allow_reversal=False,
