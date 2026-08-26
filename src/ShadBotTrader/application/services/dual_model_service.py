@@ -39,7 +39,6 @@ from ShadBotTrader.infrastructure.ai.model_roles import (
 from ShadBotTrader.infrastructure.ai.target_builder import (
     build_range_labels,
     build_range_labels_seq2seq,
-    RangeLabelsSeq2Seq,
     build_signal_labels,
 )
 
@@ -165,7 +164,8 @@ class DualModelService:
             else:
                 labels = build_range_labels(candles, horizon=role.horizon)
                 targets = [
-                    [high, low] for high, low in zip(labels.high_offset, labels.low_offset, strict=True)
+                    [high, low]
+                    for high, low in zip(labels.high_offset, labels.low_offset, strict=True)
                 ]
                 target_names = ["future_high_offset", "future_low_offset"]
                 source_index = labels.source_index
@@ -340,11 +340,21 @@ class DualModelService:
                 batch_size = 8
 
         if not val_size:
-            val_size = max(4, min(2000, rows // 50))
+            # فاز ۵۹: فرمول قدیمی ``rows // 50`` (۲٪ استخر لیبل) گیتِ
+            # انتخاب بهترین مدل را گرسنگی می‌داد — روی دیتای واقعی 5M
+            # فقط ۳۴ تا ۱۲۳ نمونهٔ اعتبارسنجی می‌ساخت؛ آن‌قدر کم که نویز
+            # val_accuracy می‌توانست epoch اشتباه را انتخاب کند.
+            # ۱۰٪ (کف ۴، سقف 2000) همان هندسه‌های قبلی را زنده نگه
+            # می‌دارد ولی به انتخابِ بهترین، نمونهٔ قابل‌استناد می‌دهد.
+            val_size = max(4, min(2000, rows // 10))
         if not step:
             step = max(1, val_size)
         if not min_train_size:
             min_train_size = max(8, min(rows // 4, 20 * role.window_size))
+        # گارد: اعتبارسنجی نباید فضایی را که اولین fold لازم دارد بخورد
+        # (کمینهٔ پیشوند آموزش + purge پنجره/افق + دست‌کم ۴ نمونهٔ ولید).
+        purge = max(role.window_size - 1, 0) + (role.horizon if is_regression else 0)
+        val_size = max(4, min(val_size, rows - min_train_size - purge - 4))
 
         # Range labels are already joined to the usable feature rows, so
         # the trainer's ordinary sample index is the input-window end and
@@ -406,6 +416,7 @@ class DualModelService:
         learning_rate: float = 1.5e-4,
         initial_epoch: int = 0,
         resume_weights: "bytes | None" = None,
+        val_size: int = 0,
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -417,12 +428,21 @@ class DualModelService:
         ``initial_epoch`` and ``resume_weights`` enable Phase 50 resume:
         pass the bytes of a saved checkpoint and the epoch count already
         completed so training continues from that point.
+
+        ``val_size`` (فاز ۵۹) overrides the automatic validation size
+        (0 = auto: 10% of the labelled pool, clamped so the first fold
+        always fits).
         """
         dataset = self.prepare(candles, symbol, timeframe, role)
         definition = self.definition_for(role, dataset, learning_rate=learning_rate)
         trainer = self.build_trainer(
-            dataset, epochs=epochs, max_folds=max_folds, progress=progress,
-            initial_epoch=initial_epoch, resume_weights=resume_weights,
+            dataset,
+            epochs=epochs,
+            max_folds=max_folds,
+            progress=progress,
+            initial_epoch=initial_epoch,
+            resume_weights=resume_weights,
+            val_size=val_size,
         )
         trainer.on_epoch_model = on_epoch_model
 

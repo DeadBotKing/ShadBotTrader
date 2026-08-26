@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-26T14:45:54.040398+00:00
+- Snapshot generated at: 2026-08-26T14:24:10.326165+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: d2e7e51761b437a8b501c658346ed568d195428c
-- Dirty: yes (494 files)
+- Dirty: yes (484 files)
 - Recent commits:
   - d2e7e51 Update Signal Model
 
@@ -52,7 +52,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 779
+- Total files: 777
 - Source files: 317
 - Test files: 124
 - Documentation files: 121

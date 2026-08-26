@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-26T14:45:54.040398+00:00
+- Snapshot generated at: 2026-08-26T14:28:32.626561+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: d2e7e51761b437a8b501c658346ed568d195428c
-- Dirty: yes (494 files)
+- Dirty: yes (490 files)
 - Recent commits:
   - d2e7e51 Update Signal Model
 

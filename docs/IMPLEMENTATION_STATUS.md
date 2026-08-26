@@ -62,6 +62,7 @@
 | **۵۶** | **Range horizon=1 روی 1D** | ✅ **کامل** | پیش‌بینی high/low فردا روی تایم‌فریم 1D؛ سیگنال 5M. گزارش: `PHASE56_REPORT.md` |
 | **۵۷** | **پایداری بکتست + ورود واقع‌بینانه** | ✅ **کامل (در کد؛ ثبت جدید)** | گسترش SL با اسپرد در `bracket.py`؛ عبور `spread`/`spread_pct`؛ entry با typical price `(O+H+L+C)/4`؛ EarlyStopping + ReduceLR برای هر دو مدل؛ resume همهٔ foldها؛ AdamW برای هر دو. |
 | **۵۸** | **معماری Signal** | ✅ **کامل (در کد؛ ثبت جدید)** | `window=300` (۲۵h)، `n_layers_per_block=5`, `n_blocks=2` → RF=249≈۸۳٪. |
+| **۵۹** | **هندسهٔ اعتبارسنجی** | ✅ **کامل (جدید)** | val پیش‌فرض ۲٪→**۱۰٪ استخر لیبل** + گارد اولین fold؛ `--val-size`/`--val-ratio`؛ چاپ صریح `val fold size`؛ ۴ تست جدید. گزارش: `PHASE59_REPORT.md` |
 | **۴۶** | **Epoch Checkpoints** | ✅ **کامل (جدید)** | ذخیره بعد از هر epoch، ETA بر مبنای epoch نه fold، timeout ۸ ساعته قابل تنظیم |
 | **۴۵** | **Threshold & Live Spread** | ✅ **کامل (جدید)** | `Signal threshold %` در فرم، `live_quote()` که اسپرد را از تیک متاتریدر می‌خواند، حذف اسپرد ۴ دلاری ضررده |
 | **۴۴** | **Training Pace** | ✅ **کامل (جدید)** | batch_size با حجم دیتا مقیاس می‌گیرد (۵٬۹۸۶→۷۴۸ قدم)، حداکثر ۳۰ ثانیه سکوت، ETA |

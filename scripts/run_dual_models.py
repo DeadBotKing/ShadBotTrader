@@ -91,6 +91,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
+    parser.add_argument(
+        "--val-size",
+        type=int,
+        default=0,
+        help=(
+            "validation samples per fold. 0 = auto: 10%% of the labelled "
+            "pool (was 2%% before Phase 59), clamped so the first fold "
+            "still fits."
+        ),
+    )
+    parser.add_argument(
+        "--val-ratio",
+        type=float,
+        default=0.0,
+        help=(
+            "validation size as a fraction of the labelled pool, e.g. "
+            "0.2 = 20%%. Ignored when --val-size > 0."
+        ),
+    )
     parser.add_argument("--learning-rate", type=float, default=1.5e-4)
     parser.add_argument(
         "--learning-rates",
@@ -154,7 +173,25 @@ def training_window_count(dataset, role) -> int:
     return max(len(dataset.series) - role.window_size + 1, 0)
 
 
-def signal_label_split_balance(dataset, role, max_folds: int):
+def effective_val_size(args: argparse.Namespace, pool_rows: int) -> int:
+    """Resolve --val-size / --val-ratio against the labelled pool (فاز ۵۹).
+
+    Returns 0 when neither option is set, meaning "trainer auto geometry"
+    (10% of the pool, clamped — see ``DualModelService.build_trainer``).
+    """
+    if getattr(args, "val_size", 0) and args.val_size > 0:
+        return int(args.val_size)
+    if getattr(args, "val_ratio", 0.0) and args.val_ratio > 0:
+        return max(4, int(pool_rows * float(args.val_ratio)))
+    return 0
+
+
+def signal_label_split_balance(
+    dataset,
+    role,
+    max_folds: int,
+    val_size_override: int = 0,
+):
     """Train/validation BUY/SELL label balance for the signal model.
 
     For the binary signal model each labelled sample is a first-passage
@@ -178,12 +215,14 @@ def signal_label_split_balance(dataset, role, max_folds: int):
     target_col = dataset.target_columns[0]
     labels = [int(round(dataset.series[idx][target_col])) for idx in sample_ends]
 
-    # Mirror DualModelService.build_trainer geometry (Phase 39/44) so the
-    # split matches the folds actually trained on.
-    val_size = max(4, min(2000, rows // 50))
+    # Mirror DualModelService.build_trainer geometry (Phase 39/44, فاز ۵۹)
+    # so the split matches the folds actually trained on.
+    val_size = val_size_override or max(4, min(2000, rows // 10))
     step = max(1, val_size)
     min_train_size = max(8, min(rows // 4, 20 * role.window_size))
     purge_gap = max(role.window_size - 1, 0)  # signal horizon is 0
+    # Same guard as build_trainer (فاز ۵۹): first fold must fit.
+    val_size = max(4, min(val_size, rows - min_train_size - purge_gap - 4))
 
     plan = expanding_split(
         total_length=rows,
@@ -448,11 +487,23 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 "learn to always answer the majority class."
             )
         # train/validation split of the BUY/SELL labels (signal model)
-        split = signal_label_split_balance(dataset, role, int(args.folds))
+        pool = training_window_count(dataset, role)
+        split = signal_label_split_balance(
+            dataset, role, int(args.folds), val_size_override=effective_val_size(args, pool)
+        )
         if split is not None:
             train_balance, val_balance = split
             print(f"  train labels   : {train_balance}")
             print(f"  val labels     : {val_balance}")
+
+    # فاز ۵۹: اندازهٔ ولیدیشن را صریح چاپ کن تا کمبودش پنهان نماند.
+    pool = training_window_count(dataset, role)
+    resolved = effective_val_size(args, pool) or max(4, min(2000, pool // 10))
+    share = (resolved / pool * 100.0) if pool else 0.0
+    print(
+        f"  val fold size  : {resolved} samples per fold "
+        f"({share:.1f}% of {pool} labelled windows)"
+    )
 
     try:
         import tensorflow  # noqa: F401
@@ -545,6 +596,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         learning_rate=learning_rate,
         initial_epoch=initial_epoch,
         resume_weights=resume_weights,
+        val_size=effective_val_size(args, training_window_count(dataset, role)),
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
