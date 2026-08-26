@@ -30,6 +30,7 @@ if sys.platform == "win32":
     except AttributeError:
         # Python < 3.7 — cannot reconfigure; best-effort replace
         import io
+
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
@@ -151,6 +152,64 @@ def training_window_count(dataset, role) -> int:
     # role, the horizon was consumed by attach_targets before this point;
     # subtracting it again under-counts the real generator by ``horizon``.
     return max(len(dataset.series) - role.window_size + 1, 0)
+
+
+def signal_label_split_balance(dataset, role, max_folds: int):
+    """Train/validation BUY/SELL label balance for the signal model.
+
+    For the binary signal model each labelled sample is a first-passage
+    window whose label lives in the target column at ``dataset.sample_ends``.
+    We rebuild the same expanding roll-forward plan the trainer will use
+    (identical geometry from ``DualModelService.build_trainer``) and report
+    the label counts of the LAST fold — the split that actually produces the
+    saved artifact — as separate ``(train_balance, val_balance)`` dicts.
+
+    Returns ``None`` for the range model (regression, no BUY/SELL labels).
+    """
+    sample_ends = getattr(dataset, "sample_ends", None)
+    if sample_ends is None or not dataset.target_columns:
+        return None
+
+    from collections import Counter
+
+    from ShadBotTrader.infrastructure.ai.roll_forward import expanding_split
+
+    rows = len(sample_ends)
+    target_col = dataset.target_columns[0]
+    labels = [int(round(dataset.series[idx][target_col])) for idx in sample_ends]
+
+    # Mirror DualModelService.build_trainer geometry (Phase 39/44) so the
+    # split matches the folds actually trained on.
+    val_size = max(4, min(2000, rows // 50))
+    step = max(1, val_size)
+    min_train_size = max(8, min(rows // 4, 20 * role.window_size))
+    purge_gap = max(role.window_size - 1, 0)  # signal horizon is 0
+
+    plan = expanding_split(
+        total_length=rows,
+        val_size=val_size,
+        step=step,
+        min_train_size=min_train_size,
+        purge_gap=purge_gap,
+        sample_end_indices=dataset.sample_ends,
+        label_end_indices=dataset.sample_label_ends,
+        window_size=role.window_size,
+    )
+    folds = list(plan.folds)
+    if max_folds and max_folds > 0:
+        folds = folds[-max_folds:]
+    if not folds:
+        return None
+    last = folds[-1]
+
+    def balance(slice_):
+        counts = Counter(slice_)
+        return {"sell": int(counts.get(0, 0)), "buy": int(counts.get(1, 0))}
+
+    return (
+        balance(labels[last.train_start : last.train_end]),
+        balance(labels[last.val_start : last.val_end]),
+    )
 
 
 def load_candles(storage_root: Path, symbol: str, timeframe: str):
@@ -388,6 +447,12 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 "  [!] One class barely appears. A model trained here will "
                 "learn to always answer the majority class."
             )
+        # train/validation split of the BUY/SELL labels (signal model)
+        split = signal_label_split_balance(dataset, role, int(args.folds))
+        if split is not None:
+            train_balance, val_balance = split
+            print(f"  train labels   : {train_balance}")
+            print(f"  val labels     : {val_balance}")
 
     try:
         import tensorflow  # noqa: F401
@@ -458,7 +523,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             f"{remaining_epochs} epoch(s) remaining"
         )
 
-    print(f"\n  training roll-forward ({remaining_epochs} epoch(s) remaining, {args.folds} fold(s)) ...")
+    print(
+        f"\n  training roll-forward ({remaining_epochs} epoch(s) remaining, "
+        f"{args.folds} fold(s)) ..."
+    )
     # Phase 46: checkpoint after every epoch. The operator lost 18
     # completed epochs to a 2-hour timeout because nothing was written
     # until train() returned.
