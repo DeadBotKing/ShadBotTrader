@@ -198,10 +198,10 @@ class TestTheProgressReporterIsActuallyUsed:
         reporter.on_train_end([0.29])
 
         output = stream.getvalue()
-        assert "epoch 1/2" in output
-        assert "acc 0.8800" in output
-        assert "val_acc 1.0000" in output
-        assert "%" in output  # the progress bar percentage
+        assert "epoch   1/2" in output
+        assert "acc=0.8800" in output
+        assert "val_acc=1.0000" in output
+        assert "OK fold" in output  # fold completion marker
         assert "eta" in output
 
 

@@ -55,8 +55,8 @@ def test_standard_catalog_has_exact_fail_closed_production_set():
     feature_set = standard_feature_set()
     report = audit_feature_set(feature_set, CalculatorRegistry())
 
-    assert len(report.rows) == 109
-    assert len(report.allowed) == 56
+    assert len(report.rows) == 227
+    assert len(report.allowed) == 174
     assert len(report.excluded) == 53
     assert "close_filter" in report.excluded
     assert "pca0" in report.excluded

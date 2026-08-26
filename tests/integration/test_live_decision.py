@@ -202,13 +202,16 @@ class TestRefusedTick:
         assert not result.executed
         assert ledger.position(SYM).signed_quantity == 0
 
-    def test_a_poor_reward_risk_does_not_trade(self):
+    def test_a_poor_reward_risk_is_deferred_to_the_bracket(self):
+        # فاز ۵۲: گیت reward/risk از Strategy/Live حذف شد چون entry_price در
+        # لحظهٔ تصمیم معلوم نیست؛ R/R توسط TradeBracket.from_model_levels با
+        # entry واقعی و reward_risk_multiplier اعمال می‌شود (تست واحد در
+        # test_bracket.py). پس در این مسیر، ستاپِ ضعیفِ R/R رد نمی‌شود.
         service, _, _ = build(range_stub=StubRange(high=0.002, low=-0.020))
 
         result = service.tick(now=NOW)
 
-        assert result.status == "no_trade"
-        assert "reward/risk" in result.reason
+        assert result.status == "traded"
 
     def test_an_unprimed_buffer_skips_with_an_explanation(self):
         service, _, _ = build(primed=0)

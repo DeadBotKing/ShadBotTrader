@@ -105,7 +105,7 @@ class TestTheEvaluationButton:
         result = service.evaluate("gold_range_1d", "TESTSYM", "1H")
 
         assert result.failed
-        assert "Build training dataset" in result.reason
+        assert "No candles stored" in result.reason
 
     def test_a_missing_model_is_reported_not_crashed(self, tmp_path):
         service = ModelEvaluationService(tmp_path, tmp_path / "logs")

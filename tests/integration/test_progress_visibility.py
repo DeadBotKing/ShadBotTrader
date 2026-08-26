@@ -73,8 +73,9 @@ class TestBatchChatterIsBounded:
         )
         text = stream.getvalue()
 
-        assert "loss 0.1234" in text
-        assert "mae 0.0456" in text
+        # فاز ۵۲: batch line فقط مهم‌ترین metric را نشان می‌دهد (mae بر loss اولویت دارد)
+        assert "batch 1/10" in text
+        assert "mae=0.0456" in text
 
     def test_no_carriage_returns_reach_the_log(self):
         r"""``\r`` only works on a terminal; a pipe keeps it as a character."""

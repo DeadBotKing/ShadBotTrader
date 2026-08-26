@@ -134,7 +134,9 @@ class TestTheOperatorCanSeeHowLongItWillTake:
 
         reporter.on_batch_end(FOLD, 0, 100, {"loss": 0.5})
         time.sleep(0.2)
-        reporter.on_batch_end(FOLD, 12, 100, {"loss": 0.4})
+        # فاز ۵۲: فقط batch های checkpoint (اول/وسط/آخر) چاپ می‌شوند؛
+        # batch=12 چاپ نمی‌شد، پس از وسط (batch=50) برای تست ETA استفاده می‌کنیم.
+        reporter.on_batch_end(FOLD, 50, 100, {"loss": 0.4})
 
         lines = [line for line in stream.getvalue().splitlines() if "batch" in line]
         assert "eta" not in lines[0], "no ETA is honest on the very first batch"

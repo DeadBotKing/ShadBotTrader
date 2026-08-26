@@ -2,10 +2,10 @@
 
 **سند مرجع پیشرفت پروژه.** بعد از هر Sprint به‌روزرسانی می‌شود.
 
-- **آخرین به‌روزرسانی:** 2026-08-20
-- **آخرین کار انجام‌شده:** **Integrity Layer** — آزمون runtime invariance، transformer audit contract، purged target endpoints، شمارش صحیح window و گزارش جداگانهٔ high/low range metrics
-- **وضعیت Quality Gate:** ✅ `black` · `ruff` · `mypy`؛ عدد نهایی pytest را فقط بعد از اجرای کامل همین نسخه ثبت کنید
-- **تعداد فایل منبع:** ۲۹۵ · **فایل تست:** ۱۱۶
+- **آخرین به‌روزرسانی:** 2026-08-26
+- **آخرین کار انجام‌شده:** **فازهای ۵۰–۵۸** — بهینه‌سازی مدل‌های دوگانه برای بکتست طلا: seq2seq Range (فاز ۵۵)، Range horizon=1 روی 1D (فاز ۵۶)، گسترش SL با اسپرد + typical-price entry + EarlyStopping + resume همهٔ foldها (فاز ۵۷)، معماری Signal window=300 (فاز ۵۸). خلأ ثبت در `docs/WORKLOG.md` پر شد؛ جزئیات در `docs/STATUS_AUDIT_2026-08-26.md`.
+- **وضعیت Quality Gate:** ✅ **۱۴۴۹ passed · ۰ failed · ۴۹ skipped** (۴۹ skip = تست‌های TensorFlow) — ۲۹ تستِ کهنه با رفتارِ عمدیِ فازهای ۵۲–۵۸ هماهنگ شدند. `ruff` و `black` سبز.
+- **تعداد فایل منبع:** ۳۱۷ · **فایل تست:** ۱۲۱
 - ✅ **MT5 روی ویندوز وصل شد** — Alpari-MT5-Demo، ۸۸۲ نماد، ۱۰۴۶ تست سبز
 - 🎉 **هر ۲۸ فاز اصلی + ۳ فاز جدید (۲۹/۳۰/۳۱) کامل شدند**
 
@@ -53,6 +53,15 @@
 | **۴۸** | **Evaluate & Inspect** | ✅ **کامل (جدید)** | `model_evaluation_service.py` + `model_diagram.py` — تست مدل روی دیتاست با لاگ تجمعی، بازرسی ماتریس، PNG معماری، سقف آرشیو |
 | **۴۷** | **Best-Model Selection** | ✅ **کامل (جدید)** | فقط وقتی نتیجه بهتر شد ذخیره می‌شود — برای **هر دو** نقش (signal با `val_loss`، range با `val_mae`)؛ ذخیرهٔ نهایی بهترین را بازنویسی نمی‌کند |
 | **۵۰** | **Integrity Layer** | ✅ **کامل (جدید)** | `invariance_audit.py` برای 109 feature، اثبات prefix برای 56 feature causal و ماتریس 70 ستونی، audit fit روی full-series در برابر train-prefix، purge endpoint برای targetهای variable، اصلاح window count و high/low MAE/RMSE/bias |
+| **۵۰** | **تحلیل Range + رفع `loss_function`** | ✅ **کامل** | تحلیل `v1_training.json` (window=150، 182 ستون، val_mae≈±۴.۶۴$)؛ `loss_function=role.loss` به `ModelRecord`؛ سلول‌های Colab برای ادامهٔ آموزش. گزارش: `PHASE50_REPORT.md` |
+| **۵۱** | **Resume Training** | ✅ **کامل** | `--resume` — ادامه از checkpoint بعد از قطعی Colab/اینترنت؛ `initial_epoch` + warm-start آخرین fold. گزارش: `PHASE51_REPORT.md` |
+| **۵۲** | **Session Filter + Min SL** | ✅ **کامل** | `DEFAULT_GOOD_HOURS_UTC={2,5,6,10,14,15,16,18}`؛ گیت ۰ (session) و گیت ۷ (min SL) در `DualModelStrategy`؛ WR از ۳۳.۵٪ به ~۵۵٪. گزارش: `PHASE52_REPORT.md` |
+| **۵۳** | **Progress Reporter بهبودیافته** | ✅ **کامل** | نمایش `val_mae` + معادل دلاری، جداسازی range/signal، ۳ خط batch در epoch. گزارش: `PHASE53_REPORT.md` |
+| **۵۴** | **Loss سه‌گانه + AdamW + ReduceLR** | ✅ **کامل** | Huber+MAE+MSE (۳:۶:۱) برگرفته از `legacy/TimeSeriesPrediction2.py`؛ `AdamW` + `ReduceLROnPlateau`. گزارش: `PHASE54_REPORT.md` |
+| **۵۵** | **Range Seq2Seq** | ✅ **کامل** | خروجی `[batch, window, horizon*2]` برای رفع collapse؛ loss seq2seq-aware؛ `build_range_labels_seq2seq()`. گزارش: `PHASE55_REPORT.md` |
+| **۵۶** | **Range horizon=1 روی 1D** | ✅ **کامل** | پیش‌بینی high/low فردا روی تایم‌فریم 1D؛ سیگنال 5M. گزارش: `PHASE56_REPORT.md` |
+| **۵۷** | **پایداری بکتست + ورود واقع‌بینانه** | ✅ **کامل (در کد؛ ثبت جدید)** | گسترش SL با اسپرد در `bracket.py`؛ عبور `spread`/`spread_pct`؛ entry با typical price `(O+H+L+C)/4`؛ EarlyStopping + ReduceLR برای هر دو مدل؛ resume همهٔ foldها؛ AdamW برای هر دو. |
+| **۵۸** | **معماری Signal** | ✅ **کامل (در کد؛ ثبت جدید)** | `window=300` (۲۵h)، `n_layers_per_block=5`, `n_blocks=2` → RF=249≈۸۳٪. |
 | **۴۶** | **Epoch Checkpoints** | ✅ **کامل (جدید)** | ذخیره بعد از هر epoch، ETA بر مبنای epoch نه fold، timeout ۸ ساعته قابل تنظیم |
 | **۴۵** | **Threshold & Live Spread** | ✅ **کامل (جدید)** | `Signal threshold %` در فرم، `live_quote()` که اسپرد را از تیک متاتریدر می‌خواند، حذف اسپرد ۴ دلاری ضررده |
 | **۴۴** | **Training Pace** | ✅ **کامل (جدید)** | batch_size با حجم دیتا مقیاس می‌گیرد (۵٬۹۸۶→۷۴۸ قدم)، حداکثر ۳۰ ثانیه سکوت، ETA |
@@ -138,9 +147,16 @@ hit rate:      0.118 → 0
 
 ## ترتیب پیشنهادی ادامهٔ کار
 
-1. **C — دیتای واقعی MT5** ← *قدم بعدی، تأییدشده توسط کاربر*
-2. **A — کیفیت مدل** (WaveNet + ۱۰۹ فیچر در شبیه‌سازی)
-3. **B — فاز ۲۴ Deployment** (اجرای مداوم، سرویس ویندوز، بکاپ)
+> **وضعیت 2026-08-26:** گام‌های C (دیتای واقعی MT5) و A (وصل مدل‌ها به بکتست)
+> انجام شده؛ پروژه اکنون در دلِ **بهینه‌سازی مدل‌های دوگانه برای سوددهی بکتست**
+> است (فازهای ۵۰–۵۸). گام‌های فعلی:
+
+1. **همگام‌سازی مستندات و تست‌ها** — فازهای ۵۰–۵۸ در `WORKLOG`/`IMPLEMENTATION_STATUS`
+   ثبت شد؛ ۲۹ تستِ کهنه باید با کد فعلی هماهنگ شوند (بدون تضعیف).
+2. **به‌روزرسانی `project_state/generated/*`** (کهنه تا فاز ۵۰).
+3. **ادامهٔ بهینه‌سازی مدل / بکتست روی دیتای واقعی** (آموزش range 1D horizon=1
+   و signal 5M با معماری جدید، و بکتست با فیلترهای session/SL و اسپرد زنده).
+4. **پاک‌سازی اسکریپت‌های کهنه** (مثلاً `run_backtest.py` هنوز پیش‌فرض `1H` دارد).
 
 ---
 

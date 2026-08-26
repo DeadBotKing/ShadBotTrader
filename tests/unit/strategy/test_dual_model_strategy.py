@@ -92,10 +92,15 @@ class TestRejectedTrades:
         assert result.signal_type is SignalType.HOLD
         assert "50.0%" in result.reason and "60.0%" in result.reason
 
-    def test_a_poor_reward_to_risk_is_rejected(self, strategy):
+    def test_a_poor_reward_to_risk_is_deferred_to_the_bracket(self, strategy):
+        # فاز ۵۲: گیت reward/risk از Strategy حذف شد چون entry_price در لحظهٔ
+        # تصمیم معلوم نیست (ورود روی بازشدن کندل بعدی است). R/R اکنون توسط
+        # TradeBracket.from_model_levels با entry_price واقعی و
+        # reward_risk_multiplier اعمال می‌شود. اینجا فقط تأیید می‌کنیم که
+        # استراتژی تصمیم را عبور می‌دهد و نسبت را گزارش می‌کند.
         result = strategy.evaluate(context(signal(0.05, 0.95), price_range(high=0.002, low=-0.020)))
-        assert result.signal_type is SignalType.HOLD
-        assert "reward/risk" in result.reason
+        assert result.signal_type is SignalType.BUY
+        assert result.context["reward_risk"] == pytest.approx(0.1)
 
     def test_a_move_too_small_to_pay_costs_is_rejected(self, strategy):
         result = strategy.evaluate(

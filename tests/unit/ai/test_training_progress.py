@@ -101,18 +101,17 @@ def test_console_reporter_reports_plan_epochs_and_progress():
     assert "folds          : 2" in output
     assert "total epochs   : 4" in output
     assert "tensorflow 2.21.0" in output
-    # per-epoch metrics are visible
-    assert "epoch 1/2" in output
-    assert "epoch 2/2" in output
-    assert "loss 0.7000" in output
-    assert "val_loss 0.6900" in output
-    assert "lr 1.50e-04" in output
-    # the fold progress bar reaches 100%
-    assert "fold 1/2" in output
-    assert "100.0%" in output
+    # per-epoch metrics are visible (فاز ۵۳: قالب `key=value` بدون lr در epoch)
+    assert "epoch   1/2" in output
+    assert "epoch   2/2" in output
+    assert "loss=0.7000" in output
+    assert "val_loss=0.6900" in output
+    # the fold completion is reported
+    assert "fold   1/2" in output
+    assert "OK fold 2/2 done" in output
     # the summary is printed
-    assert "final fold val_loss" in output
-    assert "total training time" in output
+    assert "val_loss last:" in output
+    assert "total time" in output
 
 
 def test_console_reporter_can_hide_epoch_lines():
@@ -128,8 +127,8 @@ def test_console_reporter_can_hide_epoch_lines():
 
     output = stream.getvalue()
     assert "epoch 1/2" not in output
-    # the fold-level bar is still shown
-    assert "100.0%" in output
+    # the fold-level completion is still shown
+    assert "OK fold" in output
 
 
 def test_console_reporter_handles_missing_metrics():

@@ -72,9 +72,9 @@ class TestModelRoles:
     def test_the_requested_defaults_are_what_the_user_asked_for(self):
         roles = default_roles()
 
-        assert roles["range"].timeframe == "1H"
+        assert roles["range"].timeframe == "1D"
         assert roles["signal"].timeframe == "5M"
-        assert roles["range"].horizon == 5
+        assert roles["range"].horizon == 1
         assert roles["signal"].horizon == 0
         assert roles["signal"].target.threshold == pytest.approx(0.0008)
 
@@ -101,7 +101,7 @@ class TestDatasetPreparation:
         dataset = service.prepare(wave(), SYMBOL, HOURLY, range_model_role(window_size=16))
 
         assert len(dataset.target_columns) == 2
-        assert dataset.column_names[-2:] == ["future_high_offset", "future_low_offset"]
+        assert dataset.column_names[-2:] == ["future_high_offset_1", "future_low_offset_1"]
 
     def test_the_signal_dataset_carries_one_label_and_its_distribution(self, service):
         dataset = service.prepare(

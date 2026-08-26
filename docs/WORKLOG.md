@@ -1,5 +1,73 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-08-26 — رفع ۲۹ تستِ کهنه → گیت تست سبز (1449 passed, 0 failed)
+
+**مشکل:** کد در فازهای ۵۲–۵۸ جلو رفته بود ولی تست‌ها عقب مانده بودند؛ ۲۹ تست شکست
+می‌خوردند (همه «تستِ کهنه»، نه باگِ واقعی). در ممیزیِ `STATUS_AUDIT_2026-08-26` ثبت شد.
+
+**روش:** تست‌ها را با رفتارِ **عمدیِ جدیدِ** کد هماهنگ کردم (نه تضعیف، نه حذف ضمانت).
+
+### دسته‌بندی و اصلاحات
+| علت شکست | فایل(ها) | اصلاح |
+|---|---|---|
+| فیچرها ۱۰۹ → ۲۲۷ | `test_feature_cache`, `test_feature_pipeline`, `test_feature_visibility`, `test_stored_matrix_identity`, `test_training_dataset`, `test_invariance_audit`, `test_commands`, `test_evaluate_and_inspect` | اعداد 109→227، width 123→241، causal 70→177/188 |
+| Range 1H → 1D | `test_dual_models` | timeframe 1H→1D، horizon 5→1، نام ستون seq2seq `_1` |
+| گیت R/R به Bracket منتقل شد | `test_dual_model_strategy`, `test_live_decision` | تست را با طراحی جدید هماهنگ کردم + **تست واحد جدید** در `tests/unit/simulation/test_bracket.py` که ردِ R/R ضعیف در `TradeBracket` را تضمین می‌کند |
+| فرمت progress تغییر کرد (فاز ۵۲/۵۳) | `test_training_progress`, `test_progress_visibility`, `test_training_visibility`, `test_training_pace` | هماهنگ با خروجی جدید (`key=value`، `epoch   1/2`، ۳ خط batch، ETA در checkpoint) |
+
+### نتیجه
+```
+قبل:  1415 passed · 29 failed · 49 skipped
+بعد:  1449 passed ·  0 failed · 49 skipped   (49 skip = تست‌های TensorFlow)
+ruff:  All checks passed!   |   black: clean
+```
+
+### فایل جدید
+- `tests/unit/simulation/test_bracket.py` — تست‌های براکت TP/SL (ر/ر، اسپرد، same-bar policy).
+
+---
+
+## 2026-08-26 — همگام‌سازی مستندات: ثبت فازهای ۵۰–۵۸ (که قبلاً فقط در گزارش‌ها/کد بودند)
+
+**خلأ:** کد در فاز ۵۸ بود ولی `WORKLOG` فقط تا فاز ۴۹ داشت؛ فازهای ۵۰–۵۶ فقط
+در `docs/Report/PHASE50..56` بودند و فازهای ۵۷–۵۸ فقط در کامنت‌های کد. این
+ورودی آن‌ها را یکجا ثبت می‌کند تا وضعیت از روی «کد + گیت + مستندات» قابل بازیابی
+باشد (مطابق `AGENTOPERATINGRULE`). جزئیات کامل در `docs/STATUS_AUDIT_2026-08-26.md`.
+
+### فازهای ۵۰–۵۶ (تاریخ 2026-08-25) — خلاصه
+| فاز | کار |
+|---|---|
+| ۵۰ | تحلیل range v1 (val_mae→دلار) + رفع باگ `loss_function` در `save_model`؛ سلول‌های Colab برای بررسی/ادامهٔ آموزش |
+| ۵۱ | `--resume` — ادامهٔ آموزش از checkpoint بعد از قطعی Colab/اینترنت (warm-start آخرین fold) |
+| ۵۲ | فیلتر Session (ساعت‌های خوب UTC) + حداقل فاصلهٔ SL — WR از ۳۳.۵٪ به ~۵۵٪ |
+| ۵۳ | بهبود Progress Reporter (نمایش val_mae و معادل دلاری، جداسازی range/signal) |
+| ۵۴ | Loss سه‌گانه Huber+MAE+MSE + AdamW + ReduceLROnPlateau (برگرفته از legacy) |
+| ۵۵ | **Range Model Seq2Seq** `[batch, window, horizon*2]` برای رفع collapse |
+| ۵۶ | **Range: horizon=1 روی 1D** (پیش‌بینی high/low فردا) + سیگنال 5M |
+
+گزارش‌ها: `docs/Report/PHASE50..56_REPORT.md`.
+
+### فاز ۵۷ — پایداری بکتست + ورود واقع‌بینانه (ثبت‌شده اینجا برای اولین بار)
+- **گسترش SL به‌اندازهٔ اسپرد** در `bracket.py` (`spread` در `from_model_levels`) تا اسپرد باعث توقف زودهنگام ضرر نشود.
+- عبور `spread`/`spread_pct` در `dual_model_prediction_source` و `dual_model_backtest_service`.
+- **ورود با typical price** `(O+H+L+C)/4` به‌جای open تنها در `backtest_engine.py`.
+- **EarlyStopping** + **ReduceLROnPlateau** برای هر دو مدل.
+- **Resume از همهٔ foldها** (همه warm-start) در `wavenet_trainer.py`.
+- **AdamW برای هر دو regression و classification** (weight_decay متفاوت).
+
+### فاز ۵۸ — معماری Signal (ثبت‌شده اینجا برای اولین بار)
+- مدل سیگنال: `window=300` (۲۵ ساعت)، `n_layers_per_block=5`, `n_blocks=2` → RF=249 ≈ ۸۳٪.
+
+### یافتهٔ مهم ممیزی
+- کد ۳۱۶ ماژول سالم import می‌شود؛ **۲۹ تست شکسته‌اند ولی همه تستِ کهنه‌اند** (با
+  تغییرات عمدیِ فازهای ۵۲–۵۸ همگام نشده‌اند)، نه باگ واقعی.
+- **کاتالوگ فیچر از ۱۰۹ به ۲۲۷** گسترش یافته (مدیریت با `model_scope`؛ range≈182، signal≈177).
+- GUI (`handlers.py`) با فازهای جدید هماهنگ است؛ فقط `scripts/run_backtest.py` هنوز
+  پیش‌فرض `1H`/`gold_range_1h` دارد (کهنه).
+- `project_state/generated/*` کهنه است (تا فاز ۵۰).
+
+---
+
 ## 2026-08-20 — جست‌وجوی خودکار Learning Rate در داشبورد
 
 دکمهٔ `Find best learning rate` اضافه شد. برای Signal معیار انتخاب `val_loss` و برای Range معیار `val_mae` است. چند candidate روی pilot walk-forward اجرا می‌شوند، بهترین مقدار انتخاب می‌شود و سپس مدل نهایی با همان Learning Rate آموزش و ذخیره می‌شود. هیچ script جدیدی اضافه نشده و از `run_dual_models.py` موجود استفاده می‌شود.

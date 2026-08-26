@@ -251,7 +251,7 @@ class TestRecordReplayCommand:
     def test_it_is_offered_with_a_form(self):
         descriptor = descriptor_for(CommandKind.RECORD_REPLAY)
         names = {field.name for field in descriptor.fields}
-        assert {"symbol", "timeframe", "capital", "spread"} <= names
+        assert {"symbol", "timeframe", "capital", "spread_mode"} <= names
 
     def test_it_refuses_politely_when_there_are_no_candles(self, tmp_path):
         from ShadBotTrader.presentation.commands.handlers import CommandHandlers
@@ -324,7 +324,7 @@ class TestComputeFeaturesCommand:
         # counts moved into the detail lines because one run may now
         # cover several timeframes.
         assert "5M" in result.message
-        assert "109" in "\n".join(result.lines)
+        assert "227" in "\n".join(result.lines)
         assert any("feature set" in line for line in result.lines)
 
     def test_the_definitions_reach_the_database(self, tmp_path):
@@ -342,7 +342,7 @@ class TestComputeFeaturesCommand:
         database = Database(database_path)
         stored = database.row_count("feature_definition")
         database.close()
-        assert stored == 109
+        assert stored == 227
 
     def test_the_service_contract_the_handler_relies_on_exists(self):
         """Guards the exact mismatch that caused the bug."""
