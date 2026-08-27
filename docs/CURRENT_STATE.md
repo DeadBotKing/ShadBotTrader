@@ -53,6 +53,16 @@ python scripts/run_dual_models.py --with-features \
   --learning-rate 0.001
 ```
 
+> **فاز ۵۹ (2026-08-26):** اندازهٔ اعتبارسنجی دیگر ۲٪ استخر لیبل نیست —
+> پیش‌فرض **۱۰٪** شد (+ گارد اولین fold). کنترل دستی: `--val-size N` یا
+> `--val-ratio 0.2`. سربرگ لاگ حالا `val fold size` را صریح چاپ می‌کند.
+> جزئیات: `Report/PHASE59_REPORT.md`
+>
+> **فاز ۶۰ (2026-08-26):** ReduceLROnPlateau + EarlyStopping حالا واقعاً به
+> مدل سیگنال هم وصل شدند (باگ سیم‌کشی `loss=None`) → اجرای signal حدود نصف
+> زمان قبل. حکم QUALITY با baseline واقعی فولد ولید. جزئیات:
+> `Report/PHASE60_REPORT.md`
+
 ## تنظیمات بکتست
 
 ```

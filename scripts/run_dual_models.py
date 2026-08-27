@@ -91,6 +91,41 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
+    parser.add_argument(
+        "--n-layers",
+        type=int,
+        default=0,
+        help=(
+            "WaveNet dilated layers per block (0 = role default: signal 5, "
+            "range 4). Keep RF below the window — e.g. --window 150 with "
+            "--n-layers 4 --n-blocks 2 gives RF=121 (81%%)."
+        ),
+    )
+    parser.add_argument(
+        "--n-blocks",
+        type=int,
+        default=0,
+        help="WaveNet blocks (0 = role default: 2 for both roles).",
+    )
+    parser.add_argument(
+        "--val-size",
+        type=int,
+        default=0,
+        help=(
+            "validation samples per fold. 0 = auto: 10%% of the labelled "
+            "pool (was 2%% before Phase 59), clamped so the first fold "
+            "still fits."
+        ),
+    )
+    parser.add_argument(
+        "--val-ratio",
+        type=float,
+        default=0.0,
+        help=(
+            "validation size as a fraction of the labelled pool, e.g. "
+            "0.2 = 20%%. Ignored when --val-size > 0."
+        ),
+    )
     parser.add_argument("--learning-rate", type=float, default=1.5e-4)
     parser.add_argument(
         "--learning-rates",
@@ -154,7 +189,25 @@ def training_window_count(dataset, role) -> int:
     return max(len(dataset.series) - role.window_size + 1, 0)
 
 
-def signal_label_split_balance(dataset, role, max_folds: int):
+def effective_val_size(args: argparse.Namespace, pool_rows: int) -> int:
+    """Resolve --val-size / --val-ratio against the labelled pool (فاز ۵۹).
+
+    Returns 0 when neither option is set, meaning "trainer auto geometry"
+    (10% of the pool, clamped — see ``DualModelService.build_trainer``).
+    """
+    if getattr(args, "val_size", 0) and args.val_size > 0:
+        return int(args.val_size)
+    if getattr(args, "val_ratio", 0.0) and args.val_ratio > 0:
+        return max(4, int(pool_rows * float(args.val_ratio)))
+    return 0
+
+
+def signal_label_split_balance(
+    dataset,
+    role,
+    max_folds: int,
+    val_size_override: int = 0,
+):
     """Train/validation BUY/SELL label balance for the signal model.
 
     For the binary signal model each labelled sample is a first-passage
@@ -178,12 +231,14 @@ def signal_label_split_balance(dataset, role, max_folds: int):
     target_col = dataset.target_columns[0]
     labels = [int(round(dataset.series[idx][target_col])) for idx in sample_ends]
 
-    # Mirror DualModelService.build_trainer geometry (Phase 39/44) so the
-    # split matches the folds actually trained on.
-    val_size = max(4, min(2000, rows // 50))
+    # Mirror DualModelService.build_trainer geometry (Phase 39/44, فاز ۵۹)
+    # so the split matches the folds actually trained on.
+    val_size = val_size_override or max(4, min(2000, rows // 10))
     step = max(1, val_size)
     min_train_size = max(8, min(rows // 4, 20 * role.window_size))
     purge_gap = max(role.window_size - 1, 0)  # signal horizon is 0
+    # Same guard as build_trainer (فاز ۵۹): first fold must fit.
+    val_size = max(4, min(val_size, rows - min_train_size - purge_gap - 4))
 
     plan = expanding_split(
         total_length=rows,
@@ -408,6 +463,22 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     print(f"  learning rate: {learning_rate:.2e}")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
+    # فاز ۶۱: معماری و پوشش RF را صریح چاپ کن — RF > window یعنی
+    # لایه‌های اضافه فقط پارامتر هدررفته‌اند.
+    from ShadBotTrader.infrastructure.ai.model_roles import receptive_field
+
+    _rf = receptive_field(role.n_layers_per_block, role.n_blocks, role.kernel_size)
+    _coverage = _rf / role.window_size if role.window_size else 0.0
+    print(
+        f"  architecture : window={role.window_size} · "
+        f"{role.n_layers_per_block} layers × {role.n_blocks} blocks · "
+        f"RF={_rf} ({_coverage:.0%} of window)"
+    )
+    if _rf > role.window_size:
+        print(
+            f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
+            "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
+        )
     if role.name == "signal":
         # State the binary labelling rule outright.
         print(
@@ -440,6 +511,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     )
     if summary["skipped_features"]:
         print(f"  skipped feats  : {summary['skipped_features']}")
+    val_fold_baseline: float | None = None  # فاز ۶۰: baseline فولد آخرِ ولید
     if dataset.label_distribution:
         print(f"  label balance  : {dataset.label_distribution}")
         if dataset.degenerate:
@@ -448,11 +520,26 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 "learn to always answer the majority class."
             )
         # train/validation split of the BUY/SELL labels (signal model)
-        split = signal_label_split_balance(dataset, role, int(args.folds))
+        pool = training_window_count(dataset, role)
+        split = signal_label_split_balance(
+            dataset, role, int(args.folds), val_size_override=effective_val_size(args, pool)
+        )
         if split is not None:
             train_balance, val_balance = split
             print(f"  train labels   : {train_balance}")
             print(f"  val labels     : {val_balance}")
+            # فاز ۶۰: برای حکمِ QUALITY — baseline واقعی فولد آخرِ ولید.
+            _val_total = sum(val_balance.values())
+            val_fold_baseline = max(val_balance.values()) / _val_total if _val_total else None
+
+    # فاز ۵۹: اندازهٔ ولیدیشن را صریح چاپ کن تا کمبودش پنهان نماند.
+    pool = training_window_count(dataset, role)
+    resolved = effective_val_size(args, pool) or max(4, min(2000, pool // 10))
+    share = (resolved / pool * 100.0) if pool else 0.0
+    print(
+        f"  val fold size  : {resolved} samples per fold "
+        f"({share:.1f}% of {pool} labelled windows)"
+    )
 
     try:
         import tensorflow  # noqa: F401
@@ -545,10 +632,16 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         learning_rate=learning_rate,
         initial_epoch=initial_epoch,
         resume_weights=resume_weights,
+        val_size=effective_val_size(args, training_window_count(dataset, role)),
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
-    print_quality(outcome, role, reference_price=float(candles[-1].close.amount))
+    print_quality(
+        outcome,
+        role,
+        reference_price=float(candles[-1].close.amount),
+        val_baseline=val_fold_baseline,
+    )
     save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
     # ---- one live prediction so the output is concrete -----------------
@@ -853,7 +946,12 @@ def save_model(
     print(f"    record  : {path}")
 
 
-def print_quality(outcome: dict, role, reference_price: float | None = None) -> None:
+def print_quality(
+    outcome: dict,
+    role,
+    reference_price: float | None = None,
+    val_baseline: float | None = None,
+) -> None:
     """Report how good the model actually is, not just that it ran.
 
     Phase 36: the run printed fold losses and nothing else. A loss is
@@ -879,13 +977,26 @@ def print_quality(outcome: dict, role, reference_price: float | None = None) -> 
         distribution = outcome.get("dataset", {}).get("label_distribution") or {}
         total = sum(distribution.values()) if distribution else 0
         if accuracy is not None and total:
-            baseline = max(distribution.values()) / total
-            verdict = "BETTER than" if accuracy > baseline else "NO BETTER than"
+            # فاز ۶۰: baseline باید از توزیع لیبلِ **ولیدیشنِ فولد آخر** باشد،
+            # نه کل استخر. در اجرای 2026-08-26 استخر 50/50 بود ولی فولد آخر
+            # 65.2% sell — یعنی همیشه-sell روی همان ولید 65.2% می‌گرفت و
+            # مقایسه با 50.3% حکمِ گمراه‌کننده می‌داد.
+            pool_baseline = max(distribution.values()) / total
+            if val_baseline is None:
+                val_baseline = pool_baseline
+            verdict = "BETTER than" if accuracy > val_baseline else "NO BETTER than"
             print(
-                f"\n    val_accuracy {accuracy:.1%} vs majority-class baseline " f"{baseline:.1%}"
+                f"\n    val_accuracy {accuracy:.1%} vs val-fold majority baseline "
+                f"{val_baseline:.1%}"
             )
+            if abs(val_baseline - pool_baseline) > 0.02:
+                print(
+                    f"    (pool majority baseline is {pool_baseline:.1%}; the val "
+                    "fold is regime-shifted — always-predict-majority scores "
+                    f"{val_baseline:.1%} there)"
+                )
             print(f"    -> the model is {verdict} always predicting the commonest class.")
-            if accuracy <= baseline:
+            if accuracy <= val_baseline:
                 print(
                     "    With one epoch and a few folds this is expected; it is "
                     "reported rather than hidden."
@@ -977,6 +1088,8 @@ def main(argv: list[str] | None = None) -> int:
                     timeframe=timeframe,
                     horizon=args.horizon,
                     window_size=args.window,
+                    n_layers_per_block=args.n_layers or None,
+                    n_blocks=args.n_blocks or None,
                 ),
                 timeframe,
             )
@@ -988,6 +1101,8 @@ def main(argv: list[str] | None = None) -> int:
                 horizon=0,
                 threshold=args.threshold,
                 window_size=args.window,
+                n_layers_per_block=args.n_layers or None,
+                n_blocks=args.n_blocks or None,
             ),
             args.signal_timeframe,
         )

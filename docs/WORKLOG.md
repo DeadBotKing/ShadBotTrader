@@ -1903,3 +1903,148 @@ python scripts\run_real_data.py --symbol XAUUSD
 اگر فهرست خالی بود: در MT5 → Market Watch → راست‌کلیک → **Show All**.
 
 **بعد از آن:** A (وصل‌کردن WaveNet به بک‌تست) سپس B (فاز ۲۴ Deployment).
+
+---
+
+## 2026-08-26 — فاز ۵۹: اصلاح هندسهٔ اعتبارسنجی (val ۲٪ → ۱۰٪ استخر + گارد)
+
+**گزارش کاربر:** «اشتباهی توی ساخت دیتای ولید داری» — با train-ratio 80%
+لیبل ولید ۱۴۰ تا می‌شد؛ با 20% فقط ۳۴ تا. علت: `val_size = max(4, min(2000,
+rows // 50))` روی **استخر لیبل‌دار** حساب می‌شد (۲٪) و استخر هم تابع
+train-ratio است → val همیشه کوچک و وابسته.
+
+### رفع
+
+- `build_trainer`: پیش‌فرض `rows // 10` (۱۰٪ استخر، کف ۴، سقف 2000) + گارد
+  `max(4, min(val, rows - min_train - purge - 4))` که اولین fold را روی
+  سری‌های کوچک زنده نگه می‌دارد.
+- `DualModelService.train()`: پارامتر جدید `val_size` (0 = auto) به
+  `build_trainer` پاس می‌شود.
+- `run_dual_models.py`: آپشن‌های `--val-size` / `--val-ratio` + خط چاپ
+  `val fold size : N samples per fold (X% of M labelled windows)`؛ تابع
+  آینهٔ label-balance همان هندسه را اعمال می‌کند.
+- اثر روی اجراهای واقعی: 140→~700 (80%) · 123→615 (70%) · 34→~174 (20%).
+
+### چرا
+
+گیت انتخاب بهترین مدل (فاز ۴۷) با val=34-123 عملاً روی نویز تصمیم
+می‌گرفت؛ با ~615 نمونه، val_acc به ±1.9% معنادار می‌شود.
+
+### پیامد آگاهانه
+
+چند صد نمونهٔ کمتر برای train (Expanding): ~۱۶٪ در اجرای ۷۰٪ — برای
+اعتبارِ انتخابِ بهترین، قابل قبول. `--val-size` برای کنترل دستی.
+
+### تست
+
+`tests/unit/ai/test_validation_geometry.py` — ۴ تست جدید (۱۰٪ پیش‌فرض،
+عبور val صریح، گارد سری کوچک، امضای train).
+
+```
+ruff ✅ black ✅ mypy (فایل تغییر یافته ✅؛ ۳ خطای TF-محیطی در wavenet_trainer به‌خاطر نبود TF در سندباکس)
+pytest 1456 passed, 49 skipped (قبلاً 1449 + ۴ تست جدید)
+```
+
+**گزارش:** `Report/PHASE59_REPORT.md`
+
+---
+
+## 2026-08-26 — فاز ۶۰: اتصال ReduceLR + EarlyStopping به مدل سیگنال (باگ سیم‌کشی) + baseline صحیح
+
+**کشف از اجرای ۱۰.۵ ساعتهٔ signal v1 کاربر:** بهترین epoch همهٔ فولدها
+10/13/16/19 بود ولی هر ۴ فولد تا epoch 60 کامل اجرا شد → ~۷ ساعت epochهای
+نامنتخاب‌پذیر. علت: `build_trainer` برای classification `loss=None` می‌فرستاد
+و گیتِ `if self._loss in (…)` در trainer هرگز match نمی‌شد → ReduceLROnPlateau
+(فاز ۵۴) و EarlyStopping (فاز ۵۷) فقط به range وصل بودند، هرچند گزارش‌ها
+«هر دو مدل» را ادعا می‌کردند.
+
+### رفع
+
+- `dual_model_service.build_trainer`: `loss=role.loss, metric=role.metric`
+  همیشه (کامپایل مدل بدون تغییر — شاخهٔ classification همان loss را
+  hard-code دارد؛ فقط گیت callbacks حالا match می‌شود).
+- `run_dual_models.print_quality`: پارامتر `val_baseline` — حکم با
+  baselineِ **فولد آخرِ ولید** (در اجرای مذکور 65.2% sell در برابر 50.3%
+  استخر!) + اعلام صریح رژیم‌جابه‌جایی فولد.
+
+### تست
+
+۲ تست جدید در `test_validation_geometry.py`: سیم‌کشی loss سیگنال +
+حفظ huber برای range.
+
+```
+ruff ✅ black ✅
+pytest 1458 passed, 49 skipped   (قبلاً 1456)
+```
+
+**اثر مورد انتظار:** با ES patience=12، اجرای signal حدود نصف زمان قبلی؛
+ReduceLR احتمالاً کالیبراسیون را بهتر می‌کند.
+
+**گزارش‌ها:** `Report/PHASE60_REPORT.md` · `Report/SIGNAL_V1_FULLRUN_REVIEW_2026-08-26.md`
+
+---
+
+## 2026-08-27 — فاز ۶۱: پیچ‌های معماری (--n-layers/--n-blocks) + چاپ RF
+
+**پرسش کاربر** «window=150 اوکیه؟» لو داد که `--window` فقط اندازهٔ پنجره
+را عوض می‌کند و RF پیش‌فرض فاز ۵۸ (249) بزرگ‌تر از پنجره می‌شد (166%).
+
+### رفع
+
+- factoryهای `signal_model_role`/`range_model_role`: پارامترهای اختیاری
+  `n_layers_per_block`/`n_blocks` (None = پیش‌فرض).
+- تابع `receptive_field()` — فرمول RF با تست (249/121/125/57).
+- CLI: `--n-layers` / `--n-blocks` + خط چاپ `architecture : window=… · L×B · RF=… (X% of window)`
+  + هشدار صریح وقتی RF > window.
+
+### تست
+
+۶ تست جدید (`test_model_roles_knobs.py`). پیش‌فرض‌های فاز ۵۸ قفل شدند.
+
+```
+ruff ✅ black ✅
+pytest 1464 passed, 49 skipped   (قبلاً 1458)
+```
+
+**گزارش:** `Report/PHASE61_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۲: پیچ‌های ۵۹/۶۱ در GUI
+
+سه مسیر داشبورد (Train a model · Retrain · Find best LR) حالا
+`--n-layers`/`--n-blocks`/`--val-size` را می‌فرستند؛ 0 = پیش‌فرض/auto و
+فلگ ارسال نمی‌شود. فرم‌ها hint فارسی RF دارند. ۷ تست جدید.
+
+```
+ruff ✅ (۱۰ خطای قدیمی handlers.py جدا شده) black ✅
+pytest 1471 passed, 49 skipped   (قبلاً 1464)
+```
+
+**گزارش:** `Report/PHASE62_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۳: باگ ۴۷/۴۸ — برچسب‌های seq2seq رنج خراب بودند
+
+**کشف از لاگ کاربر (range 1D):** val_mae 0.000081 (±$0.16!) هم‌زمان با
+per-bound 0.0024/0.0058 و bias≡±MAE (هر ۴۴۸ خطا هم‌علامت). ردیابی کد:
+`WindowedSample.target_index` = شماره ستون (182) ولی
+`_build_seq2seq_targets` آن را اندیس سطر می‌خواند → y همهٔ نمونه‌ها از
+سطرهای ثابت ۳۳..۱۸۲ → collapse + metric جعلی. توضیح val_maeهای تاریخی
+غیرواقعی (0.000010 فاز ۵۷) و بی‌فایده بودن بکتست‌های رنج.
+
+### رفع
+
+- سه سازندهٔ sample: `target_index=end` (سطر پایان پنجره)
+- `_range_validation_metrics`: شاخهٔ seq2seq → آخرین timestep
+- ۴ تست رگرسیون + تمیزکاری lint trainer
+
+```
+ruff ✅ black ✅  pytest 1475 passed, 49 skipped
+```
+
+**پیامد:** همهٔ آرتیفکت‌های range (تاریخی v1-v3 و این اجرا) باطل — retrain
+بعد از این فیکس لازم است. signal آسیب ندیده (مسیرش target_index نمی‌خواند).
+
+**گزارش:** `Report/PHASE63_REPORT.md`

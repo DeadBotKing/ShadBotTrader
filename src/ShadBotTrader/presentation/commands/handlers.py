@@ -157,21 +157,19 @@ def read_run_log(action: str, root: "str | Path" = RUN_LOG_DIR, lines: int = 200
 DEFAULT_LEARNING_RATE = 1.5e-4
 
 
-
-
 def _parse_spread(command: Any) -> "tuple[Decimal, Optional[Decimal]]":
     """spread_mode و spread_value رو بخون و (spread_fixed, spread_pct) برگردون.
 
     pct mode:   spread_fixed=0, spread_pct=0.0006
     fixed mode: spread_fixed=1.80, spread_pct=None
     """
-    mode  = command.text("spread_mode", "pct").strip().lower()
+    mode = command.text("spread_mode", "pct").strip().lower()
     value = Decimal(str(command.number("spread_value", 0.06)))
 
     if mode == "pct":
         # آلپاری: spread به صورت درصد
         # مثلاً 0.06 → 0.06% → 0.0006 fraction
-        pct = value / Decimal("100")   # 0.06 → 0.0006
+        pct = value / Decimal("100")  # 0.06 → 0.0006
         return Decimal("0"), pct
     else:
         # spread ثابت دلاری
@@ -426,11 +424,42 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=("1", "0"),
                     hint="1 = ادامه از آخرین checkpoint (پیشنهاد) | 0 = از صفر شروع",
                 ),
-                CommandField("epochs", "Target epochs (total)", "100", kind="number",
-                    hint="کل epoch هدف — مثلاً اگه 50 داری و میخوای 100 بشه، اینجا 100 بنویس"),
+                CommandField(
+                    "epochs",
+                    "Target epochs (total)",
+                    "100",
+                    kind="number",
+                    hint="کل epoch هدف — مثلاً اگه 50 داری و میخوای 100 بشه، اینجا 100 بنویس",
+                ),
                 CommandField("folds", "Folds", "3", kind="number"),
-                CommandField("window", "Window rows", "150", kind="number",
-                    hint="باید با مدل ذخیره‌شده یکی باشه (معمولاً 150)"),
+                CommandField(
+                    "window",
+                    "Window rows",
+                    "150",
+                    kind="number",
+                    hint="باید با مدل ذخیره‌شده یکی باشه (معمولاً 150)",
+                ),
+                CommandField(
+                    "n_layers",
+                    "WaveNet layers × block",
+                    "0",
+                    kind="number",
+                    hint="0 = پیش‌فرض (signal 5, range 4) — RF باید < window",
+                ),
+                CommandField(
+                    "n_blocks",
+                    "WaveNet blocks",
+                    "0",
+                    kind="number",
+                    hint="0 = پیش‌فرض (2) — مثال: 150+4×2 → RF=121 (81%)",
+                ),
+                CommandField(
+                    "val_size",
+                    "Validation samples per fold",
+                    "0",
+                    kind="number",
+                    hint="0 = auto: ۱۰٪ استخر لیبل (فاز ۵۹)",
+                ),
                 CommandField(
                     "learning_rate",
                     "Learning rate (0 = auto)",
@@ -474,7 +503,12 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=("auto", "dual", "legacy"),
                     hint="auto uses signal -> range -> TP/SL when both models and timeframes exist",
                 ),
-                CommandField("range_timeframe", "Range timeframe", "1D", hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین"),
+                CommandField(
+                    "range_timeframe",
+                    "Range timeframe",
+                    "1D",
+                    hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین",
+                ),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
@@ -586,7 +620,12 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                         "0 uses this form's values"
                     ),
                 ),
-                CommandField("range_timeframe", "Range timeframe", "1D", hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین"),
+                CommandField(
+                    "range_timeframe",
+                    "Range timeframe",
+                    "1D",
+                    hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین",
+                ),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
@@ -916,11 +955,42 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="number",
                     hint="first future +/- threshold hit creates BUY/SELL; no HOLD class",
                 ),
-                CommandField("epochs", "Epochs", "50", kind="number",
-                    hint="range 1D: 50 مناسبه | signal 5M: 30"),
+                CommandField(
+                    "epochs",
+                    "Epochs",
+                    "50",
+                    kind="number",
+                    hint="range 1D: 50 مناسبه | signal 5M: 30",
+                ),
                 CommandField("folds", "Folds", "3", kind="number"),
-                CommandField("window", "Window rows", "150", kind="number",
-                    hint="150 = 7 ماه برای 1D | 150 = 12.5 ساعت برای 5M"),
+                CommandField(
+                    "window",
+                    "Window rows",
+                    "150",
+                    kind="number",
+                    hint="150 = 7 ماه برای 1D | 150 = 12.5 ساعت برای 5M",
+                ),
+                CommandField(
+                    "n_layers",
+                    "WaveNet layers × block",
+                    "0",
+                    kind="number",
+                    hint="0 = پیش‌فرض (signal 5, range 4) · RF باید < window — 150 با 4 هماهنگه",
+                ),
+                CommandField(
+                    "n_blocks",
+                    "WaveNet blocks",
+                    "0",
+                    kind="number",
+                    hint="0 = پیش‌فرض (2) — مثال: 150+4×2 → RF=121 (81%)",
+                ),
+                CommandField(
+                    "val_size",
+                    "Validation samples per fold",
+                    "0",
+                    kind="number",
+                    hint="0 = auto: ۱۰٪ استخر لیبل (فاز ۵۹) — قبلاً ۲٪ بود و کم می‌شد",
+                ),
                 CommandField(
                     "learning_rate",
                     "Learning rate (0 = auto)",
@@ -978,6 +1048,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("threshold_pct", "Signal movement threshold %", "0.08", kind="number"),
                 CommandField("window", "Window rows", "100", kind="number"),
+                CommandField(
+                    "n_layers",
+                    "WaveNet layers \u00d7 block",
+                    "0",
+                    kind="number",
+                    hint="0 = \u067e\u06cc\u0634\u200c\u0641\u0631\u0636 (signal 5, range 4)",
+                ),
+                CommandField(
+                    "n_blocks",
+                    "WaveNet blocks",
+                    "0",
+                    kind="number",
+                    hint="0 = \u067e\u06cc\u0634\u200c\u0641\u0631\u0636 (2)",
+                ),
                 CommandField("train_ratio", "Training prefix %", "100", kind="number"),
                 CommandField("pilot_epochs", "Pilot epochs", "1", kind="number"),
                 CommandField("pilot_folds", "Pilot folds", "1", kind="number"),
@@ -1690,6 +1774,18 @@ class CommandHandlers:
         _resume_args = ["--resume"] if _resume else []
         _mode_label = "resume" if _resume else "from scratch"
 
+        # فاز ۶۲: پیچ‌های معماری + ولیدیشن — 0 = پیش‌فرض/auto (فاز ۵۹/۶۱)
+        _n_layers = max(command.integer("n_layers", 0), 0)
+        _n_blocks = max(command.integer("n_blocks", 0), 0)
+        _val_size = max(command.integer("val_size", 0), 0)
+        _arch_args = []
+        if _n_layers:
+            _arch_args += ["--n-layers", str(_n_layers)]
+        if _n_blocks:
+            _arch_args += ["--n-blocks", str(_n_blocks)]
+        if _val_size:
+            _arch_args += ["--val-size", str(_val_size)]
+
         return self._run_script(
             command,
             [
@@ -1715,6 +1811,7 @@ class CommandHandlers:
                 str(learning_rate),
                 "--storage-root",
                 str(self._storage_root),
+                *_arch_args,
                 *_resume_args,
             ],
             f"Retrained {saved} on {dataset} "
@@ -1840,10 +1937,9 @@ class CommandHandlers:
                 if mode == "dual":
                     raise
                 import traceback as _tb
+
                 _err_detail = str(_dual_err)[:300]
-                dual_note = (
-                    f"Dual-model failed: {_err_detail} — legacy baseline was used."
-                )
+                dual_note = f"Dual-model failed: {_err_detail} — legacy baseline was used."
         elif mode == "dual":
             raise LookupError(
                 f"Dual mode needs stored {symbol_text} {range_timeframe} candles "
@@ -1976,6 +2072,7 @@ class CommandHandlers:
         if mode == "dual":
             try:
                 from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
                 _catalogue = ModelCatalogue(self._storage_root)
                 for _mid in [
                     command.text("signal_model", "gold_signal_5m"),
@@ -2010,8 +2107,16 @@ class CommandHandlers:
             f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
             f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
             f"session filt: {'yes — hours 2,5,6,10,14,15,16,18 UTC' if command.text('session_filter','0').strip()=='1' else 'no'}",
-            f"min SL dist : {command.number('min_sl_distance', 0.0):g}$" if command.number('min_sl_distance', 0.0) > 0 else "min SL dist : off",
-            f"last N bars : {command.integer('last_n_candles', 0):,} کندل آخر" if command.integer('last_n_candles', 0) > 0 else "last N bars : all (کل تاریخچه)",
+            (
+                f"min SL dist : {command.number('min_sl_distance', 0.0):g}$"
+                if command.number("min_sl_distance", 0.0) > 0
+                else "min SL dist : off"
+            ),
+            (
+                f"last N bars : {command.integer('last_n_candles', 0):,} کندل آخر"
+                if command.integer("last_n_candles", 0) > 0
+                else "last N bars : all (کل تاریخچه)"
+            ),
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
             f"gross profit: {metrics.gross_profit:.4f}",
             f"gross loss  : {metrics.gross_loss:.4f}",
@@ -2049,6 +2154,7 @@ class CommandHandlers:
         # لاگ کامل رو روی disk هم ذخیره کن
         try:
             import datetime as _dt
+
             _log_dir = self._run_log_dir
             _log_dir.mkdir(parents=True, exist_ok=True)
             _log_path = _log_dir / "backtest_run.log"
@@ -2061,7 +2167,7 @@ class CommandHandlers:
                 for _line in lines:
                     _lf.write(_line + "\n")
         except Exception:
-            pass   # لاگ fail نباید بکتست رو خراب کنه
+            pass  # لاگ fail نباید بکتست رو خراب کنه
 
         return CommandResult.success(
             command.kind,
@@ -3036,6 +3142,18 @@ class AccountCommandHandlers(CommandHandlers):
             if _lr_manual and _lr_manual > 0
             else saved_learning_rate(self._storage_root, model_id)
         )
+        # فاز ۶۲: پیچ‌های معماری + اندازهٔ ولیدیشن — 0 یعنی «پیش‌فرض/auto»
+        # و فلگ به اسکریپت پاس نمی‌شود تا رفتار پیش‌فرض فاز ۵۹/۶۱ برقرار بماند.
+        _n_layers = max(command.integer("n_layers", 0), 0)
+        _n_blocks = max(command.integer("n_blocks", 0), 0)
+        _val_size = max(command.integer("val_size", 0), 0)
+        _arch_args = []
+        if _n_layers:
+            _arch_args += ["--n-layers", str(_n_layers)]
+        if _n_blocks:
+            _arch_args += ["--n-blocks", str(_n_blocks)]
+        if _val_size:
+            _arch_args += ["--val-size", str(_val_size)]
         return self._run_script(
             command,
             [
@@ -3072,6 +3190,7 @@ class AccountCommandHandlers(CommandHandlers):
                 str(learning_rate),
                 "--storage-root",
                 str(self._storage_root),
+                *_arch_args,
             ],
             f"Trained {role} on {dataset} "
             f"(LR {learning_rate:.2e}"
@@ -3112,6 +3231,14 @@ class AccountCommandHandlers(CommandHandlers):
             if role == "signal"
             else 0.0
         )
+        # فاز ۶۲: پیچ‌های معماری — 0 = پیش‌فرض نقش (فاز ۶۱)
+        _opt_layers = max(command.integer("n_layers", 0), 0)
+        _opt_blocks = max(command.integer("n_blocks", 0), 0)
+        _opt_arch = []
+        if _opt_layers:
+            _opt_arch += ["--n-layers", str(_opt_layers)]
+        if _opt_blocks:
+            _opt_arch += ["--n-blocks", str(_opt_blocks)]
         arguments = [
             "scripts/run_dual_models.py",
             "--with-features",
@@ -3127,6 +3254,7 @@ class AccountCommandHandlers(CommandHandlers):
             str(threshold),
             "--window",
             str(max(command.integer("window", 100), 2)),
+            *_opt_arch,
             "--train-ratio",
             str(command.number("train_ratio", 100.0)),
             "--learning-rates",
