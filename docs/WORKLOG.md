@@ -1946,3 +1946,38 @@ pytest 1456 passed, 49 skipped (قبلاً 1449 + ۴ تست جدید)
 ```
 
 **گزارش:** `Report/PHASE59_REPORT.md`
+
+---
+
+## 2026-08-26 — فاز ۶۰: اتصال ReduceLR + EarlyStopping به مدل سیگنال (باگ سیم‌کشی) + baseline صحیح
+
+**کشف از اجرای ۱۰.۵ ساعتهٔ signal v1 کاربر:** بهترین epoch همهٔ فولدها
+10/13/16/19 بود ولی هر ۴ فولد تا epoch 60 کامل اجرا شد → ~۷ ساعت epochهای
+نامنتخاب‌پذیر. علت: `build_trainer` برای classification `loss=None` می‌فرستاد
+و گیتِ `if self._loss in (…)` در trainer هرگز match نمی‌شد → ReduceLROnPlateau
+(فاز ۵۴) و EarlyStopping (فاز ۵۷) فقط به range وصل بودند، هرچند گزارش‌ها
+«هر دو مدل» را ادعا می‌کردند.
+
+### رفع
+
+- `dual_model_service.build_trainer`: `loss=role.loss, metric=role.metric`
+  همیشه (کامپایل مدل بدون تغییر — شاخهٔ classification همان loss را
+  hard-code دارد؛ فقط گیت callbacks حالا match می‌شود).
+- `run_dual_models.print_quality`: پارامتر `val_baseline` — حکم با
+  baselineِ **فولد آخرِ ولید** (در اجرای مذکور 65.2% sell در برابر 50.3%
+  استخر!) + اعلام صریح رژیم‌جابه‌جایی فولد.
+
+### تست
+
+۲ تست جدید در `test_validation_geometry.py`: سیم‌کشی loss سیگنال +
+حفظ huber برای range.
+
+```
+ruff ✅ black ✅
+pytest 1458 passed, 49 skipped   (قبلاً 1456)
+```
+
+**اثر مورد انتظار:** با ES patience=12، اجرای signal حدود نصف زمان قبلی؛
+ReduceLR احتمالاً کالیبراسیون را بهتر می‌کند.
+
+**گزارش‌ها:** `Report/PHASE60_REPORT.md` · `Report/SIGNAL_V1_FULLRUN_REVIEW_2026-08-26.md`

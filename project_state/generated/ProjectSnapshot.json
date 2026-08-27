@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "90e5afd97b2482cdf5dd724863c5323db5d2363181407f08906a667b52f950cd",
-      "size_bytes": 1711
+      "sha256": "74f62295077bffe322260dab9130682dc51011a87adfa92186dec5d37aec4e56",
+      "size_bytes": 2075
     },
     {
       "category": "documentation",
@@ -225,8 +225,8 @@
     {
       "category": "documentation",
       "path": "docs/IMPLEMENTATION_STATUS.md",
-      "sha256": "676823c48bcfb6838a00abb7ac2c213faa5cd52e586cd6d6e2f9d73af3c1348f",
-      "size_bytes": 33590
+      "sha256": "81effef80294aa1637928a340006528c73cbc1e29ca22d6fbc784de067d1fd2a",
+      "size_bytes": 33877
     },
     {
       "category": "documentation",
@@ -758,6 +758,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE59_REPORT.md",
+      "sha256": "e1fb36889215c139c5386f2369a6b0ea8f8b24bf11b4185b3f7a6f10b73bf425",
+      "size_bytes": 5692
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE_9_21_22_REPORT.md",
       "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
       "size_bytes": 9198
@@ -783,8 +789,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_2026-08-26_WORKSPACE_REBUILD.md",
-      "sha256": "c9364e012b6d3a31f7766f2760d3bb7979f1ca9144738b95795ec7c75b9bb783",
-      "size_bytes": 10749
+      "sha256": "e338aceaf0998fb128a3637b1bf1db856215e5b5770fcbbbd206e8417cb2680c",
+      "size_bytes": 11402
     },
     {
       "category": "documentation",
@@ -843,8 +849,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "39c49a24b5e79546a6fcd569aaee4ebf20baacc9f242232c1193aaf7a1f983a8",
-      "size_bytes": 102294
+      "sha256": "4fb77ee90dc9d7be664cca97069700aa8c4bc202171116aee3a5561e2eb1c268",
+      "size_bytes": 104453
     },
     {
       "category": "legacy",
@@ -1947,7 +1953,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "1a1fd116646d451aefc4bcdd66e58fee0446746cc810f408799e7e196838e777",
+      "sha256": "94fb7b3634c8bb923e47c921f417ca5b014812ba59c11dd9fcb45643b83abb00",
       "size_bytes": 25781
     },
     {
@@ -2007,8 +2013,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "890d936170b9cc8d6586d4f6157246fbd5add2823f73b6f47be8c9f5350a3d33",
-      "size_bytes": 42046
+      "sha256": "5099b678a962a7463f114056636f6265015a478b65a56213b5db887240e59457",
+      "size_bytes": 43367
     },
     {
       "category": "script",
@@ -2175,8 +2181,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "564aafbe445a245c1faad23f16e689cf07d33d9545d1be9053a4d84dd025bb68",
-      "size_bytes": 20689
+      "sha256": "2d7ddad10f31af78e1d26f8881c31cf750a68ec3d183fa85d88ccf166aa8f361",
+      "size_bytes": 21495
     },
     {
       "category": "source",
@@ -4317,8 +4323,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_validation_geometry.py",
-      "sha256": "3d905f0772693055c4bd0238ce6a6c0d4276282585fb47b2fbb047adb9d5dd02",
-      "size_bytes": 4515
+      "sha256": "f483124b1fb7781bdd4d32539e1a05bc479b2fb684e1d48df63e8d7324f85e56",
+      "size_bytes": 5764
     },
     {
       "category": "test",
@@ -4735,14 +4741,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-26T14:45:54.040398+00:00",
+  "generated_at": "2026-08-27T05:17:05.090322+00:00",
   "git": {
     "branch": "main",
-    "commit": "d2e7e51761b437a8b501c658346ed568d195428c",
+    "commit": "e40e840ee1bc31a014c22407581c37488a04c9be",
     "dirty": true,
-    "dirty_files": 494,
+    "dirty_files": 3,
     "is_repo": true,
     "recent_commits": [
+      "e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)",
       "d2e7e51 Update Signal Model"
     ]
   },
@@ -9829,7 +9836,7 @@
     {
       "classes": 0,
       "external_imports": [],
-      "functions": 6,
+      "functions": 8,
       "internal_imports": [
         "ShadBotTrader.application.services.dual_model_service",
         "ShadBotTrader.domain.market.candle",
@@ -10871,18 +10878,18 @@
   "statistics": {
     "class_count": 759,
     "config_file_count": 3,
-    "documentation_file_count": 121,
+    "documentation_file_count": 122,
     "external_dependency_count": 14,
-    "function_count": 4255,
+    "function_count": 4257,
     "internal_dependency_count": 261,
     "legacy_file_count": 176,
     "module_count": 441,
     "source_file_count": 317,
-    "source_lines": 47525,
+    "source_lines": 47534,
     "test_file_count": 124,
-    "test_lines": 21350,
-    "total_file_count": 779,
-    "total_lines": 113595
+    "test_lines": 21380,
+    "total_file_count": 780,
+    "total_lines": 113661
   },
   "test_file_count": 124
 }

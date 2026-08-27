@@ -379,8 +379,17 @@ class DualModelService:
             batch_size=batch_size,
             output_units=role.output_units,
             output_activation=role.output_activation,
-            loss=role.loss if is_regression else None,
-            metric=role.metric if is_regression else None,
+            # فاز ۶۰: loss/metric همیشه از role می‌آید. قبلاً برای مدل
+            # سیگنال ``None`` پاس می‌شد؛ گیتِ callbacks در trainer
+            # (``if self._loss in (…)``) هرگز match نمی‌شد و
+            # ReduceLROnPlateau + EarlyStoppingِ فاز ۵۴/۵۷ عملاً هیچ‌وقت
+            # به مدل سیگنال وصل نمی‌شدند (کشف از اجرای ۱۰.۵ ساعتهٔ
+            # 2026-08-26: ۴ فولد × ۶۰ epoch کامل اجرا شد در حالی که بهترین
+            # epoch همهٔ فولدها ≤ 19 بود). کامپایل مدل تغییری نمی‌کند —
+            # شاخهٔ classification در _build_compiled همین loss را
+            # hard-code دارد؛ فقط گیتِ callbacks حالا match می‌شود.
+            loss=role.loss,
+            metric=role.metric,
             max_folds=max_folds,
             progress=progress,
             sample_indices=getattr(dataset, "sample_ends", None),

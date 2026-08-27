@@ -112,3 +112,33 @@ def test_train_accepts_val_size_argument():
     parameters = inspect.signature(Service.train).parameters
     assert "val_size" in parameters
     assert parameters["val_size"].default == 0
+
+
+def test_signal_role_receives_its_loss_string():
+    """فاز ۶۰: loss سیگنال نباید None بماند.
+
+    گیتِ callbacks در ``WavenetTrainer`` (ReduceLROnPlateau + EarlyStopping
+    فاز ۵۴/۵۷) روی ``self._loss`` بسته است؛ با ``loss=None`` هیچ‌وقت match
+    نمی‌شد و هر دو callback از مدل سیگنال غایب بودند.
+    """
+    service = DualModelService(include_features=False)
+    role = signal_model_role(window_size=16, threshold=0.0008)
+    dataset, _rows = _prepared_pool(service, wave(200), role)
+
+    trainer = service.build_trainer(dataset, epochs=1, max_folds=2)
+
+    assert trainer._loss == "sparse_categorical_crossentropy"
+    assert trainer._metric == "accuracy"
+
+
+def test_range_role_keeps_huber_loss():
+    """فاز ۶۰: مسیر regression نباید تغییر کرده باشد."""
+    from ShadBotTrader.infrastructure.ai.model_roles import range_model_role
+
+    service = DualModelService(include_features=False)
+    role = range_model_role(timeframe="1H", horizon=2, window_size=16)
+    dataset = service.prepare(wave(200), SYMBOL, HOURLY, role)
+
+    trainer = service.build_trainer(dataset, epochs=1, max_folds=2)
+
+    assert trainer._loss == "huber"

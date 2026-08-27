@@ -479,6 +479,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     )
     if summary["skipped_features"]:
         print(f"  skipped feats  : {summary['skipped_features']}")
+    val_fold_baseline: float | None = None  # فاز ۶۰: baseline فولد آخرِ ولید
     if dataset.label_distribution:
         print(f"  label balance  : {dataset.label_distribution}")
         if dataset.degenerate:
@@ -495,6 +496,9 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             train_balance, val_balance = split
             print(f"  train labels   : {train_balance}")
             print(f"  val labels     : {val_balance}")
+            # فاز ۶۰: برای حکمِ QUALITY — baseline واقعی فولد آخرِ ولید.
+            _val_total = sum(val_balance.values())
+            val_fold_baseline = max(val_balance.values()) / _val_total if _val_total else None
 
     # فاز ۵۹: اندازهٔ ولیدیشن را صریح چاپ کن تا کمبودش پنهان نماند.
     pool = training_window_count(dataset, role)
@@ -600,7 +604,12 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
-    print_quality(outcome, role, reference_price=float(candles[-1].close.amount))
+    print_quality(
+        outcome,
+        role,
+        reference_price=float(candles[-1].close.amount),
+        val_baseline=val_fold_baseline,
+    )
     save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
     # ---- one live prediction so the output is concrete -----------------
@@ -905,7 +914,12 @@ def save_model(
     print(f"    record  : {path}")
 
 
-def print_quality(outcome: dict, role, reference_price: float | None = None) -> None:
+def print_quality(
+    outcome: dict,
+    role,
+    reference_price: float | None = None,
+    val_baseline: float | None = None,
+) -> None:
     """Report how good the model actually is, not just that it ran.
 
     Phase 36: the run printed fold losses and nothing else. A loss is
@@ -931,13 +945,26 @@ def print_quality(outcome: dict, role, reference_price: float | None = None) -> 
         distribution = outcome.get("dataset", {}).get("label_distribution") or {}
         total = sum(distribution.values()) if distribution else 0
         if accuracy is not None and total:
-            baseline = max(distribution.values()) / total
-            verdict = "BETTER than" if accuracy > baseline else "NO BETTER than"
+            # فاز ۶۰: baseline باید از توزیع لیبلِ **ولیدیشنِ فولد آخر** باشد،
+            # نه کل استخر. در اجرای 2026-08-26 استخر 50/50 بود ولی فولد آخر
+            # 65.2% sell — یعنی همیشه-sell روی همان ولید 65.2% می‌گرفت و
+            # مقایسه با 50.3% حکمِ گمراه‌کننده می‌داد.
+            pool_baseline = max(distribution.values()) / total
+            if val_baseline is None:
+                val_baseline = pool_baseline
+            verdict = "BETTER than" if accuracy > val_baseline else "NO BETTER than"
             print(
-                f"\n    val_accuracy {accuracy:.1%} vs majority-class baseline " f"{baseline:.1%}"
+                f"\n    val_accuracy {accuracy:.1%} vs val-fold majority baseline "
+                f"{val_baseline:.1%}"
             )
+            if abs(val_baseline - pool_baseline) > 0.02:
+                print(
+                    f"    (pool majority baseline is {pool_baseline:.1%}; the val "
+                    "fold is regime-shifted — always-predict-majority scores "
+                    f"{val_baseline:.1%} there)"
+                )
             print(f"    -> the model is {verdict} always predicting the commonest class.")
-            if accuracy <= baseline:
+            if accuracy <= val_baseline:
                 print(
                     "    With one epoch and a few folds this is expected; it is "
                     "reported rather than hidden."
