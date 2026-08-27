@@ -122,6 +122,46 @@ def test_two_candidates_do_not_share_one_entry():
     assert len(filled) == 1 and filled[0].bar_index == 20  # نزدیک‌ترین قبضه می‌کند
 
 
+def test_levels_survive_resolution_and_payload():
+    """فاز ۶۶: TP/SL مدل ثبت، حفظ و در payload می‌آید؛ override هم کار می‌کند."""
+    recorder = ReplayRecorder("s", "XAUUSD", "5M", Decimal("100"))
+    recorder.record_signal(
+        10,
+        "t10",
+        "buy",
+        0.83,
+        take_profit=2043.23,
+        stop_loss=1893.11,
+    )
+    # override واقعی براکت بعد از fill (next-open)
+    recorder.resolve_signal(
+        10,
+        "buy",
+        SIGNAL_FILLED,
+        "entry @ 2001.5",
+        take_profit=2043.23,
+        stop_loss=1892.05,
+    )
+    recorder.mark(_marker(11, "buy"))
+    recorder.record_bar(**_bar_kwargs(11))
+
+    tape = recorder.build()
+    point = tape.signal_points[0]
+    assert point.outcome == SIGNAL_FILLED
+    assert point.take_profit == 2043.23
+    assert point.stop_loss == 1892.05  # نسخهٔ براکت، نه مدل خام
+
+    payload = tape.to_dict()["signal_points"][0]
+    assert payload["tp"] == 2043.23 and payload["sl"] == 1892.05
+
+
+def test_level_validation_rejects_non_positive():
+    with pytest.raises(ValidationError):
+        SignalMarker(0, "t", "buy", 0.7, take_profit=0)
+    with pytest.raises(ValidationError):
+        SignalMarker(0, "t", "buy", 0.7, stop_loss=-5)
+
+
 def test_tape_payload_exposes_signal_points_for_the_renderer():
     recorder = ReplayRecorder("s", "XAUUSD", "5M", Decimal("100"))
     recorder.record_signal(5, "t5", "sell", 0.64, SIGNAL_REJECTED, "session filter")
@@ -137,5 +177,7 @@ def test_tape_payload_exposes_signal_points_for_the_renderer():
             "conf": 0.64,
             "outcome": "rejected",
             "reason": "session filter",
+            "tp": None,
+            "sl": None,
         }
     ]

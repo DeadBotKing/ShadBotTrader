@@ -806,6 +806,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE65_REPORT.md",
+      "sha256": "4d6993b918d466858ba3dd818e921e8daf455ae3eec949f9a622ad37589ffd72",
+      "size_bytes": 3442
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE_9_21_22_REPORT.md",
       "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
       "size_bytes": 9198
@@ -903,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "285f1015eee277f992f65c9e4bc51f3125f80a58b0ecf453dbb704aabd4c61be",
-      "size_bytes": 109592
+      "sha256": "ba81963c074546d35d8d1dcde90071b3c34ddccf7c901987c4d18db9620c7605",
+      "size_bytes": 110216
     },
     {
       "category": "legacy",
@@ -2949,8 +2955,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/simulation/replay.py",
-      "sha256": "c02da1c1cf13d15280b90bd200584160c18b574b341836c3d6c8296367ae822c",
-      "size_bytes": 21842
+      "sha256": "e120d9aec60b1d0fea833e1e3dbacdb507dee6cfd9d3bed39a4df76d9ed950fa",
+      "size_bytes": 23406
     },
     {
       "category": "source",
@@ -3717,8 +3723,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/backtest_engine.py",
-      "sha256": "8429ea7fcfb730296cd50e6fd5dfa45d3c985f1a466ab4cdf4817c36776b914e",
-      "size_bytes": 32744
+      "sha256": "a7d8400d120d8d355cb437d4c4083975b9431e02ef93133de9836a42aa9748c3",
+      "size_bytes": 34559
     },
     {
       "category": "source",
@@ -3921,8 +3927,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/replay_renderer.py",
-      "sha256": "3d741d6ed47905647a884adb7361f8ca9a535a359154311c3717b593f94dd7d0",
-      "size_bytes": 23797
+      "sha256": "c221ace132641456f2c794f8835144f53ae9b39be8d5e2d65aefb3480a0f22d4",
+      "size_bytes": 25565
     },
     {
       "category": "source",
@@ -4779,8 +4785,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_replay_signal_points.py",
-      "sha256": "547033082511db6d46e79bced61dbe4bc1551701b4592d7efbad24c42d467a52",
-      "size_bytes": 4985
+      "sha256": "aefe31bad78b665d39dfbb4cfb93c25c0a431af2649a5116e426616ab7523e7f",
+      "size_bytes": 6321
     },
     {
       "category": "test",
@@ -4825,14 +4831,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T11:49:51.045664+00:00",
+  "generated_at": "2026-08-27T12:00:20.425317+00:00",
   "git": {
     "branch": "main",
-    "commit": "bb7dd1fcbc263bad127dae436bc2532a4da029b0",
+    "commit": "bd7b242211540797f9a268f6dcd6cb3f4ed84cb9",
     "dirty": true,
-    "dirty_files": 5,
+    "dirty_files": 4,
     "is_repo": true,
     "recent_commits": [
+      "bd7b242 Phase 65: show signal-model selection points on the replay chart",
       "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
       "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)",
       "2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)",
@@ -4841,8 +4848,7 @@
       "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
       "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan",
       "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)",
-      "8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)",
-      "1661ee5 Phase 62: expose architecture/validation knobs in the dashboard"
+      "8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)"
     ]
   },
   "modules": [
@@ -6502,7 +6508,7 @@
     {
       "classes": 5,
       "external_imports": [],
-      "functions": 65,
+      "functions": 67,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.common.value_object"
@@ -10904,7 +10910,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 8,
+      "functions": 10,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.simulation.replay"
@@ -11035,18 +11041,18 @@
   "statistics": {
     "class_count": 760,
     "config_file_count": 3,
-    "documentation_file_count": 131,
+    "documentation_file_count": 132,
     "external_dependency_count": 14,
-    "function_count": 4310,
+    "function_count": 4314,
     "internal_dependency_count": 261,
     "legacy_file_count": 176,
     "module_count": 446,
     "source_file_count": 317,
-    "source_lines": 48019,
+    "source_lines": 48151,
     "test_file_count": 129,
-    "test_lines": 21911,
-    "total_file_count": 794,
-    "total_lines": 114717
+    "test_lines": 21953,
+    "total_file_count": 795,
+    "total_lines": 114891
   },
   "test_file_count": 129
 }

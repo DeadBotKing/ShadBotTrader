@@ -248,7 +248,7 @@ function draw() {
     });
   });
 
-  // signal-model selection points (فاز ۶۵)
+  // signal-model selection points (فاز ۶۵) + TP/SL (فاز ۶۶)
   slice.forEach((b, i) => {
     const sigs = signalsByBar[b.i] || [];
     sigs.forEach((s, k) => {
@@ -256,6 +256,39 @@ function draw() {
       const buy = s.side === 'buy';
       const filled = s.outcome === 'filled';
       const y = buy ? yPrice(b.l) + 12 : yPrice(b.h) - 12;
+      // ── سطوح TP/SL مدل: خط‌چین افقی کوتاه — سبز TP، قرمز SL ──
+      if (s.tp && s.sl) {
+        const tpY = yPrice(s.tp), slY = yPrice(s.sl);
+        const halfW = Math.max(5, bodyW * 2.2);
+        const alpha = filled ? 0.95 : 0.6;
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = `rgba(63,185,80,${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(x - halfW, Math.round(tpY) + 0.5);
+        ctx.lineTo(x + halfW, Math.round(tpY) + 0.5);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(248,81,73,${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(x - halfW, Math.round(slY) + 0.5);
+        ctx.lineTo(x + halfW, Math.round(slY) + 0.5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // اتصال عمودی کوتاه مثلث ↔ سطوح
+        ctx.strokeStyle = `rgba(139,148,158,${alpha * 0.6})`;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, tpY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, slY); ctx.stroke();
+        ctx.setLineDash([]);
+        // قیمت‌ها فقط وقتی جا هست (کندل‌های بزرگ)
+        if (step > 8) {
+          ctx.font = '9px ui-monospace, monospace';
+          ctx.fillStyle = `rgba(63,185,80,${alpha})`;
+          ctx.fillText(s.tp.toFixed(1), x + halfW + 3, tpY + 3);
+          ctx.fillStyle = `rgba(248,81,73,${alpha})`;
+          ctx.fillText(s.sl.toFixed(1), x + halfW + 3, slY + 3);
+        }
+      }
       ctx.beginPath();
       if (buy) {
         ctx.moveTo(x, y - 8); ctx.lineTo(x - 5, y + 4); ctx.lineTo(x + 5, y + 4);
@@ -550,6 +583,10 @@ def render_replay(
       ({signal_counts["sell"]})</span>
     <span><span class="dot" style="background:#8b949e"></span>hollow = rejected
       ({signal_counts["rejected"]}) · solid = traded ({signal_counts["filled"]})</span>
+    <span><span class="dot" style="background:#3fb950"></span>&#9472;&#9472; TP
+      model</span>
+    <span><span class="dot" style="background:#f85149"></span>&#9472;&#9472; SL
+      model</span>
     <span><span class="dot" style="background:#3fb950"></span>exit — profit</span>
     <span><span class="dot" style="background:#f85149"></span>exit — loss</span>
     <span>Space = play/pause · &#8592; &#8594; = one bar</span>

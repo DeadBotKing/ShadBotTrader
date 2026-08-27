@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T11:49:51.045664+00:00
+- Snapshot generated at: 2026-08-27T12:00:20.425317+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: bb7dd1fcbc263bad127dae436bc2532a4da029b0
-- Dirty: yes (5 files)
+- Commit: bd7b242211540797f9a268f6dcd6cb3f4ed84cb9
+- Dirty: yes (4 files)
 - Recent commits:
+  - bd7b242 Phase 65: show signal-model selection points on the replay chart
   - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
   - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
   - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan
   - a64e953 docs: end-to-end trace of the signal training dataset (code-verified)
   - 8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)
-  - 1661ee5 Phase 62: expose architecture/validation knobs in the dashboard
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 794
+- Total files: 795
 - Source files: 317
 - Test files: 129
-- Documentation files: 131
+- Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 114717
+- Total Python lines: 114891
 - Modules: 446
 - Classes: 760
-- Functions: 4310
+- Functions: 4314
 - External dependencies: 14

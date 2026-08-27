@@ -187,6 +187,8 @@ class SignalMarker(ValueObject):
         confidence: float,
         outcome: str = SIGNAL_CANDIDATE,
         reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
     ) -> None:
         if bar_index < 0:
             raise ValidationError("bar_index must not be negative")
@@ -196,6 +198,9 @@ class SignalMarker(ValueObject):
             raise ValidationError("signal confidence must be in [0, 1]")
         if outcome not in _SIGNAL_OUTCOMES:
             raise ValidationError(f"signal outcome must be one of {_SIGNAL_OUTCOMES}")
+        for name, level in (("take_profit", take_profit), ("stop_loss", stop_loss)):
+            if level is not None and level <= 0:
+                raise ValidationError(f"signal {name} must be positive when given")
 
         self._bar_index = bar_index
         self._timestamp = timestamp
@@ -203,6 +208,8 @@ class SignalMarker(ValueObject):
         self._confidence = confidence
         self._outcome = outcome
         self._reason = reason
+        self._take_profit = take_profit
+        self._stop_loss = stop_loss
 
     @property
     def bar_index(self) -> int:
@@ -228,8 +235,27 @@ class SignalMarker(ValueObject):
     def reason(self) -> str:
         return self._reason
 
-    def with_outcome(self, outcome: str, reason: str = "") -> "SignalMarker":
-        """A copy with a new outcome — resolution must not mutate history."""
+    @property
+    def take_profit(self) -> Optional[float]:
+        """Model-implied TP level at decision time, when the range ran."""
+        return self._take_profit
+
+    @property
+    def stop_loss(self) -> Optional[float]:
+        return self._stop_loss
+
+    def with_outcome(
+        self,
+        outcome: str,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> "SignalMarker":
+        """A copy with a new outcome — resolution must not mutate history.
+
+        Level overrides only apply when explicitly given; otherwise the
+        levels recorded at decision time are preserved.
+        """
         return SignalMarker(
             bar_index=self._bar_index,
             timestamp=self._timestamp,
@@ -237,6 +263,8 @@ class SignalMarker(ValueObject):
             confidence=self._confidence,
             outcome=outcome,
             reason=reason or self._reason,
+            take_profit=self._take_profit if take_profit is None else take_profit,
+            stop_loss=self._stop_loss if stop_loss is None else stop_loss,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -247,10 +275,19 @@ class SignalMarker(ValueObject):
             "conf": round(self._confidence, 4),
             "outcome": self._outcome,
             "reason": self._reason,
+            "tp": self._take_profit,
+            "sl": self._stop_loss,
         }
 
     def _value(self) -> Tuple[Any, ...]:
-        return (self._bar_index, self._side, self._outcome, self._confidence)
+        return (
+            self._bar_index,
+            self._side,
+            self._outcome,
+            self._confidence,
+            self._take_profit,
+            self._stop_loss,
+        )
 
 
 class ReplayBar(ValueObject):
@@ -536,13 +573,14 @@ class ReplayRecorder:
         confidence: float,
         outcome: str = SIGNAL_CANDIDATE,
         reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
     ) -> None:
         """Record one actionable signal-model selection (فاز ۶۵).
 
-        ``outcome`` starts as ``candidate`` when the strategy approved a
-        direction; gate/bracket rejections overwrite it immediately, and
-        :meth:`build` resolves the remaining candidates against the real
-        entry fills.
+        ``take_profit``/``stop_loss`` carry the range model's implied
+        levels for this bar (فاز ۶۶) so the replay chart can draw what
+        the trade *would* have looked like even when it is refused.
         """
         self._signals.append(
             SignalMarker(
@@ -552,18 +590,30 @@ class ReplayRecorder:
                 confidence=confidence,
                 outcome=outcome,
                 reason=reason,
+                take_profit=take_profit,
+                stop_loss=stop_loss,
             )
         )
 
-    def resolve_signal(self, bar_index: int, side: str, outcome: str, reason: str = "") -> None:
-        """Overwrite the outcome of the most recent candidate (باگ‌ها را عددی کند)."""
+    def resolve_signal(
+        self,
+        bar_index: int,
+        side: str,
+        outcome: str,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> None:
+        """Overwrite the outcome (and optionally levels) of the last candidate."""
         for point in reversed(self._signals):
             if (
                 point.bar_index == bar_index
                 and point.side == side
                 and point.outcome == SIGNAL_CANDIDATE
             ):
-                self._signals[self._signals.index(point)] = point.with_outcome(outcome, reason)
+                self._signals[self._signals.index(point)] = point.with_outcome(
+                    outcome, reason, take_profit, stop_loss
+                )
                 return
 
     def _resolve_candidates(self) -> List[SignalMarker]:

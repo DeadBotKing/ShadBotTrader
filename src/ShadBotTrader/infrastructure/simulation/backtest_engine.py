@@ -51,6 +51,7 @@ from ShadBotTrader.domain.simulation.replay import (
     MARKER_ENTRY,
     MARKER_EXIT,
     SIGNAL_CANDIDATE,
+    SIGNAL_FILLED,
     SIGNAL_REJECTED,
     ReplayRecorder,
     ReplayTape,
@@ -324,7 +325,7 @@ class BacktestEngine:
         )
 
         outcome = self._trading.evaluate(strategy_context)
-        self._record_signal_point(event, signal_forecast, outcome)
+        self._record_signal_point(event, signal_forecast, range_forecast, outcome)
         if outcome.intent is None:
             return
 
@@ -354,7 +355,13 @@ class BacktestEngine:
         if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
 
-    def _record_signal_point(self, event: MarketEvent, forecast: Any, outcome: Any) -> None:
+    def _record_signal_point(
+        self,
+        event: MarketEvent,
+        forecast: Any,
+        range_forecast: Any,
+        outcome: Any,
+    ) -> None:
         """Record every *actionable* signal-model selection (فاز ۶۵).
 
         The operator asked to see where the signal model chose to act —
@@ -371,6 +378,16 @@ class BacktestEngine:
         if min_conf is not None and not forecast.is_actionable(min_conf):
             return
         side = forecast.predicted_class.label
+        # فاز ۶۶: سطوح TP/SL پیش‌بینی رنج — برای هر دو صورتِ انتخاب‌شده و
+        # ردشده ثبت می‌شوند تا ریپلی «قرارداد» را هم نشان دهد نه فقط نتیجه.
+        tp_level = sl_level = None
+        if range_forecast is not None and range_forecast.is_coherent:
+            if side == "buy":
+                tp_level = float(range_forecast.predicted_high)
+                sl_level = float(range_forecast.predicted_low)
+            else:
+                tp_level = float(range_forecast.predicted_low)
+                sl_level = float(range_forecast.predicted_high)
         intent = getattr(outcome, "intent", None)
         if intent is not None:
             stage, reason = SIGNAL_CANDIDATE, ""
@@ -389,13 +406,29 @@ class BacktestEngine:
             confidence=forecast.confidence,
             outcome=stage,
             reason=reason,
+            take_profit=tp_level,
+            stop_loss=sl_level,
         )
 
-    def _resolve_pending_signal(self, event: MarketEvent, opened: bool, why: str) -> None:
+    def _resolve_pending_signal(
+        self,
+        event: MarketEvent,
+        opened: bool,
+        why: str,
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> None:
         """Close out the most recent signal point after its next-open attempt."""
         if not opened and self._last_signal_point is not None and self._recorder is not None:
             bar_index, side = self._last_signal_point
-            self._recorder.resolve_signal(bar_index, side, SIGNAL_REJECTED, reason=why[:160])
+            self._recorder.resolve_signal(
+                bar_index,
+                side,
+                SIGNAL_REJECTED,
+                reason=why[:160],
+                take_profit=take_profit,
+                stop_loss=stop_loss,
+            )
 
     def _execute_outcome(
         self,
@@ -511,6 +544,18 @@ class BacktestEngine:
                 return
         if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
+            # فاز ۶۶: سطوح واقعی براکت (با گسترش spread) جایگزین سطوح خام مدل
+            if bracket is not None and self._last_signal_point is not None:
+                bar_index, side = self._last_signal_point
+                if self._recorder is not None:
+                    self._recorder.resolve_signal(
+                        bar_index,
+                        side,
+                        SIGNAL_FILLED,
+                        reason=f"entry @ {quote.ask if side == 'buy' else quote.bid}",
+                        take_profit=float(bracket.take_profit.amount),
+                        stop_loss=float(bracket.stop_loss.amount),
+                    )
         # candidate باقیمانده در build() با entry marker به filled.resolve می‌شود
 
     def _check_bracket(self, event: MarketEvent) -> bool:

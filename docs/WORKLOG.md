@@ -2078,3 +2078,15 @@ ruff ✅ black ✅  pytest 1483 passed, 49 skipped
 ```
 
 **گزارش:** `Report/PHASE65_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۶: TP/SL مدل کنار نقاط سیگنال ریپلی
+
+SignalMarker +tp/sl (سطح مطلق) · engine از range forecast (BUY: high/low،
+SELL برعکس) · بعد از fill واقعی next-open، سطوح براکت (با spread) جایگزین ·
+رندر: خط‌چین سبز/قرمز + اتصال نقطه‌دار + قیمت در زوم · legend +۲ · ۳ تست.
+
+```
+pytest 1485 passed, 49 skipped
+```
