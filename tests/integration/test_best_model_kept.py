@@ -56,6 +56,10 @@ class Role:
     window_size = 32
     horizon = 5
     target = Target()
+    # فاز ۷۰: اسکریپت role.loss را در ModelRecord می‌نویسد — mock هم باید
+    # داشته باشد (قبل از نصب TF این تست‌ها skip می‌شدند و دیده نمی‌شد).
+    loss = "sparse_categorical_crossentropy"
+    metric = "accuracy"
 
 
 class Dataset:

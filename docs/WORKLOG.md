@@ -2048,3 +2048,125 @@ ruff ✅ black ✅  pytest 1475 passed, 49 skipped
 بعد از این فیکس لازم است. signal آسیب ندیده (مسیرش target_index نمی‌خواند).
 
 **گزارش:** `Report/PHASE63_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۴: باگ ۴۹ — برش last_n، رنج را گرسنه می‌کرد (trades=0)
+
+اولین بکتست دومدلیِ واقعی: مدل‌ها سالم، trades=0. ریشه: handler کندل‌های
+1D را با cutoff پنجرهٔ 5M می‌برید (۹٬۰۰۰×5M ≈ ۳۱ روز → ~۳۰ کندل 1D <
+window=150 → abstain همیشگی). علیت را خود prediction source enforce
+می‌کند؛ برش حذف شد + خط «range candles: N (1D)» به گزارش + ۳ تست.
+
+```
+pytest 1478 passed, 49 skipped
+```
+
+**گزارش:** `Report/PHASE64_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۵: نقاط انتخاب سیگنال روی ریپلی (درخواست اپراتور)
+
+SignalMarker جدید (candidate/filled/rejected · BUY ▲ سبز / SELL ▼ قرمز ·
+توپر=ترید شد، توخالی=رد شد) + resolution claim-based در build() + خط
+legend با شمارش. engine فقط actionableها را ثبت می‌کند و ردِ براکت در
+next-open را با دلیل به rejected تبدیل می‌کند. + cleanup lint (F821/E741 قدیمی).
+
+```
+ruff ✅ black ✅  pytest 1483 passed, 49 skipped
+```
+
+**گزارش:** `Report/PHASE65_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۶: TP/SL مدل کنار نقاط سیگنال ریپلی
+
+SignalMarker +tp/sl (سطح مطلق) · engine از range forecast (BUY: high/low،
+SELL برعکس) · بعد از fill واقعی next-open، سطوح براکت (با spread) جایگزین ·
+رندر: خط‌چین سبز/قرمز + اتصال نقطه‌دار + قیمت در زوم · legend +۲ · ۳ تست.
+
+```
+pytest 1485 passed, 49 skipped
+```
+
+---
+
+## 2026-08-27 — فاز ۶۷: باگ ۵۰ — بافر 1D از تاریخچه پیش‌پر نمی‌شد
+
+گزارش اپراتور: مثلث‌ها هستن، TP/SL رسم نمیشه. ردیابی با شبیه‌سازی:
+بافر 1D فقط با observe پر می‌شد → برای اولین رنج باید ۱۵۰ روز *داخل*
+replay می‌گذشت (۹٬۰۰۰×5M=۳۱ روز → هرگز). رفع: pre-fill کندل‌های 1D
+بسته‌شده قبل از اولین 5M از همان تاریخچه (cursor جلو تا observe تکرار
+نکند). عددی تأیید شد: 0 → 151 پیش‌بینی رنج. ۲ تست جدید.
+
+```
+pytest 1487 passed, 49 skipped
+```
+
+---
+
+## 2026-08-27 — فاز ۶۸: برچسب build در گزارش بکتست (درسِ اجرای با کد قدیمی)
+
+بکتست کاربر هنوز «range candles: n/a» چاپ می‌کرد = با کد قدیمی اجرا شده بود
+(زیپ جدید جایگزین نشده بود یا سرور ری‌استارت نشده بود). رفعِ ریشه‌ایِ ابهام:
+خط `build : phase-67 (…)` به گزارش بکتست اضافه شد — اپراتور با یک نگاه
+می‌بیند با کد چندم اجرا می‌کند.
+
+```
+pytest 1487 passed, 49 skipped
+```
+
+---
+
+## 2026-08-27 — فاز ۶۹: شمارش سیگنال/رنج/خطاها در گزارش بکتست
+
+بعد از فازهای ۶۵-۶۷ هنوز نمی‌شد فهمید در بکتست واقعی: چند سیگنال
+actionable بوده؟ رنج چند بار اجرا شده؟ خطای خاموشی بوده؟ سه تغییر:
+1. `BacktestResult.source_stats` — stats منبع پیش‌بینی روی نتیجه
+2. شمارش خطاها با type+پیام در source (`error_counts`) + `errors` در stats
+3. گزارش بکتست: خط جدید `signals seen: N · range ran: M · abstains: K`
+   + هر خطای تکرارشده با `[err xN]`
++ رفع: `_last_range_feed` در مسیر dual هم ست می‌شد (قبلاً فقط legacy →
+  «range candles» همیشه n/a می‌ماند)
+
+```
+pytest 1487 passed, 49 skipped
+```
+
+---
+
+## 2026-08-27 — فاز ۷۰: باگ ۵۱ — کلاس‌های _RangeLoss/_Seq2SeqMAE ماژول‌سطح شدند
+
+**گزارش اپراتور (ابزار فاز ۶۹ کار کرد):**
+`signals seen: 811 · range ran: 0 · [err x811] range: TypeError: Could not
+locate class '_RangeLoss'` — رنج هرگز اجرا نشده بود؛ خطاها خاموش بودند.
+
+### ریشه
+
+کلاس‌های `_RangeLoss` و `_Seq2SeqMAE` **داخل تابع** `_build_compiled`
+تعریف می‌شدند (local class). `@register_keras_serializable` آنها را در
+registry keras ثبت می‌کرد ولی `custom_objects()` با `getattr(ماژول, نام)`
+هرگز نمی‌توانست ببیندشان → `load_model` هر مدل رنج شکست می‌خورد. signal
+مستقل از این مسیر است (SparseCategoricalCrossentropy استاندارد) — برای
+همین سیگنال کار می‌کرد و فقط رنج می‌شکست.
+
+### رفع
+
+- کلاس‌ها به سطح ماژول منتقل شدند (lazy build با `_build_range_classes`).
+- `range_custom_objects()`: همهٔ نام‌های تاریخی (`RangeLoss`،
+  `_RangeLoss`، `ShadBotTrader>…`، …) را یک‌جا می‌دهد.
+- `wavenet.custom_objects()` حالا آن‌ها را include می‌کند.
+- get_config/from_config کامل (seq2seq، وزن‌ها، delta) — round-trip تأیید شد.
+- تست انتها-به-انتها: build → serialize → deserialize مدل seq2seq ✓
+- تست‌های TF-دار integration که در سندباکس با نصب TF نمایان شدند:
+  mock کلاس Role در `test_best_model_kept`/`test_epoch_checkpoints` بدون
+  `loss/metric` بود → تکمیل شد (این‌ها با TF واقعی کرش می‌کردند).
+- ۲ تست `test_threshold_recorded` در سندباکس fail می‌مانند (به MT5 store
+  محلی نیاز دارند — روی سیستم اپراتور سبزند).
+
+```
+ruff ✅ black ✅
+pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 store), 12 skipped
+```

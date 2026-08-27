@@ -27,6 +27,15 @@ MARKER_ADJUST = "adjust"
 
 _KINDS = (MARKER_ENTRY, MARKER_EXIT, MARKER_ADJUST)
 
+#: فاز ۶۵ — نقطه‌ای که مدل سیگنال جهتِ اقدام‌پذیر داده (هرچند براکت/گیت
+#: بعدی ممکن است معامله را رد کند). خواستهٔ اپراتور: دیدنِ «مدل کجاها
+#: انتخاب می‌کند» جدا از «کجاها واقعاً ترید شد»، با رنگِ مجزا برای BUY/SELL.
+SIGNAL_CANDIDATE = "candidate"  # جهت انتخاب شد؛ تکلیف بعد از براکت روشن می‌شود
+SIGNAL_FILLED = "filled"  # واقعاً ترید باز شد
+SIGNAL_REJECTED = "rejected"  # گیت استراتژی یا براکت رد کرد
+
+_SIGNAL_OUTCOMES = (SIGNAL_CANDIDATE, SIGNAL_FILLED, SIGNAL_REJECTED)
+
 
 def _number(value: Optional[Decimal]) -> Optional[float]:
     """Decimal -> float for transport, keeping ``None`` meaningful."""
@@ -159,6 +168,128 @@ class TradeMarker(ValueObject):
         )
 
 
+class SignalMarker(ValueObject):
+    """One actionable signal-model selection, placed on its decision bar.
+
+    This is deliberately broader than :class:`TradeMarker`: a trade needs
+    the bracket to approve the levels too, but the operator wants to see
+    *where the signal model chose to act* — including the points a gate
+    or the bracket later refused. ``outcome`` separates the two:
+    ``candidate`` (chosen, verdict pending), ``filled`` (a real entry
+    followed), ``rejected`` (a strategy gate or the bracket refused).
+    """
+
+    def __init__(
+        self,
+        bar_index: int,
+        timestamp: str,
+        side: str,
+        confidence: float,
+        outcome: str = SIGNAL_CANDIDATE,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> None:
+        if bar_index < 0:
+            raise ValidationError("bar_index must not be negative")
+        if side not in ("buy", "sell"):
+            raise ValidationError("signal side must be 'buy' or 'sell'")
+        if not 0.0 <= confidence <= 1.0:
+            raise ValidationError("signal confidence must be in [0, 1]")
+        if outcome not in _SIGNAL_OUTCOMES:
+            raise ValidationError(f"signal outcome must be one of {_SIGNAL_OUTCOMES}")
+        for name, level in (("take_profit", take_profit), ("stop_loss", stop_loss)):
+            if level is not None and level <= 0:
+                raise ValidationError(f"signal {name} must be positive when given")
+
+        self._bar_index = bar_index
+        self._timestamp = timestamp
+        self._side = side
+        self._confidence = confidence
+        self._outcome = outcome
+        self._reason = reason
+        self._take_profit = take_profit
+        self._stop_loss = stop_loss
+
+    @property
+    def bar_index(self) -> int:
+        return self._bar_index
+
+    @property
+    def timestamp(self) -> str:
+        return self._timestamp
+
+    @property
+    def side(self) -> str:
+        return self._side
+
+    @property
+    def confidence(self) -> float:
+        return self._confidence
+
+    @property
+    def outcome(self) -> str:
+        return self._outcome
+
+    @property
+    def reason(self) -> str:
+        return self._reason
+
+    @property
+    def take_profit(self) -> Optional[float]:
+        """Model-implied TP level at decision time, when the range ran."""
+        return self._take_profit
+
+    @property
+    def stop_loss(self) -> Optional[float]:
+        return self._stop_loss
+
+    def with_outcome(
+        self,
+        outcome: str,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> "SignalMarker":
+        """A copy with a new outcome — resolution must not mutate history.
+
+        Level overrides only apply when explicitly given; otherwise the
+        levels recorded at decision time are preserved.
+        """
+        return SignalMarker(
+            bar_index=self._bar_index,
+            timestamp=self._timestamp,
+            side=self._side,
+            confidence=self._confidence,
+            outcome=outcome,
+            reason=reason or self._reason,
+            take_profit=self._take_profit if take_profit is None else take_profit,
+            stop_loss=self._stop_loss if stop_loss is None else stop_loss,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bar": self._bar_index,
+            "time": self._timestamp,
+            "side": self._side,
+            "conf": round(self._confidence, 4),
+            "outcome": self._outcome,
+            "reason": self._reason,
+            "tp": self._take_profit,
+            "sl": self._stop_loss,
+        }
+
+    def _value(self) -> Tuple[Any, ...]:
+        return (
+            self._bar_index,
+            self._side,
+            self._outcome,
+            self._confidence,
+            self._take_profit,
+            self._stop_loss,
+        )
+
+
 class ReplayBar(ValueObject):
     """One processed bar with the portfolio state it left behind."""
 
@@ -269,12 +400,14 @@ class ReplayTape(ValueObject):
         timeframe: str,
         starting_equity: Decimal,
         bars: Sequence[ReplayBar],
+        signal_points: Sequence[SignalMarker] = (),
     ) -> None:
         self._session_id = session_id
         self._symbol = symbol
         self._timeframe = timeframe
         self._starting_equity = starting_equity
         self._bars: Tuple[ReplayBar, ...] = tuple(bars)
+        self._signal_points: Tuple[SignalMarker, ...] = tuple(signal_points)
 
     @property
     def session_id(self) -> str:
@@ -304,6 +437,11 @@ class ReplayTape(ValueObject):
     def markers(self) -> List[TradeMarker]:
         """Every fill of the run, in chronological order."""
         return [marker for bar in self._bars for marker in bar.markers]
+
+    @property
+    def signal_points(self) -> Tuple[SignalMarker, ...]:
+        """Every actionable signal-model selection (فاز ۶۵), in order."""
+        return self._signal_points
 
     @property
     def closing_markers(self) -> List[TradeMarker]:
@@ -397,6 +535,7 @@ class ReplayTape(ValueObject):
             "bar_count": len(self._bars),
             "bars": [bar.to_dict() for bar in self._bars],
             "markers": [marker.to_dict() for marker in self.markers],
+            "signal_points": [point.to_dict() for point in self._signal_points],
             "round_trips": self.round_trips(),
             "open_position": self.open_position_at_end(),
         }
@@ -420,10 +559,99 @@ class ReplayRecorder:
         self._starting_equity = starting_equity
         self._bars: List[ReplayBar] = []
         self._pending: List[TradeMarker] = []
+        self._signals: List[SignalMarker] = []
 
     def mark(self, marker: TradeMarker) -> None:
         """Attach a fill to the bar currently being processed."""
         self._pending.append(marker)
+
+    def record_signal(
+        self,
+        bar_index: int,
+        timestamp: str,
+        side: str,
+        confidence: float,
+        outcome: str = SIGNAL_CANDIDATE,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> None:
+        """Record one actionable signal-model selection (فاز ۶۵).
+
+        ``take_profit``/``stop_loss`` carry the range model's implied
+        levels for this bar (فاز ۶۶) so the replay chart can draw what
+        the trade *would* have looked like even when it is refused.
+        """
+        self._signals.append(
+            SignalMarker(
+                bar_index=bar_index,
+                timestamp=timestamp,
+                side=side,
+                confidence=confidence,
+                outcome=outcome,
+                reason=reason,
+                take_profit=take_profit,
+                stop_loss=stop_loss,
+            )
+        )
+
+    def resolve_signal(
+        self,
+        bar_index: int,
+        side: str,
+        outcome: str,
+        reason: str = "",
+        take_profit: Optional[float] = None,
+        stop_loss: Optional[float] = None,
+    ) -> None:
+        """Overwrite the outcome (and optionally levels) of the last candidate."""
+        for point in reversed(self._signals):
+            if (
+                point.bar_index == bar_index
+                and point.side == side
+                and point.outcome == SIGNAL_CANDIDATE
+            ):
+                self._signals[self._signals.index(point)] = point.with_outcome(
+                    outcome, reason, take_profit, stop_loss
+                )
+                return
+
+    def _resolve_candidates(self) -> List[SignalMarker]:
+        """Pair every remaining candidate with the entry fill that followed.
+
+        Each entry fill is claimed by at most one candidate — the nearest
+        candidate of the same side *before* the fill (a next-open entry
+        belongs to the signal that scheduled it, not to an older one).
+        """
+        points = list(self._signals)
+        entries = [
+            {"bar": marker.bar_index, "side": marker.side, "price": marker.price, "claimed": False}
+            for bar in self._bars
+            for marker in bar.markers
+            if marker.kind == MARKER_ENTRY
+        ]
+        # از آخر به اول: نزدیک‌ترین candidate قبل از هر entry، آن را claim می‌کند.
+        order = sorted(
+            (i for i, p in enumerate(points) if p.outcome == SIGNAL_CANDIDATE),
+            key=lambda i: points[i].bar_index,
+            reverse=True,
+        )
+        for position in order:
+            point = points[position]
+            best = None
+            for entry in entries:
+                if entry["claimed"] or entry["side"] != point.side:
+                    continue
+                if entry["bar"] <= point.bar_index:
+                    continue
+                if best is None or entry["bar"] < best["bar"]:
+                    best = entry
+            if best is not None:
+                best["claimed"] = True
+                points[position] = point.with_outcome(
+                    SIGNAL_FILLED, reason=f"entry @ {best['price']}"
+                )
+        return points
 
     def record_bar(
         self,
@@ -469,4 +697,5 @@ class ReplayRecorder:
             timeframe=self._timeframe,
             starting_equity=self._starting_equity,
             bars=tuple(self._bars),
+            signal_points=self._resolve_candidates(),
         )

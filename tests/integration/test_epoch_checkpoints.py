@@ -150,6 +150,9 @@ class TestEveryEpochIsCheckpointed:
             name = "range"
             window_size = 32
             horizon = 5
+            # فاز ۷۰: role.loss در ModelRecord نوشته می‌شود
+            loss = "huber"
+            metric = "mae"
 
         class Dataset:
             series = [[0.0] * 10 for _ in range(500)]
@@ -198,6 +201,9 @@ class TestEveryEpochIsCheckpointed:
             name = "range"
             window_size = 32
             horizon = 5
+            # فاز ۷۰: role.loss در ModelRecord نوشته می‌شود
+            loss = "huber"
+            metric = "mae"
 
         class Dataset:
             series = [[0.0] * 10 for _ in range(500)]

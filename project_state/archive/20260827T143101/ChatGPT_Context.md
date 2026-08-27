@@ -1,0 +1,73 @@
+# ChatGPT Context — ShadBotTrader
+
+
+## Project Identity
+
+- Project name: ShadBotTrader
+- Architecture version: 1.0
+- Python version: 3.13.14
+- Snapshot generated at: 2026-08-27T14:27:07.748286+00:00
+
+## Current Architecture
+
+- Clean Architecture + Domain-Driven Design
+- Dependency direction: infrastructure -> application -> domain
+- Event-driven + plugin-based core
+- Source modules: 317
+- Test modules: 131
+
+## Current Phase
+
+Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features) + Phase 39 (the training matrix reads stored features and is proven byte-identical to the computed one; the 1D timeframe has its own candles, features, dataset and range model; the operator chooses which model trains on which dataset) + Phase 40 (model type, dataset and saved model are dropdowns; trained models are persisted with the role and dataset that produced them; retraining adds a version instead of replacing one) + Phases 41-48 (streamed training, capped progress lines, batch count from fold geometry, batch size scaled to the data, a signal threshold field and a live broker spread, per-epoch checkpoints, the best epoch kept rather than the last, and buttons to test a model on a dataset and inspect a dataset) + Phase 50 (the signal model is binary SELL/BUY only; the old neutral-band/HOLD label is no longer part of the neural-network output; no-trade remains a strategy-level decision)
+
+## Implemented Components
+
+- ShadBotTrader
+
+## Git Commit
+
+- Branch: main
+- Commit: dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5
+- Dirty: yes (24 files)
+- Recent commits:
+  - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
+  - e2f10c4 Phase 68: print an engine build tag in the backtest report
+  - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
+  - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
+  - bd7b242 Phase 65: show signal-model selection points on the replay chart
+  - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
+  - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
+  - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
+  - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
+  - 554faf2 Phase 63: fix bug 47/48 — seq2seq range labels were constant (collapse + fake metric)
+
+## Quality Gate
+
+Run from the repository root:
+```bash
+python -m black --check .
+python -m ruff check .
+python -m mypy src
+python -m pytest
+```
+
+## Known Issues
+
+- None recorded for the current foundation.
+
+## Next Phase
+
+Decide how a simulated trade opens and closes. Phase 49 fixed the signal threshold so evaluation grades a model against its own label rule. What remains unanswered is the trade itself: the backtest still runs on the momentum baseline rather than the two trained models, a position closes only when the direction flips, and there is no stop loss, no take profit and no holding period. The operator is reviewing that chain before the next change is made.
+
+## Statistics
+
+- Total files: 797
+- Source files: 317
+- Test files: 131
+- Documentation files: 132
+- Legacy files: 176
+- Total Python lines: 115188
+- Modules: 448
+- Classes: 762
+- Functions: 4329
+- External dependencies: 14

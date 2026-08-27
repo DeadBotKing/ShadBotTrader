@@ -1120,6 +1120,11 @@ def descriptor_for(kind: CommandKind) -> CommandDescriptor:
 
 
 # ---------------------------------------------------------------- handlers --
+#: فاز ۶۷ — برچسب build برای گزارش بکتست؛ اپراتور با یک نگاه می‌بیند
+#: با کدِ چندم اجرا می‌کند (کد قدیمی = گزارش قدیمی = گمراهی).
+ENGINE_BUILD = "phase-67 (bug49+50 fixed: range prefill + signal points)"
+
+
 class CommandHandlers:
     """Binds commands to the application services that do the work."""
 
@@ -1867,12 +1872,18 @@ class CommandHandlers:
         range_timeframe = command.text("range_timeframe", "1D")
         range_candles = store.query(symbol, Timeframe(range_timeframe))
 
-        # range candles هم به همان نسبت زمانی برش می‌خوره
-        # (نه تعداد ثابت — چون تایم‌فریم فرق داره)
-        if last_n > 0 and signal_candles and range_candles:
-            # اولین زمان signal candle → شروع برش range candles
-            cutoff_time = signal_candles[0].open_time.value
-            range_candles = [c for c in range_candles if c.open_time.value >= cutoff_time]
+        # باگ ۴۹: range candles هرگز با last_n بریده نمی‌شود.
+        # ۹٬۰۰۰ کندل 5M یعنی ~۳۱ روز؛ برش زمانیِ range با همان cutoff
+        # فقط ~۳۰ کندل 1D باقی می‌گذاشت در حالی که مدل رنج برای هر تصمیم
+        # window=150 کندل روزانه می‌خواهد → abstain همیشگی → trades=0.
+        # علیت را خودِ DualModelPredictionSource enforce می‌کند (فقط
+        # کندل‌های 1D بسته‌شده قبل از زمان تصمیم دیده می‌شوند)؛ بریدن
+        # تاریخچهٔ range نه لازم است نه بی‌خطر.
+        if last_n > 0 and not range_candles and mode in ("dual", "auto"):
+            dual_note = (
+                f"No stored {range_timeframe} candles — the dual engine "
+                "cannot produce range forecasts."
+            )
         # configuration رو از قبل تعریف کن تا scoping خطا نده
         _spread_fixed, _spread_pct = _parse_spread(command)
         configuration = SimulationConfiguration(
@@ -1932,11 +1943,16 @@ class CommandHandlers:
                     record_replay=record_replay,
                     test_ratio=command.number("test_ratio", 0.0) / 100.0,
                 )
+                # باگ ۴۹-completion: مسیر dual هم باید خوراک رنج را گزارش کند
+                self._last_range_feed = (
+                    (len(range_candles), range_timeframe)
+                    if mode == "dual" and range_candles
+                    else None
+                )
                 return result, "dual", ""
             except Exception as _dual_err:
                 if mode == "dual":
                     raise
-                import traceback as _tb
 
                 _err_detail = str(_dual_err)[:300]
                 dual_note = f"Dual-model failed: {_err_detail} — legacy baseline was used."
@@ -1968,6 +1984,10 @@ class CommandHandlers:
             signal_candles,
             prediction_source=MomentumPredictionSource(lookback=6),
             record_replay=record_replay,
+        )
+        # باگ ۴۹: برای گزارش — چند کندل 1D واقعاً به موتور رسید
+        self._last_range_feed = (
+            (len(range_candles), range_timeframe) if mode == "dual" and range_candles else None
         )
         return result, "legacy", dual_note
 
@@ -2095,6 +2115,7 @@ class CommandHandlers:
 
         lines = [
             f"engine      : {mode}",
+            f"build       : {ENGINE_BUILD}",
             f"run id      : {result.session.session_id}",
             f"trades      : {metrics.trade_count}",
             f"initial eq  : {metrics.starting_equity:.4f}",
@@ -2105,6 +2126,12 @@ class CommandHandlers:
             f"slip rate   : {command.number('slippage', 0.0):g}",
             f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
             f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
+            # باگ ۴۹: شفافیت — چند کندل 1D واقعاً به موتور رنج رسیده؟
+            (
+                f"range candles: {self._last_range_feed[0]} ({self._last_range_feed[1]})"
+                if getattr(self, "_last_range_feed", None)
+                else "range candles: n/a"
+            ),
             f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
             f"session filt: {'yes — hours 2,5,6,10,14,15,16,18 UTC' if command.text('session_filter','0').strip()=='1' else 'no'}",
             (
@@ -2138,6 +2165,17 @@ class CommandHandlers:
                     f"stop losses : {result.bracket_exit_counts['stop_loss']}",
                 ]
             )
+            # فاز ۶۸: شمارش نقاط سیگنال و خطاهای رنج/سیگنال — تا رد شدن
+            # یا خطای خاموش دیگر نامرئی نماند (باگ ۵۰ همین‌جا پنهان بود).
+            _pst = getattr(result, "source_stats", {}) or {}
+            if _pst:
+                lines.append(
+                    f"signals seen: {_pst.get('signal_predictions', 0)}"
+                    f" · range ran: {_pst.get('range_predictions', 0)}"
+                    f" · abstains: {_pst.get('abstentions', 0)}"
+                )
+                for _err, _n in (_pst.get("errors") or {}).items():
+                    lines.append(f"  [err x{_n}] {_err}")
         if replay_diagnostics:
             lines.extend(replay_diagnostics)
         if trade_log_path is not None:

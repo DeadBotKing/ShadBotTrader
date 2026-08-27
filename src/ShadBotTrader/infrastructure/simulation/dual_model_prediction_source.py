@@ -19,6 +19,7 @@ from __future__ import annotations
 from bisect import bisect_right
 from collections import deque
 from datetime import timedelta
+from decimal import Decimal
 from typing import Any, Deque, Dict, List, Optional, Sequence
 
 from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalForecast
@@ -113,9 +114,23 @@ class DualModelPredictionSource(PredictionSource):
         self._last_range: Optional[RangeForecast] = None
         self._last_value: Optional[float] = None
         self._last_error: str = ""
+        self._error_counts: Dict[str, int] = {}
 
         self._signal_delta = _timeframe_delta(str(signal_timeframe))
         self._range_delta = _timeframe_delta(str(range_timeframe))
+        # باگ ۵۰ (فاز ۶۷): کندل‌های 1Dِ «بسته‌شدهٔ قبل از شروع replay» باید
+        # از اول در بافر باشند — وگرنه اولین سیگنال‌های actionable تا
+        # نزدیک window×1D از شروع replay بدون رنج می‌مانند (اجرای کاربر:
+        # ۹٬۰۰۰×5M=۳۱ روز → فقط ۳۱ کندل 1D → مدل ۱۵۰تایی هیچ‌وقت رنج
+        # نمی‌داد). cursor را جلو می‌بریم تا observe دوباره اضافه نکند.
+        if self._all_range_candles and signal_candles:
+            first_signal_time = min(c.open_time.value for c in signal_candles)
+            while self._range_cursor < len(self._all_range_candles):
+                candidate = self._all_range_candles[self._range_cursor]
+                if candidate.open_time.value + self._range_delta > first_signal_time:
+                    break
+                self._range_candles.append(candidate)
+                self._range_cursor += 1
 
     # ------------------------------------------------------------ state --
     @property
@@ -144,12 +159,18 @@ class DualModelPredictionSource(PredictionSource):
         return self._abstentions
 
     @property
+    def min_signal_confidence(self) -> float:
+        """The confidence gate this source applies to signal forecasts."""
+        return self._min_signal_confidence
+
+    @property
     def last_error(self) -> str:
         return self._last_error
 
     def stats(self) -> Dict[str, Any]:
         return {
             "bars_seen": self._bars_seen,
+            "errors": dict(self._error_counts),
             "signal_predictions": self._signal_predictions,
             "range_predictions": self._range_predictions,
             "abstentions": self._abstentions,
@@ -209,6 +230,8 @@ class DualModelPredictionSource(PredictionSource):
             )
         except Exception as error:
             self._last_error = f"signal inference failed: {type(error).__name__}: {error}"
+            key = f"signal: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._abstentions += 1
             return None
 
@@ -255,6 +278,8 @@ class DualModelPredictionSource(PredictionSource):
             self._range_predictions += 1
         except Exception as error:
             self._last_error = f"range inference failed: {type(error).__name__}: {error}"
+            key = f"range: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._last_range = None
         return self._last_value
 
@@ -276,6 +301,7 @@ class DualModelPredictionSource(PredictionSource):
         self._last_range = None
         self._last_value = None
         self._last_error = ""
+        self._error_counts = {}
 
     # -------------------------------------------------------- brackets --
     def bracket_for(
@@ -297,11 +323,10 @@ class DualModelPredictionSource(PredictionSource):
         spread_amount: Optional[Decimal] = None
         try:
             from decimal import Decimal as _D
+
             if self._spread_pct_val is not None:
                 # درصدی: spread = قیمت × pct
-                spread_amount = _D(str(
-                    float(entry_reference.amount) * float(self._spread_pct_val)
-                ))
+                spread_amount = _D(str(float(entry_reference.amount) * float(self._spread_pct_val)))
             elif self._spread_fixed is not None:
                 spread_amount = self._spread_fixed
         except Exception:
@@ -357,6 +382,8 @@ class DualModelPredictionSource(PredictionSource):
             )
         except Exception as error:
             self._last_error = f"feature window failed: {type(error).__name__}: {error}"
+            key = f"features: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             return None
 
         if len(matrix) < window_size:

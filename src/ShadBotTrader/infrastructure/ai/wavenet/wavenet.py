@@ -122,24 +122,19 @@ def gated_activation_layer(activation: str = "tanh") -> Any:
 
 
 def custom_objects() -> Dict[str, Any]:
-    """Custom Keras objects for deserializing a saved WaveNet."""
-    gau = _gated_activation_unit_class()
-    lt  = _last_timestep_layer_class()
+    """Custom Keras objects for deserializing a saved WaveNet.
 
-    # فاز ۵۵: _RangeLoss و _Seq2SeqMAE هم باید در load شناخته بشن
-    # اگه موجود نبودن (مدل قدیمی) فقط ignore میشه
-    from ShadBotTrader.infrastructure.ai.wavenet import wavenet_trainer as _wt
-    extra: Dict[str, Any] = {}
-    # جستجوی کلاس‌های register شده در module
-    import sys as _sys
-    for name in ("_RangeLoss", "_Seq2SeqMAE"):
-        # ممکنه بعد از اولین build تعریف شده باشن
-        mod = _sys.modules.get("ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer")
-        if mod is not None:
-            cls = getattr(mod, name, None)
-            if cls is not None:
-                extra[name] = cls
-                extra[f"ShadBotTrader>{name}"] = cls
+    فاز ۷۰ (باگ ۵۱): کلاس‌های رنج (RangeLoss/_RangeLoss، Seq2SeqMAE/
+    _Seq2SeqMAE) حالا ماژول‌سطح در wavenet_trainer هستند و همیشه در
+    دسترس — قبلاً local class بودند و load هر مدل رنج با
+    «Could not locate class '_RangeLoss'» می‌شکست.
+    """
+    gau = _gated_activation_unit_class()
+    lt = _last_timestep_layer_class()
+
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
+        range_custom_objects,
+    )
 
     return {
         "GatedActivationUnit":               gau,
@@ -147,7 +142,7 @@ def custom_objects() -> Dict[str, Any]:
         "_GatedActivationUnit":              gau,   # backwards compat
         "LastTimestep":                      lt,
         "ShadBotTrader>LastTimestep":        lt,
-        **extra,
+        **range_custom_objects(),
     }
 
 
@@ -258,7 +253,8 @@ def build_wavenet(
       ...residual blocks... -> Conv1x1 -> concat(last+avg) -> MLP -> Dense(2, linear)
 
     Range Seq2Seq (is_regression=True, seq2seq=True):  [فاز ۵۵]
-      ...residual blocks... -> Conv1x1 -> SeparableConv1D(horizon*2, causal) -> output[batch, window, horizon*2]
+      ...residual blocks... -> Conv1x1 -> SeparableConv1D(horizon*2, causal)
+      -> output[batch, window, horizon*2]
       برای هر timestep t: [high_1..high_H, low_1..low_H]
       Loss فقط روی آخرین H timestep اعمال میشه
       gradient به همه لایه‌های WaveNet مستقیم میرسه

@@ -36,6 +36,142 @@ from ShadBotTrader.infrastructure.ai.training_progress import (
     keras_progress_callback,
 )
 
+# ---------------------------------------------------------------------------
+# فاز ۷۰ — باگ ۵۱: Loss/Metric سفارشی رنج در سطح ماژول
+# ---------------------------------------------------------------------------
+# قبلاً این کلاس‌ها داخل _build_compiled تعریف می‌شدند (local class). ثبت
+# keras کار می‌کرد ولی custom_objects() با getattr ماژول هرگز نمی‌توانست
+# آنها را ببیند → بارگذاری هر مدل رنج با
+#   TypeError: Could not locate class '_RangeLoss'
+# شکست می‌خورد و بکتست دومدلی بدون رنج می‌ماند (۸۱۱ خطا در اجرای کاربر).
+
+_RANGE_CLASSES: Dict[str, Any] = {}
+
+
+def _tf():
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
+
+    return _require_tensorflow()
+
+
+def _register_now(cls: Any) -> Any:
+    try:
+        import keras as _k
+
+        return _k.saving.register_keras_serializable(package="ShadBotTrader")(cls)
+    except (ImportError, AttributeError):
+        return _tf().keras.utils.register_keras_serializable(package="ShadBotTrader")(cls)
+
+
+def _build_range_classes() -> None:
+    """ساخت و ثبت یک‌بارهٔ RangeLoss/Seq2SeqMAE (lazy، TF-safe)."""
+    if _RANGE_CLASSES:
+        return
+    tf = _tf()
+
+    @_register_now
+    class RangeLoss(tf.keras.losses.Loss):
+        """Weighted 3*Huber + 6*MAE + 1*MSE (فاز ۵۴) + حالت seq2seq (فاز ۵۵).
+
+        seq2seq: 40% loss کل سکانس + 60% آخرین timestep (پیش‌بینی فردا).
+        """
+
+        def __init__(
+            self,
+            seq2seq: bool = False,
+            w_huber: float = 3.0,
+            w_mae: float = 6.0,
+            w_mse: float = 1.0,
+            delta: float = 0.005,
+            name: str = "range_loss",
+            **kw: Any,
+        ) -> None:
+            super().__init__(name=name, **kw)
+            self._seq2seq = seq2seq
+            self._w = (w_huber, w_mae, w_mse)
+            self._delta = delta
+            self._huber_fn = tf.keras.losses.Huber(delta=delta)
+
+        def _weighted(self, y_true_t: Any, y_pred_t: Any) -> Any:
+            w_h, w_m, w_s = self._w
+            total = w_h + w_m + w_s
+            h = self._huber_fn(y_true_t, y_pred_t)
+            m = tf.reduce_mean(
+                tf.abs(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
+            )
+            s = tf.reduce_mean(
+                tf.square(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
+            )
+            return (w_h * h + w_m * m + w_s * s) / total
+
+        def call(self, y_true: Any, y_pred: Any) -> Any:
+            if self._seq2seq:
+                loss_all = self._weighted(y_true, y_pred)
+                loss_tgt = self._weighted(
+                    y_true[:, -1:, :],  # type: ignore[index]
+                    y_pred[:, -1:, :],  # type: ignore[index]
+                )
+                return 0.4 * loss_all + 0.6 * loss_tgt
+            return self._weighted(y_true, y_pred)
+
+        def get_config(self) -> dict:
+            cfg = super().get_config()
+            cfg.update(
+                {
+                    "seq2seq": self._seq2seq,
+                    "w_huber": self._w[0],
+                    "w_mae": self._w[1],
+                    "w_mse": self._w[2],
+                    "delta": self._delta,
+                }
+            )
+            return cfg
+
+    @_register_now
+    class Seq2SeqMAE(tf.keras.metrics.Metric):
+        """MAE روی آخرین timestep خروجی seq2seq (فاز ۵۵/باگ ۵)."""
+
+        def __init__(self, name: str = "mae", **kw: Any) -> None:
+            super().__init__(name=name, **kw)
+            self._mae_sum = self.add_weight(name="s2s_sum", initializer="zeros")
+            self._mae_cnt = self.add_weight(name="s2s_cnt", initializer="zeros")
+
+        def update_state(  # type: ignore[override]
+            self, y_true: Any, y_pred: Any, sample_weight: Any = None
+        ) -> None:
+            true_last = y_true[:, -1, :]
+            pred_last = y_pred[:, -1, :]
+            mae_val = tf.reduce_mean(tf.abs(true_last - pred_last))
+            self._mae_sum.assign_add(tf.cast(mae_val, self._mae_sum.dtype))
+            self._mae_cnt.assign_add(1.0)
+
+        def result(self) -> Any:
+            return tf.math.divide_no_nan(self._mae_sum, self._mae_cnt)
+
+        def reset_state(self) -> None:
+            self._mae_sum.assign(0.0)
+            self._mae_cnt.assign(0.0)
+
+    _RANGE_CLASSES["RangeLoss"] = RangeLoss
+    _RANGE_CLASSES["Seq2SeqMAE"] = Seq2SeqMAE
+
+
+def _range_class(name: str) -> Any:
+    _build_range_classes()
+    return _RANGE_CLASSES[name]
+
+
+def range_custom_objects() -> Dict[str, Any]:
+    """همهٔ نام‌هایی که مدل رنج هنگام load ممکن است بخواهد (فاز ۷۰)."""
+    _build_range_classes()
+    mapping: Dict[str, Any] = {}
+    for cls_name, cls in _RANGE_CLASSES.items():
+        mapping[cls_name] = cls
+        mapping[f"_{cls_name}"] = cls  # نام‌های تاریخی با underscore
+        mapping[f"ShadBotTrader>{cls_name}"] = cls
+        mapping[f"ShadBotTrader>_{cls_name}"] = cls
+    return mapping
+
 
 def _serialize_model(model) -> bytes:
     """Serialize a Keras model to bytes via a temporary .keras file."""
@@ -917,47 +1053,11 @@ def _build_compiled(
                     return 0.4 * loss_all + 0.6 * loss_tgt
                 return _weighted_loss(y_true, y_pred)
 
-        compiled_loss = _RangeLoss(name="range_loss")
-        if _is_seq2seq:
-            # متریک MAE روی آخرین timestep خروجی seq2seq
-            # ساده‌ترین حالت: از MeanAbsoluteError استاندارد Keras استفاده کن
-            # ولی فقط روی آخرین timestep محاسبه کن
-            # برای horizon=1: output[-1] = [high, low] فردا
-            @_register_loss(package="ShadBotTrader")
-            class _Seq2SeqMAE(tf.keras.metrics.Metric):
-                """MAE روی آخرین timestep seq2seq.
-
-                get_config/from_config پیاده‌سازی شده تا serialize درست کار کنه.
-                """
-
-                def __init__(self, name: str = "mae", **kw: object) -> None:
-                    # name رو جداگانه می‌گیریم تا conflict نشه
-                    # وقتی Keras از config لود می‌کنه، name رو پاس میده
-                    super().__init__(name=name, **kw)  # type: ignore[call-arg]
-                    self._mae_sum = self.add_weight(name="s2s_sum", initializer="zeros")
-                    self._mae_cnt = self.add_weight(name="s2s_cnt", initializer="zeros")
-
-                def get_config(self) -> dict:
-                    cfg = super().get_config()
-                    return cfg  # name در super().get_config() هست
-
-                def update_state(  # type: ignore[override]
-                    self, y_true: object, y_pred: object, sample_weight: object = None
-                ) -> None:
-                    true_last = y_true[:, -1, :]  # type: ignore[index]
-                    pred_last = y_pred[:, -1, :]  # type: ignore[index]
-                    mae_val = tf.reduce_mean(tf.abs(true_last - pred_last))
-                    self._mae_sum.assign_add(tf.cast(mae_val, self._mae_sum.dtype))
-                    self._mae_cnt.assign_add(1.0)
-
-                def result(self) -> object:
-                    return tf.math.divide_no_nan(self._mae_sum, self._mae_cnt)
-
-                def reset_state(self) -> None:
-                    self._mae_sum.assign(0.0)
-                    self._mae_cnt.assign(0.0)
-
-            compiled_metrics = [_Seq2SeqMAE()]
+        # فاز ۷۰ (باگ ۵۱): کلاس‌های RangeLoss/Seq2SeqMAE ماژول‌سطح‌اند تا
+        # custom_objects() بتواند آنها را ببیند و load مدل رنج کار کند.
+        compiled_loss = _range_class("RangeLoss")(seq2seq=seq2seq, delta=0.005, name="range_loss")
+        if seq2seq:
+            compiled_metrics = [_range_class("Seq2SeqMAE")()]
         else:
             compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     else:

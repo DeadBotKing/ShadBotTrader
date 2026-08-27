@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 78
+      "used_by": 80
     },
     {
       "name": "numpy",
@@ -542,6 +542,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/RANGE_DATASET_SCHEMATIC.html",
+      "sha256": "53cde5815018d937279910c5718f470b096e7c9f20048ec42122772a40665c70",
+      "size_bytes": 19100
+    },
+    {
+      "category": "documentation",
       "path": "docs/README.md",
       "sha256": "efc87a099cf555b9f755545c02e7264f39481569c3c16c269b92100deac5191c",
       "size_bytes": 70063
@@ -788,6 +794,24 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE63_REPORT.md",
+      "sha256": "0f9437d490091dd29f066fc3b48140f76eac48dbdcd33942bd77f228f3a2091c",
+      "size_bytes": 5860
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE64_REPORT.md",
+      "sha256": "711cab6be463fd6d70e3116981ced84c521c7ecb42156f197a4a8bb6faab5506",
+      "size_bytes": 2530
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE65_REPORT.md",
+      "sha256": "eeb57505a29dcc5b89d68a445f1bd1635bcf1f50207efb6786f1658574806de9",
+      "size_bytes": 6982
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE_9_21_22_REPORT.md",
       "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
       "size_bytes": 9198
@@ -885,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "5c3c41216b8cf8a390a2df90e8505e6e37838f843a4e45857d35451e16772631",
-      "size_bytes": 107729
+      "sha256": "e48bcb2ebaf61091a0555fb63546dcebc0180e22c7170259d6ba495a67a159a9",
+      "size_bytes": 112809
     },
     {
       "category": "legacy",
@@ -1989,7 +2013,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "94fb7b3634c8bb923e47c921f417ca5b014812ba59c11dd9fcb45643b83abb00",
+      "sha256": "3ee5f4f12acd701608563110ce5a8dba8ecc1c9d5557e3acc1f384f20f43e457",
       "size_bytes": 25781
     },
     {
@@ -2049,8 +2073,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "3916d13e2bd28c08aa39842cb96f860df1848e304f2d3747c81a7f4685185f0e",
-      "size_bytes": 44900
+      "sha256": "331b2c90bd141d12537dd7e2d63d292d61a3a62b15d8e766f167cf9398646adb",
+      "size_bytes": 45298
     },
     {
       "category": "script",
@@ -2931,8 +2955,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/simulation/replay.py",
-      "sha256": "52da4e47ad3ba2938666e511275933d7d62e9f55f53c1c2053db72af4f2ee670",
-      "size_bytes": 14984
+      "sha256": "e120d9aec60b1d0fea833e1e3dbacdb507dee6cfd9d3bed39a4df76d9ed950fa",
+      "size_bytes": 23406
     },
     {
       "category": "source",
@@ -3189,14 +3213,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet.py",
-      "sha256": "5a2756e6858cc78550e04ffb4e59d80ce0724392d740f69d74acbc623d03ffc2",
-      "size_bytes": 12852
+      "sha256": "22ea87fa6d9bace0ae29ed1badea923d6c4b3f9139f6de7011c4cb39c3f0f57c",
+      "size_bytes": 12556
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "e97d58939cae8f890dc6b340692ddeb070733c37699fc3e10702a152940e7cf7",
-      "size_bytes": 45038
+      "sha256": "3508154a649ad94ae954927879c5b53024b3fadbe5b691677828f8ea6284f7f8",
+      "size_bytes": 48431
     },
     {
       "category": "source",
@@ -3699,8 +3723,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/backtest_engine.py",
-      "sha256": "c52f8a5e970a404c7ca223c9e52bb13b37244e021cae9229c68ed0d0c1d0679c",
-      "size_bytes": 29694
+      "sha256": "86f3d3aace6387a195b5c8c6af57f527a749eece4172dd830e97a4f7eb4ab1b8",
+      "size_bytes": 35007
     },
     {
       "category": "source",
@@ -3723,8 +3747,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/dual_model_prediction_source.py",
-      "sha256": "62c34daced1c01c62c341e87ef18e0588e5bc5241d727ea7730a32c7db511009",
-      "size_bytes": 15165
+      "sha256": "fb85a55eb0d82b723f2c1453191a406782cc1ea4f8460f8bb1e90595045e97b0",
+      "size_bytes": 16944
     },
     {
       "category": "source",
@@ -3849,8 +3873,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "60d9f068282b38dfedeb26ede14e8b4a8f6ba9baf79f632f354e5e0767722f0f",
-      "size_bytes": 142369
+      "sha256": "0c3f261f58afd27aecc1824fe868152940de0b9e00f730450a477b69eadd602a",
+      "size_bytes": 144741
     },
     {
       "category": "source",
@@ -3903,8 +3927,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/replay_renderer.py",
-      "sha256": "9ceb7909bbb3a2874454f384f4af00d57daf23cdbb6a6a6c93fc11c71398cdb1",
-      "size_bytes": 21592
+      "sha256": "c221ace132641456f2c794f8835144f53ae9b39be8d5e2d65aefb3480a0f22d4",
+      "size_bytes": 25565
     },
     {
       "category": "source",
@@ -4059,8 +4083,8 @@
     {
       "category": "test",
       "path": "tests/integration/test_best_model_kept.py",
-      "sha256": "815eaea31a3692600cd13384da932691e5b08b039e288690d446e42677e7da5d",
-      "size_bytes": 9906
+      "sha256": "cb554314dd7a690f201f29842856b95b15a828488d9e4eac8f6ff66be6621afc",
+      "size_bytes": 10201
     },
     {
       "category": "test",
@@ -4113,8 +4137,8 @@
     {
       "category": "test",
       "path": "tests/integration/test_epoch_checkpoints.py",
-      "sha256": "a176e8370555541b8f3de1636100c9a6ee302f80fc4642c0232e00848027665b",
-      "size_bytes": 9033
+      "sha256": "a465999108695bb03361141d5c3e65f5fa0abae148ef6ef231ab30a554d5e3f6",
+      "size_bytes": 9299
     },
     {
       "category": "test",
@@ -4325,6 +4349,12 @@
       "path": "tests/unit/ai/test_purged_validation.py",
       "sha256": "a8166deaa9eee3ca45ae56be9931611bd0be94be822975f0b040d0d823500e99",
       "size_bytes": 3176
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/ai/test_range_loss_serialization.py",
+      "sha256": "caa31366fc92f368db4b7a79b7d6e63f6ab0b0f6ecfa6e8387478e6e415df0ca",
+      "size_bytes": 2937
     },
     {
       "category": "test",
@@ -4748,9 +4778,27 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/simulation/test_range_history_prefix.py",
+      "sha256": "27ba40a71efb12ede5afb69ccfc85167c6fb04a3cbbd8619371c52fb138c5348",
+      "size_bytes": 4623
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/simulation/test_range_window_starvation.py",
+      "sha256": "521475aaeafbc7a3df2028a4ed791d1a18ca72823888016ba0c13e1bfece46db",
+      "size_bytes": 4736
+    },
+    {
+      "category": "test",
       "path": "tests/unit/simulation/test_replay.py",
       "sha256": "f2650c547d90a371ae292292fd0c94c76b9dd72e3edab90c78a54104c478ea7a",
       "size_bytes": 7568
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/simulation/test_replay_signal_points.py",
+      "sha256": "aefe31bad78b665d39dfbb4cfb93c25c0a431af2649a5116e426616ab7523e7f",
+      "size_bytes": 6321
     },
     {
       "category": "test",
@@ -4795,23 +4843,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T09:18:50.956763+00:00",
+  "generated_at": "2026-08-27T14:48:41.835745+00:00",
   "git": {
     "branch": "main",
-    "commit": "3ffe0309ba3e05477521231c6c4b096d0916452a",
+    "commit": "dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5",
     "dirty": true,
-    "dirty_files": 3,
+    "dirty_files": 30,
     "is_repo": true,
     "recent_commits": [
-      "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
-      "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan",
-      "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)",
-      "8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)",
-      "1661ee5 Phase 62: expose architecture/validation knobs in the dashboard",
-      "9ec618b Phase 61: architecture knobs (--n-layers/--n-blocks) + RF print & guard",
-      "b9e1ed4 Phase 60: wire ReduceLR + EarlyStopping into the signal model; honest QUALITY baseline",
-      "e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)",
-      "d2e7e51 Update Signal Model"
+      "dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report",
+      "e2f10c4 Phase 68: print an engine build tag in the backtest report",
+      "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
+      "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
+      "bd7b242 Phase 65: show signal-model selection points on the replay chart",
+      "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
+      "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)",
+      "2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)",
+      "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model",
+      "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)"
     ]
   },
   "modules": [
@@ -6469,9 +6518,9 @@
       "path": "src/ShadBotTrader/domain/simulation/ports.py"
     },
     {
-      "classes": 4,
+      "classes": 5,
       "external_imports": [],
-      "functions": 51,
+      "functions": 67,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.common.value_object"
@@ -7011,18 +7060,18 @@
       ],
       "functions": 15,
       "internal_imports": [
-        "ShadBotTrader.infrastructure.ai.wavenet"
+        "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer"
       ],
       "name": "ShadBotTrader.infrastructure.ai.wavenet.wavenet",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet.py"
     },
     {
-      "classes": 6,
+      "classes": 7,
       "external_imports": [
         "keras",
         "numpy"
       ],
-      "functions": 30,
+      "functions": 38,
       "internal_imports": [
         "ShadBotTrader.domain.ai.inference",
         "ShadBotTrader.domain.ai.model_artifact",
@@ -8204,7 +8253,7 @@
     {
       "classes": 2,
       "external_imports": [],
-      "functions": 22,
+      "functions": 24,
       "internal_imports": [
         "ShadBotTrader.application.services.execution_service",
         "ShadBotTrader.application.services.trading_decision_service",
@@ -8269,7 +8318,7 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 16,
+      "functions": 17,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -9826,6 +9875,19 @@
       "path": "tests/unit/ai/test_purged_validation.py"
     },
     {
+      "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 4,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.wavenet.wavenet",
+        "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer"
+      ],
+      "name": "unit.ai.test_range_loss_serialization",
+      "path": "tests/unit/ai/test_range_loss_serialization.py"
+    },
+    {
       "classes": 1,
       "external_imports": [
         "pytest"
@@ -10840,6 +10902,39 @@
       "path": "tests/unit/simulation/test_dual_model_backtest.py"
     },
     {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 6,
+      "internal_imports": [
+        "ShadBotTrader.domain.ai.prediction_target",
+        "ShadBotTrader.domain.market.candle",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.simulation.market_event",
+        "ShadBotTrader.infrastructure.simulation.dual_model_prediction_source"
+      ],
+      "name": "unit.simulation.test_range_history_prefix",
+      "path": "tests/unit/simulation/test_range_history_prefix.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 6,
+      "internal_imports": [
+        "ShadBotTrader.domain.market.candle",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.simulation.market_event",
+        "ShadBotTrader.infrastructure.simulation.dual_model_prediction_source"
+      ],
+      "name": "unit.simulation.test_range_window_starvation",
+      "path": "tests/unit/simulation/test_range_window_starvation.py"
+    },
+    {
       "classes": 0,
       "external_imports": [
         "pytest"
@@ -10851,6 +10946,19 @@
       ],
       "name": "unit.simulation.test_replay",
       "path": "tests/unit/simulation/test_replay.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 10,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.simulation.replay"
+      ],
+      "name": "unit.simulation.test_replay_signal_points",
+      "path": "tests/unit/simulation/test_replay_signal_points.py"
     },
     {
       "classes": 6,
@@ -10973,20 +11081,20 @@
   "python_version": "3.13.14",
   "source_file_count": 317,
   "statistics": {
-    "class_count": 759,
+    "class_count": 763,
     "config_file_count": 3,
-    "documentation_file_count": 128,
+    "documentation_file_count": 132,
     "external_dependency_count": 14,
-    "function_count": 4279,
-    "internal_dependency_count": 261,
+    "function_count": 4332,
+    "internal_dependency_count": 260,
     "legacy_file_count": 176,
-    "module_count": 444,
+    "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 47708,
-    "test_file_count": 127,
-    "test_lines": 21651,
-    "total_file_count": 789,
-    "total_lines": 114142
+    "source_lines": 48297,
+    "test_file_count": 131,
+    "test_lines": 22164,
+    "total_file_count": 797,
+    "total_lines": 115248
   },
-  "test_file_count": 127
+  "test_file_count": 131
 }
