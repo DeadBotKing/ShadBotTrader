@@ -533,7 +533,11 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             val_fold_baseline = max(val_balance.values()) / _val_total if _val_total else None
 
     # فاز ۵۹: اندازهٔ ولیدیشن را صریح چاپ کن تا کمبودش پنهان نماند.
-    pool = training_window_count(dataset, role)
+    # فاز ۶۳: همان تعریف rows که build_trainer استفاده می‌کند (سیگنال =
+    # تعداد برچسب‌ها؛ رنج = طول series) تا عدد چاپ‌شده با fold واقعی یکی
+    # باشد (اجرای range: سربرگ ۴۳۳ چاپ کرد ولی فولد واقعی ۴۴۸ بود).
+    _se = getattr(dataset, "sample_ends", None)
+    pool = len(_se) if _se is not None else len(dataset.series)
     resolved = effective_val_size(args, pool) or max(4, min(2000, pool // 10))
     share = (resolved / pool * 100.0) if pool else 0.0
     print(
