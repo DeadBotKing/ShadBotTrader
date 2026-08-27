@@ -1981,3 +1981,29 @@ pytest 1458 passed, 49 skipped   (قبلاً 1456)
 ReduceLR احتمالاً کالیبراسیون را بهتر می‌کند.
 
 **گزارش‌ها:** `Report/PHASE60_REPORT.md` · `Report/SIGNAL_V1_FULLRUN_REVIEW_2026-08-26.md`
+
+---
+
+## 2026-08-27 — فاز ۶۱: پیچ‌های معماری (--n-layers/--n-blocks) + چاپ RF
+
+**پرسش کاربر** «window=150 اوکیه؟» لو داد که `--window` فقط اندازهٔ پنجره
+را عوض می‌کند و RF پیش‌فرض فاز ۵۸ (249) بزرگ‌تر از پنجره می‌شد (166%).
+
+### رفع
+
+- factoryهای `signal_model_role`/`range_model_role`: پارامترهای اختیاری
+  `n_layers_per_block`/`n_blocks` (None = پیش‌فرض).
+- تابع `receptive_field()` — فرمول RF با تست (249/121/125/57).
+- CLI: `--n-layers` / `--n-blocks` + خط چاپ `architecture : window=… · L×B · RF=… (X% of window)`
+  + هشدار صریح وقتی RF > window.
+
+### تست
+
+۶ تست جدید (`test_model_roles_knobs.py`). پیش‌فرض‌های فاز ۵۸ قفل شدند.
+
+```
+ruff ✅ black ✅
+pytest 1464 passed, 49 skipped   (قبلاً 1458)
+```
+
+**گزارش:** `Report/PHASE61_REPORT.md`

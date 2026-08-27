@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T05:17:05.090322+00:00
+- Snapshot generated at: 2026-08-27T05:32:49.404857+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 124
+- Test modules: 125
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: e40e840ee1bc31a014c22407581c37488a04c9be
-- Dirty: yes (3 files)
+- Commit: b9e1ed42098fe674ad3e21cbb5d9663fb5be16d7
+- Dirty: yes (4 files)
 - Recent commits:
+  - b9e1ed4 Phase 60: wire ReduceLR + EarlyStopping into the signal model; honest QUALITY baseline
   - e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)
   - d2e7e51 Update Signal Model
 
@@ -53,13 +54,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 780
+- Total files: 783
 - Source files: 317
-- Test files: 124
-- Documentation files: 122
+- Test files: 125
+- Documentation files: 124
 - Legacy files: 176
-- Total Python lines: 113661
-- Modules: 441
+- Total Python lines: 113783
+- Modules: 442
 - Classes: 759
-- Functions: 4257
+- Functions: 4264
 - External dependencies: 14

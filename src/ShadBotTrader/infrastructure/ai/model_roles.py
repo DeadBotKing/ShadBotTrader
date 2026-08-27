@@ -41,8 +41,8 @@ from ShadBotTrader.domain.common.errors import ValidationError
 _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
     TargetKind.PRICE_RANGE: {
         "activation": "linear",
-        "loss": "huber",   # Huber(delta=0.005): MSE zone covers ±0.005 → smooth convergence
-        "metric": "mae",   # MAE رو به عنوان متریک نگه میداریم — قابل تفسیر
+        "loss": "huber",  # Huber(delta=0.005): MSE zone covers ±0.005 → smooth convergence
+        "metric": "mae",  # MAE رو به عنوان متریک نگه میداریم — قابل تفسیر
     },
     TargetKind.TRADE_SIGNAL: {
         "activation": "softmax",
@@ -83,12 +83,12 @@ class ModelRole:
     # ── WaveNet architecture knobs ─────────────────────────────────────
     n_filters: int = 32
     kernel_size: int = 5
-    n_layers_per_block: int = 3   # RF=57 — window=100 compatible
+    n_layers_per_block: int = 3  # RF=57 — window=100 compatible
     n_blocks: int = 2
     depth_multiplier: int = 8
     l2: float = 2.5e-4
     dropout: float = 0.10
-    seq2seq: bool = False   # Phase 55: seq2seq output for range model
+    seq2seq: bool = False  # Phase 55: seq2seq output for range model
 
     def __post_init__(self) -> None:
         if self.window_size < 2:
@@ -158,10 +158,26 @@ def range_model_id(timeframe: str) -> str:
     return f"gold_range_{timeframe.strip().lower()}"
 
 
+def receptive_field(n_layers_per_block: int, n_blocks: int, kernel_size: int = 5) -> int:
+    """Total causal receptive field of the dilated stack (فاز ۶۱).
+
+    Each block stacks ``n_layers_per_block`` dilated convs with dilations
+    1, 2, 4, … so one block reaches ``1 + (kernel-1) * (2**layers - 1)``
+    bars back; ``n_blocks`` of them add up. The convention checked by the
+    role docstrings is RF < window (coverage ~80%+), e.g. 5×2 → 249 for
+    window=300 and 4×2 → 121 for window=150.
+    """
+    if n_layers_per_block < 1 or n_blocks < 1 or kernel_size < 2:
+        raise ValidationError("n_layers_per_block/n_blocks >= 1 and kernel_size >= 2 required")
+    return 1 + n_blocks * (kernel_size - 1) * (2**n_layers_per_block - 1)
+
+
 def range_model_role(
     timeframe: str = "1D",
     horizon: int = 1,
     window_size: int = 150,
+    n_layers_per_block: int | None = None,
+    n_blocks: int | None = None,
 ) -> ModelRole:
     """The price-extremes model.
 
@@ -192,11 +208,13 @@ def range_model_role(
         window_size=window_size,
         # Architecture knobs — range-specific
         n_filters=48,
-        n_layers_per_block=4,  # RF=121 -> 81% of window=150
+        # فاز ۶۱: 4×2 (RF=121, 81% of 150) پیش‌فرض می‌ماند ولی override شدنی است
+        n_layers_per_block=n_layers_per_block or 4,
+        n_blocks=n_blocks or 2,
         depth_multiplier=6,
         dropout=0.10,
         l2=2.0e-4,
-        seq2seq=True,   # Phase 55: gradient dense, no collapse
+        seq2seq=True,  # Phase 55: gradient dense, no collapse
     )
 
 
@@ -205,16 +223,19 @@ def signal_model_role(
     horizon: int = 0,
     threshold: float = 0.0008,
     window_size: int = 300,
+    n_layers_per_block: int | None = None,
+    n_blocks: int | None = None,
 ) -> ModelRole:
     """The binary direction model. Defaults to 5M bars and unbounded first-passage labels.
 
     فاز ۵۸: window=300, n_layers=5, n_blocks=2
       window=300: 300 × 5M = 25 ساعت ≈ یه روز کامل context
       n_layers=5, n_blocks=2: RF=249 = 20.8h = 83% coverage از window
-        - RF > 200: تقریباً کل روز رو میبینه
-        - n_layers=5: dilation stack [1,2,4,8,16] → pattern‌های بلندمدت‌تر
-        - n_blocks=2: کمتر از 3 → overfitting کمتر
-      n_filters=32, dropout=0.15, l2=2.5e-4 (همون قبلی)
+
+    فاز ۶۱: ``n_layers_per_block``/``n_blocks`` قابل override هستند —
+    مثلاً window=150 با 4×2 (RF=121، 81%) هماهنگ می‌شود. RF > window
+    یعنی لایه‌های بیرونی فقط پارامتر اضافه‌اند (بیشترِ پنجره را pad صفر
+    می‌بینند) — برای مدلی که همین حالا بیش‌برازش می‌شود، هدررفت است.
     """
     if threshold < 0:
         raise ValidationError("threshold must not be negative")
@@ -233,15 +254,10 @@ def signal_model_role(
             "price move is reached; no HOLD output class."
         ),
         window_size=window_size,
-        # Architecture — فاز ۵۸
-        # window=300 (25h) → نیاز به RF بزرگ‌تر
-        # n_layers=5, n_blocks=2: RF=249 = 20.8h = 83% of window ✅
-        # dilation stack: [1,2,4,8,16] × 2 blocks
-        # n_filters=32: classification نیاز به capacity کمتر داره
-        # dropout=0.15: signal noisy‌تر از range → dropout بیشتر
+        # Architecture — پیش‌فرض فاز ۵۸، override فاز ۶۱
         n_filters=32,
-        n_layers_per_block=5,   # RF=249 با n_blocks=2
-        n_blocks=2,
+        n_layers_per_block=n_layers_per_block or 5,  # RF=249 با n_blocks=2
+        n_blocks=n_blocks or 2,
         depth_multiplier=8,
         dropout=0.15,
         l2=2.5e-4,

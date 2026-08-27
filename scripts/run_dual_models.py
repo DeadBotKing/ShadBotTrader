@@ -92,6 +92,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--folds", type=int, default=2, help="roll-forward folds to keep")
     parser.add_argument(
+        "--n-layers",
+        type=int,
+        default=0,
+        help=(
+            "WaveNet dilated layers per block (0 = role default: signal 5, "
+            "range 4). Keep RF below the window — e.g. --window 150 with "
+            "--n-layers 4 --n-blocks 2 gives RF=121 (81%%)."
+        ),
+    )
+    parser.add_argument(
+        "--n-blocks",
+        type=int,
+        default=0,
+        help="WaveNet blocks (0 = role default: 2 for both roles).",
+    )
+    parser.add_argument(
         "--val-size",
         type=int,
         default=0,
@@ -447,6 +463,22 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     print(f"  learning rate: {learning_rate:.2e}")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
+    # فاز ۶۱: معماری و پوشش RF را صریح چاپ کن — RF > window یعنی
+    # لایه‌های اضافه فقط پارامتر هدررفته‌اند.
+    from ShadBotTrader.infrastructure.ai.model_roles import receptive_field
+
+    _rf = receptive_field(role.n_layers_per_block, role.n_blocks, role.kernel_size)
+    _coverage = _rf / role.window_size if role.window_size else 0.0
+    print(
+        f"  architecture : window={role.window_size} · "
+        f"{role.n_layers_per_block} layers × {role.n_blocks} blocks · "
+        f"RF={_rf} ({_coverage:.0%} of window)"
+    )
+    if _rf > role.window_size:
+        print(
+            f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
+            "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
+        )
     if role.name == "signal":
         # State the binary labelling rule outright.
         print(
@@ -1056,6 +1088,8 @@ def main(argv: list[str] | None = None) -> int:
                     timeframe=timeframe,
                     horizon=args.horizon,
                     window_size=args.window,
+                    n_layers_per_block=args.n_layers or None,
+                    n_blocks=args.n_blocks or None,
                 ),
                 timeframe,
             )
@@ -1067,6 +1101,8 @@ def main(argv: list[str] | None = None) -> int:
                 horizon=0,
                 threshold=args.threshold,
                 window_size=args.window,
+                n_layers_per_block=args.n_layers or None,
+                n_blocks=args.n_blocks or None,
             ),
             args.signal_timeframe,
         )
