@@ -2048,3 +2048,18 @@ ruff ✅ black ✅  pytest 1475 passed, 49 skipped
 بعد از این فیکس لازم است. signal آسیب ندیده (مسیرش target_index نمی‌خواند).
 
 **گزارش:** `Report/PHASE63_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۴: باگ ۴۹ — برش last_n، رنج را گرسنه می‌کرد (trades=0)
+
+اولین بکتست دومدلیِ واقعی: مدل‌ها سالم، trades=0. ریشه: handler کندل‌های
+1D را با cutoff پنجرهٔ 5M می‌برید (۹٬۰۰۰×5M ≈ ۳۱ روز → ~۳۰ کندل 1D <
+window=150 → abstain همیشگی). علیت را خود prediction source enforce
+می‌کند؛ برش حذف شد + خط «range candles: N (1D)» به گزارش + ۳ تست.
+
+```
+pytest 1478 passed, 49 skipped
+```
+
+**گزارش:** `Report/PHASE64_REPORT.md`

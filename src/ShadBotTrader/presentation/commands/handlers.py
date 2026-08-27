@@ -1867,12 +1867,18 @@ class CommandHandlers:
         range_timeframe = command.text("range_timeframe", "1D")
         range_candles = store.query(symbol, Timeframe(range_timeframe))
 
-        # range candles هم به همان نسبت زمانی برش می‌خوره
-        # (نه تعداد ثابت — چون تایم‌فریم فرق داره)
-        if last_n > 0 and signal_candles and range_candles:
-            # اولین زمان signal candle → شروع برش range candles
-            cutoff_time = signal_candles[0].open_time.value
-            range_candles = [c for c in range_candles if c.open_time.value >= cutoff_time]
+        # باگ ۴۹: range candles هرگز با last_n بریده نمی‌شود.
+        # ۹٬۰۰۰ کندل 5M یعنی ~۳۱ روز؛ برش زمانیِ range با همان cutoff
+        # فقط ~۳۰ کندل 1D باقی می‌گذاشت در حالی که مدل رنج برای هر تصمیم
+        # window=150 کندل روزانه می‌خواهد → abstain همیشگی → trades=0.
+        # علیت را خودِ DualModelPredictionSource enforce می‌کند (فقط
+        # کندل‌های 1D بسته‌شده قبل از زمان تصمیم دیده می‌شوند)؛ بریدن
+        # تاریخچهٔ range نه لازم است نه بی‌خطر.
+        if last_n > 0 and not range_candles and mode in ("dual", "auto"):
+            dual_note = (
+                f"No stored {range_timeframe} candles — the dual engine "
+                "cannot produce range forecasts."
+            )
         # configuration رو از قبل تعریف کن تا scoping خطا نده
         _spread_fixed, _spread_pct = _parse_spread(command)
         configuration = SimulationConfiguration(
@@ -1968,6 +1974,10 @@ class CommandHandlers:
             signal_candles,
             prediction_source=MomentumPredictionSource(lookback=6),
             record_replay=record_replay,
+        )
+        # باگ ۴۹: برای گزارش — چند کندل 1D واقعاً به موتور رسید
+        self._last_range_feed = (
+            (len(range_candles), range_timeframe) if mode == "dual" and range_candles else None
         )
         return result, "legacy", dual_note
 
@@ -2105,6 +2115,12 @@ class CommandHandlers:
             f"slip rate   : {command.number('slippage', 0.0):g}",
             f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
             f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
+            # باگ ۴۹: شفافیت — چند کندل 1D واقعاً به موتور رنج رسیده؟
+            (
+                f"range candles: {self._last_range_feed[0]} ({self._last_range_feed[1]})"
+                if getattr(self, "_last_range_feed", None)
+                else "range candles: n/a"
+            ),
             f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
             f"session filt: {'yes — hours 2,5,6,10,14,15,16,18 UTC' if command.text('session_filter','0').strip()=='1' else 'no'}",
             (
