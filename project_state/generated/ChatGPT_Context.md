@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T12:00:20.425317+00:00
+- Snapshot generated at: 2026-08-27T13:00:27.132746+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 129
+- Test modules: 130
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: bd7b242211540797f9a268f6dcd6cb3f4ed84cb9
-- Dirty: yes (4 files)
+- Commit: 4822e92af6cd5ae7dac971695a5df10bf7fe18a5
+- Dirty: yes (2 files)
 - Recent commits:
+  - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
   - bd7b242 Phase 65: show signal-model selection points on the replay chart
   - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
   - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 3ffe030 docs: A/B result — window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)
   - da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan
   - a64e953 docs: end-to-end trace of the signal training dataset (code-verified)
-  - 8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 795
+- Total files: 796
 - Source files: 317
-- Test files: 129
+- Test files: 130
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 114891
-- Modules: 446
-- Classes: 760
-- Functions: 4314
+- Total Python lines: 115015
+- Modules: 447
+- Classes: 762
+- Functions: 4320
 - External dependencies: 14

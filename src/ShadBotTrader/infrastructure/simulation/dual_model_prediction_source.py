@@ -117,6 +117,19 @@ class DualModelPredictionSource(PredictionSource):
 
         self._signal_delta = _timeframe_delta(str(signal_timeframe))
         self._range_delta = _timeframe_delta(str(range_timeframe))
+        # باگ ۵۰ (فاز ۶۷): کندل‌های 1Dِ «بسته‌شدهٔ قبل از شروع replay» باید
+        # از اول در بافر باشند — وگرنه اولین سیگنال‌های actionable تا
+        # نزدیک window×1D از شروع replay بدون رنج می‌مانند (اجرای کاربر:
+        # ۹٬۰۰۰×5M=۳۱ روز → فقط ۳۱ کندل 1D → مدل ۱۵۰تایی هیچ‌وقت رنج
+        # نمی‌داد). cursor را جلو می‌بریم تا observe دوباره اضافه نکند.
+        if self._all_range_candles and signal_candles:
+            first_signal_time = min(c.open_time.value for c in signal_candles)
+            while self._range_cursor < len(self._all_range_candles):
+                candidate = self._all_range_candles[self._range_cursor]
+                if candidate.open_time.value + self._range_delta > first_signal_time:
+                    break
+                self._range_candles.append(candidate)
+                self._range_cursor += 1
 
     # ------------------------------------------------------------ state --
     @property

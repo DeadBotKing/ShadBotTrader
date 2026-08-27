@@ -807,8 +807,8 @@
     {
       "category": "documentation",
       "path": "docs/Report/PHASE65_REPORT.md",
-      "sha256": "4d6993b918d466858ba3dd818e921e8daf455ae3eec949f9a622ad37589ffd72",
-      "size_bytes": 3442
+      "sha256": "67037590c1a56d36c0a3fe4555fcf70372ef73d2dd64b1d53585743411b696fb",
+      "size_bytes": 4888
     },
     {
       "category": "documentation",
@@ -909,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ba81963c074546d35d8d1dcde90071b3c34ddccf7c901987c4d18db9620c7605",
-      "size_bytes": 110216
+      "sha256": "65a8fa211fc11362e9606077d3087c625b8267380aa04f4b6283f27bd2b91260",
+      "size_bytes": 110668
     },
     {
       "category": "legacy",
@@ -3747,8 +3747,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/dual_model_prediction_source.py",
-      "sha256": "d25edc3e73f89278f32823fa33358e87fa994daa0a01ea3a9fe3ab5d5eb9ddd1",
-      "size_bytes": 15335
+      "sha256": "31feec97ee448269481b2a3df1979c3420f69f48a18605fda1a3f8e13a26ddee",
+      "size_bytes": 16383
     },
     {
       "category": "source",
@@ -4772,6 +4772,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/simulation/test_range_history_prefix.py",
+      "sha256": "27ba40a71efb12ede5afb69ccfc85167c6fb04a3cbbd8619371c52fb138c5348",
+      "size_bytes": 4623
+    },
+    {
+      "category": "test",
       "path": "tests/unit/simulation/test_range_window_starvation.py",
       "sha256": "521475aaeafbc7a3df2028a4ed791d1a18ca72823888016ba0c13e1bfece46db",
       "size_bytes": 4736
@@ -4831,14 +4837,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T12:00:20.425317+00:00",
+  "generated_at": "2026-08-27T13:00:27.132746+00:00",
   "git": {
     "branch": "main",
-    "commit": "bd7b242211540797f9a268f6dcd6cb3f4ed84cb9",
+    "commit": "4822e92af6cd5ae7dac971695a5df10bf7fe18a5",
     "dirty": true,
-    "dirty_files": 4,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
       "bd7b242 Phase 65: show signal-model selection points on the replay chart",
       "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
       "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)",
@@ -4847,8 +4854,7 @@
       "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)",
       "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
       "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan",
-      "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)",
-      "8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)"
+      "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)"
     ]
   },
   "modules": [
@@ -10877,6 +10883,23 @@
       "path": "tests/unit/simulation/test_dual_model_backtest.py"
     },
     {
+      "classes": 2,
+      "external_imports": [],
+      "functions": 6,
+      "internal_imports": [
+        "ShadBotTrader.domain.ai.prediction_target",
+        "ShadBotTrader.domain.market.candle",
+        "ShadBotTrader.domain.market.price",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.domain.market.timestamp",
+        "ShadBotTrader.domain.simulation.market_event",
+        "ShadBotTrader.infrastructure.simulation.dual_model_prediction_source"
+      ],
+      "name": "unit.simulation.test_range_history_prefix",
+      "path": "tests/unit/simulation/test_range_history_prefix.py"
+    },
+    {
       "classes": 0,
       "external_imports": [],
       "functions": 6,
@@ -11039,20 +11062,20 @@
   "python_version": "3.13.14",
   "source_file_count": 317,
   "statistics": {
-    "class_count": 760,
+    "class_count": 762,
     "config_file_count": 3,
     "documentation_file_count": 132,
     "external_dependency_count": 14,
-    "function_count": 4314,
+    "function_count": 4320,
     "internal_dependency_count": 261,
     "legacy_file_count": 176,
-    "module_count": 446,
+    "module_count": 447,
     "source_file_count": 317,
-    "source_lines": 48151,
-    "test_file_count": 129,
-    "test_lines": 21953,
-    "total_file_count": 795,
-    "total_lines": 114891
+    "source_lines": 48164,
+    "test_file_count": 130,
+    "test_lines": 22064,
+    "total_file_count": 796,
+    "total_lines": 115015
   },
-  "test_file_count": 129
+  "test_file_count": 130
 }

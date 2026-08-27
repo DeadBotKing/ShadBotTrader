@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T05:32:49.404857+00:00
+- Snapshot generated at: 2026-08-27T12:00:20.425317+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 125
+- Test modules: 129
 
 ## Current Phase
 
@@ -27,12 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: b9e1ed42098fe674ad3e21cbb5d9663fb5be16d7
+- Commit: bd7b242211540797f9a268f6dcd6cb3f4ed84cb9
 - Dirty: yes (4 files)
 - Recent commits:
-  - b9e1ed4 Phase 60: wire ReduceLR + EarlyStopping into the signal model; honest QUALITY baseline
-  - e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)
-  - d2e7e51 Update Signal Model
+  - bd7b242 Phase 65: show signal-model selection points on the replay chart
+  - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
+  - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
+  - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
+  - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
+  - 554faf2 Phase 63: fix bug 47/48 — seq2seq range labels were constant (collapse + fake metric)
+  - 3ffe030 docs: A/B result — window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)
+  - da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan
+  - a64e953 docs: end-to-end trace of the signal training dataset (code-verified)
+  - 8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)
 
 ## Quality Gate
 
@@ -54,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 783
+- Total files: 795
 - Source files: 317
-- Test files: 125
-- Documentation files: 124
+- Test files: 129
+- Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 113783
-- Modules: 442
-- Classes: 759
-- Functions: 4264
+- Total Python lines: 114891
+- Modules: 446
+- Classes: 760
+- Functions: 4314
 - External dependencies: 14
