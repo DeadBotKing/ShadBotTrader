@@ -111,11 +111,32 @@ class TradeBracket:
         target = high if side is OrderSide.BUY else low
         stop   = low  if side is OrderSide.BUY else high
 
+        # باگ ۵۲ (فاز ۷۳): گیتِ جهت براکت — SL و TP باید در سمت درست
+        # entry باشند. وقتی قیمت از close رفرنسِ رنج حرکت کرده (رنجِ
+        # دیروز)، سطوح خام مدل می‌توانند «وارونه» شوند: LONG با SL بالای
+        # entry یعنی «حد ضرر» در واقع هدف سود است — این ترید هرگز نباید
+        # باز شود. قبلاً بررسی R/R با فاصلهٔ مطلق (abs) چنین براکتی را
+        # «تأیید» می‌کرد و ۱٬۷۱۹ ترید معیوب در یک اجرا ساخت.
+        entry_amount = entry_reference.amount
+        if side is OrderSide.BUY:
+            levels_on_wrong_side = (
+                stop.amount >= entry_amount or target.amount <= entry_amount
+            )
+        else:
+            levels_on_wrong_side = (
+                stop.amount <= entry_amount or target.amount >= entry_amount
+            )
+        if levels_on_wrong_side:
+            raise ValidationError(
+                f"Bracket levels on the wrong side of entry for {side.value}: "
+                f"entry {entry_amount}, SL {stop.amount}, TP {target.amount} — "
+                "stale range forecast (entry moved outside the predicted band)"
+            )
+
         # Apply reward/risk condition: TP_distance >= multiplier * SL_distance
         # If the raw forecast does NOT satisfy the condition, the trade is
         # REJECTED (ValidationError) rather than moving TP artificially.
         if reward_risk_multiplier is not None and reward_risk_multiplier > 0:
-            entry_amount = entry_reference.amount
             tp_distance = abs(target.amount - entry_amount)
             sl_distance = abs(entry_amount - stop.amount)
             min_tp_distance = sl_distance * Decimal(str(reward_risk_multiplier))

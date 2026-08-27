@@ -99,3 +99,57 @@ def test_same_bar_policy_stop_first_resolves_ambiguous_touch():
         volume=Decimal("100"),
     )
     assert bracket.trigger(candle) is BracketExitReason.STOP_LOSS
+
+
+# ---------------------------------------------------------- باگ ۵۲ (فاز ۷۳) --
+def test_long_bracket_with_stop_above_entry_is_refused():
+    """باگ ۵۲: entry زیر رنجِ پیش‌بینی → SL بالای entry → باید رد شود.
+
+    سناریوی واقعی (۲۰۲۶-۰۸-۲۷): رنج دیروز 4536–4594 حول 4563؛ قیمت فردا
+    4482. براکتِ خام: SL=4533 (بالای entry!) · TP=4594. بررسی R/R با
+    فاصلهٔ مطلق آن را «تأیید» می‌کرد و ۱٬۷۱۹ ترید وارونه ساخته می‌شد.
+    """
+    with pytest.raises(ValidationError, match="wrong side"):
+        TradeBracket.from_model_levels(
+            side=OrderSide.BUY,
+            entry_reference=Price(Decimal("4482.34")),
+            predicted_high=4594.28,
+            predicted_low=4536.37,
+            created_at=_moment(),
+        )
+
+
+def test_short_bracket_with_stop_below_entry_is_refused():
+    """SHORT وارونه: قیمت بالای رنج رفته → SL (predicted_high+spread) زیر entry."""
+    with pytest.raises(ValidationError, match="wrong side"):
+        TradeBracket.from_model_levels(
+            side=OrderSide.SELL,
+            entry_reference=Price(Decimal("4610.00")),   # entry بالای رنج!
+            predicted_high=4594.28,   # SL برای short = high+spread → زیر entry
+            predicted_low=4536.37,
+            created_at=_moment(),
+        )
+
+
+def test_touching_the_boundary_still_passes():
+    """SL چسبیده به entry (زیر آن) — نزدیک‌ترین فاصلهٔ مجاز."""
+    bracket = TradeBracket.from_model_levels(
+        side=OrderSide.BUY,
+        entry_reference=Price(Decimal("2000")),
+        predicted_high=2024.0,   # TP بالای entry
+        predicted_low=1999.99,   # SL زیر entry (سمت درست — مرز معتبر)
+        created_at=_moment(),
+    )
+    assert bracket.stop_loss.amount == Decimal("1999.99")
+
+
+def test_valid_long_bracket_still_builds():
+    bracket = TradeBracket.from_model_levels(
+        side=OrderSide.BUY,
+        entry_reference=Price(Decimal("2000")),
+        predicted_high=2020.0,
+        predicted_low=1990.0,
+        created_at=_moment(),
+    )
+    assert bracket.stop_loss.amount == Decimal("1990")
+    assert bracket.take_profit.amount == Decimal("2020")

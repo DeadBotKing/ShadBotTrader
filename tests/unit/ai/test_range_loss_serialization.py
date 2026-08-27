@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import pytest
 
+import pytest
+
 from ShadBotTrader.infrastructure.ai.wavenet.wavenet import custom_objects
 from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
     range_custom_objects,
@@ -23,6 +25,7 @@ from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
 
 
 def test_range_custom_objects_covers_historical_names():
+    pytest.importorskip("tensorflow")
     mapping = range_custom_objects()
     for name in (
         "RangeLoss",
@@ -38,6 +41,7 @@ def test_range_custom_objects_covers_historical_names():
 
 
 def test_wavenet_custom_objects_includes_range_classes():
+    pytest.importorskip("tensorflow")
     mapping = custom_objects()
     classes = range_custom_objects()
     assert mapping["_RangeLoss"] is classes["_RangeLoss"]
@@ -45,6 +49,7 @@ def test_wavenet_custom_objects_includes_range_classes():
 
 
 def test_range_loss_config_round_trip():
+    pytest.importorskip("tensorflow")
     classes = range_custom_objects()
     loss_cls = classes["RangeLoss"]
 
