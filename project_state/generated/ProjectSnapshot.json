@@ -560,6 +560,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/ACCURACY_STORY_2026-08-27.md",
+      "sha256": "bf59ef9e9858940dbbd0ff6e14715e37d900ecd66e162e5ebe5593a8d37681b7",
+      "size_bytes": 8080
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/MT5_READINESS_REPORT.md",
       "sha256": "d049a8591ef2e86c1e8f91a5129d3d1a177029c328f989f86836f2cb6f34c23d",
       "size_bytes": 8567
@@ -759,8 +765,8 @@
     {
       "category": "documentation",
       "path": "docs/Report/PHASE59_REPORT.md",
-      "sha256": "e1fb36889215c139c5386f2369a6b0ea8f8b24bf11b4185b3f7a6f10b73bf425",
-      "size_bytes": 5692
+      "sha256": "4464bf2ee86a75764a7c4a677b725235318a33ee9d2a2a4e7f7f9afe8c815698",
+      "size_bytes": 7207
     },
     {
       "category": "documentation",
@@ -771,8 +777,14 @@
     {
       "category": "documentation",
       "path": "docs/Report/PHASE61_REPORT.md",
-      "sha256": "fe5016dbdfd83093f823f479e58675c37d7dbfed2af8e6b0c78410426757b667",
-      "size_bytes": 1782
+      "sha256": "bc15771e26dd0e55c1d22838337bd69fd6a79ce93242dc4bd56bd0bf7b800ec1",
+      "size_bytes": 2824
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE62_REPORT.md",
+      "sha256": "0d8d51696a749cc87ef83b22e0aeb899b9061927c8669e6557f723e7a1dd1c76",
+      "size_bytes": 2003
     },
     {
       "category": "documentation",
@@ -815,6 +827,12 @@
       "path": "docs/SHADBOTTRADER_MASTER_IMPLEMENTATION_SPECIFICATION.md",
       "sha256": "20bb6ce03238a975b5011af2c12c3a893e70a32fe4d103df9f8194dbb730af82",
       "size_bytes": 72382
+    },
+    {
+      "category": "documentation",
+      "path": "docs/SIGNAL_DATASET_EXPLAINED.md",
+      "sha256": "332fbb7ef99c79c609a89e038f42bbfc5045bba86e71b5b7e542b245080a4e08",
+      "size_bytes": 9636
     },
     {
       "category": "documentation",
@@ -867,8 +885,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "13634a87a56553f4f53404a4abcade7aaee4f31467abc1ee722195083e0caefb",
-      "size_bytes": 107205
+      "sha256": "5c3c41216b8cf8a390a2df90e8505e6e37838f843a4e45857d35451e16772631",
+      "size_bytes": 107729
     },
     {
       "category": "legacy",
@@ -1971,7 +1989,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "1a1fd116646d451aefc4bcdd66e58fee0446746cc810f408799e7e196838e777",
+      "sha256": "94fb7b3634c8bb923e47c921f417ca5b014812ba59c11dd9fcb45643b83abb00",
       "size_bytes": 25781
     },
     {
@@ -3057,8 +3075,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/data_windowing.py",
-      "sha256": "a2bffac2ed19274757ab1a65f4b569481bbe51a0209f9a5f1564aa93e2a3b036",
-      "size_bytes": 8323
+      "sha256": "0b3e92e09092a50634017cb3b2a339c3ea8b56834d565fd1c8628fffb9195b9c",
+      "size_bytes": 8762
     },
     {
       "category": "source",
@@ -3177,8 +3195,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "9e05dbb3f8b42349ee755ec1f8eb6f75787597055a8c02fe9cd907c49004f3a6",
-      "size_bytes": 44440
+      "sha256": "e97d58939cae8f890dc6b340692ddeb070733c37699fc3e10702a152940e7cf7",
+      "size_bytes": 45038
     },
     {
       "category": "source",
@@ -4328,6 +4346,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_seq2seq_target_alignment.py",
+      "sha256": "cb05bdd6c8f23f3184b159d62c7371075f1b4746a168ce83f38de440fbf6a4ad",
+      "size_bytes": 2796
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_signal_label_split.py",
       "sha256": "a3aa4cdbed455a9fc9d0f764ef4b659a50a0eece1caa3643ac8c44e7b3976aff",
       "size_bytes": 2747
@@ -4771,14 +4795,19 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T05:45:21.988567+00:00",
+  "generated_at": "2026-08-27T09:18:50.956763+00:00",
   "git": {
     "branch": "main",
-    "commit": "9ec618b9510ba7d5fbc3c712da89f7532e7c6160",
+    "commit": "3ffe0309ba3e05477521231c6c4b096d0916452a",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 3,
     "is_repo": true,
     "recent_commits": [
+      "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
+      "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan",
+      "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)",
+      "8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)",
+      "1661ee5 Phase 62: expose architecture/validation knobs in the dashboard",
       "9ec618b Phase 61: architecture knobs (--n-layers/--n-blocks) + RF print & guard",
       "b9e1ed4 Phase 60: wire ReduceLR + EarlyStopping into the signal model; honest QUALITY baseline",
       "e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)",
@@ -9840,6 +9869,16 @@
       "path": "tests/unit/ai/test_roll_forward.py"
     },
     {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 5,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.data_windowing"
+      ],
+      "name": "unit.ai.test_seq2seq_target_alignment",
+      "path": "tests/unit/ai/test_seq2seq_target_alignment.py"
+    },
+    {
       "classes": 1,
       "external_imports": [
         "run_dual_models"
@@ -10936,18 +10975,18 @@
   "statistics": {
     "class_count": 759,
     "config_file_count": 3,
-    "documentation_file_count": 125,
+    "documentation_file_count": 128,
     "external_dependency_count": 14,
-    "function_count": 4274,
+    "function_count": 4279,
     "internal_dependency_count": 261,
     "legacy_file_count": 176,
-    "module_count": 443,
+    "module_count": 444,
     "source_file_count": 317,
-    "source_lines": 47678,
-    "test_file_count": 126,
-    "test_lines": 21588,
-    "total_file_count": 785,
-    "total_lines": 114049
+    "source_lines": 47708,
+    "test_file_count": 127,
+    "test_lines": 21651,
+    "total_file_count": 789,
+    "total_lines": 114142
   },
-  "test_file_count": 126
+  "test_file_count": 127
 }

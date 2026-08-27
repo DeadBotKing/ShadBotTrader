@@ -2022,3 +2022,29 @@ pytest 1471 passed, 49 skipped   (قبلاً 1464)
 ```
 
 **گزارش:** `Report/PHASE62_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۳: باگ ۴۷/۴۸ — برچسب‌های seq2seq رنج خراب بودند
+
+**کشف از لاگ کاربر (range 1D):** val_mae 0.000081 (±$0.16!) هم‌زمان با
+per-bound 0.0024/0.0058 و bias≡±MAE (هر ۴۴۸ خطا هم‌علامت). ردیابی کد:
+`WindowedSample.target_index` = شماره ستون (182) ولی
+`_build_seq2seq_targets` آن را اندیس سطر می‌خواند → y همهٔ نمونه‌ها از
+سطرهای ثابت ۳۳..۱۸۲ → collapse + metric جعلی. توضیح val_maeهای تاریخی
+غیرواقعی (0.000010 فاز ۵۷) و بی‌فایده بودن بکتست‌های رنج.
+
+### رفع
+
+- سه سازندهٔ sample: `target_index=end` (سطر پایان پنجره)
+- `_range_validation_metrics`: شاخهٔ seq2seq → آخرین timestep
+- ۴ تست رگرسیون + تمیزکاری lint trainer
+
+```
+ruff ✅ black ✅  pytest 1475 passed, 49 skipped
+```
+
+**پیامد:** همهٔ آرتیفکت‌های range (تاریخی v1-v3 و این اجرا) باطل — retrain
+بعد از این فیکس لازم است. signal آسیب ندیده (مسیرش target_index نمی‌خواند).
+
+**گزارش:** `Report/PHASE63_REPORT.md`

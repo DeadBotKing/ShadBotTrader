@@ -26,6 +26,10 @@ class WindowedSample:
 
     features: List[List[float]]
     target: Optional[float]
+    #: Index of the window's last row in the flat ``series`` (باگ ۴۷).
+    #: قبلاً اشتباهی شمارهٔ ستون target ذخیره می‌شد و
+    #: ``WavenetTrainer._build_seq2seq_targets`` — که آن را به‌عنوان
+    #: اندیس سطر می‌خواند — برای «همهٔ» نمونه‌ها y یکسان می‌ساخت.
     target_index: int
     targets: Optional[List[float]] = None
 
@@ -65,7 +69,8 @@ def make_windows(
         if drop_target_column:
             window = [row[:target_column] + row[target_column + 1 :] for row in window]
         target = series[end + horizon][target_column]
-        samples.append(WindowedSample(features=window, target=target, target_index=target_column))
+        # باگ ۴۷: target_index = سطر پایان پنجره در series (نه شماره ستون)
+        samples.append(WindowedSample(features=window, target=target, target_index=end))
     return samples
 
 
@@ -128,7 +133,7 @@ def build_samples_at(
             WindowedSample(
                 features=minmax_scale_window(window) if scale else window,
                 target=series[end + horizon][target_column],
-                target_index=target_column,
+                target_index=end,
             )
         )
     return samples
@@ -200,7 +205,7 @@ def make_multi_target_windows(
             WindowedSample(
                 features=window,
                 target=None,
-                target_index=target_columns[0],
+                target_index=end,
                 targets=[float(label_row[column]) for column in target_columns],
             )
         )

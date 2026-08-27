@@ -341,7 +341,6 @@ class WavenetTrainer(ModelTrainer):
             # دلیل: کاربر میخواد از جایی که موند ادامه بده
             # هر fold با وزن‌های checkpoint warm-start میشه
             # این یعنی هر fold سریع‌تر converge میکنه
-            is_last_fold = (display_index == len(folds) - 1)
             if self._resume_weights:
                 _load_weights_into(model, self._resume_weights)
 
@@ -361,18 +360,24 @@ class WavenetTrainer(ModelTrainer):
             #   patience=5: 5 epoch صبر میکنه (کوتاه‌تر از legacy=30 چون fold کوتاهه)
             #   min_lr: حداقل LR
             # ReduceLROnPlateau و EarlyStopping برای هر دو regression و classification
-            if self._loss in ("huber", "huber_loss", "mse", "mean_squared_error",
-                               "mae", "mean_absolute_error",
-                               "sparse_categorical_crossentropy",
-                               "categorical_crossentropy",
-                               "focal"):
+            if self._loss in (
+                "huber",
+                "huber_loss",
+                "mse",
+                "mean_squared_error",
+                "mae",
+                "mean_absolute_error",
+                "sparse_categorical_crossentropy",
+                "categorical_crossentropy",
+                "focal",
+            ):
                 _min_lr = max(learning_rate * 1e-3, 1e-7)
                 # ReduceLR patience: 10% epochs (min=5, max=30)
                 _rlr_patience = max(5, min(30, self._epochs // 10))
                 callbacks.append(
                     tf.keras.callbacks.ReduceLROnPlateau(
                         monitor="val_loss",
-                        factor=0.85,        # LR × 0.85 (کمی تندتر از 0.9)
+                        factor=0.85,  # LR × 0.85 (کمی تندتر از 0.9)
                         patience=_rlr_patience,
                         verbose=0,
                         mode="min",
@@ -399,13 +404,17 @@ class WavenetTrainer(ModelTrainer):
                 _rep = _reporter_ref
                 _fld = _fold_ref
                 _orig_end = _es.on_train_end
-                def _es_on_end(logs: Any = None, _es=_es, _rep=_rep, _fld=_fld) -> None:
+
+                def _es_on_end(
+                    logs: Any = None, _es=_es, _rep=_rep, _fld=_fld, _orig_end=_orig_end
+                ) -> None:
                     _orig_end(logs)
                     if getattr(_es, "stopped_epoch", 0) > 0:
                         best = float(getattr(_es, "best", 0.0) or 0.0)
                         fn = getattr(_rep, "on_early_stop", None)
                         if callable(fn):
                             fn(_fld, _es.stopped_epoch, best)
+
                 _es.on_train_end = _es_on_end  # type: ignore[method-assign]
                 callbacks.append(_es)
             if not isinstance(self._progress, NullProgressReporter):
@@ -550,8 +559,16 @@ class WavenetTrainer(ModelTrainer):
         count = min(len(actual), len(predicted))
         if count < 1 or actual.shape[-1] < 2 or predicted.shape[-1] < 2:
             return {}
-        actual = actual[:count, :2].astype(np.float64)
-        predicted = predicted[:count, :2].astype(np.float64)
+        if predicted.ndim == 3:
+            # باگ ۴۸ (seq2seq): [:, :2] یعنی «timestepهای ۰ و ۱» نه ستون‌های
+            # high/low — موقعیت‌هایی با تقریباً صفر کانتکست که خروجی
+            # near-constant می‌دهند (bias ≡ ±MAE). چیزی که inference استفاده
+            # می‌کند آخرین timestep است.
+            actual = actual[:count, -1, :].astype(np.float64)
+            predicted = predicted[:count, -1, :].astype(np.float64)
+        else:
+            actual = actual[:count, :2].astype(np.float64)
+            predicted = predicted[:count, :2].astype(np.float64)
         error = predicted - actual
         return {
             "val_high_mae": float(np.mean(np.abs(error[:, 0]))),
@@ -804,9 +821,12 @@ def _build_compiled(
         tf.keras.utils.set_random_seed(seed)
 
     _is_regression = loss in (
-        "mse", "mean_squared_error",
-        "mae", "mean_absolute_error",
-        "huber", "huber_loss",
+        "mse",
+        "mean_squared_error",
+        "mae",
+        "mean_absolute_error",
+        "huber",
+        "huber_loss",
     )
     model = build_wavenet(
         window_size=window_size,
@@ -856,12 +876,17 @@ def _build_compiled(
         def _weighted_loss(y_true_t: object, y_pred_t: object) -> object:
             """3*Huber + 6*MAE + 1*MSE — normalize شده."""
             h = _huber_fn(y_true_t, y_pred_t)
-            m = tf.reduce_mean(tf.abs(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32)))
-            s = tf.reduce_mean(tf.square(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32)))
+            m = tf.reduce_mean(
+                tf.abs(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
+            )
+            s = tf.reduce_mean(
+                tf.square(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
+            )
             return (_w_h * h + _w_m * m + _w_s * s) / _w_sum
 
         try:
             import keras as _keras_reg
+
             _register_loss = _keras_reg.saving.register_keras_serializable
         except (ImportError, AttributeError):
             _register_loss = tf.keras.utils.register_keras_serializable
@@ -877,6 +902,7 @@ def _build_compiled(
             scalar (فاز ۵۴):
               loss معمولی روی 2 عدد خروجی
             """
+
             def get_config(self) -> dict:
                 return super().get_config()
 
@@ -885,8 +911,8 @@ def _build_compiled(
                     loss_all = _weighted_loss(y_true, y_pred)
                     # آخرین timestep: پیش‌بینی فردا
                     loss_tgt = _weighted_loss(
-                        y_true[:, -1:, :],   # type: ignore[index]
-                        y_pred[:, -1:, :],   # type: ignore[index]
+                        y_true[:, -1:, :],  # type: ignore[index]
+                        y_pred[:, -1:, :],  # type: ignore[index]
                     )
                     return 0.4 * loss_all + 0.6 * loss_tgt
                 return _weighted_loss(y_true, y_pred)
@@ -908,12 +934,8 @@ def _build_compiled(
                     # name رو جداگانه می‌گیریم تا conflict نشه
                     # وقتی Keras از config لود می‌کنه، name رو پاس میده
                     super().__init__(name=name, **kw)  # type: ignore[call-arg]
-                    self._mae_sum = self.add_weight(
-                        name="s2s_sum", initializer="zeros"
-                    )
-                    self._mae_cnt = self.add_weight(
-                        name="s2s_cnt", initializer="zeros"
-                    )
+                    self._mae_sum = self.add_weight(name="s2s_sum", initializer="zeros")
+                    self._mae_cnt = self.add_weight(name="s2s_cnt", initializer="zeros")
 
                 def get_config(self) -> dict:
                     cfg = super().get_config()
@@ -922,8 +944,8 @@ def _build_compiled(
                 def update_state(  # type: ignore[override]
                     self, y_true: object, y_pred: object, sample_weight: object = None
                 ) -> None:
-                    true_last = y_true[:, -1, :]   # type: ignore[index]
-                    pred_last = y_pred[:, -1, :]   # type: ignore[index]
+                    true_last = y_true[:, -1, :]  # type: ignore[index]
+                    pred_last = y_pred[:, -1, :]  # type: ignore[index]
                     mae_val = tf.reduce_mean(tf.abs(true_last - pred_last))
                     self._mae_sum.assign_add(tf.cast(mae_val, self._mae_sum.dtype))
                     self._mae_cnt.assign_add(1.0)
@@ -956,9 +978,12 @@ def _build_compiled(
     # weight_decay برای regression: 1e-4 (collapse کنترل)
     # weight_decay برای classification: 1e-5 (ملایم‌تر، label space محدودتره)
     is_regression_loss = loss in (
-        "mse", "mean_squared_error",
-        "mae", "mean_absolute_error",
-        "huber", "huber_loss",
+        "mse",
+        "mean_squared_error",
+        "mae",
+        "mean_absolute_error",
+        "huber",
+        "huber_loss",
     )
     _wd = 1e-4 if is_regression_loss else 1e-5
     try:
