@@ -2170,3 +2170,25 @@ registry keras ثبت می‌کرد ولی `custom_objects()` با `getattr(ما
 ruff ✅ black ✅
 pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 store), 12 skipped
 ```
+
+---
+
+## 2026-08-27 — فاز ۷۲: گزارش «شرایط شروع» کامل در بکتست
+
+**پرسش اپراتور:** «توی لاگ تمام شرایط شروع بک‌تست رو می‌نویسه؟ همهٔ
+شرایطی که توی GUI تنظیم می‌کنم؟» — جواب قبلاً «نه» بود؛ چند فیلد فرم
+(symbol، مدل‌ها، confidence، windows، same-bar، test-ratio، commission،
+capital) در گزارش غایب بودند و commission ثابت 0.0001 چاپ می‌شد.
+
+### رفع
+
+بلاک گزارش بازنویسی شد — بخش «شرایط شروع» حالا شامل:
+engine · build · run id · symbol/timeframes · models · confidence gate ·
+windows · R/R mult · same-bar policy · test ratio · session filter ·
+min SL dist · filter 0-bar · capital/quantity · spread type+value ·
+commission (واقعی، نه ثابت) · slippage · entry · range candles fed ·
+last N bars — بعدش نتایج.
+
+```
+pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 — روی سیستم اپراتور سبز), 12 skipped
+```

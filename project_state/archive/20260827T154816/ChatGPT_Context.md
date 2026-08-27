@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T15:48:16.069817+00:00
+- Snapshot generated at: 2026-08-27T15:43:40.357172+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 3527b8cd3c03ffaddbd17947e1d9dc7b51308590
-- Dirty: yes (12 files)
+- Dirty: yes (2 files)
 - Recent commits:
   - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
   - 84d4851 Phase 72: full 'start conditions' section in the backtest report
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 133
 - Legacy files: 176
-- Total Python lines: 115364
+- Total Python lines: 115359
 - Modules: 448
 - Classes: 763
 - Functions: 4336

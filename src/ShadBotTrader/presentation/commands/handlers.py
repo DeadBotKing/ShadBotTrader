@@ -2113,37 +2113,73 @@ class CommandHandlers:
             except Exception as _e:
                 _model_log_lines.append(f"  model info error: {_e}")
 
+        # فاز ۷۱: بخش «شرایط شروع» — هر فیلدی که در فرم تنظیم می‌شود
+        # باید در گزارش باشد تا هر اجرا قابل بازتولید و مقایسه باشد.
         lines = [
             f"engine      : {mode}",
             f"build       : {ENGINE_BUILD}",
             f"run id      : {result.session.session_id}",
-            f"trades      : {metrics.trade_count}",
-            f"initial eq  : {metrics.starting_equity:.4f}",
-            f"final eq    : {metrics.final_equity:.4f}",
-            f"quantity    : {command.number('quantity', 0.01):g}",
-            f"spread      : {command.number('spread_value', 0.06):g}{'%' if command.text('spread_mode','pct')=='pct' else '$'}",
-            "commission  : 0.0001",
-            f"slip rate   : {command.number('slippage', 0.0):g}",
-            f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
-            f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
-            # باگ ۴۹: شفافیت — چند کندل 1D واقعاً به موتور رنج رسیده؟
             (
-                f"range candles: {self._last_range_feed[0]} ({self._last_range_feed[1]})"
-                if getattr(self, "_last_range_feed", None)
-                else "range candles: n/a"
+                f"symbol      : {symbol_text} {signal_timeframe}"
+                + (f" + {range_timeframe} (range)" if mode == "dual" else "")
             ),
-            f"filter 0-bar: {'yes' if command.text('filter_zero_bar', '0').strip() == '1' else 'no'}",
-            f"session filt: {'yes — hours 2,5,6,10,14,15,16,18 UTC' if command.text('session_filter','0').strip()=='1' else 'no'}",
+            (
+                f"models      : {command.text('signal_model', 'gold_signal_5m')}"
+                f" + {command.text('range_model', _default_range_id)}"
+            ),
+            f"confidence  : {command.number('threshold_pct', 60.0):g}% (signal gate)",
+            (
+                f"windows     : signal={command.integer('signal_window', 0) or 'model'}"
+                f" · range={command.integer('range_window', 0) or 'model'}"
+            ),
+            f"R/R mult.   : {command.number('reward_risk_multiplier', 1.5):g}",
+            f"same-bar    : {command.text('same_bar_policy', 'stop_first')}",
+            (
+                f"test ratio  : {command.number('test_ratio', 0.0):g}%"
+                + ("" if command.number("test_ratio", 0.0) > 0 else " (all bars)")
+            ),
+            (
+                "session filt: "
+                + (
+                    "yes — hours 2,5,6,10,14,15,16,18 UTC"
+                    if command.text("session_filter", "0").strip() == "1"
+                    else "no"
+                )
+            ),
             (
                 f"min SL dist : {command.number('min_sl_distance', 0.0):g}$"
                 if command.number("min_sl_distance", 0.0) > 0
                 else "min SL dist : off"
             ),
             (
+                "filter 0-bar: "
+                + ("yes" if command.text("filter_zero_bar", "0").strip() == "1" else "no")
+            ),
+            (
+                f"capital     : {command.number('capital', 100.0):g}"
+                f" · quantity: {command.number('quantity', 0.01):g}"
+            ),
+            (
+                f"spread      : {command.number('spread_value', 0.06):g}"
+                + ("%" if command.text("spread_mode", "pct") == "pct" else "$")
+                + f" · commission: {command.number('commission', 0.0):g}"
+            ),
+            f"slip rate   : {command.number('slippage', 0.0):g}",
+            f"entry       : {'next_open' if mode == 'dual' else 'signal_close'}",
+            # باگ ۴۹: شفافیت — چند کندل 1D واقعاً به موتور رنج رسید؟
+            (
+                f"range candles: {self._last_range_feed[0]} ({self._last_range_feed[1]})"
+                if getattr(self, "_last_range_feed", None)
+                else "range candles: n/a"
+            ),
+            (
                 f"last N bars : {command.integer('last_n_candles', 0):,} کندل آخر"
                 if command.integer("last_n_candles", 0) > 0
                 else "last N bars : all (کل تاریخچه)"
             ),
+            f"trades      : {metrics.trade_count}",
+            f"initial eq  : {metrics.starting_equity:.4f}",
+            f"final eq    : {metrics.final_equity:.4f}",
             f"return      : {metrics.total_return:.4f} " f"({metrics.total_return_percent:.2f}%)",
             f"gross profit: {metrics.gross_profit:.4f}",
             f"gross loss  : {metrics.gross_loss:.4f}",

@@ -572,6 +572,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/BACKTEST_2110TRADES_ANALYSIS.md",
+      "sha256": "fadbbc3494197ae15c418f18897a4b2a0ac08f1ce4f6e9336e0a64725f177681",
+      "size_bytes": 6801
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/MT5_READINESS_REPORT.md",
       "sha256": "d049a8591ef2e86c1e8f91a5129d3d1a177029c328f989f86836f2cb6f34c23d",
       "size_bytes": 8567
@@ -909,8 +915,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "e48bcb2ebaf61091a0555fb63546dcebc0180e22c7170259d6ba495a67a159a9",
-      "size_bytes": 112809
+      "sha256": "ec39fa13d4ca6be2f5178d6dd88035e9cfaa5b2143be30087fba929febd42faf",
+      "size_bytes": 115989
     },
     {
       "category": "legacy",
@@ -2013,7 +2019,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "3ee5f4f12acd701608563110ce5a8dba8ecc1c9d5557e3acc1f384f20f43e457",
+      "sha256": "1a1fd116646d451aefc4bcdd66e58fee0446746cc810f408799e7e196838e777",
       "size_bytes": 25781
     },
     {
@@ -2913,8 +2919,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/simulation/bracket.py",
-      "sha256": "a0fbc4b2edda801e13411cf0f33caa8adafbe0e7d4602bb369afb05d4afac66c",
-      "size_bytes": 8263
+      "sha256": "d83e76cf322cce2184a38f3c9f294125b767b3777a4ef06d178057a7223867d7",
+      "size_bytes": 9548
     },
     {
       "category": "source",
@@ -3873,8 +3879,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "0c3f261f58afd27aecc1824fe868152940de0b9e00f730450a477b69eadd602a",
-      "size_bytes": 144741
+      "sha256": "eaff85fa864ca0ec70277e91fdf4af14782cedf80fd66b88589da47a65b38f46",
+      "size_bytes": 146245
     },
     {
       "category": "source",
@@ -4353,8 +4359,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_range_loss_serialization.py",
-      "sha256": "caa31366fc92f368db4b7a79b7d6e63f6ab0b0f6ecfa6e8387478e6e415df0ca",
-      "size_bytes": 2937
+      "sha256": "ce202d77971b4d24330c33f7bc78c41f4afe2efa09f60da2b17e89926aa03c48",
+      "size_bytes": 3066
     },
     {
       "category": "test",
@@ -4767,8 +4773,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_bracket.py",
-      "sha256": "d6e9a88424f49e95ba8f25d5307b3f7a2537e21ecf1c600221d5230722dedd3a",
-      "size_bytes": 3656
+      "sha256": "f4b1937f6b8ca3f39e8b1811e44e1b392d4f050d278434a1a5fb2322c6c72438",
+      "size_bytes": 6004
     },
     {
       "category": "test",
@@ -4843,24 +4849,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T14:48:41.835745+00:00",
+  "generated_at": "2026-08-27T15:48:16.069817+00:00",
   "git": {
     "branch": "main",
-    "commit": "dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5",
+    "commit": "3527b8cd3c03ffaddbd17947e1d9dc7b51308590",
     "dirty": true,
-    "dirty_files": 30,
+    "dirty_files": 12,
     "is_repo": true,
     "recent_commits": [
+      "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed",
+      "84d4851 Phase 72: full 'start conditions' section in the backtest report",
+      "8f97a67 Phase 70: fix bug 51 \u2014 _RangeLoss/_Seq2SeqMAE were function-local, range models could never load",
       "dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report",
       "e2f10c4 Phase 68: print an engine build tag in the backtest report",
       "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
       "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
       "bd7b242 Phase 65: show signal-model selection points on the replay chart",
       "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
-      "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)",
-      "2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)",
-      "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model",
-      "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)"
+      "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)"
     ]
   },
   "modules": [
@@ -10869,7 +10875,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 6,
+      "functions": 10,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.market.candle",
@@ -11083,18 +11089,18 @@
   "statistics": {
     "class_count": 763,
     "config_file_count": 3,
-    "documentation_file_count": 132,
+    "documentation_file_count": 133,
     "external_dependency_count": 14,
-    "function_count": 4332,
+    "function_count": 4336,
     "internal_dependency_count": 260,
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48297,
+    "source_lines": 48354,
     "test_file_count": 131,
-    "test_lines": 22164,
-    "total_file_count": 797,
-    "total_lines": 115248
+    "test_lines": 22223,
+    "total_file_count": 798,
+    "total_lines": 115364
   },
   "test_file_count": 131
 }
