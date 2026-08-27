@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T14:24:06.513747+00:00
+- Snapshot generated at: 2026-08-27T14:48:41.835745+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5
-- Dirty: yes (20 files)
+- Dirty: yes (30 files)
 - Recent commits:
   - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
   - e2f10c4 Phase 68: print an engine build tag in the backtest report
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 115188
+- Total Python lines: 115248
 - Modules: 448
-- Classes: 762
-- Functions: 4329
+- Classes: 763
+- Functions: 4332
 - External dependencies: 14

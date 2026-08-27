@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T14:48:41.835745+00:00
+- Snapshot generated at: 2026-08-27T15:17:42.275674+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5
-- Dirty: yes (30 files)
+- Commit: 8f97a67e51bbb85e331d78973ba96d9c926f3313
+- Dirty: yes (1 files)
 - Recent commits:
+  - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
   - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
   - e2f10c4 Phase 68: print an engine build tag in the backtest report
   - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
   - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
   - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
-  - 554faf2 Phase 63: fix bug 47/48 — seq2seq range labels were constant (collapse + fake metric)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 115248
+- Total Python lines: 115284
 - Modules: 448
 - Classes: 763
 - Functions: 4332

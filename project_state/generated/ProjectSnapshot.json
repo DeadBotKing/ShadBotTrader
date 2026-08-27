@@ -909,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "e48bcb2ebaf61091a0555fb63546dcebc0180e22c7170259d6ba495a67a159a9",
-      "size_bytes": 112809
+      "sha256": "4a9401cafb6cdda57a6ff733a844579fa6f74a5d0329cfa8e658c59f1141fe5b",
+      "size_bytes": 114889
     },
     {
       "category": "legacy",
@@ -3873,8 +3873,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "0c3f261f58afd27aecc1824fe868152940de0b9e00f730450a477b69eadd602a",
-      "size_bytes": 144741
+      "sha256": "eaff85fa864ca0ec70277e91fdf4af14782cedf80fd66b88589da47a65b38f46",
+      "size_bytes": 146245
     },
     {
       "category": "source",
@@ -4843,14 +4843,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T14:48:41.835745+00:00",
+  "generated_at": "2026-08-27T15:17:42.275674+00:00",
   "git": {
     "branch": "main",
-    "commit": "dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5",
+    "commit": "8f97a67e51bbb85e331d78973ba96d9c926f3313",
     "dirty": true,
-    "dirty_files": 30,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "8f97a67 Phase 70: fix bug 51 \u2014 _RangeLoss/_Seq2SeqMAE were function-local, range models could never load",
       "dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report",
       "e2f10c4 Phase 68: print an engine build tag in the backtest report",
       "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
@@ -4859,8 +4860,7 @@
       "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
       "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)",
       "2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)",
-      "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model",
-      "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)"
+      "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model"
     ]
   },
   "modules": [
@@ -11090,11 +11090,11 @@
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48297,
+    "source_lines": 48333,
     "test_file_count": 131,
     "test_lines": 22164,
     "total_file_count": 797,
-    "total_lines": 115248
+    "total_lines": 115284
   },
   "test_file_count": 131
 }
