@@ -2007,3 +2007,18 @@ pytest 1464 passed, 49 skipped   (قبلاً 1458)
 ```
 
 **گزارش:** `Report/PHASE61_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۲: پیچ‌های ۵۹/۶۱ در GUI
+
+سه مسیر داشبورد (Train a model · Retrain · Find best LR) حالا
+`--n-layers`/`--n-blocks`/`--val-size` را می‌فرستند؛ 0 = پیش‌فرض/auto و
+فلگ ارسال نمی‌شود. فرم‌ها hint فارسی RF دارند. ۷ تست جدید.
+
+```
+ruff ✅ (۱۰ خطای قدیمی handlers.py جدا شده) black ✅
+pytest 1471 passed, 49 skipped   (قبلاً 1464)
+```
+
+**گزارش:** `Report/PHASE62_REPORT.md`

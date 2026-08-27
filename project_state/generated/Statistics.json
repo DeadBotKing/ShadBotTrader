@@ -1,16 +1,16 @@
 {
   "class_count": 759,
   "config_file_count": 3,
-  "documentation_file_count": 124,
+  "documentation_file_count": 125,
   "external_dependency_count": 14,
-  "function_count": 4264,
+  "function_count": 4274,
   "internal_dependency_count": 261,
   "legacy_file_count": 176,
-  "module_count": 442,
+  "module_count": 443,
   "source_file_count": 317,
-  "source_lines": 47550,
-  "test_file_count": 125,
-  "test_lines": 21450,
-  "total_file_count": 783,
-  "total_lines": 113783
+  "source_lines": 47678,
+  "test_file_count": 126,
+  "test_lines": 21588,
+  "total_file_count": 785,
+  "total_lines": 114049
 }

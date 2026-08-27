@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 77
+      "used_by": 78
     },
     {
       "name": "numpy",
@@ -770,6 +770,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE61_REPORT.md",
+      "sha256": "fe5016dbdfd83093f823f479e58675c37d7dbfed2af8e6b0c78410426757b667",
+      "size_bytes": 1782
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE_9_21_22_REPORT.md",
       "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
       "size_bytes": 9198
@@ -861,8 +867,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "fd75112726562d87e99988c32dc3d9cbd0ee36d6f6c4f5cfa500c79475e8787f",
-      "size_bytes": 106231
+      "sha256": "13634a87a56553f4f53404a4abcade7aaee4f31467abc1ee722195083e0caefb",
+      "size_bytes": 107205
     },
     {
       "category": "legacy",
@@ -3825,8 +3831,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "3f9b7fc5075bbc506e48ae26eee5b8ae3a836a1c0af260c5238c67709d92a216",
-      "size_bytes": 137679
+      "sha256": "60d9f068282b38dfedeb26ede14e8b4a8f6ba9baf79f632f354e5e0767722f0f",
+      "size_bytes": 142369
     },
     {
       "category": "source",
@@ -4640,6 +4646,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/presentation/test_architecture_knobs_gui.py",
+      "sha256": "668b99544f58fccaaf50434488c6174da63214ff0b4a774ff6ab5fdc5d9378aa",
+      "size_bytes": 5068
+    },
+    {
+      "category": "test",
       "path": "tests/unit/presentation/test_commands.py",
       "sha256": "7b5582d3e8d689adf78655d087925b33b3e4eaa9dfd7c81fd381fad69cbaefa8",
       "size_bytes": 13732
@@ -4759,14 +4771,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T05:32:49.404857+00:00",
+  "generated_at": "2026-08-27T05:45:21.988567+00:00",
   "git": {
     "branch": "main",
-    "commit": "b9e1ed42098fe674ad3e21cbb5d9663fb5be16d7",
+    "commit": "9ec618b9510ba7d5fbc3c712da89f7532e7c6160",
     "dirty": true,
-    "dirty_files": 4,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "9ec618b Phase 61: architecture knobs (--n-layers/--n-blocks) + RF print & guard",
       "b9e1ed4 Phase 60: wire ReduceLR + EarlyStopping into the signal model; honest QUALITY baseline",
       "e40e840 Phase 59: fix starved validation geometry (2% -> 10% of labelled pool)",
       "d2e7e51 Update Signal Model"
@@ -10612,6 +10625,19 @@
       "path": "tests/unit/presentation/__init__.py"
     },
     {
+      "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 10,
+      "internal_imports": [
+        "ShadBotTrader.presentation.commands",
+        "ShadBotTrader.presentation.commands.handlers"
+      ],
+      "name": "unit.presentation.test_architecture_knobs_gui",
+      "path": "tests/unit/presentation/test_architecture_knobs_gui.py"
+    },
+    {
       "classes": 6,
       "external_imports": [
         "pytest"
@@ -10910,18 +10936,18 @@
   "statistics": {
     "class_count": 759,
     "config_file_count": 3,
-    "documentation_file_count": 124,
+    "documentation_file_count": 125,
     "external_dependency_count": 14,
-    "function_count": 4264,
+    "function_count": 4274,
     "internal_dependency_count": 261,
     "legacy_file_count": 176,
-    "module_count": 442,
+    "module_count": 443,
     "source_file_count": 317,
-    "source_lines": 47550,
-    "test_file_count": 125,
-    "test_lines": 21450,
-    "total_file_count": 783,
-    "total_lines": 113783
+    "source_lines": 47678,
+    "test_file_count": 126,
+    "test_lines": 21588,
+    "total_file_count": 785,
+    "total_lines": 114049
   },
-  "test_file_count": 125
+  "test_file_count": 126
 }
