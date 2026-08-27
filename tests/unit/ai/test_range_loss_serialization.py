@@ -16,8 +16,6 @@ from __future__ import annotations
 
 import pytest
 
-import pytest
-
 from ShadBotTrader.infrastructure.ai.wavenet.wavenet import custom_objects
 from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
     range_custom_objects,
