@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T13:17:55.959388+00:00
+- Snapshot generated at: 2026-08-27T14:43:40.512837+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 130
+- Test modules: 131
 
 ## Current Phase
 
@@ -27,9 +27,11 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 87826364ec04d6085ab5e7db9036221f8e66cdc8
-- Dirty: yes (1 files)
+- Commit: dbd0570fdd60f89f32f3fbf6eef270d8a6d726b5
+- Dirty: yes (30 files)
 - Recent commits:
+  - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
+  - e2f10c4 Phase 68: print an engine build tag in the backtest report
   - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
   - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
   - bd7b242 Phase 65: show signal-model selection points on the replay chart
@@ -38,8 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
   - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
   - 554faf2 Phase 63: fix bug 47/48 — seq2seq range labels were constant (collapse + fake metric)
-  - 3ffe030 docs: A/B result — window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)
-  - da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 796
+- Total files: 797
 - Source files: 317
-- Test files: 130
+- Test files: 131
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 115020
-- Modules: 447
-- Classes: 762
-- Functions: 4320
+- Total Python lines: 115248
+- Modules: 448
+- Classes: 763
+- Functions: 4332
 - External dependencies: 14

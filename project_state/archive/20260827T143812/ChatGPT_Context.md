@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T13:39:16.265170+00:00
+- Snapshot generated at: 2026-08-27T13:46:05.578738+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: e2f10c495ef49acb0c3e27099f06b93e9b9ffb10
-- Dirty: yes (3 files)
+- Dirty: yes (16 files)
 - Recent commits:
   - e2f10c4 Phase 68: print an engine build tag in the backtest report
   - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 130
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 115051
+- Total Python lines: 115052
 - Modules: 447
 - Classes: 762
 - Functions: 4320

@@ -2134,3 +2134,39 @@ actionable بوده؟ رنج چند بار اجرا شده؟ خطای خاموش
 ```
 pytest 1487 passed, 49 skipped
 ```
+
+---
+
+## 2026-08-27 — فاز ۷۰: باگ ۵۱ — کلاس‌های _RangeLoss/_Seq2SeqMAE ماژول‌سطح شدند
+
+**گزارش اپراتور (ابزار فاز ۶۹ کار کرد):**
+`signals seen: 811 · range ran: 0 · [err x811] range: TypeError: Could not
+locate class '_RangeLoss'` — رنج هرگز اجرا نشده بود؛ خطاها خاموش بودند.
+
+### ریشه
+
+کلاس‌های `_RangeLoss` و `_Seq2SeqMAE` **داخل تابع** `_build_compiled`
+تعریف می‌شدند (local class). `@register_keras_serializable` آنها را در
+registry keras ثبت می‌کرد ولی `custom_objects()` با `getattr(ماژول, نام)`
+هرگز نمی‌توانست ببیندشان → `load_model` هر مدل رنج شکست می‌خورد. signal
+مستقل از این مسیر است (SparseCategoricalCrossentropy استاندارد) — برای
+همین سیگنال کار می‌کرد و فقط رنج می‌شکست.
+
+### رفع
+
+- کلاس‌ها به سطح ماژول منتقل شدند (lazy build با `_build_range_classes`).
+- `range_custom_objects()`: همهٔ نام‌های تاریخی (`RangeLoss`،
+  `_RangeLoss`، `ShadBotTrader>…`، …) را یک‌جا می‌دهد.
+- `wavenet.custom_objects()` حالا آن‌ها را include می‌کند.
+- get_config/from_config کامل (seq2seq، وزن‌ها، delta) — round-trip تأیید شد.
+- تست انتها-به-انتها: build → serialize → deserialize مدل seq2seq ✓
+- تست‌های TF-دار integration که در سندباکس با نصب TF نمایان شدند:
+  mock کلاس Role در `test_best_model_kept`/`test_epoch_checkpoints` بدون
+  `loss/metric` بود → تکمیل شد (این‌ها با TF واقعی کرش می‌کردند).
+- ۲ تست `test_threshold_recorded` در سندباکس fail می‌مانند (به MT5 store
+  محلی نیاز دارند — روی سیستم اپراتور سبزند).
+
+```
+ruff ✅ black ✅
+pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 store), 12 skipped
+```
