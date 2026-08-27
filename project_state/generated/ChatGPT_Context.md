@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T13:00:27.132746+00:00
+- Snapshot generated at: 2026-08-27T13:17:55.959388+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 4822e92af6cd5ae7dac971695a5df10bf7fe18a5
-- Dirty: yes (2 files)
+- Commit: 87826364ec04d6085ab5e7db9036221f8e66cdc8
+- Dirty: yes (1 files)
 - Recent commits:
+  - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
   - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
   - bd7b242 Phase 65: show signal-model selection points on the replay chart
   - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 554faf2 Phase 63: fix bug 47/48 — seq2seq range labels were constant (collapse + fake metric)
   - 3ffe030 docs: A/B result — window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)
   - da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan
-  - a64e953 docs: end-to-end trace of the signal training dataset (code-verified)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 130
 - Documentation files: 132
 - Legacy files: 176
-- Total Python lines: 115015
+- Total Python lines: 115020
 - Modules: 447
 - Classes: 762
 - Functions: 4320

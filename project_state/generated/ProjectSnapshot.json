@@ -807,8 +807,8 @@
     {
       "category": "documentation",
       "path": "docs/Report/PHASE65_REPORT.md",
-      "sha256": "67037590c1a56d36c0a3fe4555fcf70372ef73d2dd64b1d53585743411b696fb",
-      "size_bytes": 4888
+      "sha256": "eeb57505a29dcc5b89d68a445f1bd1635bcf1f50207efb6786f1658574806de9",
+      "size_bytes": 6982
     },
     {
       "category": "documentation",
@@ -909,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "65a8fa211fc11362e9606077d3087c625b8267380aa04f4b6283f27bd2b91260",
-      "size_bytes": 110668
+      "sha256": "464d24fa61b64617a5137b8adb1bd6a8966ba46e7a25aa6f3fbb101eff4f261a",
+      "size_bytes": 111363
     },
     {
       "category": "legacy",
@@ -3873,8 +3873,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "e99bc736bda9c06bce1cb6fb7413e79771bda7cb5749258132b5bfab15467ad8",
-      "size_bytes": 143415
+      "sha256": "f0bfe99ae2679f52a38e64ac30c9f19f2a8adb3d9693b9865a805b85dab51a93",
+      "size_bytes": 143720
     },
     {
       "category": "source",
@@ -4837,14 +4837,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T13:00:27.132746+00:00",
+  "generated_at": "2026-08-27T13:17:55.959388+00:00",
   "git": {
     "branch": "main",
-    "commit": "4822e92af6cd5ae7dac971695a5df10bf7fe18a5",
+    "commit": "87826364ec04d6085ab5e7db9036221f8e66cdc8",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
       "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
       "bd7b242 Phase 65: show signal-model selection points on the replay chart",
       "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
@@ -4853,8 +4854,7 @@
       "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model",
       "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)",
       "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
-      "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan",
-      "a64e953 docs: end-to-end trace of the signal training dataset (code-verified)"
+      "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan"
     ]
   },
   "modules": [
@@ -11071,11 +11071,11 @@
     "legacy_file_count": 176,
     "module_count": 447,
     "source_file_count": 317,
-    "source_lines": 48164,
+    "source_lines": 48169,
     "test_file_count": 130,
     "test_lines": 22064,
     "total_file_count": 796,
-    "total_lines": 115015
+    "total_lines": 115020
   },
   "test_file_count": 130
 }

@@ -1120,6 +1120,11 @@ def descriptor_for(kind: CommandKind) -> CommandDescriptor:
 
 
 # ---------------------------------------------------------------- handlers --
+#: فاز ۶۷ — برچسب build برای گزارش بکتست؛ اپراتور با یک نگاه می‌بیند
+#: با کدِ چندم اجرا می‌کند (کد قدیمی = گزارش قدیمی = گمراهی).
+ENGINE_BUILD = "phase-67 (bug49+50 fixed: range prefill + signal points)"
+
+
 class CommandHandlers:
     """Binds commands to the application services that do the work."""
 
@@ -1942,7 +1947,6 @@ class CommandHandlers:
             except Exception as _dual_err:
                 if mode == "dual":
                     raise
-                import traceback as _tb
 
                 _err_detail = str(_dual_err)[:300]
                 dual_note = f"Dual-model failed: {_err_detail} — legacy baseline was used."
@@ -2105,6 +2109,7 @@ class CommandHandlers:
 
         lines = [
             f"engine      : {mode}",
+            f"build       : {ENGINE_BUILD}",
             f"run id      : {result.session.session_id}",
             f"trades      : {metrics.trade_count}",
             f"initial eq  : {metrics.starting_equity:.4f}",
