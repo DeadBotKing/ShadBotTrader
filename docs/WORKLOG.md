@@ -2117,3 +2117,20 @@ pytest 1487 passed, 49 skipped
 ```
 pytest 1487 passed, 49 skipped
 ```
+
+---
+
+## 2026-08-27 — فاز ۶۹: شمارش سیگنال/رنج/خطاها در گزارش بکتست
+
+بعد از فازهای ۶۵-۶۷ هنوز نمی‌شد فهمید در بکتست واقعی: چند سیگنال
+actionable بوده؟ رنج چند بار اجرا شده؟ خطای خاموشی بوده؟ سه تغییر:
+1. `BacktestResult.source_stats` — stats منبع پیش‌بینی روی نتیجه
+2. شمارش خطاها با type+پیام در source (`error_counts`) + `errors` در stats
+3. گزارش بکتست: خط جدید `signals seen: N · range ran: M · abstains: K`
+   + هر خطای تکرارشده با `[err xN]`
++ رفع: `_last_range_feed` در مسیر dual هم ست می‌شد (قبلاً فقط legacy →
+  «range candles» همیشه n/a می‌ماند)
+
+```
+pytest 1487 passed, 49 skipped
+```

@@ -909,8 +909,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "464d24fa61b64617a5137b8adb1bd6a8966ba46e7a25aa6f3fbb101eff4f261a",
-      "size_bytes": 111363
+      "sha256": "2bab3d05ca59d4f353039fca43b700cd6ae8602c4032fba58cd191c5435e8639",
+      "size_bytes": 111958
     },
     {
       "category": "legacy",
@@ -3723,8 +3723,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/backtest_engine.py",
-      "sha256": "a7d8400d120d8d355cb437d4c4083975b9431e02ef93133de9836a42aa9748c3",
-      "size_bytes": 34559
+      "sha256": "86f3d3aace6387a195b5c8c6af57f527a749eece4172dd830e97a4f7eb4ab1b8",
+      "size_bytes": 35007
     },
     {
       "category": "source",
@@ -3747,8 +3747,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/dual_model_prediction_source.py",
-      "sha256": "31feec97ee448269481b2a3df1979c3420f69f48a18605fda1a3f8e13a26ddee",
-      "size_bytes": 16383
+      "sha256": "fb85a55eb0d82b723f2c1453191a406782cc1ea4f8460f8bb1e90595045e97b0",
+      "size_bytes": 16944
     },
     {
       "category": "source",
@@ -3873,8 +3873,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "f0bfe99ae2679f52a38e64ac30c9f19f2a8adb3d9693b9865a805b85dab51a93",
-      "size_bytes": 143720
+      "sha256": "0c3f261f58afd27aecc1824fe868152940de0b9e00f730450a477b69eadd602a",
+      "size_bytes": 144741
     },
     {
       "category": "source",
@@ -4837,14 +4837,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T13:17:55.959388+00:00",
+  "generated_at": "2026-08-27T13:46:05.578738+00:00",
   "git": {
     "branch": "main",
-    "commit": "87826364ec04d6085ab5e7db9036221f8e66cdc8",
+    "commit": "e2f10c495ef49acb0c3e27099f06b93e9b9ffb10",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 16,
     "is_repo": true,
     "recent_commits": [
+      "e2f10c4 Phase 68: print an engine build tag in the backtest report",
       "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
       "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
       "bd7b242 Phase 65: show signal-model selection points on the replay chart",
@@ -4853,8 +4854,7 @@
       "2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)",
       "1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model",
       "554faf2 Phase 63: fix bug 47/48 \u2014 seq2seq range labels were constant (collapse + fake metric)",
-      "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)",
-      "da27bc2 docs: why the old 72% and today's 69.9% are not comparable + recovery plan"
+      "3ffe030 docs: A/B result \u2014 window=150 4x2 beats window=300 5x2 (val_loss 0.587 vs 0.667)"
     ]
   },
   "modules": [
@@ -11071,11 +11071,11 @@
     "legacy_file_count": 176,
     "module_count": 447,
     "source_file_count": 317,
-    "source_lines": 48169,
+    "source_lines": 48201,
     "test_file_count": 130,
     "test_lines": 22064,
     "total_file_count": 796,
-    "total_lines": 115020
+    "total_lines": 115052
   },
   "test_file_count": 130
 }

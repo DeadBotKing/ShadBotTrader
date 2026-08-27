@@ -86,6 +86,9 @@ class BacktestResult:
     #: one (``record_replay=True``). A sweep of hundreds of simulations
     #: should not pay for a tape nobody reads.
     tape: Optional[ReplayTape] = None
+    #: فاز ۶۸: stats منبع پیش‌بینی (شمارش سیگنال/رنج/abstain/خطاها) —
+    #: تا خطای خاموشِ رنج (مثل باگ ۵۰) در گزارش دیده شود.
+    source_stats: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -96,6 +99,7 @@ class BacktestResult:
             "fills": self.fills,
             "bracket_exit_counts": dict(self.bracket_exit_counts),
             **self.metrics.to_dict(),
+            "source_stats": dict(self.source_stats),
         }
 
 
@@ -238,6 +242,7 @@ class BacktestEngine:
         metrics = self._metrics(config)
         self._reporter.on_session_end(self._session, metrics, list(self._trades))
 
+        stats_fn = getattr(self._predictions, "stats", None)
         return BacktestResult(
             session=self._session,
             metrics=metrics,
@@ -248,6 +253,7 @@ class BacktestEngine:
             fills=self._fills,
             bracket_exit_counts=dict(self._bracket_exit_counts),
             tape=self.tape,
+            source_stats=stats_fn() if callable(stats_fn) else {},
         )
 
     # -- one bar -----------------------------------------------------------

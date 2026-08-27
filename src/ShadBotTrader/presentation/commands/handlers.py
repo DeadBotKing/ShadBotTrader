@@ -1943,6 +1943,12 @@ class CommandHandlers:
                     record_replay=record_replay,
                     test_ratio=command.number("test_ratio", 0.0) / 100.0,
                 )
+                # باگ ۴۹-completion: مسیر dual هم باید خوراک رنج را گزارش کند
+                self._last_range_feed = (
+                    (len(range_candles), range_timeframe)
+                    if mode == "dual" and range_candles
+                    else None
+                )
                 return result, "dual", ""
             except Exception as _dual_err:
                 if mode == "dual":
@@ -2159,6 +2165,17 @@ class CommandHandlers:
                     f"stop losses : {result.bracket_exit_counts['stop_loss']}",
                 ]
             )
+            # فاز ۶۸: شمارش نقاط سیگنال و خطاهای رنج/سیگنال — تا رد شدن
+            # یا خطای خاموش دیگر نامرئی نماند (باگ ۵۰ همین‌جا پنهان بود).
+            _pst = getattr(result, "source_stats", {}) or {}
+            if _pst:
+                lines.append(
+                    f"signals seen: {_pst.get('signal_predictions', 0)}"
+                    f" · range ran: {_pst.get('range_predictions', 0)}"
+                    f" · abstains: {_pst.get('abstentions', 0)}"
+                )
+                for _err, _n in (_pst.get("errors") or {}).items():
+                    lines.append(f"  [err x{_n}] {_err}")
         if replay_diagnostics:
             lines.extend(replay_diagnostics)
         if trade_log_path is not None:

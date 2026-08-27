@@ -114,6 +114,7 @@ class DualModelPredictionSource(PredictionSource):
         self._last_range: Optional[RangeForecast] = None
         self._last_value: Optional[float] = None
         self._last_error: str = ""
+        self._error_counts: Dict[str, int] = {}
 
         self._signal_delta = _timeframe_delta(str(signal_timeframe))
         self._range_delta = _timeframe_delta(str(range_timeframe))
@@ -169,6 +170,7 @@ class DualModelPredictionSource(PredictionSource):
     def stats(self) -> Dict[str, Any]:
         return {
             "bars_seen": self._bars_seen,
+            "errors": dict(self._error_counts),
             "signal_predictions": self._signal_predictions,
             "range_predictions": self._range_predictions,
             "abstentions": self._abstentions,
@@ -228,6 +230,8 @@ class DualModelPredictionSource(PredictionSource):
             )
         except Exception as error:
             self._last_error = f"signal inference failed: {type(error).__name__}: {error}"
+            key = f"signal: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._abstentions += 1
             return None
 
@@ -274,6 +278,8 @@ class DualModelPredictionSource(PredictionSource):
             self._range_predictions += 1
         except Exception as error:
             self._last_error = f"range inference failed: {type(error).__name__}: {error}"
+            key = f"range: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._last_range = None
         return self._last_value
 
@@ -295,6 +301,7 @@ class DualModelPredictionSource(PredictionSource):
         self._last_range = None
         self._last_value = None
         self._last_error = ""
+        self._error_counts = {}
 
     # -------------------------------------------------------- brackets --
     def bracket_for(
@@ -375,6 +382,8 @@ class DualModelPredictionSource(PredictionSource):
             )
         except Exception as error:
             self._last_error = f"feature window failed: {type(error).__name__}: {error}"
+            key = f"features: {type(error).__name__}: {str(error)[:80]}"
+            self._error_counts[key] = self._error_counts.get(key, 0) + 1
             return None
 
         if len(matrix) < window_size:
