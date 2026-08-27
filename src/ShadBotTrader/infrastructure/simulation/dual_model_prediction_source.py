@@ -19,6 +19,7 @@ from __future__ import annotations
 from bisect import bisect_right
 from collections import deque
 from datetime import timedelta
+from decimal import Decimal
 from typing import Any, Deque, Dict, List, Optional, Sequence
 
 from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalForecast
@@ -142,6 +143,11 @@ class DualModelPredictionSource(PredictionSource):
     @property
     def abstentions(self) -> int:
         return self._abstentions
+
+    @property
+    def min_signal_confidence(self) -> float:
+        """The confidence gate this source applies to signal forecasts."""
+        return self._min_signal_confidence
 
     @property
     def last_error(self) -> str:
@@ -297,11 +303,10 @@ class DualModelPredictionSource(PredictionSource):
         spread_amount: Optional[Decimal] = None
         try:
             from decimal import Decimal as _D
+
             if self._spread_pct_val is not None:
                 # درصدی: spread = قیمت × pct
-                spread_amount = _D(str(
-                    float(entry_reference.amount) * float(self._spread_pct_val)
-                ))
+                spread_amount = _D(str(float(entry_reference.amount) * float(self._spread_pct_val)))
             elif self._spread_fixed is not None:
                 spread_amount = self._spread_fixed
         except Exception:

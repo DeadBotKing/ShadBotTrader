@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T11:18:32.521104+00:00
+- Snapshot generated at: 2026-08-27T11:49:51.045664+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 128
+- Test modules: 129
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 4caceb43d83234c724b8fb6dafaee3401ef95f05
-- Dirty: yes (2 files)
+- Commit: bb7dd1fcbc263bad127dae436bc2532a4da029b0
+- Dirty: yes (5 files)
 - Recent commits:
+  - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
   - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
   - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
   - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - a64e953 docs: end-to-end trace of the signal training dataset (code-verified)
   - 8e2ab84 docs: plain-language appendix for RF/window coverage (Phase 61)
   - 1661ee5 Phase 62: expose architecture/validation knobs in the dashboard
-  - 9ec618b Phase 61: architecture knobs (--n-layers/--n-blocks) + RF print & guard
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 792
+- Total files: 794
 - Source files: 317
-- Test files: 128
-- Documentation files: 130
+- Test files: 129
+- Documentation files: 131
 - Legacy files: 176
-- Total Python lines: 114281
-- Modules: 445
-- Classes: 759
-- Functions: 4285
+- Total Python lines: 114717
+- Modules: 446
+- Classes: 760
+- Functions: 4310
 - External dependencies: 14

@@ -114,6 +114,18 @@ const markersByBar = {};
 (TAPE.markers || []).forEach(m => {
   (markersByBar[m.bar] = markersByBar[m.bar] || []).push(m);
 });
+// فاز ۶۵: نقاط انتخاب مدل سیگنال — BUY سبز / SELL قرمز؛
+// توپر = ترید واقعاً باز شد، توخالی = گیت/براکت رد کرد
+const signalsByBar = {};
+(TAPE.signal_points || []).forEach(s => {
+  (signalsByBar[s.bar] = signalsByBar[s.bar] || []).push(s);
+});
+const signalCounts = { buy: 0, sell: 0, filled: 0, rejected: 0 };
+(TAPE.signal_points || []).forEach(s => {
+  signalCounts[s.side] += 1;
+  if (s.outcome === 'filled') signalCounts.filled += 1;
+  if (s.outcome === 'rejected') signalCounts.rejected += 1;
+});
 
 const canvas = document.getElementById('chart');
 const ctx = canvas.getContext('2d');
@@ -233,6 +245,32 @@ function draw() {
       }
       ctx.closePath();
       ctx.fill();
+    });
+  });
+
+  // signal-model selection points (فاز ۶۵)
+  slice.forEach((b, i) => {
+    const sigs = signalsByBar[b.i] || [];
+    sigs.forEach((s, k) => {
+      const x = xOf(i) + (k - (sigs.length - 1) / 2) * Math.max(6, bodyW);
+      const buy = s.side === 'buy';
+      const filled = s.outcome === 'filled';
+      const y = buy ? yPrice(b.l) + 12 : yPrice(b.h) - 12;
+      ctx.beginPath();
+      if (buy) {
+        ctx.moveTo(x, y - 8); ctx.lineTo(x - 5, y + 4); ctx.lineTo(x + 5, y + 4);
+      } else {
+        ctx.moveTo(x, y + 8); ctx.lineTo(x - 5, y - 4); ctx.lineTo(x + 5, y - 4);
+      }
+      ctx.closePath();
+      if (filled) {
+        ctx.fillStyle = buy ? '#3fb950' : '#f85149';
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = buy ? 'rgba(63,185,80,.85)' : 'rgba(248,81,73,.85)';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
     });
   });
 
@@ -423,6 +461,13 @@ def render_replay(
     losses = sum(1 for trip in trips if trip["result"] == "loss")
     still_open = tape.open_position_at_end()
 
+    # فاز ۶۵: شمارش نقاط سیگنال برای legend
+    signal_counts = {"buy": 0, "sell": 0, "filled": 0, "rejected": 0}
+    for point in tape.signal_points:
+        signal_counts[point.side] = signal_counts.get(point.side, 0) + 1
+        if point.outcome in ("filled", "rejected"):
+            signal_counts[point.outcome] += 1
+
     open_note = ""
     if still_open is not None:
         open_note = (
@@ -499,6 +544,12 @@ def render_replay(
   </div>
   <div class="legend">
     <span><span class="dot" style="background:#58a6ff"></span>entry fill</span>
+    <span><span class="dot" style="background:#3fb950"></span>&#9650; signal BUY
+      ({signal_counts["buy"]})</span>
+    <span><span class="dot" style="background:#f85149"></span>&#9660; signal SELL
+      ({signal_counts["sell"]})</span>
+    <span><span class="dot" style="background:#8b949e"></span>hollow = rejected
+      ({signal_counts["rejected"]}) · solid = traded ({signal_counts["filled"]})</span>
     <span><span class="dot" style="background:#3fb950"></span>exit — profit</span>
     <span><span class="dot" style="background:#f85149"></span>exit — loss</span>
     <span>Space = play/pause · &#8592; &#8594; = one bar</span>

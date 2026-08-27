@@ -50,6 +50,8 @@ from ShadBotTrader.domain.simulation.replay import (
     MARKER_ADJUST,
     MARKER_ENTRY,
     MARKER_EXIT,
+    SIGNAL_CANDIDATE,
+    SIGNAL_REJECTED,
     ReplayRecorder,
     ReplayTape,
     TradeMarker,
@@ -131,6 +133,9 @@ class BacktestEngine:
         self._bracket_provider = bracket_provider
         self._exit_trading = exit_trading_service
         self._pending_entry: Optional[Dict[str, Any]] = None
+        # فاز ۶۵: آخرین نقطهٔ سیگنالِ ثبت‌شده (bar, side) — اگر گیت یا
+        # براکت آن را رد کند، outcome به rejected تبدیل می‌شود.
+        self._last_signal_point: Optional[tuple[int, str]] = None
         self._bracket: Optional[TradeBracket] = None
         self._filter_zero_bar = filter_zero_bar
         self._open_bar_index: Optional[int] = None
@@ -319,6 +324,7 @@ class BacktestEngine:
         )
 
         outcome = self._trading.evaluate(strategy_context)
+        self._record_signal_point(event, signal_forecast, outcome)
         if outcome.intent is None:
             return
 
@@ -341,9 +347,55 @@ class BacktestEngine:
             entry_price = quote.ask if outcome.intent.side.value == "buy" else quote.bid
             bracket = self._bracket_provider.bracket_for(event, outcome.intent.side, entry_price)
             if bracket is None:
+                self._resolve_pending_signal(
+                    event, opened=False, why="bracket rejected (R/R or gap)"
+                )
                 return
         if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
+
+    def _record_signal_point(self, event: MarketEvent, forecast: Any, outcome: Any) -> None:
+        """Record every *actionable* signal-model selection (فاز ۶۵).
+
+        The operator asked to see where the signal model chose to act —
+        including the points the range gate or the bracket later refused.
+        Confidence-gated by the model source's own threshold so quiet
+        bars stay quiet; every surviving bar lands on the tape as a
+        ``SignalMarker`` (candidate / rejected), and ``build()`` pairs
+        surviving candidates with their real entry fills.
+        """
+        recorder = self._recorder
+        if recorder is None or forecast is None:
+            return
+        min_conf = getattr(self._predictions, "min_signal_confidence", None)
+        if min_conf is not None and not forecast.is_actionable(min_conf):
+            return
+        side = forecast.predicted_class.label
+        intent = getattr(outcome, "intent", None)
+        if intent is not None:
+            stage, reason = SIGNAL_CANDIDATE, ""
+        else:
+            stage = SIGNAL_REJECTED
+            reason = str(getattr(outcome, "rejected_reason", "") or "")
+            if not reason:
+                signal_obj = getattr(outcome, "signal", None)
+                reason = str(getattr(signal_obj, "reason", "") or "")
+            reason = reason[:160]
+        self._last_signal_point = (self._bars - 1, side)
+        recorder.record_signal(
+            bar_index=self._bars - 1,
+            timestamp=str(self._clock.current_time),
+            side=side,
+            confidence=forecast.confidence,
+            outcome=stage,
+            reason=reason,
+        )
+
+    def _resolve_pending_signal(self, event: MarketEvent, opened: bool, why: str) -> None:
+        """Close out the most recent signal point after its next-open attempt."""
+        if not opened and self._last_signal_point is not None and self._recorder is not None:
+            bar_index, side = self._last_signal_point
+            self._recorder.resolve_signal(bar_index, side, SIGNAL_REJECTED, reason=why[:160])
 
     def _execute_outcome(
         self,
@@ -414,12 +466,14 @@ class BacktestEngine:
                 candle = event.candle
                 try:
                     from decimal import Decimal as _D
+
                     o = candle.open.amount
                     h = candle.high.amount
-                    l = candle.low.amount
+                    low_ = candle.low.amount
                     c = candle.close.amount
-                    typical = (o + h + l + c) / _D("4")
+                    typical = (o + h + low_ + c) / _D("4")
                     from ShadBotTrader.domain.market.price import Price as _Price
+
                     return quote_for(candle, mid=_Price(typical))
                 except Exception:
                     return quote_for(candle, mid=candle.open)
@@ -435,9 +489,11 @@ class BacktestEngine:
         intent = outcome.intent
         position = self._ledger.position(event.symbol)
         if not position.is_flat:
+            self._resolve_pending_signal(event, opened=False, why="position not flat at next open")
             return
         quote = self._quote_for_event(event, opening=True)
         if quote is None:
+            self._resolve_pending_signal(event, opened=False, why="no quote at next open")
             return
         # The bracket is attached only after the actual entry fill, but a
         # next-open gap that invalidates both levels must not create an
@@ -449,9 +505,13 @@ class BacktestEngine:
                 event, intent.side, quote.ask if intent.side.value == "buy" else quote.bid
             )
             if bracket is None:
+                self._resolve_pending_signal(
+                    event, opened=False, why="bracket rejected (R/R or gap)"
+                )
                 return
         if self._execute_outcome(event, outcome, position, quote, bracket=bracket):
             self._bracket = bracket
+        # candidate باقیمانده در build() با entry marker به filled.resolve می‌شود
 
     def _check_bracket(self, event: MarketEvent) -> bool:
         """Close the open position when its TP/SL is touched."""
@@ -672,7 +732,7 @@ class BacktestEngine:
                 self._open_trade_realized = Decimal("0")
                 self._last_realized = realized
                 self._last_fees = fees
-                return delta, fee_delta, True   # ← filtered
+                return delta, fee_delta, True  # ← filtered
 
             self._trades.append(
                 TradeRecord(
@@ -690,7 +750,7 @@ class BacktestEngine:
 
         self._last_realized = realized
         self._last_fees = fees
-        return delta, fee_delta, False   # ← not filtered
+        return delta, fee_delta, False  # ← not filtered
 
     def _record_equity(self, event: MarketEvent, close: Price) -> None:
         prices = {str(event.symbol): close}

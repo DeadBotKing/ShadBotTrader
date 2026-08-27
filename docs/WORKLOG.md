@@ -2063,3 +2063,18 @@ pytest 1478 passed, 49 skipped
 ```
 
 **گزارش:** `Report/PHASE64_REPORT.md`
+
+---
+
+## 2026-08-27 — فاز ۶۵: نقاط انتخاب سیگنال روی ریپلی (درخواست اپراتور)
+
+SignalMarker جدید (candidate/filled/rejected · BUY ▲ سبز / SELL ▼ قرمز ·
+توپر=ترید شد، توخالی=رد شد) + resolution claim-based در build() + خط
+legend با شمارش. engine فقط actionableها را ثبت می‌کند و ردِ براکت در
+next-open را با دلیل به rejected تبدیل می‌کند. + cleanup lint (F821/E741 قدیمی).
+
+```
+ruff ✅ black ✅  pytest 1483 passed, 49 skipped
+```
+
+**گزارش:** `Report/PHASE65_REPORT.md`
