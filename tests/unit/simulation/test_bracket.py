@@ -101,12 +101,12 @@ def test_same_bar_policy_stop_first_resolves_ambiguous_touch():
     assert bracket.trigger(candle) is BracketExitReason.STOP_LOSS
 
 
-# ------------------------------------------ فاز ۷۵ — بازسازی حول entry --
-def test_long_bracket_inverted_is_recentered_around_entry():
-    """فاز ۷۵ (درخواست اپراتور): به‌جای ردِ براکت وارونه، حول entry بازسازی.
+# ----------------------- فاز ۷۶ — SL بازسازی · TP ادعا: رد اگر سمت غلط --
+def test_long_inverted_sl_is_recentered_but_tp_still_model_level():
+    """فاز ۷۶: entry زیر رنج → SL بازسازی زیر entry · TP همان high مدل.
 
-    سناریوی واقعی: رنج دیروز 4536–4594 (عرض 57.91)؛ entry=4482 زیر رنج.
-    بدون mult: SL = entry − width · TP = entry + width.
+    رنج دیروز 4536–4594 (عرض 57.91) · entry=4482 زیر رنج.
+    SL جدید = 4482.34 − 57.91 = 4424.43 · TP = 4594.28 (دست‌نخورده).
     """
     bracket = TradeBracket.from_model_levels(
         side=OrderSide.BUY,
@@ -115,16 +115,15 @@ def test_long_bracket_inverted_is_recentered_around_entry():
         predicted_low=4536.37,
         created_at=_moment(),
     )
-    width = Decimal("4594.28") - Decimal("4536.37")  # 57.91
+    width = Decimal("4594.28") - Decimal("4536.37")
     assert bracket.recentered is True
     assert bracket.stop_loss.amount == Decimal("4482.34") - width
-    assert bracket.take_profit.amount == Decimal("4482.34") + width
-    # entry بین TP و SL
+    assert bracket.take_profit.amount == Decimal("4594.28")  # TP مدل، دست‌نخورده
     assert bracket.stop_loss.amount < bracket.entry_reference.amount < bracket.take_profit.amount
 
 
-def test_short_bracket_inverted_is_recentered_around_entry():
-    """SHORT وارونه: entry بالای رنج → SL بالا (entry+width) · TP پایین."""
+def test_short_inverted_sl_is_recentered_above_entry():
+    """SHORT با entry بالای رنج: SL = entry + width · TP = low مدل."""
     bracket = TradeBracket.from_model_levels(
         side=OrderSide.SELL,
         entry_reference=Price(Decimal("4610.00")),
@@ -135,35 +134,50 @@ def test_short_bracket_inverted_is_recentered_around_entry():
     width = Decimal("57.91")
     assert bracket.recentered is True
     assert bracket.stop_loss.amount == Decimal("4610.00") + width
-    assert bracket.take_profit.amount == Decimal("4610.00") - width
+    assert bracket.take_profit.amount == Decimal("4536.37")  # TP مدل
     assert bracket.take_profit.amount < bracket.entry_reference.amount < bracket.stop_loss.amount
 
 
-def test_recentered_honors_reward_risk_multiplier():
-    """با mult=1.2: TP = entry + 1.2×width · SL = entry − width."""
-    bracket = TradeBracket.from_model_levels(
-        side=OrderSide.BUY,
-        entry_reference=Price(Decimal("4482.34")),
-        predicted_high=4594.28,
-        predicted_low=4536.37,
-        created_at=_moment(),
-        reward_risk_multiplier=1.2,
-    )
-    width = Decimal("57.91")
-    assert bracket.recentered is True
-    assert bracket.stop_loss.amount == Decimal("4482.34") - width
-    assert bracket.take_profit.amount == Decimal("4482.34") + Decimal("1.2") * width
+def test_long_with_tp_below_entry_is_refused():
+    """فاز ۷۶ (خواستهٔ اپراتور): BUY که TP زیر entry است نباید باز شود.
+
+    رنج دیروز 4536–4594 حول 4563؛ قیمت فردا 4620 (بالای رنج):
+    برای BUY، TP=predicted_high=4594 زیر entry=4620 است → رد.
+    (SL هم بالای entry است و recenter می‌شد — ولی TP بی‌اعتبار است.)
+    """
+    with pytest.raises(ValidationError, match="Take-profit on the wrong side"):
+        TradeBracket.from_model_levels(
+            side=OrderSide.BUY,
+            entry_reference=Price(Decimal("4620.00")),
+            predicted_high=4594.28,
+            predicted_low=4536.37,
+            created_at=_moment(),
+        )
 
 
-def test_recentered_flag_flows_to_dict():
+def test_short_with_tp_above_entry_is_refused():
+    """SHORT که TP (predicted_low) بالای entry است → رد."""
+    with pytest.raises(ValidationError, match="Take-profit on the wrong side"):
+        TradeBracket.from_model_levels(
+            side=OrderSide.SELL,
+            entry_reference=Price(Decimal("4520.00")),  # entry زیر رنج
+            predicted_high=4594.28,
+            predicted_low=4536.37,  # TP بالای entry برای short → نامعتبر
+            created_at=_moment(),
+        )
+
+
+def test_valid_bracket_is_not_marked_recentered():
+    """براکت سالم: بدون بازسازی."""
     bracket = TradeBracket.from_model_levels(
         side=OrderSide.BUY,
-        entry_reference=Price(Decimal("4482.34")),
-        predicted_high=4594.28,
-        predicted_low=4536.37,
+        entry_reference=Price(Decimal("2000")),
+        predicted_high=2020.0,
+        predicted_low=1990.0,
         created_at=_moment(),
     )
-    assert bracket.to_dict()["recentered"] is True
+    assert bracket.recentered is False
+    assert bracket.to_dict()["recentered"] is False
 
 
 def test_zero_width_range_still_rejected():

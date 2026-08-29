@@ -114,36 +114,45 @@ class TradeBracket:
         target = high if side is OrderSide.BUY else low
         stop = low if side is OrderSide.BUY else high
 
-        # فاز ۷۵ (به‌جای reject باگ ۵۲): اگر entry بیرون باندِ پیش‌بینی
-        # باشد (سطوح خام وارونه می‌شوند)، به‌درخواست اپراتور ترید «رد
-        # نمی‌شود» — براکت حول entry بازسازی می‌شود با همان عرضِ رنج:
-        #   BUY : SL = entry − width · TP = entry + mult × width
-        #   SELL: SL = entry + width · TP = entry − mult × width
-        # به این ترتیب entry همیشه بین TP و SL است، SL واقعاً سمت ضرر
-        # است، و فاصلهٔ هر دو سطح اندازهٔ رنجِ پیش‌بینی مدل است.
-        # (مورد قبلی: ValidationError — ۸۱.۵٪ تریدهای یک اجرا را حذف می‌کرد.)
+        # فاز ۷۶ (اصلاح فاز ۷۵ به‌درخواست اپراتور):
+        #
+        # «حد ضرر» یک محافظ محلی است — اگر رنجِ مدل نسبت به entry وارونه
+        # شود (entry بیرون باند)، SL به‌صورت محلی بازسازی می‌شود:
+        #   BUY : SL = entry − width      SELL: SL = entry + width
+        # (width = عرض رنج پیش‌بینی؛ entry همیشه سمت درستِ SL قرار می‌گیرد.)
+        #
+        # «حد سود» اما یک ادعای واقعی دربارهٔ آینده است: مدل گفته high
+        # (یا low) کجاست — جعلش یعنی ترید روی هدفی که مدل نگفته. پس:
+        #   BUY : اگر TP ≤ entry (هدف زیر قیمت شروع) → ترید رد می‌شود
+        #   SELL: اگر TP ≥ entry (هدف بالای قیمت شروع) → ترید رد می‌شود
         entry_amount = entry_reference.amount
         if side is OrderSide.BUY:
-            levels_on_wrong_side = stop.amount >= entry_amount or target.amount <= entry_amount
+            sl_on_wrong_side = stop.amount >= entry_amount
+            tp_on_wrong_side = target.amount <= entry_amount
         else:
-            levels_on_wrong_side = stop.amount <= entry_amount or target.amount >= entry_amount
+            sl_on_wrong_side = stop.amount <= entry_amount
+            tp_on_wrong_side = target.amount >= entry_amount
 
         recentered = False
-        if levels_on_wrong_side:
+        if sl_on_wrong_side:
             width = Decimal(str(predicted_high)) - Decimal(str(predicted_low))
             if width <= 0:
                 raise ValidationError(
-                    "Cannot recenter bracket: the range forecast has zero width "
+                    "Cannot recenter stop: the range forecast has zero width "
                     f"(high {predicted_high}, low {predicted_low})"
                 )
-            mult = Decimal(str(reward_risk_multiplier)) if reward_risk_multiplier else Decimal("1")
             if side is OrderSide.BUY:
                 stop = Price(entry_amount - width)
-                target = Price(entry_amount + mult * width)
             else:
                 stop = Price(entry_amount + width)
-                target = Price(entry_amount - mult * width)
             recentered = True
+
+        if tp_on_wrong_side:
+            raise ValidationError(
+                f"Take-profit on the wrong side of entry for {side.value}: "
+                f"entry {entry_amount}, TP {target.amount} — the range model "
+                "does not forecast a profit target beyond this entry; refusing"
+            )
 
         # Apply reward/risk condition: TP_distance >= multiplier * SL_distance
         # If the raw forecast does NOT satisfy the condition, the trade is
