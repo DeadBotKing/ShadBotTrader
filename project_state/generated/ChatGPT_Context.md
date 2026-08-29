@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T09:42:53.456703+00:00
+- Snapshot generated at: 2026-08-29T10:54:49.698020+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,11 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 8820ffd55a816269618aec85ee5ada5e41395134
-- Dirty: yes (2 files)
+- Commit: ec93102e93a471bef9c821dd7abbc1bac459d376
+- Dirty: yes (1 files)
 - Recent commits:
+  - ec93102 Phase 77 lint pass
+  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
   - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
   - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
   - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
@@ -38,8 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
   - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
   - f18533c Phase 73 lint: dedupe pytest import
-  - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
-  - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 136
 - Legacy files: 176
-- Total Python lines: 115588
+- Total Python lines: 115611
 - Modules: 448
 - Classes: 763
 - Functions: 4342

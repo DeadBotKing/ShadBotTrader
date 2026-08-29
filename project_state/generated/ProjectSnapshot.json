@@ -2265,8 +2265,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "baad53e79a4c5437177fc5d5f60ac5e63e20de6e39396001a7ee31ccbbffe317",
-      "size_bytes": 21686
+      "sha256": "9b354bfc17666596188787516ceaeece9bd9fe98127e459ee11dd28ae6623ac3",
+      "size_bytes": 22087
     },
     {
       "category": "source",
@@ -4791,8 +4791,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_bracket.py",
-      "sha256": "b166b6036bf98d6ee929a71c305264b34e1fce94c0f6fb8aa008cbc2918a4ce1",
-      "size_bytes": 10667
+      "sha256": "14d9cecc5d216ad8cb4cc56fde3795b361a454040739f775221760a6075b3264",
+      "size_bytes": 10845
     },
     {
       "category": "test",
@@ -4867,14 +4867,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T09:42:53.456703+00:00",
+  "generated_at": "2026-08-29T10:54:49.698020+00:00",
   "git": {
     "branch": "main",
-    "commit": "8820ffd55a816269618aec85ee5ada5e41395134",
+    "commit": "ec93102e93a471bef9c821dd7abbc1bac459d376",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "ec93102 Phase 77 lint pass",
+      "334851b Phase 77: fix bug 54 \u2014 min_sl_distance compared a dollar distance against fraction*ref",
       "8820ffd docs: full-history 260-trade analysis \u2014 patience thesis, trend filter ROI, session sims",
       "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)",
       "564f94d Phase 76: recenter the STOP only \u2014 a TP on the wrong side of entry still refuses",
@@ -4882,9 +4884,7 @@
       "7aee78e docs: post-fix analysis of the 154-trade backtest \u2014 bug 53 (SL hugging entry)",
       "ccc404f docs: the NameError belonged to the interim 84d4851 zip \u2014 fixed since 5188801",
       "5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience",
-      "f18533c Phase 73 lint: dedupe pytest import",
-      "f61eb51 Phase 73: fix bug 52 \u2014 refuse brackets whose stop lands on the profit side",
-      "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed"
+      "f18533c Phase 73 lint: dedupe pytest import"
     ]
   },
   "modules": [
@@ -11117,11 +11117,11 @@
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48438,
+    "source_lines": 48447,
     "test_file_count": 131,
-    "test_lines": 22341,
+    "test_lines": 22355,
     "total_file_count": 801,
-    "total_lines": 115588
+    "total_lines": 115611
   },
   "test_file_count": 131
 }
