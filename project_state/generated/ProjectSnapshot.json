@@ -584,6 +584,18 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/BACKTEST_260TRADES_FULLHISTORY_ANALYSIS.md",
+      "sha256": "f77501df88c8d942e9af01aaed9a4ab24dd313229c5426feec899b48260ea249",
+      "size_bytes": 4748
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/BACKTEST_28TRADES_PHASE76_ANALYSIS.md",
+      "sha256": "9c8a7bb852fab5a5aeccd9699a73763ca05fa6ff0c12118d13d4580b71fe9cd3",
+      "size_bytes": 2618
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/MT5_READINESS_REPORT.md",
       "sha256": "d049a8591ef2e86c1e8f91a5129d3d1a177029c328f989f86836f2cb6f34c23d",
       "size_bytes": 8567
@@ -921,8 +933,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "e25e26cd33932cf05c4b2561077dc222b697070860468dbf48af5a5b64df2775",
-      "size_bytes": 118595
+      "sha256": "4226d6d3bc28d39721acb08025148c99a879c0be6e29444b959e7901b0dbdfcc",
+      "size_bytes": 119692
     },
     {
       "category": "legacy",
@@ -3813,8 +3825,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/trading/dual_model_strategy.py",
-      "sha256": "1ecf75809a67369df3e0e8ea51970aaa05f96ea0d3e07d468bfadeace9fac587",
-      "size_bytes": 13959
+      "sha256": "88e76b889e8154acb29b9f274cff2fde503f057f80b93b8ee6e1c6e2560b28ad",
+      "size_bytes": 14059
     },
     {
       "category": "source",
@@ -4779,8 +4791,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_bracket.py",
-      "sha256": "15b74dcae07544e9e113fbcce8ec8bca3f5c76e7f9f45fa8b24b3a3d35da4863",
-      "size_bytes": 8361
+      "sha256": "b166b6036bf98d6ee929a71c305264b34e1fce94c0f6fb8aa008cbc2918a4ce1",
+      "size_bytes": 10667
     },
     {
       "category": "test",
@@ -4855,24 +4867,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T07:10:36.685421+00:00",
+  "generated_at": "2026-08-29T09:42:53.456703+00:00",
   "git": {
     "branch": "main",
-    "commit": "c8b3749f02a1fe815b8db610da9250bcba16d367",
+    "commit": "8820ffd55a816269618aec85ee5ada5e41395134",
     "dirty": true,
     "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "8820ffd docs: full-history 260-trade analysis \u2014 patience thesis, trend filter ROI, session sims",
+      "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)",
+      "564f94d Phase 76: recenter the STOP only \u2014 a TP on the wrong side of entry still refuses",
       "c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting",
       "7aee78e docs: post-fix analysis of the 154-trade backtest \u2014 bug 53 (SL hugging entry)",
       "ccc404f docs: the NameError belonged to the interim 84d4851 zip \u2014 fixed since 5188801",
       "5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience",
       "f18533c Phase 73 lint: dedupe pytest import",
       "f61eb51 Phase 73: fix bug 52 \u2014 refuse brackets whose stop lands on the profit side",
-      "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed",
-      "84d4851 Phase 72: full 'start conditions' section in the backtest report",
-      "8f97a67 Phase 70: fix bug 51 \u2014 _RangeLoss/_Seq2SeqMAE were function-local, range models could never load",
-      "dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report"
+      "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed"
     ]
   },
   "modules": [
@@ -10881,8 +10893,9 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 14,
+      "functions": 16,
       "internal_imports": [
+        "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.market.candle",
         "ShadBotTrader.domain.market.price",
@@ -10890,7 +10903,9 @@
         "ShadBotTrader.domain.market.timeframe",
         "ShadBotTrader.domain.market.timestamp",
         "ShadBotTrader.domain.simulation.bracket",
-        "ShadBotTrader.domain.trading.order"
+        "ShadBotTrader.domain.strategy.strategy_context",
+        "ShadBotTrader.domain.trading.order",
+        "ShadBotTrader.infrastructure.trading.dual_model_strategy"
       ],
       "name": "unit.simulation.test_bracket",
       "path": "tests/unit/simulation/test_bracket.py"
@@ -11095,18 +11110,18 @@
   "statistics": {
     "class_count": 763,
     "config_file_count": 3,
-    "documentation_file_count": 134,
+    "documentation_file_count": 136,
     "external_dependency_count": 14,
-    "function_count": 4340,
+    "function_count": 4342,
     "internal_dependency_count": 260,
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48437,
+    "source_lines": 48438,
     "test_file_count": 131,
-    "test_lines": 22282,
-    "total_file_count": 799,
-    "total_lines": 115528
+    "test_lines": 22341,
+    "total_file_count": 801,
+    "total_lines": 115588
   },
   "test_file_count": 131
 }
