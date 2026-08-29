@@ -2192,3 +2192,63 @@ last N bars — بعدش نتایج.
 ```
 pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 — روی سیستم اپراتور سبز), 12 skipped
 ```
+
+---
+
+## 2026-08-27 — فاز ۷۴: patienceهای قابل تنظیم برای EarlyStopping و ReduceLR
+
+**تحلیل اجرای کاربر (range retrain 75 epoch):** بهترین epoch 50 (val_loss
+0.002102) ولی EarlyStopping در ~65 قطع کرد → ReduceLR (patience=7) فقط
+۱-۲ پله فرصت کاهش داشت. حدس اپراتور درست بود.
+
+### رفع (پارامتر جدید در کل زنجیره)
+
+- `WavenetTrainer(early_stopping_patience=0, reduce_lr_patience=0)` —
+  0 = auto (ES=epochs/5، ReduceLR=epochs/10)
+- `DualModelService.build_trainer/train()` پاس می‌دهند
+- CLI: `--es-patience N` / `--rlr-patience N` + چاپ در سربرگ
+  (`callbacks : EarlyStopping patience=… · ReduceLR patience=…`)
+- GUI: دو فیلد در Train a model و Retrain a model
+
+### پیشنهاد عددی برای range 1D با epochs=75-100
+
+`--es-patience 30 --rlr-patience 10` — به ReduceLR اجازه ۳-۴ پله کاهش
+(0.85³≈0.61) قبل از قطع.
+
+```
+pytest 1491 passed, 53 skipped · ruff ✅ black ✅
+```
+
+---
+
+## 2026-08-27 — یادداشت فاز ۷۴-ب: باگ NameError متعلق به کامیت ۸۴d4851 بود
+
+کاربر هنگام run_backtest خطای `NameError: symbol_text` گرفت — traceback به
+خط ۲۱۲۳ از کامیت **۸۴d4851 (فاز ۷۲)** اشاره داشت که بخش «شرایط شروع» را با
+متغیرهای محلیِ `_run_simulation` در `run_backtest` نوشته بود. در فاز ۷۴
+(کامیت `5188801`) همین بخش با bridge `_last_run_context` بازنویسی و فیکس
+شده بود. کاربر فقط zip میانی (۸۴d4851) را گرفته بود.
+
+**اقدام:** بدون تغییر کد — کاربر به آخرین zip (۵۱۸۸۸۰۱) ارتقا داده شد.
+تأیید: compile ✅ · تست‌های presentation/simulation سبز.
+
+---
+
+## 2026-08-29 — فاز ۷۵: بازسازی براکت حول entry (به‌جای reject)
+
+**درخواست اپراتور:** براکت‌های وارونه رد نشوند؛ باز شوند با SL زیر
+قیمت ورود و TP بالای آن (برای BUY)، با استفاده از عرض رنج مدل.
+
+### رفع
+
+`from_model_levels`: گیت rejectِ باگ ۵۲ → منطق recenter:
+`width = high − low` · BUY: `SL=entry−width, TP=entry+mult×width` ·
+SELL برعکس · پرچم `recentered` در metadata/to_dict · رنج عرض‌صفر رد.
+
+### تست
+
+۵ تست جدید/به‌روز در `test_bracket.py` (کل ۱۲).
+
+```
+ruff ✅ black ✅  pytest 1494 passed, 53 skipped
+```

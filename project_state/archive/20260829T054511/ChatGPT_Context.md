@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T06:57:32.120972+00:00
+- Snapshot generated at: 2026-08-29T05:39:50.879001+00:00
 
 ## Current Architecture
 
@@ -27,12 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 7aee78efd5c0825eefdbf7e65143091ed0539844
-- Dirty: yes (2 files)
+- Commit: f18533c51217b42fa318e20d5bd3fabbe5ff2f56
+- Dirty: yes (4 files)
 - Recent commits:
-  - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
-  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
-  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
   - f18533c Phase 73 lint: dedupe pytest import
   - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
   - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
@@ -40,6 +37,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
   - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
   - e2f10c4 Phase 68: print an engine build tag in the backtest report
+  - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
+  - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
+  - bd7b242 Phase 65: show signal-model selection points on the replay chart
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 799
+- Total files: 798
 - Source files: 317
 - Test files: 131
-- Documentation files: 134
+- Documentation files: 133
 - Legacy files: 176
-- Total Python lines: 115505
+- Total Python lines: 115435
 - Modules: 448
 - Classes: 763
-- Functions: 4339
+- Functions: 4336
 - External dependencies: 14

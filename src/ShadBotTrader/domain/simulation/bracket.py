@@ -48,6 +48,9 @@ class TradeBracket:
     #: The 1H Range model's reference close. It is distinct from the
     #: actual executable entry and is kept so replay can audit offsets.
     model_reference: Optional[Price] = None
+    #: فاز ۷۵: True وقتی براکت به‌درخواست اپراتور حول entry بازسازی شده
+    #: (رنجِ مدل نسبت به entry وارونه بود — entry بیرون باند پیش‌بینی).
+    recentered: bool = False
 
     def __post_init__(self) -> None:
         for name, price in (
@@ -96,7 +99,7 @@ class TradeBracket:
           SELL: SL_adjusted = predicted_high + spread
         """
         high = Price(Decimal(str(predicted_high)))
-        low  = Price(Decimal(str(predicted_low)))
+        low = Price(Decimal(str(predicted_low)))
         reference = None if model_reference is None else Price(Decimal(str(model_reference)))
 
         # فاز ۵۷: SL رو به اندازه spread گسترش بده
@@ -109,29 +112,38 @@ class TradeBracket:
                 high = Price(high.amount + spread)
 
         target = high if side is OrderSide.BUY else low
-        stop   = low  if side is OrderSide.BUY else high
+        stop = low if side is OrderSide.BUY else high
 
-        # باگ ۵۲ (فاز ۷۳): گیتِ جهت براکت — SL و TP باید در سمت درست
-        # entry باشند. وقتی قیمت از close رفرنسِ رنج حرکت کرده (رنجِ
-        # دیروز)، سطوح خام مدل می‌توانند «وارونه» شوند: LONG با SL بالای
-        # entry یعنی «حد ضرر» در واقع هدف سود است — این ترید هرگز نباید
-        # باز شود. قبلاً بررسی R/R با فاصلهٔ مطلق (abs) چنین براکتی را
-        # «تأیید» می‌کرد و ۱٬۷۱۹ ترید معیوب در یک اجرا ساخت.
+        # فاز ۷۵ (به‌جای reject باگ ۵۲): اگر entry بیرون باندِ پیش‌بینی
+        # باشد (سطوح خام وارونه می‌شوند)، به‌درخواست اپراتور ترید «رد
+        # نمی‌شود» — براکت حول entry بازسازی می‌شود با همان عرضِ رنج:
+        #   BUY : SL = entry − width · TP = entry + mult × width
+        #   SELL: SL = entry + width · TP = entry − mult × width
+        # به این ترتیب entry همیشه بین TP و SL است، SL واقعاً سمت ضرر
+        # است، و فاصلهٔ هر دو سطح اندازهٔ رنجِ پیش‌بینی مدل است.
+        # (مورد قبلی: ValidationError — ۸۱.۵٪ تریدهای یک اجرا را حذف می‌کرد.)
         entry_amount = entry_reference.amount
         if side is OrderSide.BUY:
-            levels_on_wrong_side = (
-                stop.amount >= entry_amount or target.amount <= entry_amount
-            )
+            levels_on_wrong_side = stop.amount >= entry_amount or target.amount <= entry_amount
         else:
-            levels_on_wrong_side = (
-                stop.amount <= entry_amount or target.amount >= entry_amount
-            )
+            levels_on_wrong_side = stop.amount <= entry_amount or target.amount >= entry_amount
+
+        recentered = False
         if levels_on_wrong_side:
-            raise ValidationError(
-                f"Bracket levels on the wrong side of entry for {side.value}: "
-                f"entry {entry_amount}, SL {stop.amount}, TP {target.amount} — "
-                "stale range forecast (entry moved outside the predicted band)"
-            )
+            width = Decimal(str(predicted_high)) - Decimal(str(predicted_low))
+            if width <= 0:
+                raise ValidationError(
+                    "Cannot recenter bracket: the range forecast has zero width "
+                    f"(high {predicted_high}, low {predicted_low})"
+                )
+            mult = Decimal(str(reward_risk_multiplier)) if reward_risk_multiplier else Decimal("1")
+            if side is OrderSide.BUY:
+                stop = Price(entry_amount - width)
+                target = Price(entry_amount + mult * width)
+            else:
+                stop = Price(entry_amount + width)
+                target = Price(entry_amount - mult * width)
+            recentered = True
 
         # Apply reward/risk condition: TP_distance >= multiplier * SL_distance
         # If the raw forecast does NOT satisfy the condition, the trade is
@@ -155,6 +167,7 @@ class TradeBracket:
             model_high=high,
             model_low=low,
             model_reference=reference,
+            recentered=recentered,
         )
 
     def trigger(
@@ -227,4 +240,5 @@ class TradeBracket:
                 else str(self.model_low.amount / self.model_reference.amount - Decimal("1"))
             ),
             "created_at": str(self.created_at),
+            "recentered": self.recentered,
         }
