@@ -2409,3 +2409,34 @@ ruff ✅ black ✅  pytest 1544 passed, 2 env-failed, 12 skipped
 ```
 ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
+
+---
+
+## 2026-08-29 — فاز ۸۴: نمای سیگنال در /data (درخواست اپراتور)
+
+**درخواست:** «توی /data بتونم دیتاست سیگنال رو ببینم — threshold رو تعیین
+کنم و نقاط خرید/فروش نشون داده بشه.»
+
+### رفع
+
+- `/data` فرم جدید: تیک «Show signals» + فیلد «threshold %» (پیش‌فرض 0.6)
+- JS: محاسبهٔ **first-passage روی همان کندل‌های چارت** با همان قانون
+  آموزش (اولین close که ±barrier بزند؛ گارد OHLC: LONG اگر Low زیر
+  Lowِ شروع برود نامعتبر؛ SELL قرینه) — بدون سمت سرور
+- رسم: ▲ سبز زیر کندل = BUY · ▼ قرمز بالا = SELL
+- خلاصهٔ زنده: «N signals · X buy · Y sell (th …%)»
+- debounce تایپ threshold (250ms) تا compute spams نشود
+- `DataInspector.candles` حالا `i` (اندیس سراسری) هم برمی‌گرداند
+  تا JS نقاط را به کندل‌های پنجره match کند
+- تست integration به‌روز شد (فیلد +i)
+
+### نکتهٔ عملکرد
+
+computeSignals روی تغییر threshold اجرا می‌شود (O(n²) در بدترین حالت
+روی ۵۰۰ کندل چارت = ~۲۵۰k مقایسه — فوری). اگر بعداً چارت بزرگ‌تر شد
+(>۲۰۰۰ کندل)، می‌توان کار را به web-worker منتقل کرد — ثبت به‌عنوان
+یادداشت، نه نیاز فعلی.
+
+```
+ruff ✅ black ✅  pytest 1504 passed, 54 skipped
+```

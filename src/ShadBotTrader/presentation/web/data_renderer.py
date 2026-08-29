@@ -151,6 +151,31 @@ function draw() {
     ctx.fillRect(x - bodyW / 2, top, bodyW, Math.max(1, bot - top));
   });
 
+  // فاز ۸۴: نقاط سیگنال — ▲ BUY زیر کندل · ▼ SELL بالای کندل
+  if (currentSignals.length) {
+    const indexOf = new Map();
+    slice.forEach((c, i) => indexOf.set(c.i, i));   // c.i = اندیس سراسری
+    currentSignals.forEach(s => {
+      const local = indexOf.get(s.i);
+      if (local === undefined) return;
+      const c = slice[local];
+      const x = xOf(local);
+      const buy = s.side === 'buy';
+      ctx.beginPath();
+      if (buy) {
+        const y = yP(c.l) + 9;
+        ctx.moveTo(x, y - 8); ctx.lineTo(x - 5, y + 4); ctx.lineTo(x + 5, y + 4);
+        ctx.fillStyle = '#3fb950';
+      } else {
+        const y = yP(c.h) - 9;
+        ctx.moveTo(x, y + 8); ctx.lineTo(x - 5, y - 4); ctx.lineTo(x + 5, y - 4);
+        ctx.fillStyle = '#f85149';
+      }
+      ctx.closePath();
+      ctx.fill();
+    });
+  }
+
   if (showVolume && maxVol > 0) {
     const base = height - 20;
     slice.forEach((c, i) => {
@@ -187,6 +212,61 @@ function draw() {
       `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${pct.toFixed(2)}%)</div></div>`;
   }
 }
+
+// ── فاز ۸۴: سیگنال‌های first-passage روی همان کندل‌های چارت ──
+// قانون دقیقاً مثل آموزش: اولین close که ±threshold را بزند؛
+// BUY معتبر تا وقتی Low زیر Lowِ کندل شروع نرود (و برعکس برای SELL).
+function computeSignals(threshold) {
+  const signals = [];   // {i, side}
+  const n = CANDLES.length;
+  for (let start = 0; start < n - 1; start++) {
+    const c0 = CANDLES[start];
+    const upper = c0.c * (1 + threshold);
+    const lower = c0.c * (1 - threshold);
+    let label = null;
+    for (let k = start + 1; k < n; k++) {
+      const c = CANDLES[k];
+      const buyHit = c.c >= upper;
+      const buyInvalid = c.l < c0.l;
+      const sellHit = c.c <= lower;
+      const sellInvalid = c.h > c0.h;
+      if (buyHit && (!sellHit || !sellInvalid)) { label = 'buy'; break; }
+      if (sellHit && (!buyHit || !buyInvalid)) { label = 'sell'; break; }
+      if (buyInvalid && sellInvalid) break;
+      if (buyInvalid) break;   // LONG مسدود شد — SELL فقط اگر sellHit بعداً
+      if (sellInvalid) break;
+    }
+    if (label) signals.push({ i: start, side: label });
+  }
+  return signals;
+}
+
+let currentSignals = [];
+
+function renderSignals() {
+  const box = document.getElementById('show-signals');
+  const thEl = document.getElementById('sig-threshold');
+  const summary = document.getElementById('sig-summary');
+  if (!box || !thEl) return;
+  if (!box.checked) { currentSignals = []; summary.textContent = ''; draw(); return; }
+  const th = parseFloat(thEl.value) / 100;
+  if (!(th > 0)) return;
+  currentSignals = computeSignals(th);
+  const buys = currentSignals.filter(s => s.side === 'buy').length;
+  const sells = currentSignals.length - buys;
+  summary.textContent =
+    `${currentSignals.length} signals · ${buys} buy ▲ · ${sells} sell ▼ (th ${thEl.value}%)`;
+  draw();
+}
+
+const sigBox = document.getElementById('show-signals');
+const sigTh = document.getElementById('sig-threshold');
+if (sigBox) sigBox.addEventListener('change', renderSignals);
+let sigThTimer = null;
+if (sigTh) sigTh.addEventListener('input', () => {
+  clearTimeout(sigThTimer);
+  sigThTimer = setTimeout(renderSignals, 250);   // debounce تایپ
+});
 
 const windowSelect = document.getElementById('window');
 if (windowSelect) {
@@ -333,6 +413,16 @@ def render_candle_section(info: Dict[str, Any]) -> str:
     </select>
     <button id="toggle-volume" class="on" type="button">Volume</button>
     <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
+    <label style="display:inline-flex;align-items:center;gap:6px;color:#8b949e;font-size:12px">
+      <input id="show-signals" type="checkbox"> Show signals
+    </label>
+    <label style="display:inline-flex;align-items:center;gap:6px;color:#8b949e;font-size:12px">
+      threshold %
+      <input id="sig-threshold" type="number" step="0.05" min="0.05" value="0.6"
+             style="width:70px;background:#0d1117;color:#dce3f2;
+                    border:1px solid #2a3348;border-radius:4px;padding:2px 6px">
+    </label>
+    <span id="sig-summary" style="color:#8b949e;font-size:12px"></span>
     <span style="color:#8b949e;align-self:center;font-size:12px">
       wheel = اسکرول زمان · Ctrl+wheel = زوم قیمت · درگ = جابجایی
     </span>

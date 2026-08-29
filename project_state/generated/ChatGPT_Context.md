@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T20:25:11.001437+00:00
+- Snapshot generated at: 2026-08-29T20:42:31.527159+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ed5cc57e7e13df6c5d1b6ee6acc07bd360a8d658
-- Dirty: yes (2 files)
+- Commit: 2c4fa0da837aaef2c222cc92fbae4c432b2e5a8a
+- Dirty: yes (12 files)
 - Recent commits:
+  - 2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price
   - ed5cc57 Phase 82: price zoom & time pan on the /data candle chart
   - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
   - 5084467 docs: zero-trade 1H analysis — signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
   - ec93102 Phase 77 lint pass
   - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
-  - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116018
+- Total Python lines: 116110
 - Modules: 450
 - Classes: 763
 - Functions: 4356

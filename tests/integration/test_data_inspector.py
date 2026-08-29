@@ -87,7 +87,7 @@ class TestCandleInspection:
 
         assert info.chart
         first = info.chart[0]
-        assert set(first) == {"t", "o", "h", "l", "c", "v"}
+        assert set(first) == {"i", "t", "o", "h", "l", "c", "v"}   # فاز ۸۴: +i
 
     def test_the_chart_is_limited_but_the_count_is_not(self, populated):
         """A 100k dataset must not become a 100k-point web page."""

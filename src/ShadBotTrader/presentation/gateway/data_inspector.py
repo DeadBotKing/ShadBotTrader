@@ -199,8 +199,10 @@ class DataInspector:
         info.last_time = ordered[-1].open_time.value
 
         window = ordered[-(chart_candles or self._chart_candles) :]
+        chart_offset = len(ordered) - len(window)
         info.chart = [
             {
+                "i": chart_offset + index,  # فاز ۸۴: اندیس سراسری برای رسم سیگنال
                 "t": candle.open_time.value.isoformat(),
                 "o": float(candle.open.amount),
                 "h": float(candle.high.amount),
@@ -208,7 +210,7 @@ class DataInspector:
                 "c": float(candle.close.amount),
                 "v": float(candle.volume),
             }
-            for candle in window
+            for index, candle in enumerate(window)
         ]
         info.price_low = min(float(candle.low.amount) for candle in window)
         info.price_high = max(float(candle.high.amount) for candle in window)

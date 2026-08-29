@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T13:49:07.902801+00:00
+- Snapshot generated at: 2026-08-29T20:25:11.001437+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 132
+- Test modules: 133
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 8eb5612437325e9e5d6a0abdb8a5a332b89579a1
-- Dirty: yes (3 files)
+- Commit: ed5cc57e7e13df6c5d1b6ee6acc07bd360a8d658
+- Dirty: yes (2 files)
 - Recent commits:
+  - ed5cc57 Phase 82: price zoom & time pan on the /data candle chart
+  - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
+  - 5084467 docs: zero-trade 1H analysis — signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses
+  - 7b59185 Phase 80: range horizon configurable in the dashboard
+  - ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands
+  - 026737b Phase 79: fix bug 55 — streamed range training fed [batch,2] labels to a seq2seq loss
   - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
   - ec93102 Phase 77 lint pass
   - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
   - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
-  - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
-  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
-  - c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting
-  - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
-  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
-  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 802
+- Total files: 805
 - Source files: 317
-- Test files: 132
-- Documentation files: 136
+- Test files: 133
+- Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 115705
-- Modules: 449
+- Total Python lines: 116018
+- Modules: 450
 - Classes: 763
-- Functions: 4348
+- Functions: 4356
 - External dependencies: 14
