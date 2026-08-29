@@ -2231,3 +2231,24 @@ pytest 1491 passed, 53 skipped · ruff ✅ black ✅
 
 **اقدام:** بدون تغییر کد — کاربر به آخرین zip (۵۱۸۸۸۰۱) ارتقا داده شد.
 تأیید: compile ✅ · تست‌های presentation/simulation سبز.
+
+---
+
+## 2026-08-29 — فاز ۷۵: بازسازی براکت حول entry (به‌جای reject)
+
+**درخواست اپراتور:** براکت‌های وارونه رد نشوند؛ باز شوند با SL زیر
+قیمت ورود و TP بالای آن (برای BUY)، با استفاده از عرض رنج مدل.
+
+### رفع
+
+`from_model_levels`: گیت rejectِ باگ ۵۲ → منطق recenter:
+`width = high − low` · BUY: `SL=entry−width, TP=entry+mult×width` ·
+SELL برعکس · پرچم `recentered` در metadata/to_dict · رنج عرض‌صفر رد.
+
+### تست
+
+۵ تست جدید/به‌روز در `test_bracket.py` (کل ۱۲).
+
+```
+ruff ✅ black ✅  pytest 1494 passed, 53 skipped
+```

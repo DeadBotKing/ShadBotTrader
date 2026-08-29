@@ -572,6 +572,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/BACKTEST_154TRADES_POSTFIX_ANALYSIS.md",
+      "sha256": "526d2139cbe81951a6ba8e622935cecb09a687cae26c78fd6a598f475d76d268",
+      "size_bytes": 2706
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/BACKTEST_2110TRADES_ANALYSIS.md",
       "sha256": "fadbbc3494197ae15c418f18897a4b2a0ac08f1ce4f6e9336e0a64725f177681",
       "size_bytes": 6801
@@ -915,8 +921,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ec39fa13d4ca6be2f5178d6dd88035e9cfaa5b2143be30087fba929febd42faf",
-      "size_bytes": 115989
+      "sha256": "c7cea83b283189566187b4dccdee8ccf2a38a005f986f0ba1fb5f48e7b1fb47f",
+      "size_bytes": 117877
     },
     {
       "category": "legacy",
@@ -2919,8 +2925,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/simulation/bracket.py",
-      "sha256": "d83e76cf322cce2184a38f3c9f294125b767b3777a4ef06d178057a7223867d7",
-      "size_bytes": 9548
+      "sha256": "26d33c86246ced89c7fff8697832ed7883713c5a5adff855edf9bde9ffb6cf1f",
+      "size_bytes": 10433
     },
     {
       "category": "source",
@@ -4773,8 +4779,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_bracket.py",
-      "sha256": "f4b1937f6b8ca3f39e8b1811e44e1b392d4f050d278434a1a5fb2322c6c72438",
-      "size_bytes": 6004
+      "sha256": "259edb24aa90ae49251057fc9476a9463d49d61ebb76435361cf2157d6e976c9",
+      "size_bytes": 7609
     },
     {
       "category": "test",
@@ -4849,24 +4855,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T05:45:11.699908+00:00",
+  "generated_at": "2026-08-29T06:57:32.120972+00:00",
   "git": {
     "branch": "main",
-    "commit": "f18533c51217b42fa318e20d5bd3fabbe5ff2f56",
+    "commit": "7aee78efd5c0825eefdbf7e65143091ed0539844",
     "dirty": true,
-    "dirty_files": 13,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "7aee78e docs: post-fix analysis of the 154-trade backtest \u2014 bug 53 (SL hugging entry)",
+      "ccc404f docs: the NameError belonged to the interim 84d4851 zip \u2014 fixed since 5188801",
+      "5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience",
       "f18533c Phase 73 lint: dedupe pytest import",
       "f61eb51 Phase 73: fix bug 52 \u2014 refuse brackets whose stop lands on the profit side",
       "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed",
       "84d4851 Phase 72: full 'start conditions' section in the backtest report",
       "8f97a67 Phase 70: fix bug 51 \u2014 _RangeLoss/_Seq2SeqMAE were function-local, range models could never load",
       "dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report",
-      "e2f10c4 Phase 68: print an engine build tag in the backtest report",
-      "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
-      "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
-      "bd7b242 Phase 65: show signal-model selection points on the replay chart"
+      "e2f10c4 Phase 68: print an engine build tag in the backtest report"
     ]
   },
   "modules": [
@@ -10875,7 +10881,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 10,
+      "functions": 13,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.market.candle",
@@ -11089,18 +11095,18 @@
   "statistics": {
     "class_count": 763,
     "config_file_count": 3,
-    "documentation_file_count": 133,
+    "documentation_file_count": 134,
     "external_dependency_count": 14,
-    "function_count": 4336,
+    "function_count": 4339,
     "internal_dependency_count": 260,
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48414,
+    "source_lines": 48428,
     "test_file_count": 131,
-    "test_lines": 22221,
-    "total_file_count": 798,
-    "total_lines": 115444
+    "test_lines": 22268,
+    "total_file_count": 799,
+    "total_lines": 115505
   },
   "test_file_count": 131
 }
