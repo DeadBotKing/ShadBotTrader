@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "c2fe56b7abd80c77ab2e79831c41b481b90897230e510f83d42f71cfcfe0e9ea",
-      "size_bytes": 123889
+      "sha256": "e2b5209981d067670c33b9413765ba051d4dfed285ba0712fb5516790886513d",
+      "size_bytes": 124712
     },
     {
       "category": "legacy",
@@ -3951,8 +3951,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "2dae27bfd7b42d3b157aab37c7761a730f5caa67cee8bf581cca616d48020587",
-      "size_bytes": 18766
+      "sha256": "a0ccd0eb5330dbad527278bcb51be07be1ec3a5874e87b9dce0a4e7827b9e25b",
+      "size_bytes": 19375
     },
     {
       "category": "source",
@@ -3963,8 +3963,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/replay_renderer.py",
-      "sha256": "714e4452d64315e9aea2d806f4e3f48feeb2810993f66325e08a8e60958bcdd5",
-      "size_bytes": 29097
+      "sha256": "068ff68482ab4a76828896722b450615f9eee6ad5801c328a2b8547e366858a7",
+      "size_bytes": 29452
     },
     {
       "category": "source",
@@ -4891,14 +4891,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T18:37:26.855804+00:00",
+  "generated_at": "2026-08-29T20:25:11.001437+00:00",
   "git": {
     "branch": "main",
-    "commit": "947ce0ccf140101dd9238abe2b1b566921d89a94",
+    "commit": "ed5cc57e7e13df6c5d1b6ee6acc07bd360a8d658",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "ed5cc57 Phase 82: price zoom & time pan on the /data candle chart",
       "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)",
       "5084467 docs: zero-trade 1H analysis \u2014 signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses",
       "7b59185 Phase 80: range horizon configurable in the dashboard",
@@ -4907,8 +4908,7 @@
       "8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)",
       "ec93102 Phase 77 lint pass",
       "334851b Phase 77: fix bug 54 \u2014 min_sl_distance compared a dollar distance against fraction*ref",
-      "8820ffd docs: full-history 260-trade analysis \u2014 patience thesis, trend filter ROI, session sims",
-      "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)"
+      "8820ffd docs: full-history 260-trade analysis \u2014 patience thesis, trend filter ROI, session sims"
     ]
   },
   "modules": [
@@ -11167,11 +11167,11 @@
     "legacy_file_count": 176,
     "module_count": 450,
     "source_file_count": 317,
-    "source_lines": 48681,
+    "source_lines": 48705,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 805,
-    "total_lines": 115994
+    "total_lines": 116018
   },
   "test_file_count": 133
 }

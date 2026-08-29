@@ -209,33 +209,47 @@ if (volumeButton) {
 if (canvas) {
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width;
-    const height = 460;
-    const volumeH = showVolume ? 70 : 0;
-    const priceH = height - volumeH - 26;
-    const padL = 8, padR = 66;
 
-    const slice = (viewStart !== null)
-      ? CANDLES.slice(Math.max(0, Math.min(viewStart, CANDLES.length - visible)))
-      : CANDLES.slice(-visible);
-    if (!slice.length) return;
-    let hi = -Infinity, lo = Infinity;
-    slice.forEach(c => { if (c.h > hi) hi = c.h; if (c.l < lo) lo = c.l; });
-    if (priceZoom > 1.0 && priceAnchor !== null) {
-      const span = (hi - lo) / priceZoom;
-      hi = priceAnchor + span / 2;
-      lo = priceAnchor - span / 2;
+    // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
+    if (e.ctrlKey) {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = 460;
+      const volumeH = showVolume ? 70 : 0;
+      const priceH = height - volumeH - 26;
+      const padL = 8, padR = 66;
+
+      const slice = (viewStart !== null)
+        ? CANDLES.slice(Math.max(0, Math.min(viewStart, CANDLES.length - visible)))
+        : CANDLES.slice(-visible);
+      if (!slice.length) return;
+      let hi = -Infinity, lo = Infinity;
+      slice.forEach(c => { if (c.h > hi) hi = c.h; if (c.l < lo) lo = c.l; });
+      if (priceZoom > 1.0 && priceAnchor !== null) {
+        const span = (hi - lo) / priceZoom;
+        hi = priceAnchor + span / 2;
+        lo = priceAnchor - span / 2;
+      }
+
+      const plotW = width - padL - padR;
+      const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - padL) / plotW));
+      const mousePrice = hi - rel * (hi - lo);
+
+      const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+      priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
+      priceAnchor = mousePrice;
+      if (priceZoom === 1.0) priceAnchor = null;
+      draw();
+      return;
     }
 
-    const plotW = width - padL - padR;
-    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - padL) / plotW));
-    const mousePrice = hi - rel * (hi - lo);
-
-    const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
-    priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
-    priceAnchor = mousePrice;
-    if (priceZoom === 1.0) priceAnchor = null;
+    // فاز ۸۲: wheel = اسکرول زمان (مثل متاتریدر)
+    const step = Math.max(1, Math.round(visible / 15));
+    const shift = (e.deltaY < 0 ? -1 : 1) * step;
+    if (viewStart === null) {
+      viewStart = (viewStart !== null) ? viewStart : Math.max(0, CANDLES.length - visible);
+    }
+    viewStart = Math.max(0, Math.min(CANDLES.length - visible, viewStart + shift));
     draw();
   }, { passive: false });
 
@@ -320,7 +334,7 @@ def render_candle_section(info: Dict[str, Any]) -> str:
     <button id="toggle-volume" class="on" type="button">Volume</button>
     <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
     <span style="color:#8b949e;align-self:center;font-size:12px">
-      wheel = زوم قیمت · درگ = جابجایی زمان
+      wheel = اسکرول زمان · Ctrl+wheel = زوم قیمت · درگ = جابجایی
     </span>
     <span class="sub">green = close above open</span>
   </div>

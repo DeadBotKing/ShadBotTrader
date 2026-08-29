@@ -492,29 +492,39 @@ window.addEventListener('resize', resize);
 // ── فاز ۸۱: تعاملات موس (زوم قیمت با wheel، پن زمان با درگ) ──
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
   const [start, end] = visibleRange();
-  const slice = bars.slice(start, end);
-  if (!slice.length) return;
+  const size = end - start;
 
-  // قیمتِ زیر موس (قبل از زوم) را محاسبه کن
-  const priceH = 420 * 0.72;
-  let hi = -Infinity, lo = Infinity;
-  slice.forEach(b => { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; });
-  if (priceZoom > 1.0 && priceAnchor !== null) {
-    const span = (hi - lo) / priceZoom;
-    hi = priceAnchor + span / 2;
-    lo = priceAnchor - span / 2;
+  // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
+  if (e.ctrlKey) {
+    const rect = canvas.getBoundingClientRect();
+    const slice = bars.slice(start, end);
+    if (!slice.length) return;
+    const priceH = 420 * 0.72;
+    let hi = -Infinity, lo = Infinity;
+    slice.forEach(b => { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; });
+    if (priceZoom > 1.0 && priceAnchor !== null) {
+      const span = (hi - lo) / priceZoom;
+      hi = priceAnchor + span / 2;
+      lo = priceAnchor - span / 2;
+    }
+    const plotW = rect.width - 8 - 62;
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - 8) / plotW));
+    const mousePrice = hi - rel * (hi - lo);
+
+    const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+    priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
+    priceAnchor = mousePrice;
+    if (priceZoom === 1.0) priceAnchor = null;
+    draw();
+    return;
   }
-  const plotW = rect.width - 8 - 62;
-  const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - 8) / plotW));
-  const mousePrice = hi - rel * (hi - lo);
 
-  // زوم: wheel به بالا = بزرگ‌نمایی
-  const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
-  priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
-  priceAnchor = mousePrice;   // مرکز زوم روی نقطهٔ زیر موس می‌ماند
-  if (priceZoom === 1.0) priceAnchor = null;
+  // فاز ۸۲: wheel = اسکرول زمان (مثل متاتریدر) — جلو/عقب بین کندل‌ها
+  const step = Math.max(1, Math.round(size / 15));
+  const shift = (e.deltaY < 0 ? -1 : 1) * step;
+  if (viewStart === null) viewStart = start;
+  viewStart = Math.max(0, Math.min(bars.length - size, viewStart + shift));
   draw();
 }, { passive: false });
 
@@ -657,7 +667,7 @@ def render_replay(
   <div class="controls" style="margin-top:6px">
     <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
     <span style="color:#8b949e;align-self:center;font-size:12px">
-      wheel = زوم قیمت · درگ = جابجایی زمان
+      wheel = اسکرول زمان · Ctrl+wheel = زوم قیمت · درگ = جابجایی
     </span>
   </div>
   <div class="legend">
