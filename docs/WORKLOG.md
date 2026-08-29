@@ -2324,3 +2324,24 @@ pytest 1496 passed, 53 skipped · ruff ✅ black ✅
 ```
 pytest 1539 passed, 2 env-failed, 12 skipped · ruff ✅ black ✅
 ```
+
+---
+
+## 2026-08-29 — فاز ۸۰: horizon رنج در GUI
+
+**درخواست اپراتور:** horizon قابل تنظیم در داشبورد باشد (برای آزمایش‌های
+1H با horizonهای ۱۲/۲۴/۶/۱).
+
+### رفع
+
+- فرم **Train a model** و **Retrain a model**: فیلد
+  «Range horizon (candles)» (پیش‌فرض 1 = رفتار فعلی)
+- مسیرهای train_dual_models و retrain_model:
+  `--horizon N` فقط وقتی ≠1 و فقط برای role=range پاس می‌شود
+  (سیگنال first-passage بی‌کران است — horizon معنا ندارد)
+- hint: «1H: 12 (نیم‌روز) یا 24 (یک روز) برای براکت معنادار»
+- ۵ تست جدید (descriptorها، پاس 12، حذف وقتی 1، نادیده‌گرفتن برای signal)
+
+```
+ruff ✅ black ✅  pytest 1504 passed, 54 skipped
+```

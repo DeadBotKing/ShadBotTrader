@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T05:45:11.699908+00:00
+- Snapshot generated at: 2026-08-29T13:49:07.902801+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 131
+- Test modules: 132
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: f18533c51217b42fa318e20d5bd3fabbe5ff2f56
-- Dirty: yes (13 files)
+- Commit: 8eb5612437325e9e5d6a0abdb8a5a332b89579a1
+- Dirty: yes (3 files)
 - Recent commits:
-  - f18533c Phase 73 lint: dedupe pytest import
-  - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
-  - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
-  - 84d4851 Phase 72: full 'start conditions' section in the backtest report
-  - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
-  - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
-  - e2f10c4 Phase 68: print an engine build tag in the backtest report
-  - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
-  - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
-  - bd7b242 Phase 65: show signal-model selection points on the replay chart
+  - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
+  - ec93102 Phase 77 lint pass
+  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
+  - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
+  - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
+  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
+  - c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting
+  - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
+  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
+  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 798
+- Total files: 802
 - Source files: 317
-- Test files: 131
-- Documentation files: 133
+- Test files: 132
+- Documentation files: 136
 - Legacy files: 176
-- Total Python lines: 115444
-- Modules: 448
+- Total Python lines: 115705
+- Modules: 449
 - Classes: 763
-- Functions: 4336
+- Functions: 4348
 - External dependencies: 14

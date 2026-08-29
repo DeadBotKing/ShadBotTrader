@@ -410,6 +410,16 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="which stored candles to train on",
                 ),
                 CommandField(
+                    "range_horizon",
+                    "Range horizon (candles)",
+                    "1",
+                    kind="number",
+                    hint=(
+                        "چند کندل جلوتر — باید با مدل ذخیره‌شده یکی باشد. "
+                        "1H: 12 یا 24 برای براکت معنادار"
+                    ),
+                ),
+                CommandField(
                     "threshold_pct",
                     "Signal movement threshold %",
                     "",
@@ -967,6 +977,16 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="select",
                     options=tuple(datasets),
                     hint="which stored candles to train on",
+                ),
+                CommandField(
+                    "range_horizon",
+                    "Range horizon (candles)",
+                    "1",
+                    kind="number",
+                    hint=(
+                        "چند کندل جلوتر — فقط برای range. "
+                        "1H: 12 (نیم‌روز) یا 24 (یک روز) برای براکت معنادار"
+                    ),
                 ),
                 CommandField(
                     "threshold_pct",
@@ -1830,6 +1850,11 @@ class CommandHandlers:
             _arch_args += ["--es-patience", str(_es_p)]
         if _rlr_p:
             _arch_args += ["--rlr-patience", str(_rlr_p)]
+        # فاز ۸۰: horizon رنج — باید با مدل ذخیره‌شده یکی باشد
+        if role == "range":
+            _rng_h = max(command.integer("range_horizon", 1), 1)
+            if _rng_h != 1:
+                _arch_args += ["--horizon", str(_rng_h)]
 
         return self._run_script(
             command,
@@ -3275,6 +3300,16 @@ class AccountCommandHandlers(CommandHandlers):
             _arch_args += ["--n-blocks", str(_n_blocks)]
         if _val_size:
             _arch_args += ["--val-size", str(_val_size)]
+        # فاز ۷۴: patienceها (0 = auto) و فاز ۸۰: horizon رنج
+        _es_p = max(command.integer("es_patience", 0), 0)
+        _rlr_p = max(command.integer("rlr_patience", 0), 0)
+        if _es_p:
+            _arch_args += ["--es-patience", str(_es_p)]
+        if _rlr_p:
+            _arch_args += ["--rlr-patience", str(_rlr_p)]
+        _rng_h = max(command.integer("range_horizon", 1), 1)
+        if role in ("range", "all") and _rng_h != 1:
+            _arch_args += ["--horizon", str(_rng_h)]
         return self._run_script(
             command,
             [

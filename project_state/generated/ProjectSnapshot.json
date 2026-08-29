@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 81
+      "used_by": 82
     },
     {
       "name": "numpy",
@@ -933,8 +933,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "fbd7b66827a9868229847f1c93e2f04aaaca77c82f240a5850af385f6c7da608",
-      "size_bytes": 120254
+      "sha256": "01c290de270a136f859863a294aa0ef1f022ecde1eba0de8bd70c9d8c4b6f71e",
+      "size_bytes": 121697
     },
     {
       "category": "legacy",
@@ -2037,8 +2037,14 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "94fb7b3634c8bb923e47c921f417ca5b014812ba59c11dd9fcb45643b83abb00",
+      "sha256": "1a1fd116646d451aefc4bcdd66e58fee0446746cc810f408799e7e196838e777",
       "size_bytes": 25781
+    },
+    {
+      "category": "script",
+      "path": "scripts/experiments_1h_horizons.md",
+      "sha256": "97d578a99974691f27ee225ef0c4fc3324754ec6317e97991e048cdb71c246cf",
+      "size_bytes": 3175
     },
     {
       "category": "script",
@@ -3897,8 +3903,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "e65000d94ffe5afdd764c04b5f651b0ce54e9c4a7a80cf020ff884ccc9662ea8",
-      "size_bytes": 148272
+      "sha256": "87fa7bfb8d924f8a5d9c7187b837093899bd2fce5903e412ef6d35306deff3e9",
+      "size_bytes": 149930
     },
     {
       "category": "source",
@@ -4748,6 +4754,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/presentation/test_range_horizon_gui.py",
+      "sha256": "40c02a7c6fbacbbdf15974c95edf926bd378302dce6afdba89755a43df9da038",
+      "size_bytes": 2620
+    },
+    {
+      "category": "test",
       "path": "tests/unit/project/__init__.py",
       "sha256": "d0b32e5905f68bba18a17e15b9836c23ec91ba08741c1295aa9ecfe373b84fc3",
       "size_bytes": 34
@@ -4873,14 +4885,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T13:49:07.902801+00:00",
+  "generated_at": "2026-08-29T17:00:52.480372+00:00",
   "git": {
     "branch": "main",
-    "commit": "8eb5612437325e9e5d6a0abdb8a5a332b89579a1",
+    "commit": "ea91da32084ebfb2556e6fe14699899c145c8270",
     "dirty": true,
-    "dirty_files": 3,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands",
+      "026737b Phase 79: fix bug 55 \u2014 streamed range training fed [batch,2] labels to a seq2seq loss",
       "8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)",
       "ec93102 Phase 77 lint pass",
       "334851b Phase 77: fix bug 54 \u2014 min_sl_distance compared a dollar distance against fraction*ref",
@@ -4888,9 +4902,7 @@
       "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)",
       "564f94d Phase 76: recenter the STOP only \u2014 a TP on the wrong side of entry still refuses",
       "c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting",
-      "7aee78e docs: post-fix analysis of the 154-trade backtest \u2014 bug 53 (SL hugging entry)",
-      "ccc404f docs: the NameError belonged to the interim 84d4851 zip \u2014 fixed since 5188801",
-      "5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience"
+      "7aee78e docs: post-fix analysis of the 154-trade backtest \u2014 bug 53 (SL hugging entry)"
     ]
   },
   "modules": [
@@ -10828,6 +10840,19 @@
     },
     {
       "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 8,
+      "internal_imports": [
+        "ShadBotTrader.presentation.commands",
+        "ShadBotTrader.presentation.commands.handlers"
+      ],
+      "name": "unit.presentation.test_range_horizon_gui",
+      "path": "tests/unit/presentation/test_range_horizon_gui.py"
+    },
+    {
+      "classes": 0,
       "external_imports": [],
       "functions": 0,
       "internal_imports": [],
@@ -11131,16 +11156,16 @@
     "config_file_count": 3,
     "documentation_file_count": 136,
     "external_dependency_count": 14,
-    "function_count": 4348,
+    "function_count": 4356,
     "internal_dependency_count": 260,
     "legacy_file_count": 176,
-    "module_count": 449,
+    "module_count": 450,
     "source_file_count": 317,
-    "source_lines": 48473,
-    "test_file_count": 132,
-    "test_lines": 22423,
-    "total_file_count": 802,
-    "total_lines": 115705
+    "source_lines": 48508,
+    "test_file_count": 133,
+    "test_lines": 22504,
+    "total_file_count": 804,
+    "total_lines": 115821
   },
-  "test_file_count": 132
+  "test_file_count": 133
 }
