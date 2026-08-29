@@ -5,8 +5,8 @@
 
 - Project name: ShadBotTrader
 - Architecture version: 1.0
-- Python version: 3.12.10
-- Snapshot generated at: 2026-08-29T16:09:24.007051+00:00
+- Python version: 3.13.14
+- Snapshot generated at: 2026-08-29T13:49:07.902801+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ec089b10bc49e0f760db7ac21deb2e6cbc309f00
-- Dirty: no
+- Commit: 8eb5612437325e9e5d6a0abdb8a5a332b89579a1
+- Dirty: yes (3 files)
 - Recent commits:
-  - ec089b1 Model 1H
-  - b77fcd4 Update
-  - 1436f2a Update BackTest
-  - d4ac999 update
-  - 05266a9 Update BackTest And Model Early Stopping
-  - f07bbf6 Backtest Updated Bug Fixed
-  - c6e7cc7 Update Backtest
-  - c376ced Update Range And Signal
-  - d2e7e51 Update Signal Model
-  - b0fdb95 Update Docs And Tests
+  - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
+  - ec93102 Phase 77 lint pass
+  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
+  - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
+  - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
+  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
+  - c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting
+  - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
+  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
+  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
 
 ## Quality Gate
 
