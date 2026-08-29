@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T06:57:32.120972+00:00
+- Snapshot generated at: 2026-08-29T17:00:52.480372+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 131
+- Test modules: 133
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 7aee78efd5c0825eefdbf7e65143091ed0539844
+- Commit: ea91da32084ebfb2556e6fe14699899c145c8270
 - Dirty: yes (2 files)
 - Recent commits:
+  - ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands
+  - 026737b Phase 79: fix bug 55 — streamed range training fed [batch,2] labels to a seq2seq loss
+  - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
+  - ec93102 Phase 77 lint pass
+  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
+  - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
+  - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
+  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
+  - c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting
   - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
-  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
-  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
-  - f18533c Phase 73 lint: dedupe pytest import
-  - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
-  - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
-  - 84d4851 Phase 72: full 'start conditions' section in the backtest report
-  - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
-  - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
-  - e2f10c4 Phase 68: print an engine build tag in the backtest report
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 799
+- Total files: 804
 - Source files: 317
-- Test files: 131
-- Documentation files: 134
+- Test files: 133
+- Documentation files: 136
 - Legacy files: 176
-- Total Python lines: 115505
-- Modules: 448
+- Total Python lines: 115821
+- Modules: 450
 - Classes: 763
-- Functions: 4339
+- Functions: 4356
 - External dependencies: 14
