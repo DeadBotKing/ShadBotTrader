@@ -72,6 +72,12 @@ const ctx = canvas && canvas.getContext('2d');
 let showVolume = true;
 let visible = 120;
 
+// فاز ۸۲ — زوم قیمت و پن زمان (مثل ریپلی/متاتریدر)
+let priceZoom = 1.0;
+let priceAnchor = null;
+let viewStart = null;   // null = آخرین N کندل؛ عدد = شروعِ دستی
+let dragX = null;
+
 function resize() {
   if (!canvas) return;
   const ratio = window.devicePixelRatio || 1;
@@ -94,7 +100,12 @@ function draw() {
 
   ctx.clearRect(0, 0, width, height);
 
-  const slice = CANDLES.slice(-visible);
+  const slice = (viewStart !== null)
+    ? CANDLES.slice(
+        Math.max(0, Math.min(viewStart, Math.max(0, CANDLES.length - visible))),
+        Math.max(0, Math.min(viewStart, Math.max(0, CANDLES.length - visible))) + visible
+      )
+    : CANDLES.slice(-visible);
   let hi = -Infinity, lo = Infinity, maxVol = 0;
   slice.forEach(c => {
     if (c.h > hi) hi = c.h;
@@ -102,6 +113,14 @@ function draw() {
     if (c.v > maxVol) maxVol = c.v;
   });
   if (hi === lo) { hi += 1; lo -= 1; }
+
+  // فاز ۸۲: زوم قیمت حول anchor
+  if (priceZoom > 1.0) {
+    const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
+    const span = (hi - lo) / priceZoom;
+    hi = anchor + span / 2;
+    lo = anchor - span / 2;
+  }
 
   const plotW = width - padL - padR;
   const step = plotW / slice.length;
@@ -173,6 +192,7 @@ const windowSelect = document.getElementById('window');
 if (windowSelect) {
   windowSelect.addEventListener('change', () => {
     visible = parseInt(windowSelect.value, 10);
+    viewStart = null;   // انتخاب تعداد کندل → زوم زمانی ریست
     draw();
   });
 }
@@ -182,6 +202,70 @@ if (volumeButton) {
     showVolume = !showVolume;
     volumeButton.classList.toggle('on', showVolume);
     draw();
+  });
+}
+
+// ── فاز ۸۲: wheel = زوم قیمت · درگ = پن زمان · دکمهٔ ریست ──
+if (canvas) {
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = 460;
+    const volumeH = showVolume ? 70 : 0;
+    const priceH = height - volumeH - 26;
+    const padL = 8, padR = 66;
+
+    const slice = (viewStart !== null)
+      ? CANDLES.slice(Math.max(0, Math.min(viewStart, CANDLES.length - visible)))
+      : CANDLES.slice(-visible);
+    if (!slice.length) return;
+    let hi = -Infinity, lo = Infinity;
+    slice.forEach(c => { if (c.h > hi) hi = c.h; if (c.l < lo) lo = c.l; });
+    if (priceZoom > 1.0 && priceAnchor !== null) {
+      const span = (hi - lo) / priceZoom;
+      hi = priceAnchor + span / 2;
+      lo = priceAnchor - span / 2;
+    }
+
+    const plotW = width - padL - padR;
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - padL) / plotW));
+    const mousePrice = hi - rel * (hi - lo);
+
+    const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+    priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
+    priceAnchor = mousePrice;
+    if (priceZoom === 1.0) priceAnchor = null;
+    draw();
+  }, { passive: false });
+
+  canvas.addEventListener('mousedown', e => { dragX = e.clientX; });
+  canvas.addEventListener('mousemove', e => {
+    if (dragX === null) return;
+    const dx = e.clientX - dragX;
+    if (Math.abs(dx) < 6) return;
+    dragX = e.clientX;
+    const plotW = canvas.clientWidth - 8 - 66;
+    const stepPx = plotW / visible;
+    const shift = Math.round(dx / stepPx);
+    if (shift === 0) return;
+    viewStart = Math.max(
+      0,
+      Math.min(
+        CANDLES.length - visible,
+        (viewStart !== null ? viewStart : CANDLES.length - visible) + shift
+      )
+    );
+    draw();
+  });
+  canvas.addEventListener('mouseup', () => { dragX = null; });
+  canvas.addEventListener('mouseleave', () => { dragX = null; });
+}
+
+const zoomResetBtn = document.getElementById('zoom-reset');
+if (zoomResetBtn) {
+  zoomResetBtn.addEventListener('click', () => {
+    priceZoom = 1.0; priceAnchor = null; viewStart = null; draw();
   });
 }
 window.addEventListener('resize', resize);
@@ -234,6 +318,10 @@ def render_candle_section(info: Dict[str, Any]) -> str:
       <option value="300">300 candles</option>
     </select>
     <button id="toggle-volume" class="on" type="button">Volume</button>
+    <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
+    <span style="color:#8b949e;align-self:center;font-size:12px">
+      wheel = زوم قیمت · درگ = جابجایی زمان
+    </span>
     <span class="sub">green = close above open</span>
   </div>
   <div class="stats" id="chart-stats"></div>

@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T18:04:48.521038+00:00
+- Snapshot generated at: 2026-08-29T18:37:26.855804+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 5084467037a50cbe0653278b726e7d16d4b90f99
+- Commit: 947ce0ccf140101dd9238abe2b1b566921d89a94
 - Dirty: yes (1 files)
 - Recent commits:
+  - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
   - 5084467 docs: zero-trade 1H analysis — signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses
   - 7b59185 Phase 80: range horizon configurable in the dashboard
   - ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
   - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
   - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
-  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 115906
+- Total Python lines: 115994
 - Modules: 450
 - Classes: 763
 - Functions: 4356

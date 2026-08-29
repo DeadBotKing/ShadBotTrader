@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ada5eb8e81a9f0ef5a24e718d830d799986819174ad2edebe4f4939ebdb9f71c",
-      "size_bytes": 122563
+      "sha256": "c2fe56b7abd80c77ab2e79831c41b481b90897230e510f83d42f71cfcfe0e9ea",
+      "size_bytes": 123889
     },
     {
       "category": "legacy",
@@ -3951,8 +3951,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "57936da2cb564153491b30ceac0781e0806b25d7e156d00bf1f2072c7647100f",
-      "size_bytes": 15540
+      "sha256": "2dae27bfd7b42d3b157aab37c7761a730f5caa67cee8bf581cca616d48020587",
+      "size_bytes": 18766
     },
     {
       "category": "source",
@@ -4891,14 +4891,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T18:04:48.521038+00:00",
+  "generated_at": "2026-08-29T18:37:26.855804+00:00",
   "git": {
     "branch": "main",
-    "commit": "5084467037a50cbe0653278b726e7d16d4b90f99",
+    "commit": "947ce0ccf140101dd9238abe2b1b566921d89a94",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)",
       "5084467 docs: zero-trade 1H analysis \u2014 signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses",
       "7b59185 Phase 80: range horizon configurable in the dashboard",
       "ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands",
@@ -4907,8 +4908,7 @@
       "ec93102 Phase 77 lint pass",
       "334851b Phase 77: fix bug 54 \u2014 min_sl_distance compared a dollar distance against fraction*ref",
       "8820ffd docs: full-history 260-trade analysis \u2014 patience thesis, trend filter ROI, session sims",
-      "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)",
-      "564f94d Phase 76: recenter the STOP only \u2014 a TP on the wrong side of entry still refuses"
+      "b8365e4 docs: 28-trade analysis \u2014 first genuinely positive expectancy (+$0.013/trade)"
     ]
   },
   "modules": [
@@ -11167,11 +11167,11 @@
     "legacy_file_count": 176,
     "module_count": 450,
     "source_file_count": 317,
-    "source_lines": 48593,
+    "source_lines": 48681,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 805,
-    "total_lines": 115906
+    "total_lines": 115994
   },
   "test_file_count": 133
 }
