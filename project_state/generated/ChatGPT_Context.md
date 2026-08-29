@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T15:48:16.069817+00:00
+- Snapshot generated at: 2026-08-29T05:45:11.699908+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,11 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 3527b8cd3c03ffaddbd17947e1d9dc7b51308590
-- Dirty: yes (12 files)
+- Commit: f18533c51217b42fa318e20d5bd3fabbe5ff2f56
+- Dirty: yes (13 files)
 - Recent commits:
+  - f18533c Phase 73 lint: dedupe pytest import
+  - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
   - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
   - 84d4851 Phase 72: full 'start conditions' section in the backtest report
   - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
@@ -38,8 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
   - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
   - bd7b242 Phase 65: show signal-model selection points on the replay chart
-  - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
-  - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 133
 - Legacy files: 176
-- Total Python lines: 115364
+- Total Python lines: 115444
 - Modules: 448
 - Classes: 763
 - Functions: 4336

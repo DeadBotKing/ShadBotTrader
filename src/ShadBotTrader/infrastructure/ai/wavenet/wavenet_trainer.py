@@ -243,8 +243,15 @@ class WavenetTrainer(ModelTrainer):
         resume_weights: bytes | None = None,
         seq2seq: bool = False,
         horizon: int = 5,
+        early_stopping_patience: int = 0,
+        reduce_lr_patience: int = 0,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
+
+        ``early_stopping_patience`` / ``reduce_lr_patience`` (فاز ۷۴):
+        0 = auto (پیش‌فرض فاز ۵۴/۵۷: ES = epochs/5، ReduceLR = epochs/10).
+        عدد بزرگ‌تر به ReduceLR فرصت می‌دهد LR را چند پله بشکند قبل از
+        اینکه EarlyStopping قطع کند.
 
         Args:
             target_columns: for the Phase 29 **regression** head, the
@@ -288,6 +295,8 @@ class WavenetTrainer(ModelTrainer):
         self._depth_multiplier = depth_multiplier
         self._l2 = float(l2)
         self._dropout = float(dropout)
+        self._es_patience_override = max(int(early_stopping_patience), 0)
+        self._rlr_patience_override = max(int(reduce_lr_patience), 0)
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self._initial_epoch = max(0, int(initial_epoch))
@@ -508,8 +517,8 @@ class WavenetTrainer(ModelTrainer):
                 "focal",
             ):
                 _min_lr = max(learning_rate * 1e-3, 1e-7)
-                # ReduceLR patience: 10% epochs (min=5, max=30)
-                _rlr_patience = max(5, min(30, self._epochs // 10))
+                # ReduceLR patience: 10% epochs (min=5, max=30) — یا override
+                _rlr_patience = self._rlr_patience_override or max(5, min(30, self._epochs // 10))
                 callbacks.append(
                     tf.keras.callbacks.ReduceLROnPlateau(
                         monitor="val_loss",
@@ -522,8 +531,8 @@ class WavenetTrainer(ModelTrainer):
                         min_lr=_min_lr,
                     )
                 )
-                # Phase 57: EarlyStopping — وقتی plateau زد متوقف بشه
-                _es_patience = max(10, min(50, self._epochs // 5))
+                # Phase 57: EarlyStopping — یا override اپراتور (فاز ۷۴)
+                _es_patience = self._es_patience_override or max(10, min(50, self._epochs // 5))
                 _reporter_ref = self._progress
                 _fold_ref = fold_info
 

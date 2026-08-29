@@ -426,6 +426,8 @@ class DualModelService:
         initial_epoch: int = 0,
         resume_weights: "bytes | None" = None,
         val_size: int = 0,
+        early_stopping_patience: int = 0,
+        reduce_lr_patience: int = 0,
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -452,6 +454,8 @@ class DualModelService:
             initial_epoch=initial_epoch,
             resume_weights=resume_weights,
             val_size=val_size,
+            early_stopping_patience=early_stopping_patience,
+            reduce_lr_patience=reduce_lr_patience,
         )
         trainer.on_epoch_model = on_epoch_model
 

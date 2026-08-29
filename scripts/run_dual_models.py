@@ -128,6 +128,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--learning-rate", type=float, default=1.5e-4)
     parser.add_argument(
+        "--es-patience",
+        type=int,
+        default=0,
+        help=(
+            "EarlyStopping patience in epochs. 0 = auto (epochs/5, min 10). "
+            "Raise it so ReduceLROnPlateau gets room to step LR down before "
+            "the run is cut."
+        ),
+    )
+    parser.add_argument(
+        "--rlr-patience",
+        type=int,
+        default=0,
+        help="ReduceLROnPlateau patience. 0 = auto (epochs/10, min 5).",
+    )
+    parser.add_argument(
         "--learning-rates",
         default="1e-5,3e-5,1e-4,3e-4,1e-3",
         help="comma-separated candidates for --tune-learning-rate",
@@ -474,6 +490,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         f"{role.n_layers_per_block} layers × {role.n_blocks} blocks · "
         f"RF={_rf} ({_coverage:.0%} of window)"
     )
+    # فاز ۷۴: patienceها — شفاف چه چیزی تنظیم است
+    _es_p = max(getattr(args, "es_patience", 0), 0) or "auto (epochs/5)"
+    _rlr_p = max(getattr(args, "rlr_patience", 0), 0) or "auto (epochs/10)"
+    print(f"  callbacks    : EarlyStopping patience={_es_p} · ReduceLR patience={_rlr_p}")
     if _rf > role.window_size:
         print(
             f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
@@ -637,6 +657,8 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         initial_epoch=initial_epoch,
         resume_weights=resume_weights,
         val_size=effective_val_size(args, training_window_count(dataset, role)),
+        early_stopping_patience=max(getattr(args, "es_patience", 0), 0),
+        reduce_lr_patience=max(getattr(args, "rlr_patience", 0), 0),
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")

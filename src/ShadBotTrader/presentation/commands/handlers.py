@@ -433,6 +433,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("folds", "Folds", "3", kind="number"),
                 CommandField(
+                    "es_patience",
+                    "EarlyStopping patience",
+                    "0",
+                    kind="number",
+                    hint="0 = auto (epochs/5) · بزرگ‌تر = ReduceLR فرصت کاهش LR",
+                ),
+                CommandField(
+                    "rlr_patience",
+                    "ReduceLR patience",
+                    "0",
+                    kind="number",
+                    hint="0 = auto (epochs/10)",
+                ),
+                CommandField(
                     "window",
                     "Window rows",
                     "150",
@@ -517,7 +531,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Reward/Risk multiplier",
                     "1.5",
                     kind="number",
-                    hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                    hint=(
+                        "TP must be at least this times SL distance "
+                        "(e.g. 1.5 means TP >= 1.5x SL)"
+                    ),
                 ),
                 CommandField(
                     "commission",
@@ -634,7 +651,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Reward/Risk multiplier",
                     "1.5",
                     kind="number",
-                    hint="TP must be at least this times SL distance (e.g. 1.5 means TP >= 1.5x SL)",
+                    hint=(
+                        "TP must be at least this times SL distance "
+                        "(e.g. 1.5 means TP >= 1.5x SL)"
+                    ),
                 ),
                 CommandField(
                     "commission",
@@ -963,6 +983,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="range 1D: 50 مناسبه | signal 5M: 30",
                 ),
                 CommandField("folds", "Folds", "3", kind="number"),
+                CommandField(
+                    "es_patience",
+                    "EarlyStopping patience",
+                    "0",
+                    kind="number",
+                    hint="0 = auto (epochs/5) · بزرگ‌تر = ReduceLR فرصت کاهش LR قبل قطع",
+                ),
+                CommandField(
+                    "rlr_patience",
+                    "ReduceLR patience",
+                    "0",
+                    kind="number",
+                    hint="0 = auto (epochs/10) · مثلاً 8-12 برای کاهش چندپله LR",
+                ),
                 CommandField(
                     "window",
                     "Window rows",
@@ -1790,6 +1824,12 @@ class CommandHandlers:
             _arch_args += ["--n-blocks", str(_n_blocks)]
         if _val_size:
             _arch_args += ["--val-size", str(_val_size)]
+        _es_p = max(command.integer("es_patience", 0), 0)
+        _rlr_p = max(command.integer("rlr_patience", 0), 0)
+        if _es_p:
+            _arch_args += ["--es-patience", str(_es_p)]
+        if _rlr_p:
+            _arch_args += ["--rlr-patience", str(_rlr_p)]
 
         return self._run_script(
             command,
@@ -1949,6 +1989,13 @@ class CommandHandlers:
                     if mode == "dual" and range_candles
                     else None
                 )
+                self._last_run_context = {
+                    "symbol_line": f"{symbol_text} {signal_timeframe} + {range_timeframe} (range)",
+                    "models_line": (
+                        f"{command.text('signal_model', 'gold_signal_5m')}"
+                        f" + {command.text('range_model', _default_range_id)}"
+                    ),
+                }
                 return result, "dual", ""
             except Exception as _dual_err:
                 if mode == "dual":
@@ -1989,6 +2036,10 @@ class CommandHandlers:
         self._last_range_feed = (
             (len(range_candles), range_timeframe) if mode == "dual" and range_candles else None
         )
+        self._last_run_context = {
+            "symbol_line": f"{symbol_text} {signal_timeframe}",
+            "models_line": "legacy momentum baseline",
+        }
         return result, "legacy", dual_note
 
     def run_backtest(self, command: Command) -> CommandResult:
@@ -2115,18 +2166,14 @@ class CommandHandlers:
 
         # فاز ۷۱: بخش «شرایط شروع» — هر فیلدی که در فرم تنظیم می‌شود
         # باید در گزارش باشد تا هر اجرا قابل بازتولید و مقایسه باشد.
+        _feed = getattr(self, "_last_range_feed", None)
+        _ctx = getattr(self, "_last_run_context", None) or {}
         lines = [
             f"engine      : {mode}",
             f"build       : {ENGINE_BUILD}",
             f"run id      : {result.session.session_id}",
-            (
-                f"symbol      : {symbol_text} {signal_timeframe}"
-                + (f" + {range_timeframe} (range)" if mode == "dual" else "")
-            ),
-            (
-                f"models      : {command.text('signal_model', 'gold_signal_5m')}"
-                f" + {command.text('range_model', _default_range_id)}"
-            ),
+            (f"symbol      : {_ctx.get('symbol_line', '')}" if _ctx else "symbol      : n/a"),
+            (f"models      : {_ctx.get('models_line', '')}" if _ctx else "models      : n/a"),
             f"confidence  : {command.number('threshold_pct', 60.0):g}% (signal gate)",
             (
                 f"windows     : signal={command.integer('signal_window', 0) or 'model'}"

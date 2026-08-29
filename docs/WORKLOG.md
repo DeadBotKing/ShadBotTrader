@@ -2192,3 +2192,29 @@ last N bars — بعدش نتایج.
 ```
 pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 — روی سیستم اپراتور سبز), 12 skipped
 ```
+
+---
+
+## 2026-08-27 — فاز ۷۴: patienceهای قابل تنظیم برای EarlyStopping و ReduceLR
+
+**تحلیل اجرای کاربر (range retrain 75 epoch):** بهترین epoch 50 (val_loss
+0.002102) ولی EarlyStopping در ~65 قطع کرد → ReduceLR (patience=7) فقط
+۱-۲ پله فرصت کاهش داشت. حدس اپراتور درست بود.
+
+### رفع (پارامتر جدید در کل زنجیره)
+
+- `WavenetTrainer(early_stopping_patience=0, reduce_lr_patience=0)` —
+  0 = auto (ES=epochs/5، ReduceLR=epochs/10)
+- `DualModelService.build_trainer/train()` پاس می‌دهند
+- CLI: `--es-patience N` / `--rlr-patience N` + چاپ در سربرگ
+  (`callbacks : EarlyStopping patience=… · ReduceLR patience=…`)
+- GUI: دو فیلد در Train a model و Retrain a model
+
+### پیشنهاد عددی برای range 1D با epochs=75-100
+
+`--es-patience 30 --rlr-patience 10` — به ReduceLR اجازه ۳-۴ پله کاهش
+(0.85³≈0.61) قبل از قطع.
+
+```
+pytest 1491 passed, 53 skipped · ruff ✅ black ✅
+```

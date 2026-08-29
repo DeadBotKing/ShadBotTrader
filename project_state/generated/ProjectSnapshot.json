@@ -2079,8 +2079,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "331b2c90bd141d12537dd7e2d63d292d61a3a62b15d8e766f167cf9398646adb",
-      "size_bytes": 45298
+      "sha256": "d9decc8c425c40a8d70706aad752868872a6932a7e8cf0b7c2474ce624399007",
+      "size_bytes": 46230
     },
     {
       "category": "script",
@@ -2247,8 +2247,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "2d7ddad10f31af78e1d26f8881c31cf750a68ec3d183fa85d88ccf166aa8f361",
-      "size_bytes": 21495
+      "sha256": "baad53e79a4c5437177fc5d5f60ac5e63e20de6e39396001a7ee31ccbbffe317",
+      "size_bytes": 21686
     },
     {
       "category": "source",
@@ -3225,8 +3225,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "3508154a649ad94ae954927879c5b53024b3fadbe5b691677828f8ea6284f7f8",
-      "size_bytes": 48431
+      "sha256": "6d57825920ecb44f9e0fc5642f0de7fcc09a3b6e6f3be1c9ff2c677115be5d8e",
+      "size_bytes": 49065
     },
     {
       "category": "source",
@@ -3879,8 +3879,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "eaff85fa864ca0ec70277e91fdf4af14782cedf80fd66b88589da47a65b38f46",
-      "size_bytes": 146245
+      "sha256": "e65000d94ffe5afdd764c04b5f651b0ce54e9c4a7a80cf020ff884ccc9662ea8",
+      "size_bytes": 148272
     },
     {
       "category": "source",
@@ -4359,8 +4359,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_range_loss_serialization.py",
-      "sha256": "ce202d77971b4d24330c33f7bc78c41f4afe2efa09f60da2b17e89926aa03c48",
-      "size_bytes": 3066
+      "sha256": "de9119ec4437d2fc110b34980a1b1563b9dd6dc376e97927b464bb8cd5cac02c",
+      "size_bytes": 3051
     },
     {
       "category": "test",
@@ -4849,14 +4849,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-27T15:48:16.069817+00:00",
+  "generated_at": "2026-08-29T05:45:11.699908+00:00",
   "git": {
     "branch": "main",
-    "commit": "3527b8cd3c03ffaddbd17947e1d9dc7b51308590",
+    "commit": "f18533c51217b42fa318e20d5bd3fabbe5ff2f56",
     "dirty": true,
-    "dirty_files": 12,
+    "dirty_files": 13,
     "is_repo": true,
     "recent_commits": [
+      "f18533c Phase 73 lint: dedupe pytest import",
+      "f61eb51 Phase 73: fix bug 52 \u2014 refuse brackets whose stop lands on the profit side",
       "3527b8c docs: full analysis of the 2110-trade backtest \u2014 bracket inversion bug 52 exposed",
       "84d4851 Phase 72: full 'start conditions' section in the backtest report",
       "8f97a67 Phase 70: fix bug 51 \u2014 _RangeLoss/_Seq2SeqMAE were function-local, range models could never load",
@@ -4864,9 +4866,7 @@
       "e2f10c4 Phase 68: print an engine build tag in the backtest report",
       "8782636 Phase 67: fix bug 50 \u2014 1D buffer was never pre-filled from history",
       "4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay",
-      "bd7b242 Phase 65: show signal-model selection points on the replay chart",
-      "bb7dd1f Phase 64: fix bug 49 \u2014 last_n trim starved the range engine (trades=0)",
-      "4caceb4 docs: Phase 63 post-fix verification \u2014 range retrain healthy (val_mae $9.1, no collapse)"
+      "bd7b242 Phase 65: show signal-model selection points on the replay chart"
     ]
   },
   "modules": [
@@ -11096,11 +11096,11 @@
     "legacy_file_count": 176,
     "module_count": 448,
     "source_file_count": 317,
-    "source_lines": 48354,
+    "source_lines": 48414,
     "test_file_count": 131,
-    "test_lines": 22223,
+    "test_lines": 22221,
     "total_file_count": 798,
-    "total_lines": 115364
+    "total_lines": 115444
   },
   "test_file_count": 131
 }
