@@ -2218,3 +2218,16 @@ pytest 1526 passed, 2 failed (محیطی: TESTSYM/MT5 — روی سیستم اپ
 ```
 pytest 1491 passed, 53 skipped · ruff ✅ black ✅
 ```
+
+---
+
+## 2026-08-27 — یادداشت فاز ۷۴-ب: باگ NameError متعلق به کامیت ۸۴d4851 بود
+
+کاربر هنگام run_backtest خطای `NameError: symbol_text` گرفت — traceback به
+خط ۲۱۲۳ از کامیت **۸۴d4851 (فاز ۷۲)** اشاره داشت که بخش «شرایط شروع» را با
+متغیرهای محلیِ `_run_simulation` در `run_backtest` نوشته بود. در فاز ۷۴
+(کامیت `5188801`) همین بخش با bridge `_last_run_context` بازنویسی و فیکس
+شده بود. کاربر فقط zip میانی (۸۴d4851) را گرفته بود.
+
+**اقدام:** بدون تغییر کد — کاربر به آخرین zip (۵۱۸۸۸۰۱) ارتقا داده شد.
+تأیید: compile ✅ · تست‌های presentation/simulation سبز.
