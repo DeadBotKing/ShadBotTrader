@@ -78,6 +78,9 @@ let priceAnchor = null;
 let viewStart = null;   // null = آخرین N کندل؛ عدد = شروعِ دستی
 let dragX = null;
 
+// فاز ۸۵-ب: مسیر پیش‌بینی رنج برای رسم روی چارت
+let forecastPath = null;   // { localIdx, points: [{high, low}] }
+
 function resize() {
   if (!canvas) return;
   const ratio = window.devicePixelRatio || 1;
@@ -122,8 +125,16 @@ function draw() {
     lo = anchor - span / 2;
   }
 
+  // فاز ۸۵-ب: اگر forecast مسیر دارد و از آخرین کندل رد می‌شود،
+  // اسلات‌های خالی بعد از کندل‌ها اضافه کن (فقط برای X-axis).
+  let extraSlots = 0;
+  if (forecastPath && forecastPath.localIdx >= 0) {
+    const needed = forecastPath.localIdx + forecastPath.points.length;
+    if (needed > slice.length) extraSlots = needed - slice.length;
+  }
+
   const plotW = width - padL - padR;
-  const step = plotW / slice.length;
+  const step = plotW / (slice.length + extraSlots);
   const bodyW = Math.max(1.5, Math.min(12, step * 0.66));
   const yP = p => 8 + (hi - p) / (hi - lo) * (priceH - 16);
   const xOf = i => padL + i * step + step / 2;
@@ -174,6 +185,76 @@ function draw() {
       ctx.closePath();
       ctx.fill();
     });
+  }
+
+  // ── فاز ۸۵-ب: مسیر پیش‌بینی رنج ──
+  if (forecastPath && forecastPath.points.length) {
+    const li = forecastPath.localIdx;
+    if (li >= 0 && li < slice.length + extraSlots) {
+      // خط عمودی روی کندلِ anchor
+      const anchorX = xOf(li);
+      ctx.strokeStyle = 'rgba(139,148,158,.5)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.round(anchorX) + 0.5, 8);
+      ctx.lineTo(Math.round(anchorX) + 0.5, priceH - 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // مسیر high (سبز) و low (قرمز)
+      const drawPath = (key, colour, dashed) => {
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = 1.6;
+        if (dashed) ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        forecastPath.points.forEach((pt, k) => {
+          const x = xOf(li + k + 1);
+          const y = yP(pt[key]);
+          if (k === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // نقاط
+        forecastPath.points.forEach((pt, k) => {
+          const x = xOf(li + k + 1);
+          const y = yP(pt[key]);
+          ctx.fillStyle = colour;
+          ctx.beginPath();
+          ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      };
+      drawPath('high', 'rgba(63,185,80,.9)', true);
+      drawPath('low', 'rgba(248,81,73,.9)', true);
+
+      // ناحیهٔ بین high و low (پر با شفافیت کم)
+      ctx.fillStyle = 'rgba(94,200,232,.08)';
+      ctx.beginPath();
+      forecastPath.points.forEach((pt, k) => {
+        const x = xOf(li + k + 1);
+        const y = yP(pt.high);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      for (let k = forecastPath.points.length - 1; k >= 0; k--) {
+        const x = xOf(li + k + 1);
+        ctx.lineTo(x, yP(forecastPath.points[k].low));
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // برچسب آخرین نقطه
+      if (step > 6 && forecastPath.points.length) {
+        const lastPt = forecastPath.points[forecastPath.points.length - 1];
+        const lx = xOf(li + forecastPath.points.length);
+        ctx.font = '9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(63,185,80,.9)';
+        ctx.fillText(lastPt.high.toFixed(1), lx + 3, yP(lastPt.high) + 3);
+        ctx.fillStyle = 'rgba(248,81,73,.9)';
+        ctx.fillText(lastPt.low.toFixed(1), lx + 3, yP(lastPt.low) + 3);
+      }
+    }
   }
 
   if (showVolume && maxVol > 0) {
@@ -276,6 +357,10 @@ const rfPanel = document.getElementById('rf-panel');
 let lastClickedBar = null;
 
 if (rfModel) {
+  rfModel.addEventListener('change', () => {
+    forecastPath = null; draw();
+    if (rfPanel) rfPanel.style.display = 'none';
+  });
   RANGE_MODELS.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.model_id;
@@ -298,17 +383,25 @@ async function fetchForecast(barIndex, symbol, timeframe) {
   try {
     const res = await fetch(`/api/range-forecast?${params}`);
     const data = await res.json();
-    if (data.error) { updateRfStatus(`[X] ${data.error}`); rfPanel.style.display = 'none'; return; }
-    renderForecast(data, symbol, timeframe);
+    if (data.error) {
+      updateRfStatus(`[X] ${data.error}`);
+      rfPanel.style.display = 'none';
+      forecastPath = null;
+      draw();
+      return;
+    }
+    renderForecast(data, symbol, timeframe, window._clickedLocalIdx);
     updateRfStatus('');
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
 }
 
-function renderForecast(f, symbol, timeframe) {
+function renderForecast(f, symbol, timeframe, localIdx) {
   if (!rfPanel) return;
   rfPanel.style.display = '';
+  // فاز ۸۵-ب: برای رسم روی چارت
+  forecastPath = { localIdx: localIdx, points: f.points.map(p => ({high: p.high, low: p.low})) };
   const anchorTime = f.anchor_time.replace('T', ' ').slice(0, 16);
   const statsHtml =
     `<div class="stat"><div class="k">Model</div>` +
@@ -356,6 +449,7 @@ if (chartCanvas) {
     const idx = Math.min(slice.length - 1, Math.max(0, Math.floor(rel * slice.length)));
     const bar = slice[idx];
     lastClickedBar = bar.i;
+    window._clickedLocalIdx = idx;   // برای renderForecast
     const symSel = document.querySelector('select[name="series"]');
     let symbol = 'XAUUSD', timeframe = '1H';
     if (symSel && symSel.value.includes('|')) {
@@ -370,7 +464,8 @@ const windowSelect = document.getElementById('window');
 if (windowSelect) {
   windowSelect.addEventListener('change', () => {
     visible = parseInt(windowSelect.value, 10);
-    viewStart = null;   // انتخاب تعداد کندل → زوم زمانی ریست
+    viewStart = null;
+    forecastPath = null;   // کندل‌ها عوض شدند → forecast کهنه
     draw();
   });
 }

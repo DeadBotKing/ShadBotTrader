@@ -6,14 +6,14 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T18:04:48.521038+00:00
+- Snapshot generated at: 2026-08-29T20:57:35.724123+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 317
+- Source modules: 318
 - Test modules: 133
 
 ## Current Phase
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 5084467037a50cbe0653278b726e7d16d4b90f99
-- Dirty: yes (1 files)
+- Commit: 5dc46a90e0a339a570b6e18a1bf9a6efea8c15f6
+- Dirty: yes (3 files)
 - Recent commits:
+  - 5dc46a9 Phase 84: signal labels view on /data — operator-set threshold, first-passage markers
+  - 2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price
+  - ed5cc57 Phase 82: price zoom & time pan on the /data candle chart
+  - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
   - 5084467 docs: zero-trade 1H analysis — signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses
   - 7b59185 Phase 80: range horizon configurable in the dashboard
   - ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands
   - 026737b Phase 79: fix bug 55 — streamed range training fed [batch,2] labels to a seq2seq loss
   - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
   - ec93102 Phase 77 lint pass
-  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
-  - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
-  - b8365e4 docs: 28-trade analysis — first genuinely positive expectancy (+$0.013/trade)
-  - 564f94d Phase 76: recenter the STOP only — a TP on the wrong side of entry still refuses
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 805
-- Source files: 317
+- Total files: 806
+- Source files: 318
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 115906
-- Modules: 450
-- Classes: 763
-- Functions: 4356
+- Total Python lines: 116495
+- Modules: 451
+- Classes: 765
+- Functions: 4362
 - External dependencies: 14
