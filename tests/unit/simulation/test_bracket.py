@@ -231,7 +231,9 @@ def test_gate7_uses_dollar_distance_not_fraction():
     from ShadBotTrader.domain.market.timeframe import Timeframe
     from ShadBotTrader.domain.market.timestamp import Timestamp
     from ShadBotTrader.domain.strategy.strategy_context import (
-        PredictionView, PortfolioView, StrategyContext,
+        PortfolioView,
+        PredictionView,
+        StrategyContext,
     )
     from ShadBotTrader.infrastructure.trading.dual_model_strategy import (
         DualModelStrategy,
@@ -240,8 +242,11 @@ def test_gate7_uses_dollar_distance_not_fraction():
     base = datetime(2026, 1, 1, tzinfo=timezone.utc)
     sf = SignalForecast.from_vector((0.85, 0.15), horizon=0, timeframe="5M")
     rf = RangeForecast(
-        reference_close=4104.87, high_offset=0.00623, low_offset=-0.00598,
-        horizon=1, timeframe="1D",
+        reference_close=4104.87,
+        high_offset=0.00623,
+        low_offset=-0.00598,
+        horizon=1,
+        timeframe="1D",
     )
     sym = Symbol("XAUUSD")
 
@@ -250,11 +255,16 @@ def test_gate7_uses_dollar_distance_not_fraction():
             timestamp=Timestamp(base),
             symbol=sym,
             timeframe=Timeframe("5M"),
-            predictions=[PredictionView(
-                model_id="m", model_version=1, value=0.85,
-                confidence=0.85, generated_at=Timestamp(base),
-                metadata={"signal_forecast": sf, "range_forecast": rf},
-            )],
+            predictions=[
+                PredictionView(
+                    model_id="m",
+                    model_version=1,
+                    value=0.85,
+                    confidence=0.85,
+                    generated_at=Timestamp(base),
+                    metadata={"signal_forecast": sf, "range_forecast": rf},
+                )
+            ],
             portfolio=PortfolioView(
                 equity=D("100"), open_position_quantity=0, open_position_count=0
             ),
@@ -262,14 +272,18 @@ def test_gate7_uses_dollar_distance_not_fraction():
 
     # risk دلاری = $25.57
     s40 = DualModelStrategy(
-        min_confidence=0.6, min_reward_risk=None,
-        min_move_fraction=0.0, min_sl_distance=40.0,
+        min_confidence=0.6,
+        min_reward_risk=None,
+        min_move_fraction=0.0,
+        min_sl_distance=40.0,
     ).evaluate(ctx())
     assert s40.signal_type.name == "HOLD"
     assert "25.57" in s40.reason
 
     s10 = DualModelStrategy(
-        min_confidence=0.6, min_reward_risk=None,
-        min_move_fraction=0.0, min_sl_distance=10.0,
+        min_confidence=0.6,
+        min_reward_risk=None,
+        min_move_fraction=0.0,
+        min_sl_distance=10.0,
     ).evaluate(ctx())
     assert s10.signal_type.name == "SELL"
