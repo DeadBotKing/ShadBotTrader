@@ -2277,3 +2277,20 @@ ruff ✅ black ✅  pytest 1494 passed, 53 skipped
 ```
 ruff ✅ black ✅  pytest 1495 passed, 53 skipped
 ```
+
+---
+
+## 2026-08-29 — فاز ۷۸: رفع باگ «unexpected keyword argument early_stopping_patience»
+
+**گزارش کاربر:** آموزش range 1H با `DualModelService.train()` کرش کرد —
+`build_trainer` فاز ۷۴ پارامترهای patience را دریافت نمی‌کرد (فقط train()
+آن‌ها را داشت و پاس نمی‌داد).
+
+### رفع
+
+- `build_trainer(..., early_stopping_patience=0, reduce_lr_patience=0)`
+- پاس به `WavenetTrainer(...)` constructor
+
+```
+pytest 1496 passed, 53 skipped · ruff ✅ black ✅
+```

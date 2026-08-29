@@ -304,8 +304,14 @@ class DualModelService:
         progress: Any = None,
         initial_epoch: int = 0,
         resume_weights: "bytes | None" = None,
+        early_stopping_patience: int = 0,
+        reduce_lr_patience: int = 0,
     ) -> Any:
-        """A roll-forward WaveNet trainer configured for this role."""
+        """A roll-forward WaveNet trainer configured for this role.
+
+        ``early_stopping_patience``/``reduce_lr_patience`` (فاز ۷۴):
+        0 = auto (ES=epochs/5، ReduceLR=epochs/10).
+        """
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
             WavenetTrainer,
         )
@@ -406,6 +412,9 @@ class DualModelService:
             # Phase 50: resume from checkpoint
             initial_epoch=initial_epoch,
             resume_weights=resume_weights,
+            # فاز ۷۴: patienceهای قابل تنظیم (0 = auto)
+            early_stopping_patience=early_stopping_patience,
+            reduce_lr_patience=reduce_lr_patience,
             # Phase 55: seq2seq head برای range model
             seq2seq=getattr(role, "seq2seq", False) if is_regression else False,
             horizon=role.horizon if is_regression else 5,

@@ -225,16 +225,17 @@ class DualModelStrategy(Strategy):
                     )
 
             # --- gate 7: SL minimum distance از entry_price (فاز ۵۲) -----
-            # SL < 3$ → WR=15% از آنالیز بکتست (33 ترید، ضررده)
-            # entry_price هنوز نداریم (بعد از signal bar، قبل از fill)،
-            # پس از reference_close + risk_offset تقریب میزنیم.
-            # این گیت فقط وقتی min_sl_distance > 0 فعاله.
-            if self._min_sl_distance > 0 and reference > 0:
-                sl_distance_approx = risk * reference  # risk = offset fraction
-                if sl_distance_approx < self._min_sl_distance:
+            # باگ ۵۴ (فاز ۷۷): «risk» اینجا یک فاصلهٔ دلاری است (upside/
+            # downside از RangeForecast) ولی ضرب در reference می‌شد:
+            #   approx = risk($25) × ref($4104) = $104,975
+            # → گیت همیشه pass می‌شد و min_sl_distance عملاً بی‌اثر بود
+            #   (اجرای کاربر: min=$40 ولی ۹۴ ترید با SL واقعی <$40 باز شدند).
+            # رفع: مقایسهٔ مستقیم فاصلهٔ دلاری با حد.
+            if self._min_sl_distance > 0 and risk > 0:
+                if risk < self._min_sl_distance:
                     return self._hold(
                         context,
-                        f"predicted SL distance {sl_distance_approx:.2f} < "
+                        f"predicted SL distance {risk:.2f} < "
                         f"min {self._min_sl_distance:.2f}",
                         confidence=signal.confidence,
                     )

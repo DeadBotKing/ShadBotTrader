@@ -214,3 +214,76 @@ def test_valid_long_bracket_still_builds():
     )
     assert bracket.stop_loss.amount == Decimal("1990")
     assert bracket.take_profit.amount == Decimal("2020")
+
+
+# ------------------------------------------------------ باگ ۵۴ (فاز ۷۷) --
+def test_gate7_uses_dollar_distance_not_fraction():
+    """باگ ۵۴: min_sl_distance با فاصلهٔ دلاری سنجیده شود، نه fraction×ref.
+
+    قبلاً ``risk`` (دلاری از RangeForecast) در reference ضرب می‌شد:
+    $25 × $4104 = $104,975 → گیت همیشه pass می‌شد.
+    """
+    from datetime import datetime, timezone
+    from decimal import Decimal as D
+
+    from ShadBotTrader.domain.ai.prediction_target import RangeForecast, SignalForecast
+    from ShadBotTrader.domain.market.symbol import Symbol
+    from ShadBotTrader.domain.market.timeframe import Timeframe
+    from ShadBotTrader.domain.market.timestamp import Timestamp
+    from ShadBotTrader.domain.strategy.strategy_context import (
+        PortfolioView,
+        PredictionView,
+        StrategyContext,
+    )
+    from ShadBotTrader.infrastructure.trading.dual_model_strategy import (
+        DualModelStrategy,
+    )
+
+    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    sf = SignalForecast.from_vector((0.85, 0.15), horizon=0, timeframe="5M")
+    rf = RangeForecast(
+        reference_close=4104.87,
+        high_offset=0.00623,
+        low_offset=-0.00598,
+        horizon=1,
+        timeframe="1D",
+    )
+    sym = Symbol("XAUUSD")
+
+    def ctx():
+        return StrategyContext(
+            timestamp=Timestamp(base),
+            symbol=sym,
+            timeframe=Timeframe("5M"),
+            predictions=[
+                PredictionView(
+                    model_id="m",
+                    model_version=1,
+                    value=0.85,
+                    confidence=0.85,
+                    generated_at=Timestamp(base),
+                    metadata={"signal_forecast": sf, "range_forecast": rf},
+                )
+            ],
+            portfolio=PortfolioView(
+                equity=D("100"), open_position_quantity=0, open_position_count=0
+            ),
+        )
+
+    # risk دلاری = $25.57
+    s40 = DualModelStrategy(
+        min_confidence=0.6,
+        min_reward_risk=None,
+        min_move_fraction=0.0,
+        min_sl_distance=40.0,
+    ).evaluate(ctx())
+    assert s40.signal_type.name == "HOLD"
+    assert "25.57" in s40.reason
+
+    s10 = DualModelStrategy(
+        min_confidence=0.6,
+        min_reward_risk=None,
+        min_move_fraction=0.0,
+        min_sl_distance=10.0,
+    ).evaluate(ctx())
+    assert s10.signal_type.name == "SELL"
