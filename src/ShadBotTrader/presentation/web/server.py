@@ -62,6 +62,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_html(self._data_page(query))
             elif route.path == "/api/data":
                 self._send_json(self._data_payload(query))
+            elif route.path == "/api/range-forecast":
+                self._send_json(self._range_forecast_payload(query))
             elif route.path == "/api/state":
                 self._send_json(self._state(session))
             elif route.path == "/api/status":
@@ -205,10 +207,18 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def _data_page(self, query: dict[str, list[str]]) -> str:
         from ShadBotTrader.presentation.gateway.data_inspector import DataInspector
+        from ShadBotTrader.presentation.gateway.range_forecast_inspector import (
+            RangeForecastInspector,
+        )
         from ShadBotTrader.presentation.web.data_renderer import render_data_page
 
         inspector = DataInspector(self.storage_root)
         symbol, timeframe = self._selected_series(query)
+
+        try:
+            models = RangeForecastInspector(self.storage_root).available_models(timeframe)
+        except Exception:
+            models = []
 
         return render_data_page(
             candles=inspector.candles(symbol, timeframe).to_dict(),
@@ -216,7 +226,37 @@ class DashboardHandler(BaseHTTPRequestHandler):
             features=inspector.features(),
             series=inspector.available_series(),
             selected={"symbol": symbol, "timeframe": timeframe},
+            range_models=models,
         )
+
+    def _range_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
+        """فاز ۸۵ — مسیر پیش‌بینی رنج برای یک کندل انتخابی روی /data."""
+        from ShadBotTrader.presentation.gateway.range_forecast_inspector import (
+            RangeForecastInspector,
+        )
+
+        def _q(name: str, default: str = "") -> str:
+            return query.get(name, [default])[0]
+
+        symbol = _q("symbol", "XAUUSD")
+        timeframe = _q("timeframe", "1H")
+        model_id = _q("model", "gold_range_1h")
+        try:
+            bar_index = int(_q("bar", "0"))
+        except ValueError:
+            self._send_json({"error": "bar must be an integer"})
+            return
+        try:
+            inspector = RangeForecastInspector(self.storage_root)
+            forecast = inspector.forecast_at(
+                symbol=symbol,
+                timeframe=timeframe,
+                model_id=model_id,
+                bar_index=bar_index,
+            )
+            self._send_json(forecast.to_dict())
+        except Exception as error:
+            self._send_json({"error": f"{type(error).__name__}: {error}"})
 
     def _data_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
         """The same information as JSON, for scripting or checking."""

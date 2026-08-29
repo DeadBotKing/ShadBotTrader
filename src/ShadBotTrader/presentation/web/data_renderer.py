@@ -268,6 +268,104 @@ if (sigTh) sigTh.addEventListener('input', () => {
   sigThTimer = setTimeout(renderSignals, 250);   // debounce تایپ
 });
 
+// ── فاز ۸۵: انتخاب مدل رنج + کلیک روی کندل → پیش‌بینی ──
+const RANGE_MODELS = __RANGE_MODELS__;
+const rfModel = document.getElementById('rf-model');
+const rfStatus = document.getElementById('rf-status');
+const rfPanel = document.getElementById('rf-panel');
+let lastClickedBar = null;
+
+if (rfModel) {
+  RANGE_MODELS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.model_id;
+    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${m.trained_at}`;
+    rfModel.appendChild(opt);
+  });
+}
+
+function updateRfStatus(text) {
+  if (rfStatus) rfStatus.textContent = text;
+}
+
+async function fetchForecast(barIndex, symbol, timeframe) {
+  const modelId = rfModel ? rfModel.value : '';
+  if (!modelId) return;
+  updateRfStatus('predicting…');
+  const params = new URLSearchParams({
+    symbol, timeframe, model: modelId, bar: String(barIndex),
+  });
+  try {
+    const res = await fetch(`/api/range-forecast?${params}`);
+    const data = await res.json();
+    if (data.error) { updateRfStatus(`[X] ${data.error}`); rfPanel.style.display = 'none'; return; }
+    renderForecast(data, symbol, timeframe);
+    updateRfStatus('');
+  } catch (err) {
+    updateRfStatus(`[X] ${err.message}`);
+  }
+}
+
+function renderForecast(f, symbol, timeframe) {
+  if (!rfPanel) return;
+  rfPanel.style.display = '';
+  const anchorTime = f.anchor_time.replace('T', ' ').slice(0, 16);
+  const statsHtml =
+    `<div class="stat"><div class="k">Model</div>` +
+    `<div class="v">${f.model_id} v${f.model_version}</div></div>` +
+    `<div class="stat"><div class="k">Anchor</div>` +
+    `<div class="v">${anchorTime}</div></div>` +
+    `<div class="stat"><div class="k">Anchor close</div>` +
+    `<div class="v">${f.anchor_close.toFixed(2)}</div></div>` +
+    `<div class="stat"><div class="k">Horizon</div>` +
+    `<div class="v">${f.horizon} × ${f.timeframe}</div></div>`;
+  document.getElementById('rf-stats').innerHTML = statsHtml;
+  const rows = document.getElementById('rf-rows');
+  rows.innerHTML = '';
+  f.points.forEach(p => {
+    const tr = document.createElement('tr');
+    const cells = [
+      [ '', '+' + p.k ],
+      [ '', p.high.toFixed(2) + ` (${(p.high_offset*100).toFixed(2)}%)` ],
+      [ '', p.low.toFixed(2) + ` (${(p.low_offset*100).toFixed(2)}%)` ],
+    ];
+    cells.forEach(([klass, text]) => {
+      const td = document.createElement('td');
+      if (klass) td.className = klass;
+      td.textContent = text;
+      tr.appendChild(td);
+    });
+    rows.appendChild(tr);
+  });
+}
+
+const chartCanvas = document.getElementById('chart');
+if (chartCanvas) {
+  chartCanvas.addEventListener('click', e => {
+    if (!CANDLES.length) return;
+    const rect = chartCanvas.getBoundingClientRect();
+    const width = chartCanvas.clientWidth;
+    const padL = 8, padR = 66;
+    const plotW = width - padL - padR;
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - padL) / plotW));
+    // انتخاب نزدیک‌ترین کندلِ قابل‌مشاهده
+    const slice = (viewStart !== null)
+      ? CANDLES.slice(viewStart, viewStart + visible)
+      : CANDLES.slice(-visible);
+    if (!slice.length) return;
+    const idx = Math.min(slice.length - 1, Math.max(0, Math.floor(rel * slice.length)));
+    const bar = slice[idx];
+    lastClickedBar = bar.i;
+    const symSel = document.querySelector('select[name="series"]');
+    let symbol = 'XAUUSD', timeframe = '1H';
+    if (symSel && symSel.value.includes('|')) {
+      [symbol, timeframe] = symSel.value.split('|');
+    }
+    updateRfStatus(`bar #${bar.i} @ ${bar.t.replace('T',' ').slice(5,16)} — predict…`);
+    fetchForecast(bar.i, symbol, timeframe);
+  });
+}
+
 const windowSelect = document.getElementById('window');
 if (windowSelect) {
   windowSelect.addEventListener('change', () => {
@@ -542,10 +640,14 @@ def render_data_page(
     features: Dict[str, Any],
     series: Sequence[Dict[str, str]] = (),
     selected: Optional[Dict[str, str]] = None,
+    range_models: Sequence[Dict[str, Any]] = (),
 ) -> str:
     """The complete data-inspection page."""
     chart_data = json.dumps(candles.get("chart", []), separators=(",", ":"))
-    script = _CHART_SCRIPT.replace("__CANDLES__", chart_data)
+    models_data = json.dumps(list(range_models), separators=(",", ":"))
+    script = _CHART_SCRIPT.replace("__CANDLES__", chart_data).replace(
+        "__RANGE_MODELS__", models_data
+    )
 
     options = []
     current = selected or {}
@@ -585,6 +687,26 @@ def render_data_page(
 </header>
 {picker}
 {render_candle_section(candles)}
+<section class="panel">
+  <h2>Range model forecast</h2>
+  <p class="sub">
+    یک کندل روی چارت کلیک کن تا پیش‌بینی رنجِ مدل برای کندل‌های بعدی دیده شود.
+    پنجرهٔ مدل فقط کندل‌های قبل از آن نقطه را می‌بیند (علیت حفظ می‌شود).
+  </p>
+  <div class="controls" style="margin-bottom:10px">
+    <label style="color:#8b949e;font-size:12px">Range model
+      <select id="rf-model" style="background:#0d1117;color:#dce3f2;
+              border:1px solid #2a3348;border-radius:4px;padding:3px 8px"></select>
+    </label>
+    <span id="rf-status" style="color:#8b949e;font-size:12px"></span>
+  </div>
+  <div id="rf-panel" style="display:none">
+    <div class="stats" id="rf-stats"></div>
+    <table class="scroll"><thead><tr>
+      <th>#</th><th>High ($)</th><th>Low ($)</th><th>High offset</th><th>Low offset</th>
+    </tr></thead><tbody id="rf-rows"></tbody></table>
+  </div>
+</section>
 <div class="grid2">
   {render_matrix_section(matrix)}
   {render_features_section(features)}

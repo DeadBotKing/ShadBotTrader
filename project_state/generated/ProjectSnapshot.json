@@ -8,7 +8,7 @@
     },
     {
       "name": "numpy",
-      "used_by": 25
+      "used_by": 26
     },
     {
       "name": "pandas",
@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "d58ec5492d7a2232d16852f273c2a22f74b1d41ce20aa829e4766881506bfd30",
-      "size_bytes": 125763
+      "sha256": "669fd32301fded58b5444b33f6288fcacf00d820d347d446ce7239beecb3b95d",
+      "size_bytes": 127346
     },
     {
       "category": "legacy",
@@ -3932,6 +3932,12 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/presentation/gateway/range_forecast_inspector.py",
+      "sha256": "ccc796f219f1642abac2476d0979fc186d0a154a079417cc1af4b2d7fa33aea9",
+      "size_bytes": 9076
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader/presentation/viewmodels/__init__.py",
       "sha256": "828def797143da2411b79f5826e0d74ae35dbd0c631c1ba95b865e55ab70f66e",
       "size_bytes": 693
@@ -3951,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "3873720dc48cb174b88b189f70d9f11dd9e09b6e959e501309cd9c682006c87d",
-      "size_bytes": 23105
+      "sha256": "437eb152b0fa8b84eeb0d49c7faa8688076ac080016e8cb9cf544ec27b7ea003",
+      "size_bytes": 27991
     },
     {
       "category": "source",
@@ -3969,8 +3975,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "7c6cac62847c2100ae6199d66f70eb4f595f5854d58f4d68b910dbb39e81db62",
-      "size_bytes": 16196
+      "sha256": "de75d6b48a106850261e1cc3b585addcb1ca44f39aeeb88f81297d9ce88f23d3",
+      "size_bytes": 17805
     },
     {
       "category": "source",
@@ -4891,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T20:42:31.527159+00:00",
+  "generated_at": "2026-08-29T20:57:35.724123+00:00",
   "git": {
     "branch": "main",
-    "commit": "2c4fa0da837aaef2c222cc92fbae4c432b2e5a8a",
+    "commit": "5dc46a90e0a339a570b6e18a1bf9a6efea8c15f6",
     "dirty": true,
-    "dirty_files": 12,
+    "dirty_files": 3,
     "is_repo": true,
     "recent_commits": [
+      "5dc46a9 Phase 84: signal labels view on /data \u2014 operator-set threshold, first-passage markers",
       "2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price",
       "ed5cc57 Phase 82: price zoom & time pan on the /data candle chart",
       "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)",
@@ -4907,8 +4914,7 @@
       "ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands",
       "026737b Phase 79: fix bug 55 \u2014 streamed range training fed [batch,2] labels to a seq2seq loss",
       "8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)",
-      "ec93102 Phase 77 lint pass",
-      "334851b Phase 77: fix bug 54 \u2014 min_sl_distance compared a dollar distance against fraction*ref"
+      "ec93102 Phase 77 lint pass"
     ]
   },
   "modules": [
@@ -8746,6 +8752,30 @@
       "path": "src/ShadBotTrader/presentation/gateway/data_inspector.py"
     },
     {
+      "classes": 2,
+      "external_imports": [
+        "numpy"
+      ],
+      "functions": 4,
+      "internal_imports": [
+        "ShadBotTrader.domain.ai.model_identity",
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
+        "ShadBotTrader.infrastructure.ai.data_windowing",
+        "ShadBotTrader.infrastructure.ai.dual_predictor",
+        "ShadBotTrader.infrastructure.ai.feature_matrix",
+        "ShadBotTrader.infrastructure.ai.filesystem_artifact_store",
+        "ShadBotTrader.infrastructure.ai.model_catalogue",
+        "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer",
+        "ShadBotTrader.infrastructure.data.parquet_candle_store",
+        "ShadBotTrader.infrastructure.feature.calculator_registry",
+        "ShadBotTrader.infrastructure.feature.standard_catalog"
+      ],
+      "name": "ShadBotTrader.presentation.gateway.range_forecast_inspector",
+      "path": "src/ShadBotTrader/presentation/gateway/range_forecast_inspector.py"
+    },
+    {
       "classes": 0,
       "external_imports": [],
       "functions": 0,
@@ -8807,7 +8837,7 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 24,
+      "functions": 26,
       "internal_imports": [
         "ShadBotTrader.infrastructure.account",
         "ShadBotTrader.presentation.commands.bus",
@@ -8815,6 +8845,7 @@
         "ShadBotTrader.presentation.commands.handlers",
         "ShadBotTrader.presentation.gateway.dashboard_gateway",
         "ShadBotTrader.presentation.gateway.data_inspector",
+        "ShadBotTrader.presentation.gateway.range_forecast_inspector",
         "ShadBotTrader.presentation.web.data_renderer",
         "ShadBotTrader.presentation.web.renderer"
       ],
@@ -11156,22 +11187,22 @@
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.13.14",
-  "source_file_count": 317,
+  "source_file_count": 318,
   "statistics": {
-    "class_count": 763,
+    "class_count": 765,
     "config_file_count": 3,
     "documentation_file_count": 137,
     "external_dependency_count": 14,
-    "function_count": 4356,
-    "internal_dependency_count": 260,
+    "function_count": 4362,
+    "internal_dependency_count": 261,
     "legacy_file_count": 176,
-    "module_count": 450,
-    "source_file_count": 317,
-    "source_lines": 48797,
+    "module_count": 451,
+    "source_file_count": 318,
+    "source_lines": 49182,
     "test_file_count": 133,
     "test_lines": 22504,
-    "total_file_count": 805,
-    "total_lines": 116110
+    "total_file_count": 806,
+    "total_lines": 116495
   },
   "test_file_count": 133
 }

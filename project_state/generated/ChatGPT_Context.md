@@ -6,14 +6,14 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T20:42:31.527159+00:00
+- Snapshot generated at: 2026-08-29T20:57:35.724123+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 317
+- Source modules: 318
 - Test modules: 133
 
 ## Current Phase
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 2c4fa0da837aaef2c222cc92fbae4c432b2e5a8a
-- Dirty: yes (12 files)
+- Commit: 5dc46a90e0a339a570b6e18a1bf9a6efea8c15f6
+- Dirty: yes (3 files)
 - Recent commits:
+  - 5dc46a9 Phase 84: signal labels view on /data — operator-set threshold, first-passage markers
   - 2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price
   - ed5cc57 Phase 82: price zoom & time pan on the /data candle chart
   - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 026737b Phase 79: fix bug 55 — streamed range training fed [batch,2] labels to a seq2seq loss
   - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
   - ec93102 Phase 77 lint pass
-  - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 805
-- Source files: 317
+- Total files: 806
+- Source files: 318
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116110
-- Modules: 450
-- Classes: 763
-- Functions: 4356
+- Total Python lines: 116495
+- Modules: 451
+- Classes: 765
+- Functions: 4362
 - External dependencies: 14

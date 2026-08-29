@@ -2440,3 +2440,39 @@ computeSignals روی تغییر threshold اجرا می‌شود (O(n²) در �
 ```
 ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
+
+---
+
+## 2026-08-29 — فاز ۸۵: پیش‌بینی رنج برای هر کندل روی /data (درخواست اپراتور)
+
+**درخواست:** «مدل و دیتاست را انتخاب کنم، روی هر کندل کلیک کنم،
+پیش‌بینی قیمتی بعدش نمایش داده شود — مثلاً مدل 1H-h12 → ۱۲ کندل بعد.»
+
+### رفع
+
+- **`presentation/gateway/range_forecast_inspector.py` (جدید):**
+  `available_models(timeframe)` (رکوردهای range) و
+  `forecast_at(symbol, timeframe, model_id, bar_index)` — پنجرهٔ
+  `[bar-149 .. bar]` با همان feature_matrix (causal_only، role=range)
+  به مدل می‌رود و **کل مسیر horizon نقطه‌ای** برمی‌گردد:
+  `points: [{k, high, low, high_offset, low_offset} …]`
+  (بدون خلاصه‌سازی worst-case — هر کندلِ آینده جدا دیده می‌شود)
+- **server.py:** `GET /api/range-forecast?symbol&timeframe&model&bar`
+  + دادهٔ مدل‌های رنج موجود به صفحهٔ /data
+- **data_renderer:** پنل «Range model forecast» — dropdown مدل‌ها،
+  کلیک روی کندل → fetch → جدول high/low به‌ازای هر k با درصد آفست
+
+### علیت
+
+پنجره فقط کندل‌های `≤ bar` را می‌بیند؛ هیچ برچسب آینده‌ای ساخته نمی‌شود.
+فیچرها همان build مسیر آموزش است (causal_only=True، role-filtered).
+
+### نکتهٔ عملکرد
+
+اولین کلیک: آموزش فیچرها (~۱۰-۲۰ ثانیه). کلیک‌های بعدی: فیچر کش شده،
+فقط inference (~۱ ثانیه). اگر کندل انتخابی <۱۵۰ کندل قبلی داشته باشد
+→ خطای صریح.
+
+```
+ruff ✅ black ✅  pytest 1504 passed, 54 skipped
+```
