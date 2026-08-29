@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-27T15:17:42.275674+00:00
+- Snapshot generated at: 2026-08-29T06:57:32.120972+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 8f97a67e51bbb85e331d78973ba96d9c926f3313
-- Dirty: yes (1 files)
+- Commit: 7aee78efd5c0825eefdbf7e65143091ed0539844
+- Dirty: yes (2 files)
 - Recent commits:
+  - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
+  - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
+  - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
+  - f18533c Phase 73 lint: dedupe pytest import
+  - f61eb51 Phase 73: fix bug 52 — refuse brackets whose stop lands on the profit side
+  - 3527b8c docs: full analysis of the 2110-trade backtest — bracket inversion bug 52 exposed
+  - 84d4851 Phase 72: full 'start conditions' section in the backtest report
   - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
   - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
   - e2f10c4 Phase 68: print an engine build tag in the backtest report
-  - 8782636 Phase 67: fix bug 50 — 1D buffer was never pre-filled from history
-  - 4822e92 Phase 66: draw model TP/SL levels at every signal point on the replay
-  - bd7b242 Phase 65: show signal-model selection points on the replay chart
-  - bb7dd1f Phase 64: fix bug 49 — last_n trim starved the range engine (trades=0)
-  - 4caceb4 docs: Phase 63 post-fix verification — range retrain healthy (val_mae $9.1, no collapse)
-  - 2845ac0 docs: visual schematic of the range dataset (post bug-47 semantics)
-  - 1e80fd2 Phase 63 follow-up: printed val-fold size now matches the real fold for the range model
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 797
+- Total files: 799
 - Source files: 317
 - Test files: 131
-- Documentation files: 132
+- Documentation files: 134
 - Legacy files: 176
-- Total Python lines: 115284
+- Total Python lines: 115505
 - Modules: 448
 - Classes: 763
-- Functions: 4332
+- Functions: 4339
 - External dependencies: 14

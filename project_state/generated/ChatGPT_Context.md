@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T06:57:32.120972+00:00
+- Snapshot generated at: 2026-08-29T07:10:36.685421+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 7aee78efd5c0825eefdbf7e65143091ed0539844
+- Commit: c8b3749f02a1fe815b8db610da9250bcba16d367
 - Dirty: yes (2 files)
 - Recent commits:
+  - c8b3749 Phase 75: recenter inverted brackets around entry instead of rejecting
   - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
   - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
   - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 84d4851 Phase 72: full 'start conditions' section in the backtest report
   - 8f97a67 Phase 70: fix bug 51 — _RangeLoss/_Seq2SeqMAE were function-local, range models could never load
   - dbd0570 Phase 69: surface signal/range counts and silent errors in the backtest report
-  - e2f10c4 Phase 68: print an engine build tag in the backtest report
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 131
 - Documentation files: 134
 - Legacy files: 176
-- Total Python lines: 115505
+- Total Python lines: 115528
 - Modules: 448
 - Classes: 763
-- Functions: 4339
+- Functions: 4340
 - External dependencies: 14
