@@ -126,6 +126,7 @@ class WindowGenerator:
         scale: bool = True,
         classification: bool = False,
         sample_ends: Optional[Sequence[int]] = None,
+        seq2seq: bool = False,
     ) -> None:
         if not series:
             raise ValidationError("series must not be empty")
@@ -144,6 +145,12 @@ class WindowGenerator:
         self._horizon = horizon
         self._stride = stride
         self._scale = scale
+        # فاز ۷۹: وقتی True، label هر window به‌صورت seq2seq ساخته می‌شود —
+        # [window_size, n_targets] (برچسبِ فردای هر سطر پنجره) به‌جای
+        # [n_targets] (فقط سطر آخر). برای مسیر streamed مدل رنج لازم است؛
+        # وگرنه RangeLoss که [batch, window, 2] می‌خواهد با y=[batch,2]
+        # کرش می‌کند (بکتست 1H: 4.3GB > آستانهٔ استریم).
+        self._seq2seq = bool(seq2seq)
         self._classification = classification
         self._sample_ends = list(sample_ends) if sample_ends is not None else None
         if self._sample_ends is not None:
@@ -189,6 +196,17 @@ class WindowGenerator:
         window = [[float(row[column]) for column in self._keep] for row in self._series[start:stop]]
         if self._scale:
             window = minmax_scale_window(window)
+
+        if self._seq2seq:
+            # فاز ۷۹: label هر سطر پنجره = برچسبِ فردای همان سطر
+            # (سطرهای پنجره: [start..end] → برچسب‌ها از همان سطرها
+            #  چون targets در series[end+horizon] برای سطر end تعریف شده‌اند
+            #  و در prepare به هر سطر چسبیده‌اند).
+            seq_rows = self._series[start:stop]
+            label = [
+                [float(row[column]) for column in self._targets] for row in seq_rows
+            ]
+            return window, label
 
         label_row = self._series[end + self._horizon]
         label = [float(label_row[column]) for column in self._targets]
@@ -254,11 +272,16 @@ class WindowGenerator:
         import tensorflow as tf
 
         rows, columns = self.input_shape
-        label_spec = (
-            tf.TensorSpec(shape=(None,), dtype=tf.int32)
-            if self._classification
-            else tf.TensorSpec(shape=(None, len(self._targets)), dtype=tf.float32)
-        )
+        if self._classification:
+            label_spec = tf.TensorSpec(shape=(None,), dtype=tf.int32)
+        elif self._seq2seq:
+            label_spec = tf.TensorSpec(
+                shape=(None, rows, len(self._targets)), dtype=tf.float32
+            )
+        else:
+            label_spec = tf.TensorSpec(
+                shape=(None, len(self._targets)), dtype=tf.float32
+            )
 
         def generator():
             yield from self.iter_batches(batch_size=batch_size, start=start, stop=stop)

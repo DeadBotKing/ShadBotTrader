@@ -763,6 +763,9 @@ class WavenetTrainer(ModelTrainer):
                 scale=True,
                 classification=self._target_columns is None,
                 sample_ends=self._sample_indices,
+                # فاز ۷۹: مسیر streamed مدل رنج seq2seq — برچسب‌های
+                # [window,2] تا RangeLoss با y سه‌بعدی سازگار باشد.
+                seq2seq=self._seq2seq,
             )
         return self._window_cache
 

@@ -2294,3 +2294,33 @@ ruff ✅ black ✅  pytest 1495 passed, 53 skipped
 ```
 pytest 1496 passed, 53 skipped · ruff ✅ black ✅
 ```
+
+---
+
+## 2026-08-29 — فاز ۷۹: باگ ۵۵ — مسیر streamed مدل رنج seq2seq برچسب درست نمی‌داد
+
+**گزارش کاربر:** آموزش range 1H (39,773 پنجره = 4.3GB > آستانهٔ استریم
+512MB) کرش کرد: `Index out of range using input dim 2; input has only 2 dims`
+در RangeLoss.
+
+### ریشه
+
+مدل رنج seq2seq دو مسیر دارد:
+- in-memory (<512MB): `_build_seq2seq_targets` → y=[batch,150,2] ✓ (1D قبلاً از این مسیر بود)
+- **streamed (>512MB): `WindowGenerator` برچسب را فقط برای «سطر آخر» می‌ساخت
+  → y=[batch,2] → RangeLoss با `y[:, -1:, :]` روی آرایهٔ ۲بعدی کرش**
+
+یعنی seq2seq در مسیر استریم هرگز پیاده نشده بود — 1D قبلاً کوچک‌تر از
+آستانه بود و مخفی مانده بود.
+
+### رفع
+
+- `WindowGenerator(..., seq2seq=True)`: `window_at` برچسبِ **هر سطر
+  پنجره** را می‌دهد (برچسب فردای همان سطر، که prepare قبلاً به سطرها
+  چسبانده)؛ `to_tf_dataset` spec سه‌بعدی `[batch, window, n_targets]`
+- `WavenetTrainer._generator()` فلگ `seq2seq=self._seq2seq` را پاس می‌دهد
+- ۴ تست جدید (window_at، مسیر قبلی دست‌نخورده، آرایه‌ها، tf.data)
+
+```
+pytest 1539 passed, 2 env-failed, 12 skipped · ruff ✅ black ✅
+```

@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T10:54:49.698020+00:00
+- Snapshot generated at: 2026-08-29T13:49:07.902801+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 317
-- Test modules: 131
+- Test modules: 132
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ec93102e93a471bef9c821dd7abbc1bac459d376
-- Dirty: yes (1 files)
+- Commit: 8eb5612437325e9e5d6a0abdb8a5a332b89579a1
+- Dirty: yes (3 files)
 - Recent commits:
+  - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
   - ec93102 Phase 77 lint pass
   - 334851b Phase 77: fix bug 54 — min_sl_distance compared a dollar distance against fraction*ref
   - 8820ffd docs: full-history 260-trade analysis — patience thesis, trend filter ROI, session sims
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 7aee78e docs: post-fix analysis of the 154-trade backtest — bug 53 (SL hugging entry)
   - ccc404f docs: the NameError belonged to the interim 84d4851 zip — fixed since 5188801
   - 5188801 Phase 74: configurable EarlyStopping/ReduceLROnPlateau patience
-  - f18533c Phase 73 lint: dedupe pytest import
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 801
+- Total files: 802
 - Source files: 317
-- Test files: 131
+- Test files: 132
 - Documentation files: 136
 - Legacy files: 176
-- Total Python lines: 115611
-- Modules: 448
+- Total Python lines: 115705
+- Modules: 449
 - Classes: 763
-- Functions: 4342
+- Functions: 4348
 - External dependencies: 14
