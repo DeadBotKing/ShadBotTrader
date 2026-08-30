@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "c017dd953a677ffe325fae64e80ec958828f0fd887aeb5b9585a6d9c7356f560",
-      "size_bytes": 132965
+      "sha256": "6bf568e79c7f94afe224be75df7ffca94c127c93e73cafa38a3c4064fd451e9f",
+      "size_bytes": 134082
     },
     {
       "category": "legacy",
@@ -3927,8 +3927,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/gateway/data_inspector.py",
-      "sha256": "42d7de3c501b44b77c826a155f7beabe52d3472e006c77e9d639c989c4980423",
-      "size_bytes": 15202
+      "sha256": "5092e4bb23fdc5974a9f8d6477b22c84ce453777a2f653aec4e4cf229a618df1",
+      "size_bytes": 15203
     },
     {
       "category": "source",
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "033b7067a6e8d01c03a6bf3d78d960f1819024f19df3d564c54f8b485590974f",
-      "size_bytes": 33492
+      "sha256": "6307e18e2f4fcb77148eba02344a92bc64c8722a6b3d9a422aa64c658d25ffe4",
+      "size_bytes": 37445
     },
     {
       "category": "source",
@@ -4897,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T08:40:07.058667+00:00",
+  "generated_at": "2026-08-30T08:54:35.734697+00:00",
   "git": {
     "branch": "main",
-    "commit": "e84a8f0a1489594b5bbf121dc6e67e8ce081dca8",
+    "commit": "dc2dfc86f44fa7eda19f4b08ea9b5c5c7407e926",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "dc2dfc8 Phase 88: fix signal markers not drawing \u2014 index mismatch between computeSignals (local) and indexOf (global)",
       "e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite",
       "e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts",
       "2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart",
@@ -4913,8 +4914,7 @@
       "2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price",
       "ed5cc57 Phase 82: price zoom & time pan on the /data candle chart",
       "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)",
-      "5084467 docs: zero-trade 1H analysis \u2014 signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses",
-      "7b59185 Phase 80: range horizon configurable in the dashboard"
+      "5084467 docs: zero-trade 1H analysis \u2014 signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses"
     ]
   },
   "modules": [
@@ -11198,11 +11198,11 @@
     "legacy_file_count": 176,
     "module_count": 451,
     "source_file_count": 318,
-    "source_lines": 49441,
+    "source_lines": 49547,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 806,
-    "total_lines": 116754
+    "total_lines": 116860
   },
   "test_file_count": 133
 }

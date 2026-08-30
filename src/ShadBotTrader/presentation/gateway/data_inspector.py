@@ -26,7 +26,7 @@ from ShadBotTrader.domain.market.timeframe import Timeframe
 
 #: Candles sent to the chart. Enough to see structure, few enough that
 #: the page stays a page rather than a download.
-DEFAULT_CHART_CANDLES = 300
+DEFAULT_CHART_CANDLES = 5000
 
 
 @dataclass(frozen=True)

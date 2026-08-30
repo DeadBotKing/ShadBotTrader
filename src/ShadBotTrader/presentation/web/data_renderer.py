@@ -489,6 +489,82 @@ if (sigTh) sigTh.addEventListener('input', () => {
   sigThTimer = setTimeout(renderSignals, 250);
 });
 
+// ── فاز ۸۵: dropdown مدل رنج + کلیک روی کندل → پیش‌بینی ──
+const RANGE_MODELS = __RANGE_MODELS__;
+const rfModel = document.getElementById('rf-model');
+const rfStatus = document.getElementById('rf-status');
+const rfPanel = document.getElementById('rf-panel');
+
+if (rfModel) {
+  RANGE_MODELS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.model_id;
+    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${m.trained_at}`;
+    rfModel.appendChild(opt);
+  });
+}
+
+function updateRfStatus(text) {
+  if (rfStatus) rfStatus.textContent = text;
+}
+
+async function fetchForecast(barIndex, symbol, timeframe) {
+  const modelId = rfModel ? rfModel.value : '';
+  if (!modelId) return;
+  updateRfStatus('predicting…');
+  const params = new URLSearchParams({
+    symbol, timeframe, model: modelId, bar: String(barIndex),
+  });
+  try {
+    const res = await fetch(`/api/range-forecast?${params}`);
+    const data = await res.json();
+    if (data.error) {
+      updateRfStatus(`[X] ${data.error}`);
+      if (rfPanel) rfPanel.style.display = 'none';
+      return;
+    }
+    renderForecast(data);
+    updateRfStatus('');
+  } catch (err) {
+    updateRfStatus(`[X] ${err.message}`);
+  }
+}
+
+function renderForecast(f) {
+  if (!rfPanel) return;
+  rfPanel.style.display = '';
+  const anchorTime = f.anchor_time.replace('T', ' ').slice(0, 16);
+  const statsHtml =
+    `<div class="stat"><div class="k">Model</div>` +
+    `<div class="v">${f.model_id} v${f.model_version}</div></div>` +
+    `<div class="stat"><div class="k">Anchor</div>` +
+    `<div class="v">${anchorTime}</div></div>` +
+    `<div class="stat"><div class="k">Anchor close</div>` +
+    `<div class="v">${f.anchor_close.toFixed(2)}</div></div>` +
+    `<div class="stat"><div class="k">Horizon</div>` +
+    `<div class="v">${f.horizon} × ${f.timeframe}</div></div>`;
+  document.getElementById('rf-stats').innerHTML = statsHtml;
+  const rows = document.getElementById('rf-rows');
+  rows.innerHTML = '';
+  f.points.forEach(p => {
+    const tr = document.createElement('tr');
+    [[`+${p.k}`], [`${p.high.toFixed(2)} (${(p.high_offset*100).toFixed(2)}%)`],
+     [`${p.low.toFixed(2)} (${(p.low_offset*100).toFixed(2)}%)`]].forEach(([text]) => {
+      const td = document.createElement('td');
+      td.textContent = text;
+      tr.appendChild(td);
+    });
+    rows.appendChild(tr);
+  });
+}
+
+if (rfModel) {
+  rfModel.addEventListener('change', () => {
+    forecastPath = null; draw();
+    if (rfPanel) rfPanel.style.display = 'none';
+  });
+}
+
 const windowSelect = document.getElementById('window');
 if (windowSelect) {
   windowSelect.addEventListener('change', () => {
@@ -599,6 +675,34 @@ if (th) th.addEventListener('click', () => setTool('hline'));
 if (tv) tv.addEventListener('click', () => setTool('vline'));
 if (tc) tc.addEventListener('click', () => { drawnLines = []; draw(); });
 
+// ── فاز ۸۵: کلیک روی کندل → fetch forecast (اگر مدل انتخاب شده) ──
+const chartCanvas = document.getElementById('chart');
+if (chartCanvas) {
+  chartCanvas.addEventListener('click', e => {
+    if (!CANDLES.length || !rfModel || !rfModel.value) return;
+    // درگ را نادیده بگیر (فقط کلیک ساده)
+    const rect = chartCanvas.getBoundingClientRect();
+    const width = chartCanvas.clientWidth;
+    const padL = 8, padR = 66;
+    const plotW = width - padL - padR;
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - padL) / plotW));
+    const base = (viewStart !== null)
+      ? Math.max(0, Math.min(viewStart, Math.max(0, CANDLES.length - visible)))
+      : Math.max(0, CANDLES.length - visible);
+    const idx = Math.min(CANDLES.length - 1, base + Math.floor(rel * visible));
+    const bar = CANDLES[idx];
+    if (!bar) return;
+
+    let symbol = 'XAUUSD', timeframe = '1H';
+    const symSel = document.querySelector('select[name="series"]');
+    if (symSel && symSel.value.includes('|')) {
+      [symbol, timeframe] = symSel.value.split('|');
+    }
+    updateRfStatus(`bar #${bar.i ?? idx} — predicting…`);
+    fetchForecast(bar.i !== undefined ? bar.i : idx, symbol, timeframe);
+  });
+}
+
 const zoomResetBtn = document.getElementById('zoom-reset');
 if (zoomResetBtn) {
   zoomResetBtn.addEventListener('click', () => {
@@ -649,10 +753,12 @@ def render_candle_section(info: Dict[str, Any]) -> str:
   <canvas id="chart" height="460"></canvas>
   <div class="controls">
     <select id="window">
-      <option value="60">60 candles</option>
       <option value="120" selected>120 candles</option>
-      <option value="200">200 candles</option>
       <option value="300">300 candles</option>
+      <option value="500">500 candles</option>
+      <option value="1000">1,000 candles</option>
+      <option value="2000">2,000 candles</option>
+      <option value="5000">5,000 candles</option>
     </select>
     <button id="toggle-volume" class="on" type="button">Volume</button>
     <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
