@@ -2659,3 +2659,27 @@ ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
 ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
+
+---
+
+## 2026-08-30 — فاز ۹۲: رفع باگ — مسیر پیش‌بینی روی چارت /data رسم نمی‌شد
+
+**گزارش اپراتور:** «مقادیر قیمت پیش‌بینی می‌شوند ولی توی چارت نشونشان
+نمی‌دهد» — خطای `ConnectionAbortedError` هم در سرور (چون مرورگر timeout
+کرده بود در حال انتظار).
+
+### ریشه
+
+`renderForecast()` هیچ‌وقت `forecastPath` را نمی‌ساخت — فاز ۸۵-ب این
+متغیر را تعریف کرد ولی خود تابع render را آپدیت نکرد. نتیجه: داده
+برمی‌گشت و جدول پر می‌شد ولی `draw()` هیچ مسیری نداشت که رسم کند.
+
+### رفع
+
+- `renderForecast(f, localIdx, …)`: بعد از پر کردن جدول، `forecastPath`
+  را از `f.points` می‌سازد
+- `fetchForecast(..., localIdx)` و کلیک کندل `_clickedLocalIdx` را پاس
+  می‌دهد
+- سرور `ConnectionAbortedError` را هم بلعیده باشد تا لاگ کثیف نشود
+
+### تکمیلی — symbolTf تعریف‌نشده حذف شد

@@ -520,7 +520,7 @@ function updateRfStatus(text) {
   if (rfStatus) rfStatus.textContent = text;
 }
 
-async function fetchForecast(barIndex, symbol, timeframe) {
+async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   const modelId = rfModel ? rfModel.value : '';
   if (!modelId) return;
   updateRfStatus('predicting…');
@@ -535,14 +535,14 @@ async function fetchForecast(barIndex, symbol, timeframe) {
       if (rfPanel) rfPanel.style.display = 'none';
       return;
     }
-    renderForecast(data);
+    renderForecast(data, localIdx);
     updateRfStatus('');
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
 }
 
-function renderForecast(f) {
+function renderForecast(f, localIdx, symbolTf) {
   if (!rfPanel) return;
   rfPanel.style.display = '';
   const anchorTime = f.anchor_time.replace('T', ' ').slice(0, 16);
@@ -568,6 +568,14 @@ function renderForecast(f) {
     });
     rows.appendChild(tr);
   });
+
+  // فاز ۹۲: مسیر را برای رسم روی چارت آماده کن
+  if (localIdx !== undefined && localIdx >= 0) {
+    forecastPath = {
+      localIdx: localIdx,
+      points: f.points.map(p => ({ high: p.high, low: p.low })),
+    };
+  }
 }
 
 if (rfModel) {
@@ -741,7 +749,8 @@ if (chartCanvas) {
       [symbol, timeframe] = symSel.value.split('|');
     }
     updateRfStatus(`bar #${bar.i ?? idx} — predicting…`);
-    fetchForecast(bar.i !== undefined ? bar.i : idx, symbol, timeframe);
+    window._clickedLocalIdx = idx;   // موقعیت در slice — برای رسم روی چارت
+    fetchForecast(bar.i !== undefined ? bar.i : idx, symbol, timeframe, idx);
   });
 }
 
