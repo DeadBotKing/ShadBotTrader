@@ -549,6 +549,9 @@ function renderForecast(f, localIdx, symbolTf) {
     `<div class="v">${f.anchor_close.toFixed(2)}</div></div>` +
     `<div class="stat"><div class="k">Horizon</div>` +
     `<div class="v">${f.horizon} × ${f.timeframe}</div></div>`;
+  statsHtml +=
+    `<div class="stat"><div class="k">Base price</div>` +
+    `<div class="v">${f.reference_close.toFixed(2)}</div></div>`;
   document.getElementById('rf-stats').innerHTML = statsHtml;
   const rows = document.getElementById('rf-rows');
   rows.innerHTML = '';

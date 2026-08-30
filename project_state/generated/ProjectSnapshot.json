@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "a7e454ad77903759974ca0d997839156177fa6afcc59175e67a7609f8cb44dab",
-      "size_bytes": 138380
+      "sha256": "e1f7e723075bebc6c5679eaca3299e59ee9f44ba32f2ea398084a4dfacbf9167",
+      "size_bytes": 139082
     },
     {
       "category": "legacy",
@@ -2043,7 +2043,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "1a1fd116646d451aefc4bcdd66e58fee0446746cc810f408799e7e196838e777",
+      "sha256": "94fb7b3634c8bb923e47c921f417ca5b014812ba59c11dd9fcb45643b83abb00",
       "size_bytes": 25781
     },
     {
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "90a4e44cb9f4e7dc33da8092e28e82241d47bbe2a3e3d6931e4e849a28f94ca0",
-      "size_bytes": 39485
+      "sha256": "97b679a69d8d5a6238ddafca829043dedb412e784b08f15a7572d7d5f0248f17",
+      "size_bytes": 39624
     },
     {
       "category": "source",
@@ -3975,8 +3975,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "66092650b0795d1a02397e90195c62e93d94085eb6592bfe8f0e62e7f944298e",
-      "size_bytes": 18189
+      "sha256": "c1f62f991d866edfeffab35559b0497f8bf897de809be4d41a1cdf0b0ff36881",
+      "size_bytes": 18352
     },
     {
       "category": "source",
@@ -4897,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T10:24:33.312061+00:00",
+  "generated_at": "2026-08-30T10:44:26.417027+00:00",
   "git": {
     "branch": "main",
-    "commit": "53b78ae0bebe5e182cfd68b0a04081d4da65de75",
+    "commit": "1e66be82351d5fd88b0ecd08ba74eaf9506839c7",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black",
       "53b78ae Phase 92: fix forecast path never drawing on /data \u2014 renderForecast was missing forecastPath wiring",
       "bb21be6 Phase 91: vertical pan on the price axis (when zoomed)",
       "8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom",
@@ -4913,8 +4914,7 @@
       "e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite",
       "e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts",
       "2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart",
-      "983ed36 Phase 85: click any /data candle \u2192 per-step range forecast path from a chosen model",
-      "5dc46a9 Phase 84: signal labels view on /data \u2014 operator-set threshold, first-passage markers"
+      "983ed36 Phase 85: click any /data candle \u2192 per-step range forecast path from a chosen model"
     ]
   },
   "modules": [
@@ -11198,11 +11198,11 @@
     "legacy_file_count": 176,
     "module_count": 451,
     "source_file_count": 318,
-    "source_lines": 49623,
+    "source_lines": 49629,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 806,
-    "total_lines": 116936
+    "total_lines": 116942
   },
   "test_file_count": 133
 }

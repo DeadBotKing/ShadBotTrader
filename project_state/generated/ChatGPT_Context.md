@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T10:24:33.312061+00:00
+- Snapshot generated at: 2026-08-30T10:44:26.417027+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 53b78ae0bebe5e182cfd68b0a04081d4da65de75
-- Dirty: yes (1 files)
+- Commit: 1e66be82351d5fd88b0ecd08ba74eaf9506839c7
+- Dirty: yes (2 files)
 - Recent commits:
+  - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
   - 53b78ae Phase 92: fix forecast path never drawing on /data — renderForecast was missing forecastPath wiring
   - bb21be6 Phase 91: vertical pan on the price axis (when zoomed)
   - 8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts
   - 2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart
   - 983ed36 Phase 85: click any /data candle → per-step range forecast path from a chosen model
-  - 5dc46a9 Phase 84: signal labels view on /data — operator-set threshold, first-passage markers
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116936
+- Total Python lines: 116942
 - Modules: 451
 - Classes: 765
 - Functions: 4362

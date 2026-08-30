@@ -2700,3 +2700,22 @@ ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 
 تعریف تکراری حذف شد؛ نسخهٔ درست `plotW / Math.max(1, totalSlots)`
 (که اسلات‌های future را هم حساب می‌کند) نگه داشته شد.
+
+---
+
+## 2026-08-30 — فاز ۹۴: رفع چارت سیاه + شفافیت قیمت پایه در forecast
+
+### چارت سیاه
+
+علت: SyntaxError در JS (تعریف تکراری plotW/step/yP/xOf در فاز ۸۶) — رفع شد در فاز ۹۳.
+
+### ConnectionAbortedError در سرور
+
+مرورگر وقتی fetch timeout می‌شود اتصال را قطع می‌کند → سرور خطا می‌دهد.
+حالا `_send_json`/`_send_html` در خطای `{ConnectionAborted,BrokenPipe}Error`
+را بی‌صدا عبور می‌دهند (لاگ تمیز).
+
+### Base price در جدول forecast
+
+جدول حالا «Base price» هم نشان می‌دهد تا کاربر بداند آفست‌ها نسبت به
+کدام قیمت محاسبه شده‌اند (close کندل انتخابی).
