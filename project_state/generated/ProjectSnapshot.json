@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "3c8824c0a05e5678ddb9ece16cd14da640fda546f6c2cde27ca0928cac77714f",
-      "size_bytes": 134932
+      "sha256": "9b4c746abfffc6078d15ed1c945edc14b978cbdf7335fc2105d43c55bbaf672a",
+      "size_bytes": 136170
     },
     {
       "category": "legacy",
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "9d42454d55e785606c946d98b90f8c24dae5c5c073a760d945b96bf840877df8",
-      "size_bytes": 37631
+      "sha256": "9b941172977009604060a2162ca684ee275eee59db74fcccdbbe0ac671324aea",
+      "size_bytes": 39327
     },
     {
       "category": "source",
@@ -3969,8 +3969,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/replay_renderer.py",
-      "sha256": "dc06af1f634a87985910798b6bb3169cb6a15d2269d381fb6d9ae5ffe766011e",
-      "size_bytes": 33418
+      "sha256": "9f716198b6ebf8939f7cb2645ba3bb7996a8924177e6d96a8cb7dfe750cf77be",
+      "size_bytes": 34240
     },
     {
       "category": "source",
@@ -4897,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T09:10:35.401194+00:00",
+  "generated_at": "2026-08-30T09:22:59.361663+00:00",
   "git": {
     "branch": "main",
-    "commit": "39f3ed729c068838ca4887a31f0fc7d586836198",
+    "commit": "8ad4bd8bbcab4ce7e03255f4417f51dafdd90562",
     "dirty": true,
-    "dirty_files": 3,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom",
       "39f3ed7 Phase 89: restore range model dropdown JS + extend candles to 5000",
       "dc2dfc8 Phase 88: fix signal markers not drawing \u2014 index mismatch between computeSignals (local) and indexOf (global)",
       "e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite",
@@ -4913,8 +4914,7 @@
       "983ed36 Phase 85: click any /data candle \u2192 per-step range forecast path from a chosen model",
       "5dc46a9 Phase 84: signal labels view on /data \u2014 operator-set threshold, first-passage markers",
       "2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price",
-      "ed5cc57 Phase 82: price zoom & time pan on the /data candle chart",
-      "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)"
+      "ed5cc57 Phase 82: price zoom & time pan on the /data candle chart"
     ]
   },
   "modules": [
@@ -11198,11 +11198,11 @@
     "legacy_file_count": 176,
     "module_count": 451,
     "source_file_count": 318,
-    "source_lines": 49559,
+    "source_lines": 49620,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 806,
-    "total_lines": 116872
+    "total_lines": 116933
   },
   "test_file_count": 133
 }

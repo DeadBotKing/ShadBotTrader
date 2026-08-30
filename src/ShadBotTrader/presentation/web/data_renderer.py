@@ -75,6 +75,7 @@ let visible = 120;
 // فاز ۸۲ — زوم قیمت و پن زمان (مثل ریپلی/متاتریدر)
 let priceZoom = 1.0;
 let priceAnchor = null;
+let pricePan = 0;       // فاز ۹۱: جابجایی عمودی بر حسب $ (وقتی zoom > 1)
 let viewStart = null;   // null = آخرین N کندل؛ عدد = شروعِ دستی
 let dragX = null;
 
@@ -162,10 +163,18 @@ function draw() {
   // زوم قیمت
   if (priceZoom > 1.0) {
     const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
-    const span = (hi - lo) / priceZoom;
-    hi = anchor + span / 2;
-    lo = anchor - span / 2;
+    let span = (hi - lo) / priceZoom;
+    let hiZ = anchor + span / 2;
+    let loZ = anchor - span / 2;
+    if (pricePan !== 0) { hiZ += pricePan; loZ += pricePan; }
+    hi = hiZ; lo = loZ;
   }
+
+  const plotW = width - padL - padR;
+  const step = plotW / slice.length;
+  const bodyW = Math.max(1.5, Math.min(12, step * 0.66));
+  const yP = p => 8 + (hi - p) / (hi - lo) * (priceH - 16);
+  const xOf = i => padL + i * step + step / 2;
 
   const plotW = width - padL - padR;
   const step = plotW / Math.max(1, totalSlots);
@@ -405,7 +414,10 @@ function _currentScale() {
   if (priceZoom > 1.0) {
     const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
     const span = (hi - lo) / priceZoom;
-    hi = anchor + span / 2; lo = anchor - span / 2;
+    let hiZ = anchor + span / 2;
+    let loZ = anchor - span / 2;
+    if (pricePan !== 0) { hiZ += pricePan; loZ += pricePan; }
+    hi = hiZ; lo = loZ;
   }
   const height = 460;
   const volumeH = showVolume ? 70 : 0;
@@ -590,7 +602,34 @@ if (canvas) {
 
     // فاز ۹۰: wheel روی محور قیمت (سمت راست چارت) = زوم قیمت همیشه
     const canvasRightEdge = canvas.clientWidth - 66;
-    const onPriceAxis = e.clientX - canvas.getBoundingClientRect().left > canvasRightEdge;
+    const rect = canvas.getBoundingClientRect();
+    const onPriceAxis = e.clientX - rect.left > canvasRightEdge;
+
+    // فاز ۹۱: wheel روی محور قیمت و زوم فعال → پن عمودی (جابجایی بالا/پایین)
+    if (onPriceAxis && priceZoom > 1.0 && !e.ctrlKey) {
+      // محدودهٔ فعلی (با زوم و پن قبلی)
+      let hi = -Infinity, lo = Infinity;
+      const slice = (viewStart !== null)
+        ? CANDLES.slice(Math.max(0, Math.min(viewStart, CANDLES.length - visible)))
+        : CANDLES.slice(-visible);
+      slice.forEach(c => { if (c.h > hi) hi = c.h; if (c.l < lo) lo = c.l; });
+      if (priceZoom > 1.0) {
+        const span = (hi - lo) / priceZoom;
+        const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
+        hi = anchor + span / 2 + pricePan;
+        lo = anchor - span / 2 + pricePan;
+      }
+      const curSpan = (hi - lo) / 4 || 10;
+      pricePan += (e.deltaY < 0 ? 1 : -1) * curSpan;
+
+      // قیمتِ زیر موس برای آپدیت anchor
+      const priceH = 460 * 0.72;
+      const rel = Math.min(1, Math.max(0, (e.clientY - rect.top - 8) / (priceH - 16)));
+      priceAnchor = (hi - rel * (hi - lo)) - pricePan;
+
+      draw();
+      return;
+    }
 
     if (e.ctrlKey || onPriceAxis) {
       const rect = canvas.getBoundingClientRect();

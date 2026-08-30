@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T09:10:35.401194+00:00
+- Snapshot generated at: 2026-08-30T09:22:59.361663+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 39f3ed729c068838ca4887a31f0fc7d586836198
-- Dirty: yes (3 files)
+- Commit: 8ad4bd8bbcab4ce7e03255f4417f51dafdd90562
+- Dirty: yes (2 files)
 - Recent commits:
+  - 8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom
   - 39f3ed7 Phase 89: restore range model dropdown JS + extend candles to 5000
   - dc2dfc8 Phase 88: fix signal markers not drawing — index mismatch between computeSignals (local) and indexOf (global)
   - e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 5dc46a9 Phase 84: signal labels view on /data — operator-set threshold, first-passage markers
   - 2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price
   - ed5cc57 Phase 82: price zoom & time pan on the /data candle chart
-  - 947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116872
+- Total Python lines: 116933
 - Modules: 451
 - Classes: 765
 - Functions: 4362
