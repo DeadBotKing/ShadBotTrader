@@ -145,6 +145,7 @@ let loggedTrips = 0;
 // viewStart: کندلِ اولِ پنجرهٔ دید (وقتی کاربر درگ/زوم زمانی کرده)
 let priceZoom = 1.0;
 let priceAnchor = null;    // قیمتِ زیر موس هنگام wheel
+let pricePan = 0;          // فاز ۹۱: پن عمودی ($)
 let viewStart = null;      // null = از windowSel پیروی کن
 let dragX = null;
 
@@ -187,6 +188,7 @@ function visibleRange() {
 function resetZoom() {
   priceZoom = 1.0;
   priceAnchor = null;
+  pricePan = 0;
   viewStart = null;
   draw();
 }
@@ -220,8 +222,10 @@ function draw() {
   if (priceZoom > 1.0) {
     const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
     const span = (hi - lo) / priceZoom;
-    hi = anchor + span / 2;
-    lo = anchor - span / 2;
+    let hiZ = anchor + span / 2;
+    let loZ = anchor - span / 2;
+    if (pricePan !== 0) { hiZ += pricePan; loZ += pricePan; }
+    hi = hiZ; lo = loZ;
   }
 
   const plotW = width - padL - padR;
@@ -590,8 +594,28 @@ canvas.addEventListener('wheel', e => {
   const [start, end] = visibleRange();
   const size = end - start;
 
-  // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
-  if (e.ctrlKey) {
+  // فاز ۹۰/۹۱: wheel روی محور قیمت (سمت راست) = زوم یا پن عمودی
+  const rect0 = canvas.getBoundingClientRect();
+  const onPriceAxis = (e.clientX - rect0.left) > (canvas.clientWidth - 62);
+
+  // فاز ۹۱: اگر زوم فعال و بدون Ctrl → پن عمودی
+  if (onPriceAxis && priceZoom > 1.0 && !e.ctrlKey) {
+    let hi = -Infinity, lo = Infinity;
+    const [s0, e0] = visibleRange();
+    bars.slice(s0, e0).forEach(b => { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; });
+    if (priceZoom > 1.0) {
+      const span = (hi - lo) / priceZoom;
+      const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
+      hi = anchor + span / 2 + pricePan;
+      lo = anchor - span / 2 + pricePan;
+    }
+    const curSpan = (hi - lo) / 4 || 10;
+    pricePan += (e.deltaY < 0 ? 1 : -1) * curSpan;
+    draw();
+    return;
+  }
+
+  if (e.ctrlKey || onPriceAxis) {
     const rect = canvas.getBoundingClientRect();
     const slice = bars.slice(start, end);
     if (!slice.length) return;

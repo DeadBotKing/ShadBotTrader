@@ -139,8 +139,14 @@ class RangeForecastInspector:
             reference_close=float(anchor.close.amount),
         )
 
-        # window: the record's window bars ENDING at bar_index (inclusive).
-        window_candles = candles[bar_index - window_size + 1 : bar_index + 1]
+        # باگ ۵۶ (فاز ۹۰): پنجره باید شامل warmup فیچرها هم باشد.
+        # build_feature_matrix سطرهای warm-up را حذف می‌کند؛ پس اگر فقط
+        # window_size کندل بدهیم، بعد از حذف warmup کمتر از window_size
+        # سطر می‌ماند (اجرای کاربر: 73 از 150). راه: پنجرهٔ گسترش‌یافته
+        # = window_size + 400 (پوشش EMA200 و طولانی‌ترین فیچر) — بعد
+        # از build، از انتها window_size سطر برمی‌داریم.
+        WARMUP_PAD = 400
+        window_candles = candles[max(0, bar_index - window_size + 1 - WARMUP_PAD) : bar_index + 1]
         if len(window_candles) < window_size:
             raise ValidationError("not enough candles for one window")
 
@@ -171,7 +177,8 @@ class RangeForecastInspector:
         )
         if len(matrix) < window_size:
             raise ValidationError(
-                f"Feature matrix has {len(matrix)} rows; model needs {window_size}."
+                f"Feature matrix has {len(matrix)} rows even after warmup pad; "
+                f"model needs {window_size}."
             )
 
         artifact = FilesystemArtifactStore(self._root).load(

@@ -77,7 +77,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"error": "not found", "path": route.path}, status=404)
         except Exception as error:  # pragma: no cover - defensive
-            self._send_json({"error": str(error)}, status=500)
+            try:
+                self._send_json({"error": str(error)}, status=500)
+            except (ConnectionAbortedError, BrokenPipeError):
+                pass  # مرورگر قطع شده — لاگ کثیف نشود
 
     def do_POST(self) -> None:  # noqa: N802
         route = urlparse(self.path)

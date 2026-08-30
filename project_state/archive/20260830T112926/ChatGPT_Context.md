@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T11:29:26.064172+00:00
+- Snapshot generated at: 2026-08-30T10:44:26.417027+00:00
 
 ## Current Architecture
 
@@ -27,10 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 0b008a9dd26d0314f3a0f245c66d7e0a64a7705b
-- Dirty: yes (1 files)
+- Commit: 1e66be82351d5fd88b0ecd08ba74eaf9506839c7
+- Dirty: yes (2 files)
 - Recent commits:
-  - 0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table
   - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
   - 53b78ae Phase 92: fix forecast path never drawing on /data — renderForecast was missing forecastPath wiring
   - bb21be6 Phase 91: vertical pan on the price axis (when zoomed)
@@ -40,6 +39,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite
   - e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts
   - 2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart
+  - 983ed36 Phase 85: click any /data candle → per-step range forecast path from a chosen model
 
 ## Quality Gate
 
