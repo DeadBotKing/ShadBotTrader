@@ -171,12 +171,6 @@ function draw() {
   }
 
   const plotW = width - padL - padR;
-  const step = plotW / slice.length;
-  const bodyW = Math.max(1.5, Math.min(12, step * 0.66));
-  const yP = p => 8 + (hi - p) / (hi - lo) * (priceH - 16);
-  const xOf = i => padL + i * step + step / 2;
-
-  const plotW = width - padL - padR;
   const step = plotW / Math.max(1, totalSlots);
   const bodyW = Math.max(1.5, Math.min(12, step * 0.66));
   const yP = p => 8 + (hi - p) / (hi - lo) * (priceH - 16);
