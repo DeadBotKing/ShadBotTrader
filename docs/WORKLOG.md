@@ -2606,3 +2606,33 @@ ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
 ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
+
+---
+
+## 2026-08-30 — فاز ۹۰: باگ ۵۶ (warmup pad) + باگ ۵۷ (wheel روی محور قیمت)
+
+**گزارش اپراتور:**
+۱. «tوی محور قیمت نمی‌تونم اسکرول کنم»
+۲. «Feature matrix has 73 rows; model needs 150» در کلیک روی /data
+
+### باگ ۵۶ — warmup pad برای پیش‌بینی روی /data
+
+`build_feature_matrix` سطرهای warm-up را حذف می‌کند (EMA200=200,
+ATR=77, …). وقتی فقط window_size=150 کندل به آن می‌دادیم، بعد از
+حذف warmup فقط ۷۳ سطر باقی می‌ماند → خطا.
+
+**رفع:** پنجرهٔ ورودی = `window_size + 400` کندل (پوشش کامل warmup)
+، بعد از build آخرین ۱۵۰ سطر برای مدل.
+
+### باگ ۵۷ — wheel روی محور قیمت = زوم قیمت
+
+قبلاً wheel فقط اسکرول زمان بود. حالا:
+- **موس روی محور قیمت (۶۶px سمت راست چارت) + wheel** → زوم قیمت
+- **موس روی چارت + wheel** → اسکرول زمان
+- **Ctrl+wheel** → زوم قیمت (هر جا)
+
+در هر دو چارت (/data و replay) اعمال شد.
+
+```
+ruff ✅ black ✅  pytest 1504 passed, 54 skipped
+```

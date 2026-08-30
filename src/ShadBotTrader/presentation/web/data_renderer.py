@@ -588,8 +588,11 @@ if (canvas) {
   canvas.addEventListener('wheel', e => {
     e.preventDefault();
 
-    // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
-    if (e.ctrlKey) {
+    // فاز ۹۰: wheel روی محور قیمت (سمت راست چارت) = زوم قیمت همیشه
+    const canvasRightEdge = canvas.clientWidth - 66;
+    const onPriceAxis = e.clientX - canvas.getBoundingClientRect().left > canvasRightEdge;
+
+    if (e.ctrlKey || onPriceAxis) {
       const rect = canvas.getBoundingClientRect();
       const width = rect.width;
       const height = 460;

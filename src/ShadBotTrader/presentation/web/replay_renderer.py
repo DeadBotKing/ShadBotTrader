@@ -590,8 +590,10 @@ canvas.addEventListener('wheel', e => {
   const [start, end] = visibleRange();
   const size = end - start;
 
-  // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
-  if (e.ctrlKey) {
+  // فاز ۹۰: wheel روی محور قیمت (سمت راست چارت) = زوم قیمت همیشه
+  const rect0 = canvas.getBoundingClientRect();
+  const onPriceAxis = (e.clientX - rect0.left) > (canvas.clientWidth - 62);
+  if (e.ctrlKey || onPriceAxis) {
     const rect = canvas.getBoundingClientRect();
     const slice = bars.slice(start, end);
     if (!slice.length) return;
