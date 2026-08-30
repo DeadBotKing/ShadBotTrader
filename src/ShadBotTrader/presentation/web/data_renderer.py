@@ -279,6 +279,31 @@ function draw() {
   }
 
   // ── volume ──
+  // ── فاز ۸۴: نقاط سیگنال ──
+  if (currentSignals.length) {
+    const indexOf = new Map();
+    slice.forEach((c, i) => indexOf.set(c.i, i));
+    currentSignals.forEach(s => {
+      const local = indexOf.get(s.i);
+      if (local === undefined) return;
+      const c = slice[local];
+      const x = xOf(local);
+      const buy = s.side === 'buy';
+      ctx.beginPath();
+      if (buy) {
+        const y = yP(c.l) + 9;
+        ctx.moveTo(x, y - 8); ctx.lineTo(x - 5, y + 4); ctx.lineTo(x + 5, y + 4);
+        ctx.fillStyle = '#3fb950';
+      } else {
+        const y = yP(c.h) - 9;
+        ctx.moveTo(x, y + 8); ctx.lineTo(x - 5, y - 4); ctx.lineTo(x + 5, y - 4);
+        ctx.fillStyle = '#f85149';
+      }
+      ctx.closePath();
+      ctx.fill();
+    });
+  }
+
   if (showVolume && maxVol > 0) {
     const base = height - 34;
     slice.forEach((c, i) => {
@@ -399,6 +424,63 @@ function _barAtX(x) {
   const absIdx = Math.floor(rel * s.visible);
   return Math.max(0, Math.min(CANDLES.length - 1, s.base + absIdx));
 }
+
+
+// ── فاز ۸۴: سیگنال‌های first-passage روی همان کندل‌های چارت ──
+// قانون دقیقاً مثل آموزش: اولین close که ±threshold را بزند؛
+// BUY معتبر تا وقتی Low زیر Lowِ کندل شروع نرود (و برعکس برای SELL).
+function computeSignals(threshold) {
+  const signals = [];   // {i, side}
+  const n = CANDLES.length;
+  for (let start = 0; start < n - 1; start++) {
+    const c0 = CANDLES[start];
+    const upper = c0.c * (1 + threshold);
+    const lower = c0.c * (1 - threshold);
+    let label = null;
+    for (let k = start + 1; k < n; k++) {
+      const c = CANDLES[k];
+      const buyHit = c.c >= upper;
+      const buyInvalid = c.l < c0.l;
+      const sellHit = c.c <= lower;
+      const sellInvalid = c.h > c0.h;
+      if (buyHit && (!sellHit || !sellInvalid)) { label = 'buy'; break; }
+      if (sellHit && (!buyHit || !buyInvalid)) { label = 'sell'; break; }
+      if (buyInvalid && sellInvalid) break;
+      if (buyInvalid) break;
+      if (sellInvalid) break;
+    }
+    if (label) signals.push({ i: start, side: label });
+  }
+  return signals;
+}
+
+let currentSignals = [];
+
+function renderSignals() {
+  const box = document.getElementById('show-signals');
+  const thEl = document.getElementById('sig-threshold');
+  const summary = document.getElementById('sig-summary');
+  if (!box || !thEl) return;
+  if (!box.checked) { currentSignals = []; summary.textContent = ''; draw(); return; }
+  const th = parseFloat(thEl.value) / 100;
+  if (!(th > 0)) return;
+  currentSignals = computeSignals(th);
+  const buys = currentSignals.filter(s => s.side === 'buy').length;
+  const sells = currentSignals.length - buys;
+  summary.textContent =
+    `${currentSignals.length} signals · ${buys} \u25b2 · ${sells} \u25bc` +
+    ` (th ${thEl.value}%)`;
+  draw();
+}
+
+const sigBox = document.getElementById('show-signals');
+const sigTh = document.getElementById('sig-threshold');
+if (sigBox) sigBox.addEventListener('change', renderSignals);
+let sigThTimer = null;
+if (sigTh) sigTh.addEventListener('input', () => {
+  clearTimeout(sigThTimer);
+  sigThTimer = setTimeout(renderSignals, 250);
+});
 
 const windowSelect = document.getElementById('window');
 if (windowSelect) {

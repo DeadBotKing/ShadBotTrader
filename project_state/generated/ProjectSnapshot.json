@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "b73548ab89ae01f809475b90abfd9f631211c8581dcd1e1f2f84bde756900be2",
-      "size_bytes": 130465
+      "sha256": "bbee6717ef3498a0642b0a11460ccc5dbe5288ecc21710c2f0bbdd9f7e465939",
+      "size_bytes": 132009
     },
     {
       "category": "legacy",
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "caabf94adb5c6142acde57018af039b3f9f39107159ab4655c5ac73d808d4391",
-      "size_bytes": 30147
+      "sha256": "d704bf77a40a545c28f1f71ed6e74578ea774fafc5f8a027bb9a6797dcd98836",
+      "size_bytes": 33116
     },
     {
       "category": "source",
@@ -4897,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-29T21:47:48.542841+00:00",
+  "generated_at": "2026-08-30T05:45:21.674319+00:00",
   "git": {
     "branch": "main",
-    "commit": "2d0fd0c49eb038c46633f7bfc785f6a73a88c2d4",
+    "commit": "e5b9d248b41dd92b438f834cc0e8be6e5003d714",
     "dirty": true,
-    "dirty_files": 15,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts",
       "2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart",
       "983ed36 Phase 85: click any /data candle \u2192 per-step range forecast path from a chosen model",
       "5dc46a9 Phase 84: signal labels view on /data \u2014 operator-set threshold, first-passage markers",
@@ -4913,8 +4914,7 @@
       "947ce0c Phase 81: price & time zoom on the replay chart (MetaTrader-style)",
       "5084467 docs: zero-trade 1H analysis \u2014 signal threshold sits on the range band edge, gate 7 (now fixed) correctly refuses",
       "7b59185 Phase 80: range horizon configurable in the dashboard",
-      "ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands",
-      "026737b Phase 79: fix bug 55 \u2014 streamed range training fed [batch,2] labels to a seq2seq loss"
+      "ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands"
     ]
   },
   "modules": [
@@ -11198,11 +11198,11 @@
     "legacy_file_count": 176,
     "module_count": 451,
     "source_file_count": 318,
-    "source_lines": 49344,
+    "source_lines": 49426,
     "test_file_count": 133,
     "test_lines": 22504,
     "total_file_count": 806,
-    "total_lines": 116657
+    "total_lines": 116739
   },
   "test_file_count": 133
 }
