@@ -1,6 +1,6 @@
 """Progress reporting for feature-set computation (Phase 37).
 
-Computing the 109-feature catalogue over 100,000 candles takes minutes
+Computing the standard feature catalogue over 100,000 candles takes minutes
 and used to print nothing whatsoever. The operator could not tell which
 feature was being computed, how many were done, or whether a slow
 calculator had hung — the same blindness Phase 36 fixed for training.
@@ -38,7 +38,7 @@ class FeatureProgressReporter(Protocol):
 
         ``reason`` explains why a recompute is happening at all, which is
         the question an operator asks when a run they expected to be
-        instant starts churning through 109 features (Phase 38).
+        instant starts churning through the whole catalogue (Phase 38).
         """
 
     def on_cache_hit(self, set_name: str, symbol: str, timeframe: str, total: int) -> None:

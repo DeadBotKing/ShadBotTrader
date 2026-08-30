@@ -1,4 +1,4 @@
-"""Turn OHLCV + the 109-feature catalogue into a model input matrix.
+"""Turn OHLCV + the standard feature catalogue into a model input matrix.
 
 Phase 29 §3. The Feature Platform built in Phase 12 was never connected
 to the AI Platform — the trainer used four hand-written columns. This

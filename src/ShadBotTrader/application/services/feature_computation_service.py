@@ -100,7 +100,7 @@ class FeatureComputationService:
         self._event_bus = event_bus
         self._quality_engine = FeatureQualityEngine()
         self._leakage_checker = LeakageChecker()
-        # Phase 37: 109 features over 100k candles takes minutes and used
+        # Phase 37: the catalogue over 100k candles takes minutes and used
         # to print nothing at all, so a slow calculator was
         # indistinguishable from a hang.
         self._progress: FeatureProgressReporter = progress or NullFeatureProgress()

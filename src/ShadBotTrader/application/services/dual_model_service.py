@@ -3,7 +3,7 @@
 Composition root for the dual-model architecture. It owns no trading,
 feature or AI logic of its own — it wires the pieces that already exist:
 
-    candles -> feature matrix (109 features + OHLCV)
+    candles -> feature matrix (catalogue features + OHLCV)
             -> forward labels  (future high/low  |  sell/hold/buy)
             -> aligned series
             -> roll-forward WaveNet training

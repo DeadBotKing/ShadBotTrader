@@ -169,7 +169,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--with-features",
         action="store_true",
-        help="use the full 109-feature catalogue (slower)",
+        help="use the full standard feature catalogue (slower)",
     )
     parser.add_argument("--storage-root", default=str(STORAGE_ROOT))
     parser.add_argument(
@@ -1112,7 +1112,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print("=== ShadBotTrader — Phase 29 dual predictive models ===")
     print(f"symbol {args.symbol} | horizon {args.horizon} | window {args.window}")
-    print(f"features: {'109-feature catalogue' if args.with_features else 'OHLCV only'}")
+    # فاز ۹۵: عدد کاتالوگ هاردکد نباشد — تعداد واقعی در سربرگ خود مدل
+    # چاپ می‌شود (feature columns). اینجا فقط حالت گفته می‌شود.
+    print(f"features: {'full standard catalogue' if args.with_features else 'OHLCV only'}")
 
     service = build_service(args)
     status = 0
