@@ -2818,3 +2818,48 @@ pytest 1532 passed, 54 skipped  (+28 تست جدید فاز ۹۵)
 
 تست‌های جدید: `test_atr_range_target.py` (13)،
 `test_range_predictor_atr.py` (9)، `test_range_atr_wiring.py` (6).
+
+---
+
+## 2026-08-30 — فاز ۹۵-ب: گزارش آموزش ATR-آگاه + baseline «پیش‌بینی ثابت»
+
+**گزارش اپراتور از اولین ران با تارگت ATR (1D, horizon=5):** «توی بک تست
+قیمت‌ها متفاوت بود، مثل قبل یه درصد ثابت نمی‌داد» ✓ — هدف فاز ۹۵ محقق شد.
+
+### مشکل پیدا‌شده در همان لاگ
+
+خط epoch هنوز `~+-1984.27$` چاپ می‌کرد — ریاضیِ قدیمی pct
+(`val_mae × قیمت ۲۶۵۰`). با تارگت ATR این عدد بی‌معنی است.
+
+### رفع
+
+- `ConsoleProgressReporter(target_units, atr_reference)` — تبدیل دلاری
+  فقط با واحد درست: ATR → `mult × ATR14` (نمایش `~+-23.59$
+  (ATR14=31.50)`)؛ pct قدیمی → رفتار قبل؛ بدون مرجع → هیچ عدد جعلی.
+- `print_quality` هم همین‌طور: پیام «ATR multiples» + تبدیل با ATR.
+- اسکریپت گزارشگر را با واحد/ATR دیتاست می‌سازد.
+
+### baseline جدید: «پیش‌بینی ثابت»
+
+سربرگ آموزش حالا MAE یک پیش‌بینی‌کنندهٔ ثابت (میانهٔ train) روی آخرین
+فولد ولید را چاپ می‌کند (`constant base`) و QUALITY حکم می‌دهد:
+
+```
+vs constant baseline 0.7521: the model BEATS ... by 0.0033
+vs constant baseline 0.7480: NO BETTER than a constant prediction
+```
+
+این دقیقاً سنجهٔ ریشه‌یابی مشکل آفست ثابت است.
+
+### نکتهٔ عملی برای اپراتور (ران 300×4)
+
+val_loss بعد از epoch ~90 فقط با دقت 1e-6 «بهبود» می‌یافت →
+ReduceLROnPlateau (min_delta=1e-6) هرگز decay نمی‌کند و ES هم نه.
+بهترین checkpoint بعد از هر epoch ذخیره می‌شود؛ قطع کردن ران امن است.
+پیشنهاد: `--epochs 60..80`.
+
+### تأیید
+
+```
+ruff ✅ black ✅  pytest full suite green (+4 تست جدید گزارشگر)
+```

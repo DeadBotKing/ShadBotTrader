@@ -574,6 +574,31 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         f"({share:.1f}% of {pool} labelled windows)"
     )
 
+    # فاز ۹۵: baseline «پیش‌بینی ثابت» برای رنج — مدل رنج با تارگتِ
+    # بدون مقیاس به میانگین ثابت فرو می‌ریخت. حالا معیار قضاوت مستقیم است:
+    # MAE یک پیش‌بینی‌کنندهٔ ثابت (میانهٔ train) روی همان فولد ولید.
+    # اگر val_mae مدل از این عدد کمتر نباشد، مدل چیزی یاد نگرفته.
+    _units = getattr(dataset, "target_units", "pct") or "pct"
+    if role.name == "range" and 0 < resolved < len(dataset.series):
+        import statistics as _stats
+
+        _tcols = dataset.target_columns
+        _rows = dataset.series
+        _train_rows = _rows[: len(_rows) - resolved]
+        _val_rows = _rows[len(_rows) - resolved :]
+        if _train_rows and _val_rows:
+            _total = 0.0
+            for _c in _tcols:
+                _med = _stats.median(row[_c] for row in _train_rows)
+                _total += sum(abs(row[_c] - _med) for row in _val_rows) / len(_val_rows)
+            val_fold_baseline = _total / len(_tcols)
+            unit_tag = "ATR14" if _units == "atr" else "frac"
+            print(
+                f"  constant base  : {val_fold_baseline:.4f} {unit_tag} "
+                f"(MAE of always predicting the train median on the last "
+                f"{resolved} rows — the model must beat this)"
+            )
+
     try:
         import tensorflow  # noqa: F401
     except ImportError:
@@ -591,6 +616,17 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     )
 
     reporter = NullProgressReporter() if args.quiet else ConsoleProgressReporter()
+
+    # فاز ۹۵: گزارشگر با واحد درست ساخته شود — val_mae برای مدل ATR
+    # «ضریب ATR» است و دلارِ آن mult × ATR14 است، نه mult × قیمت.
+    _atr_last = None
+    if role.name == "range" and _units == "atr":
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+        _atr_value = atr_from_candles(candles, period=14)
+        _atr_last = float(_atr_value) if _atr_value else None
+    if not isinstance(reporter, NullProgressReporter):
+        reporter = ConsoleProgressReporter(target_units=_units, atr_reference=_atr_last or 0.0)
 
     # Phase 41: say what this will cost BEFORE starting. A 500-row window
     # over 50,000 candles is 12 GB if materialised; the operator saw the
@@ -676,6 +712,8 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         role,
         reference_price=float(candles[-1].close.amount),
         val_baseline=val_fold_baseline,
+        target_units=_units,
+        atr_reference=_atr_last,
     )
     save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
@@ -1024,6 +1062,8 @@ def print_quality(
     role,
     reference_price: float | None = None,
     val_baseline: float | None = None,
+    target_units: str = "pct",
+    atr_reference: float | None = None,
 ) -> None:
     """Report how good the model actually is, not just that it ran.
 
@@ -1077,17 +1117,46 @@ def print_quality(
     else:
         mae = final.get("val_mae", final.get("mae"))
         if mae is not None:
-            print(
-                f"\n    val_mae {mae:.6f} — average error of the predicted "
-                f"high/low offsets, as a fraction of price."
-            )
-            if reference_price is not None and reference_price > 0:
+            # فاز ۹۵: واحد پیام با واحد تارگت یکی باشد
+            if target_units == "atr":
                 print(
-                    f"    At {reference_price:.2f} on {getattr(role, 'timeframe', 'the market')}, "
-                    f"that is about {mae * reference_price:.2f} USD per bound."
+                    f"\n    val_mae {mae:.4f} ATR14 — average miss of the "
+                    f"predicted high/low, in ATR multiples."
                 )
+                if atr_reference is not None and atr_reference > 0:
+                    print(
+                        f"    With ATR14={atr_reference:.2f}, that is about "
+                        f"{mae * atr_reference:.2f} USD per bound."
+                    )
             else:
-                print("    USD translation skipped: no reference close was supplied.")
+                print(
+                    f"\n    val_mae {mae:.6f} — average error of the predicted "
+                    f"high/low offsets, as a fraction of price."
+                )
+                if reference_price is not None and reference_price > 0:
+                    tf_name = getattr(role, "timeframe", "the market")
+                    print(
+                        f"    At {reference_price:.2f} on {tf_name}, "
+                        f"that is about {mae * reference_price:.2f} USD per bound."
+                    )
+                else:
+                    print("    USD translation skipped: no reference close was supplied.")
+
+            # فاز ۹۵: حکم مستقیم مقابل پیش‌بینی ثابت — ریشهٔ مشکل آفست
+            # ثابت همین‌جا قابل سنجش است.
+            if val_baseline is not None:
+                if mae < val_baseline:
+                    print(
+                        f"    vs constant baseline {val_baseline:.4f}: the model "
+                        f"BEATS always predicting the train median by "
+                        f"{val_baseline - mae:.4f}."
+                    )
+                else:
+                    print(
+                        f"    vs constant baseline {val_baseline:.4f}: the model is "
+                        f"NO BETTER than a constant prediction — it has not "
+                        f"learned anything usable yet."
+                    )
 
             bound_labels = (
                 ("val_high_mae", "high MAE"),

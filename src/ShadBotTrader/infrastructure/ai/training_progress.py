@@ -202,6 +202,8 @@ elapsed 0:14 | eta 1:42
         stream: Optional[TextIO] = None,
         show_epochs: bool = True,
         bar_width: int = 28,
+        target_units: str = "pct",
+        atr_reference: float = 0.0,
     ) -> None:
         self._stream: TextIO = stream if stream is not None else sys.stdout
         self._show_epochs = show_epochs
@@ -212,6 +214,10 @@ elapsed 0:14 | eta 1:42
         self._epoch_start: float = 0.0
         self._completed_folds: int = 0
         self._last_batch_line: float = 0.0
+        # فاز ۹۵: واحد تارگت و ATR مرجع — تبدیل دلاریِ val_mae فقط با
+        # واحد درست انجام می‌شود (ATR mult × ATR، نه mult × قیمت).
+        self._target_units = target_units
+        self._atr_reference = float(atr_reference)
 
     # -- helpers ----------------------------------------------------------
     def _write(self, text: str) -> None:
@@ -240,7 +246,7 @@ elapsed 0:14 | eta 1:42
             return
 
         now = time.monotonic()
-        is_last = (batch + 1 >= total_batches)
+        is_last = batch + 1 >= total_batches
 
         # فقط سه نقطه ثابت: اول / وسط / آخر
         mid = total_batches // 2
@@ -271,10 +277,7 @@ elapsed 0:14 | eta 1:42
             remaining = (elapsed / (batch + 1)) * (total_batches - batch - 1)
             eta_str = f" | eta {format_duration(remaining)}"
 
-        self._write(
-            f"    {pct:5.1f}% batch {batch+1}/{total_batches}"
-            + metric_str + eta_str
-        )
+        self._write(f"    {pct:5.1f}% batch {batch+1}/{total_batches}" + metric_str + eta_str)
 
     def on_train_begin(self, plan: TrainingPlanInfo) -> None:
         self._plan = plan
@@ -321,36 +324,38 @@ elapsed 0:14 | eta 1:42
         # فاز ۵۲: خلاصه epoch به‌صورت یک خط واضح
         # برای مدل range: loss + val_loss + mae + val_mae
         # برای مدل signal: loss + val_loss + acc + val_acc
-        mae      = metrics.extra.get("mae")
-        val_mae  = metrics.extra.get("val_mae")
+        mae = metrics.extra.get("mae")
+        val_mae = metrics.extra.get("val_mae")
         is_range = mae is not None or val_mae is not None
 
         ep_tag = f"epoch {metrics.human_epoch:>3}/{metrics.total_epochs}"
 
         if is_range:
             # مدل range — مهم‌ترین عدد: val_mae
-            loss_str    = f"loss={_fmt(metrics.loss, 6)}"
-            vl_str      = f"val_loss={_fmt(metrics.val_loss, 6)}"
-            mae_str     = f"mae={_fmt(mae, 6)}"
-            vmae_str    = f"val_mae={_fmt(val_mae, 6)}"
+            loss_str = f"loss={_fmt(metrics.loss, 6)}"
+            vl_str = f"val_loss={_fmt(metrics.val_loss, 6)}"
+            mae_str = f"mae={_fmt(mae, 6)}"
+            vmae_str = f"val_mae={_fmt(val_mae, 6)}"
 
-            # تبدیل val_mae به دلار (XAUUSD ~ 3000 فعلاً، قابل تنظیم)
+            # تبدیل val_mae به دلار — فقط با واحد درست (فاز ۹۵):
+            # ATR-unit → mult × ATR14 مرجع؛ pct قدیمی → fraction × قیمت.
+            # بدون مرجعِ درست، عدد غلط ۲۶۵۰ نمایش داده نمیشود.
             usd_hint = ""
             if val_mae is not None:
-                # از آخرین reference_close اگه موجود بود استفاده کن
-                # وگرنه 2650 (میانگین مناسب)
-                ref = getattr(self, "_last_ref_price", 2650.0)
-                usd = val_mae * ref
-                usd_hint = f"  ~+-{usd:.2f}$"
+                if self._target_units == "atr" and self._atr_reference > 0:
+                    usd = val_mae * self._atr_reference
+                    usd_hint = f"  ~+-{usd:.2f}$ (ATR14={self._atr_reference:.2f})"
+                elif self._target_units == "pct":
+                    ref = getattr(self, "_last_ref_price", None)
+                    if ref:
+                        usd_hint = f"  ~+-{val_mae * ref:.2f}$"
 
-            self._write(
-                f"  {ep_tag} | {loss_str} | {vl_str} | {mae_str} | {vmae_str}{usd_hint}"
-            )
+            self._write(f"  {ep_tag} | {loss_str} | {vl_str} | {mae_str} | {vmae_str}{usd_hint}")
         else:
             # مدل signal — مهم‌ترین عدد: val_acc
             loss_str = f"loss={_fmt(metrics.loss, 4)}"
-            vl_str   = f"val_loss={_fmt(metrics.val_loss, 4)}"
-            parts    = [f"  {ep_tag}", loss_str, vl_str]
+            vl_str = f"val_loss={_fmt(metrics.val_loss, 4)}"
+            parts = [f"  {ep_tag}", loss_str, vl_str]
             if metrics.accuracy is not None:
                 parts.append(f"acc={_fmt(metrics.accuracy, 4)}")
             if metrics.val_accuracy is not None:
@@ -400,19 +405,29 @@ elapsed 0:14 | eta 1:42
         self._write("  TRAINING COMPLETE")
         self._write("=" * 74)
         if fold_losses:
-            best  = min(fold_losses)
+            best = min(fold_losses)
             worst = max(fold_losses)
-            mean  = sum(fold_losses) / len(fold_losses)
+            mean = sum(fold_losses) / len(fold_losses)
             final = fold_losses[-1]
             self._write(f"  folds        : {len(fold_losses)}")
             self._write(f"  val_loss best: {best:.6f}")
             self._write(f"  val_loss mean: {mean:.6f}")
             self._write(f"  val_loss last: {final:.6f}")
-            # نمایش به دلار اگه val_mae داریم (از extra metrics)
-            ref = getattr(self, "_last_ref_price", None)
-            if ref and hasattr(self, "_last_val_mae") and self._last_val_mae:
-                usd = self._last_val_mae * ref
-                self._write(f"  val_mae last : {self._last_val_mae:.6f} ~+-{usd:.2f}$ (ref={ref:.0f})")
+            # نمایش به دلار — فقط با واحد درست (فاز ۹۵)
+            _last_mae = getattr(self, "_last_val_mae", None)
+            if self._target_units == "atr" and self._atr_reference > 0 and _last_mae:
+                usd = _last_mae * self._atr_reference
+                self._write(
+                    f"  val_mae last : {_last_mae:.6f} "
+                    f"~+-{usd:.2f}$ (ATR14={self._atr_reference:.2f})"
+                )
+            else:
+                ref = getattr(self, "_last_ref_price", None)
+                if ref and _last_mae:
+                    usd = _last_mae * ref
+                    self._write(
+                        f"  val_mae last : {_last_mae:.6f} " f"~+-{usd:.2f}$ (ref={ref:.0f})"
+                    )
         self._write(f"  total time   : {format_duration(elapsed)}")
         self._write("=" * 74)
         self._write("")
@@ -447,9 +462,7 @@ def keras_progress_callback(
             # فاز ۵۲: همه metrics (از جمله mae/val_mae) را در extra ذخیره کن
             known = {"loss", "val_loss", "accuracy", "val_accuracy"}
             extra = {
-                key: float(value)
-                for key, value in logs.items()
-                if _as_float(value) is not None
+                key: float(value) for key, value in logs.items() if _as_float(value) is not None
             }
             # ذخیره val_mae برای نمایش نهایی
             if hasattr(reporter, "_last_val_mae") or "val_mae" in extra:

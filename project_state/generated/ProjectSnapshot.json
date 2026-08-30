@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "bde269c65f40fb7c9aec8a6a61dccf54d0fca94595e96b58e7420dc0adda52ac",
-      "size_bytes": 2409
+      "sha256": "1dd8f78ca89c2665272b9526ba239c2a8a7d49445e5225e52bd6df013cbf8b4f",
+      "size_bytes": 3478
     },
     {
       "category": "documentation",
@@ -842,6 +842,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE95_REPORT.md",
+      "sha256": "3b5a6a4ff5c66042d1f675d91d575cafe97f7c3a77e1733e76c4cfe12006fa14",
+      "size_bytes": 5841
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE_9_21_22_REPORT.md",
       "sha256": "6372fc197bb32f07bf2f3efec87d2a12e030958bfebbfc4d7814677ce20718e5",
       "size_bytes": 9198
@@ -951,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "5c7e273b6d68a8da722f7798b455959cc600386c5921cb6a8c8b2b3db01b9cf2",
-      "size_bytes": 140754
+      "sha256": "918c80749fc7e0efa884d0fdeb06b6b96931efb577c0889224eb920c93d4ec5f",
+      "size_bytes": 144609
     },
     {
       "category": "legacy",
@@ -2121,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "8ddb2f9c45601ddc0a717b8460c34db3283e4c3e4d1b130b46d364c16a3818a7",
-      "size_bytes": 48380
+      "sha256": "3b8243f2d9a29335bedc423e5f43e35fa4a9d0db7abeaffed9cbaf08dd1583dd",
+      "size_bytes": 52265
     },
     {
       "category": "script",
@@ -2289,8 +2295,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "45a4c94ade709c1f87f169bdf551cf380e5374b707c10947a3295e9876d09867",
-      "size_bytes": 22875
+      "sha256": "7bcfa0f6a0cecbc4ed05196b079eceb93fb0818902d454a60853fa5db28deec4",
+      "size_bytes": 22881
     },
     {
       "category": "source",
@@ -2301,8 +2307,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/feature_computation_service.py",
-      "sha256": "224932bc4f37903d82133db086b8fba7a90e292cacba1893710f8eb0a00d78d8",
-      "size_bytes": 13050
+      "sha256": "dca8fc1269fafe19f6b7568e52a6cfabab04ea0fcaaacaab77ecf803fbcf09eb",
+      "size_bytes": 13051
     },
     {
       "category": "source",
@@ -3165,8 +3171,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/feature_matrix.py",
-      "sha256": "97d8345e35a5e2edd19e29ae16267035c3e281f33ae74e9214784c237f281291",
-      "size_bytes": 20520
+      "sha256": "b1e673073abab58fc8983bd5675f00214bbe21e315c332b5aaa79b3bce6a62f6",
+      "size_bytes": 20525
     },
     {
       "category": "source",
@@ -3243,8 +3249,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/training_progress.py",
-      "sha256": "0b86a6158bd478f6b98ed46365cc548050206c9a65e62e943440191e25016fc4",
-      "size_bytes": 19362
+      "sha256": "4cdb345ce4b64373291057311a1a5c73c933c9a5bf3ead6af1e7dadfce02b9b2",
+      "size_bytes": 20318
     },
     {
       "category": "source",
@@ -3417,8 +3423,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/feature/calculator_registry.py",
-      "sha256": "15a3d2ca6564217dbf99a73a030774085f74a25c4dd6ed2bd88b3c673345762f",
-      "size_bytes": 6217
+      "sha256": "0fd148e0971c6d5a5ba2e4783804bc78b9675f879ef29eb0c6b21ffd397068a6",
+      "size_bytes": 6262
     },
     {
       "category": "source",
@@ -3555,8 +3561,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/feature/calculators/price_context.py",
-      "sha256": "5639a5c5565f5fad9c1dd79bcc5b422205d7ae54dcb99b2151d7d00959bc9c5c",
-      "size_bytes": 3388
+      "sha256": "b5b978d61f4f53b7184e03ca073e99735721cf78471c62bd8d5c43e7c32d6c10",
+      "size_bytes": 3313
     },
     {
       "category": "source",
@@ -3639,8 +3645,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/feature/feature_progress.py",
-      "sha256": "7548eadef9a40f690e043ffe584314ec681e9a50cd7e1fa0ba983701ba41f82a",
-      "size_bytes": 7323
+      "sha256": "5658bb85bcc9a36fb5850656d9ecfcfbe8b67283e12c048373198bc5b622a398",
+      "size_bytes": 7335
     },
     {
       "category": "source",
@@ -4472,6 +4478,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_training_progress_units.py",
+      "sha256": "857306303401ff9a35e7a0f3cf3d90140635f4424e9f051978a4f1f091e10ae1",
+      "size_bytes": 2305
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_validation_geometry.py",
       "sha256": "f483124b1fb7781bdd4d32539e1a05bc479b2fb684e1d48df63e8d7324f85e56",
       "size_bytes": 5764
@@ -4933,14 +4945,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T13:42:54.138435+00:00",
+  "generated_at": "2026-08-30T15:53:26.149394+00:00",
   "git": {
     "branch": "main",
-    "commit": "1f1515679cf81719cb1d35b043bd4a841b600b52",
+    "commit": "ce5676d707b44d10ca717a6a1f29485e0cfd9e74",
     "dirty": true,
-    "dirty_files": 53,
+    "dirty_files": 3,
     "is_repo": true,
     "recent_commits": [
+      "ce5676d docs: remove stale '109-feature' banner/help/docstrings",
+      "4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere",
       "1f15156 docs: root cause analysis \u2014 constant offset is a structural limitation, not a code bug",
       "dd52ad0 docs: range model constant-offset analysis \u2014 structural limitation of minmax-scaled input + percentage targets",
       "0ef5eeb Phase 94: fix bug 58 \u2014 statsHtml was const but received += Base price",
@@ -4948,9 +4962,7 @@
       "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black",
       "53b78ae Phase 92: fix forecast path never drawing on /data \u2014 renderForecast was missing forecastPath wiring",
       "bb21be6 Phase 91: vertical pan on the price axis (when zoomed)",
-      "8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom",
-      "39f3ed7 Phase 89: restore range model dropdown JS + extend candles to 5000",
-      "dc2dfc8 Phase 88: fix signal markers not drawing \u2014 index mismatch between computeSignals (local) and indexOf (global)"
+      "8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom"
     ]
   },
   "modules": [
@@ -10153,6 +10165,16 @@
     {
       "classes": 0,
       "external_imports": [],
+      "functions": 5,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.training_progress"
+      ],
+      "name": "unit.ai.test_training_progress_units",
+      "path": "tests/unit/ai/test_training_progress_units.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
       "functions": 8,
       "internal_imports": [
         "ShadBotTrader.application.services.dual_model_service",
@@ -11305,18 +11327,18 @@
   "statistics": {
     "class_count": 777,
     "config_file_count": 3,
-    "documentation_file_count": 139,
+    "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4410,
+    "function_count": 4415,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
-    "module_count": 455,
+    "module_count": 456,
     "source_file_count": 319,
-    "source_lines": 50119,
-    "test_file_count": 136,
-    "test_lines": 23039,
-    "total_file_count": 812,
-    "total_lines": 118014
+    "source_lines": 50138,
+    "test_file_count": 137,
+    "test_lines": 23113,
+    "total_file_count": 814,
+    "total_lines": 118178
   },
-  "test_file_count": 136
+  "test_file_count": 137
 }
