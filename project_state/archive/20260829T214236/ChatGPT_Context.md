@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T21:47:48.542841+00:00
+- Snapshot generated at: 2026-08-29T21:37:02.502068+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 2d0fd0c49eb038c46633f7bfc785f6a73a88c2d4
-- Dirty: yes (15 files)
+- Dirty: yes (1 files)
 - Recent commits:
   - 2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart
   - 983ed36 Phase 85: click any /data candle → per-step range forecast path from a chosen model
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116657
+- Total Python lines: 116547
 - Modules: 451
 - Classes: 765
 - Functions: 4362

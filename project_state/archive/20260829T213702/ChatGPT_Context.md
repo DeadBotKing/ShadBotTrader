@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-29T21:47:48.542841+00:00
+- Snapshot generated at: 2026-08-29T21:23:56.318344+00:00
 
 ## Current Architecture
 
@@ -27,10 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 2d0fd0c49eb038c46633f7bfc785f6a73a88c2d4
-- Dirty: yes (15 files)
+- Commit: 983ed36b776b3aa23ca4fee6e0de16b3eefeea2c
+- Dirty: yes (1 files)
 - Recent commits:
-  - 2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart
   - 983ed36 Phase 85: click any /data candle → per-step range forecast path from a chosen model
   - 5dc46a9 Phase 84: signal labels view on /data — operator-set threshold, first-passage markers
   - 2c4fa0d Phase 83: wheel scrolls time (MT-style), Ctrl+wheel zooms price
@@ -40,6 +39,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 7b59185 Phase 80: range horizon configurable in the dashboard
   - ea91da3 docs: 1H horizon sweep experiment plan (12/24/6/1) with exact commands
   - 026737b Phase 79: fix bug 55 — streamed range training fed [batch,2] labels to a seq2seq loss
+  - 8eb5612 Phase 78: build_trainer accepts and forwards ES/ReduceLR patience (fixes TypeError from Phase 74)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 133
 - Documentation files: 137
 - Legacy files: 176
-- Total Python lines: 116657
+- Total Python lines: 116590
 - Modules: 451
 - Classes: 765
 - Functions: 4362

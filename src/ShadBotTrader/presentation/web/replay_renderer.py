@@ -140,6 +140,19 @@ let playing = false;
 let timer = null;
 let loggedTrips = 0;
 
+// فاز ۸۱ — زوم قیمت و زمان (مثل متاتریدر)
+// priceZoom: ضریب بزرگ‌نمایی قیمت حول priceAnchor
+// viewStart: کندلِ اولِ پنجرهٔ دید (وقتی کاربر درگ/زوم زمانی کرده)
+let priceZoom = 1.0;
+let priceAnchor = null;    // قیمتِ زیر موس هنگام wheel
+let viewStart = null;      // null = از windowSel پیروی کن
+let dragX = null;
+
+// فاز ۸۶: ابزارهای ترسیم
+let drawMode = null;
+let pendingPoint = null;
+let drawnLines = []; // {type, x1, y1, x2, y2, price1, t1}
+
 scrub.max = Math.max(bars.length - 1, 0);
 
 function fmt(value, digits) {
@@ -159,10 +172,23 @@ function resize() {
 }
 
 function visibleRange() {
-  const size = parseInt(windowSel.value, 10);
   const end = cursor + 1;
+  if (viewStart !== null) {
+    // حالت زوم/درگ دستی — تا وقتی reset نشده، همان پنجره می‌ماند
+    const size = parseInt(windowSel.value, 10);
+    const start = Math.max(0, Math.min(viewStart, Math.max(0, bars.length - size)));
+    return [start, Math.min(bars.length, start + size)];
+  }
+  const size = parseInt(windowSel.value, 10);
   const start = Math.max(0, end - size);
   return [start, end];
+}
+
+function resetZoom() {
+  priceZoom = 1.0;
+  priceAnchor = null;
+  viewStart = null;
+  draw();
 }
 
 function draw() {
@@ -190,6 +216,14 @@ function draw() {
   if (hi === lo) { hi += 1; lo -= 1; }
   if (eqHi === eqLo) { eqHi += 1; eqLo -= 1; }
 
+  // فاز ۸۱: زوم قیمت — باند را حول priceAnchor به نسبت priceZoom جمع کن
+  if (priceZoom > 1.0) {
+    const anchor = priceAnchor !== null ? priceAnchor : (hi + lo) / 2;
+    const span = (hi - lo) / priceZoom;
+    hi = anchor + span / 2;
+    lo = anchor - span / 2;
+  }
+
   const plotW = width - padL - padR;
   const step = plotW / slice.length;
   const bodyW = Math.max(1.5, Math.min(11, step * 0.62));
@@ -207,6 +241,18 @@ function draw() {
     const y = Math.round(yPrice(price)) + 0.5;
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(width - padR, y); ctx.stroke();
     ctx.fillText(price.toFixed(2), width - padR + 6, y + 3);
+  }
+
+  // ── فاز ۸۶: زمان روی محور X ──
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '9.5px ui-monospace, monospace';
+  const timeStep = Math.max(1, Math.floor(slice.length / Math.min(8, slice.length)));
+  for (let i = 0; i < slice.length; i += timeStep) {
+    const b = slice[i];
+    if (!b.t) continue;
+    const x = xOf(i);
+    const dt = b.t.replace('T', ' ').slice(5, 16);
+    ctx.fillText(dt, x - 28, height - 8);
   }
 
   // candles
@@ -305,6 +351,40 @@ function draw() {
         ctx.stroke();
       }
     });
+  });
+
+  // ── فاز ۸۶: خطوط ترسیمی ──
+  drawnLines.forEach(line => {
+    ctx.lineWidth = 1.5;
+    if (line.type === 'trend') {
+      ctx.strokeStyle = '#5ec8e8';
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+    } else if (line.type === 'h') {
+      ctx.strokeStyle = 'rgba(240,166,60,.7)';
+      ctx.setLineDash([6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(8, line.y1);
+      ctx.lineTo(canvas.clientWidth - 62, line.y1);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (line.type === 'v') {
+      ctx.strokeStyle = 'rgba(240,166,60,.7)';
+      ctx.setLineDash([6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(line.x1, 8);
+      ctx.lineTo(line.x1, priceH - 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (line.t1) {
+        ctx.fillStyle = 'rgba(240,166,60,.9)';
+        ctx.font = '9px ui-monospace, monospace';
+        ctx.fillText(line.t1.replace('T',' ').slice(5, 16), line.x1 + 3, priceH - 12);
+      }
+    }
+    ctx.lineWidth = 1;
   });
 
   // equity strip
@@ -441,6 +521,50 @@ function pause() {
 
 playBtn.addEventListener('click', () => playing ? pause() : play());
 document.getElementById('step').addEventListener('click', () => { pause(); stepForward(); });
+// ── فاز ۸۶: ابزارهای ترسیم ──
+function setTool(tool) {
+  drawMode = (drawMode === tool) ? null : tool;
+  pendingPoint = null;
+  document.querySelectorAll('#tool-trend,#tool-hline,#tool-vline')
+    .forEach(b => b.classList.remove('on'));
+  if (drawMode) {
+    const suffix = drawMode === 'trend' ? 'trend' : drawMode === 'hline' ? 'hline' : 'vline';
+    const btn = document.getElementById('tool-' + suffix);
+    if (btn) btn.classList.add('on');
+  }
+}
+['trend','hline','vline'].forEach(suffix => {
+  const btn = document.getElementById('tool-' + suffix);
+  if (btn) btn.addEventListener('click', () => setTool(suffix));
+});
+const clearBtn = document.getElementById('tool-clear');
+if (clearBtn) clearBtn.addEventListener('click', () => { drawnLines = []; draw(); });
+
+canvas.addEventListener('click', e => {
+  if (!drawMode) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  if (drawMode === 'hline') {
+    drawnLines.push({ type: 'h', y1: my });
+    draw();
+  } else if (drawMode === 'vline') {
+    const [start, end] = visibleRange();
+    const slice = bars.slice(start, end);
+    const plotW = canvas.clientWidth - 8 - 62;
+    const stepW = plotW / Math.max(1, slice.length);
+    const rel = (mx - 8) / stepW;
+    const barIdx = start + Math.floor(rel);
+    const bar = bars[barIdx];
+    drawnLines.push({ type: 'v', x1: mx, t1: bar ? bar.t : '' });
+    draw();
+  } else if (drawMode === 'trend') {
+    if (!pendingPoint) { pendingPoint = { x: mx, y: my }; return; }
+    drawnLines.push({ type: 'trend', x1: pendingPoint.x, y1: pendingPoint.y, x2: mx, y2: my });
+    pendingPoint = null;
+    draw();
+  }
+});
 document.getElementById('back').addEventListener('click', () => {
   pause();
   if (cursor > 0) { cursor -= 1; paint(); }
@@ -457,8 +581,68 @@ scrub.addEventListener('input', () => {
   paint();
 });
 speedSel.addEventListener('change', () => { if (playing) { pause(); play(); } });
-windowSel.addEventListener('change', draw);
+windowSel.addEventListener('change', () => { viewStart = null; draw(); });
 window.addEventListener('resize', resize);
+
+// ── فاز ۸۱: تعاملات موس (زوم قیمت با wheel، پن زمان با درگ) ──
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const [start, end] = visibleRange();
+  const size = end - start;
+
+  // فاز ۸۲: Ctrl+wheel = زوم قیمت (حول قیمت زیر موس)
+  if (e.ctrlKey) {
+    const rect = canvas.getBoundingClientRect();
+    const slice = bars.slice(start, end);
+    if (!slice.length) return;
+    const priceH = 420 * 0.72;
+    let hi = -Infinity, lo = Infinity;
+    slice.forEach(b => { if (b.h > hi) hi = b.h; if (b.l < lo) lo = b.l; });
+    if (priceZoom > 1.0 && priceAnchor !== null) {
+      const span = (hi - lo) / priceZoom;
+      hi = priceAnchor + span / 2;
+      lo = priceAnchor - span / 2;
+    }
+    const plotW = rect.width - 8 - 62;
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left - 8) / plotW));
+    const mousePrice = hi - rel * (hi - lo);
+
+    const factor = e.deltaY < 0 ? 1.25 : 1 / 1.25;
+    priceZoom = Math.min(30, Math.max(1.0, priceZoom * factor));
+    priceAnchor = mousePrice;
+    if (priceZoom === 1.0) priceAnchor = null;
+    draw();
+    return;
+  }
+
+  // فاز ۸۲: wheel = اسکرول زمان (مثل متاتریدر) — جلو/عقب بین کندل‌ها
+  const step = Math.max(1, Math.round(size / 15));
+  const shift = (e.deltaY < 0 ? -1 : 1) * step;
+  if (viewStart === null) viewStart = start;
+  viewStart = Math.max(0, Math.min(bars.length - size, viewStart + shift));
+  draw();
+}, { passive: false });
+
+canvas.addEventListener('mousedown', e => { dragX = e.clientX; });
+canvas.addEventListener('mousemove', e => {
+  if (dragX === null) return;
+  const dx = e.clientX - dragX;
+  if (Math.abs(dx) < 6) return;         // آستانهٔ درگ
+  dragX = e.clientX;
+  const size = parseInt(windowSel.value, 10);
+  const [start, end] = visibleRange();
+  const plotW = canvas.clientWidth - 8 - 62;
+  const stepPx = plotW / Math.max(1, end - start);
+  const shift = Math.round(dx / stepPx);
+  if (shift === 0) return;
+  viewStart = Math.max(0, Math.min(bars.length - size, (viewStart ?? start) + shift));
+  draw();
+});
+canvas.addEventListener('mouseup', () => { dragX = null; });
+canvas.addEventListener('mouseleave', () => { dragX = null; });
+
+// دکمهٔ ریست زوم
+document.getElementById('zoom-reset').addEventListener('click', resetZoom);
 document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
   if (e.code === 'ArrowRight') { pause(); stepForward(); }
@@ -574,6 +758,18 @@ def render_replay(
       <option value="250">250 bars</option>
       <option value="10000">All</option>
     </select>
+  </div>
+  <div class="controls" style="margin-top:6px">
+    <button id="zoom-reset" class="ghost" type="button">&#8634; Reset zoom</button>
+    <span style="color:#8b949e;align-self:center;font-size:12px">
+      wheel = اسکرول زمان · Ctrl+wheel = زوم قیمت · درگ = جابجایی
+    </span>
+  </div>
+  <div class="controls" style="margin-top:4px">
+    <button id="tool-trend" class="ghost" type="button" title="خط روند">╱ Trend</button>
+    <button id="tool-hline" class="ghost" type="button" title="خط افقی">─ H-Line</button>
+    <button id="tool-vline" class="ghost" type="button" title="خط عمودی">│ V-Line</button>
+    <button id="tool-clear" class="ghost" type="button">&#10005; Clear</button>
   </div>
   <div class="legend">
     <span><span class="dot" style="background:#58a6ff"></span>entry fill</span>
