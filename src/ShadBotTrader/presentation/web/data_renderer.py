@@ -540,7 +540,7 @@ function renderForecast(f, localIdx, symbolTf) {
   if (!rfPanel) return;
   rfPanel.style.display = '';
   const anchorTime = f.anchor_time.replace('T', ' ').slice(0, 16);
-  const statsHtml =
+  let statsHtml =
     `<div class="stat"><div class="k">Model</div>` +
     `<div class="v">${f.model_id} v${f.model_version}</div></div>` +
     `<div class="stat"><div class="k">Anchor</div>` +

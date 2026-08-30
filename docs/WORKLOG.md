@@ -2719,3 +2719,30 @@ ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 
 جدول حالا «Base price» هم نشان می‌دهد تا کاربر بداند آفست‌ها نسبت به
 کدام قیمت محاسبه شده‌اند (close کندل انتخابی).
+
+---
+
+## 2026-08-30 — فاز ۹۴: باگ ۵۸ — statsHtml const ولی += داشت
+
+**گزارش اپراتور:** «[X] Assignment to constant variable» در rf-status
+و مسیر پیش‌بینی روی چارت رسم نمی‌شد.
+
+### ریشه
+
+`renderForecast` در فاز ۸۵-ب اضافه شد ولی `statsHtml` را `const` تعریف
+کرده بود و بعداً با `+=` مقدار Base price را اضافه می‌کرد → TypeError
+در مرورگر → کل تابع abort می‌شد → `forecastPath` هرگز ست نمی‌شد →
+چارت هیچ مسیری رسم نمی‌کرد.
+
+### رفع
+
+`const statsHtml` → `let statsHtml`
+
+### تأیید
+
+`forecastPath` بعد از `renderForecast` مقدار دارد:
+`{"localIdx":0,"points":[{"high":101,"low":99}]}` ✓
+
+```
+ruff ✅ black ✅  pytest 1504 passed, 54 skipped
+```

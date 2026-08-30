@@ -939,8 +939,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "e1f7e723075bebc6c5679eaca3299e59ee9f44ba32f2ea398084a4dfacbf9167",
-      "size_bytes": 139082
+      "sha256": "e075c06fa7e1f80201742985d5e4f6a6067454940dd171f036bb96bf3f9aef44",
+      "size_bytes": 139891
     },
     {
       "category": "legacy",
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "97b679a69d8d5a6238ddafca829043dedb412e784b08f15a7572d7d5f0248f17",
-      "size_bytes": 39624
+      "sha256": "78556338f7512762165dd23909425cf251281c9f6ba1604e3485efe36525e7c6",
+      "size_bytes": 39622
     },
     {
       "category": "source",
@@ -4897,14 +4897,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T10:44:26.417027+00:00",
+  "generated_at": "2026-08-30T11:29:26.064172+00:00",
   "git": {
     "branch": "main",
-    "commit": "1e66be82351d5fd88b0ecd08ba74eaf9506839c7",
+    "commit": "0b008a9dd26d0314f3a0f245c66d7e0a64a7705b",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table",
       "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black",
       "53b78ae Phase 92: fix forecast path never drawing on /data \u2014 renderForecast was missing forecastPath wiring",
       "bb21be6 Phase 91: vertical pan on the price axis (when zoomed)",
@@ -4913,8 +4914,7 @@
       "dc2dfc8 Phase 88: fix signal markers not drawing \u2014 index mismatch between computeSignals (local) and indexOf (global)",
       "e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite",
       "e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts",
-      "2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart",
-      "983ed36 Phase 85: click any /data candle \u2192 per-step range forecast path from a chosen model"
+      "2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart"
     ]
   },
   "modules": [
