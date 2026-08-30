@@ -32,7 +32,11 @@ class RangeForecastPath:
     reference_close: float  # closeِ آخرین کندلِ پنجره (= کندل انتخابی)
     points: List[Dict[str, Any]] = field(default_factory=list)
     # هر نقطه: {"k": 1..horizon, "high": $, "low": $}
+    # فاز ۹۵: برای مدل ATR هر نقطه high_atr_mult/low_atr_mult هم دارد
     warning: str = ""
+    # فاز ۹۵: واحد تارگت مدل ("pct" یا "atr") و ATR مرجع
+    target_units: str = "pct"
+    atr_reference: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -45,6 +49,8 @@ class RangeForecastPath:
             "reference_close": self.reference_close,
             "points": self.points,
             "warning": self.warning,
+            "target_units": self.target_units,
+            "atr_reference": self.atr_reference,
         }
 
 
@@ -187,8 +193,29 @@ class RangeForecastInspector:
         if artifact is None:
             raise ValidationError(f"weights for {record.model_id} v{record.version} missing")
 
-        predictor = RangePredictor(horizon=horizon, timeframe=record.timeframe or timeframe)
+        predictor = RangePredictor(
+            horizon=horizon,
+            timeframe=record.timeframe or timeframe,
+            target_units=getattr(record, "target_units", "pct") or "pct",
+        )
         window_rows = [list(row) for row in matrix.rows[-window_size:]]
+
+        # فاز ۹۵: مدل ATR برای تبدیل ضرایب به قیمت به ATR(14) همان کندل
+        # نیاز دارد — فقط از تاریخچهٔ تا کندل انتخابی (علیت).
+        target_units = predictor.target_units
+        atr_reference_value = 0.0
+        if target_units == "atr":
+            from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+            atr_value = atr_from_candles(candles[: bar_index + 1], period=14)
+            if atr_value is None or atr_value <= 0:
+                raise ValidationError(
+                    "ATR(14) is not available at the selected candle; cannot "
+                    "convert the ATR-unit forecast into prices"
+                )
+            atr_reference_value = float(atr_value)
+        out.target_units = target_units
+        out.atr_reference = atr_reference_value
 
         # ‼️ برای گرفتن کل مسیر (نه فقط worst-case) از خروجی خام استفاده می‌کنیم
         model = predictor._load(artifact) if hasattr(predictor, "_load") else None
@@ -213,17 +240,35 @@ class RangeForecastInspector:
         reference = float(anchor.close.amount)
 
         for k in range(horizon):
-            high_off = float(last_step[k * 2])
-            low_off = float(last_step[k * 2 + 1])
-            out.points.append(
-                {
-                    "k": k + 1,
-                    "high": reference * (1.0 + high_off),
-                    "low": reference * (1.0 + low_off),
-                    "high_offset": high_off,
-                    "low_offset": low_off,
-                }
-            )
+            raw_high = float(last_step[k * 2])
+            raw_low = float(last_step[k * 2 + 1])
+            if target_units == "atr":
+                # فاز ۹۵: خروجی مدل ضرایب ATR است — قیمت = close + mult×ATR
+                high_price = reference + raw_high * atr_reference_value
+                low_price = reference + raw_low * atr_reference_value
+                high_off = raw_high * atr_reference_value / reference
+                low_off = raw_low * atr_reference_value / reference
+                out.points.append(
+                    {
+                        "k": k + 1,
+                        "high": high_price,
+                        "low": low_price,
+                        "high_offset": high_off,
+                        "low_offset": low_off,
+                        "high_atr_mult": raw_high,
+                        "low_atr_mult": raw_low,
+                    }
+                )
+            else:
+                out.points.append(
+                    {
+                        "k": k + 1,
+                        "high": reference * (1.0 + raw_high),
+                        "low": reference * (1.0 + raw_low),
+                        "high_offset": raw_high,
+                        "low_offset": raw_low,
+                    }
+                )
 
         if horizon > n_pairs:
             out.warning = f"model outputs {n_pairs} steps but record horizon is {horizon}"

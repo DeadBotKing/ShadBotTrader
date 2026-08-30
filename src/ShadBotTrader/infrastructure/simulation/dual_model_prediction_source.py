@@ -61,9 +61,14 @@ class DualModelPredictionSource(PredictionSource):
         reward_risk_multiplier: Optional[float] = None,
         spread: Optional[Decimal] = None,
         spread_pct: Optional[Decimal] = None,
+        range_target_units: str = "pct",
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
+        if range_target_units not in ("pct", "atr"):
+            raise ValidationError(
+                f"Unknown range target units: {range_target_units!r} (use 'pct' or 'atr')"
+            )
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if not 0.0 <= hold_confidence_penalty <= 1.0:
@@ -90,6 +95,10 @@ class DualModelPredictionSource(PredictionSource):
         self._reward_risk_multiplier = reward_risk_multiplier
         self._spread_fixed = spread
         self._spread_pct_val = spread_pct
+        # فاز ۹۵: واحد تارگت مدل رنج — "atr" نیاز به ATR مرجع داره
+        self._range_target_units = range_target_units
+        self._atr_cache_key: Any = None
+        self._atr_cache_value: float = 0.0
         self._signal_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(signal_candles)
         }
@@ -177,6 +186,7 @@ class DualModelPredictionSource(PredictionSource):
             "signal_window_size": self._signal_window_size,
             "range_window_size": self._range_window_size,
             "min_signal_confidence": self._min_signal_confidence,
+            "range_target_units": self._range_target_units,
         }
 
     # ------------------------------------------------------------- port --
@@ -269,11 +279,17 @@ class DualModelPredictionSource(PredictionSource):
 
         latest_range = self._range_candles[-1]
         try:
+            # فاز ۹۵: فقط مدل‌های ATR-unit کلمهٔ atr_reference را می‌گیرند —
+            # پیش‌بینی‌کننده‌های قدیمی (همان امضای فاز ۲۹) بی‌تغییر کار می‌کنند.
+            forecast_kwargs: Dict[str, Any] = {}
+            if self._range_target_units == "atr":
+                forecast_kwargs["atr_reference"] = self._reference_atr(latest_range)
             self._last_range = self._range_predictor.forecast(
                 self._range_artifact,
                 range_window,
                 reference_close=float(latest_range.close.amount),
                 generated_at=str(latest_range.open_time),
+                **forecast_kwargs
             )
             self._range_predictions += 1
         except Exception as error:
@@ -282,6 +298,30 @@ class DualModelPredictionSource(PredictionSource):
             self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._last_range = None
         return self._last_value
+
+    def _reference_atr(self, latest_range: Candle) -> Optional[float]:
+        """ATR(period) at the latest closed range candle (فاز ۹۵).
+
+        Only ATR-unit models need it; for them it de-normalizes the
+        forecast back into dollars. Computed causally over the already
+        delivered range candles — never a future one — and memoized per
+        range bar because several 5M events share one range candle.
+        """
+        if self._range_target_units != "atr":
+            return None
+        key = latest_range.open_time.value
+        if self._atr_cache_key == key:
+            return self._atr_cache_value
+        candles = list(self._range_candles)
+        if len(candles) < 2:
+            return None
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+        value = atr_from_candles(candles, period=14)
+        value = float(value) if value is not None else 0.0
+        self._atr_cache_key = key
+        self._atr_cache_value = value
+        return value if value > 0 else None
 
     def confidence(self, event: MarketEvent) -> float:
         """Confidence of the latest signal forecast."""
@@ -302,6 +342,8 @@ class DualModelPredictionSource(PredictionSource):
         self._last_value = None
         self._last_error = ""
         self._error_counts = {}
+        self._atr_cache_key = None
+        self._atr_cache_value = 0.0
 
     # -------------------------------------------------------- brackets --
     def bracket_for(

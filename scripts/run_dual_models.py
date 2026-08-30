@@ -525,6 +525,15 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     print(f"  usable rows    : {summary['rows']}")
     print(f"  feature columns: {summary['feature_columns']}")
     print(f"  dropped warmup : {summary['dropped_warmup']}")
+    if role.name == "range":
+        # فاز ۹۵: واحد تارگت صریح — ATR یعنی مدل «چند ATR» یاد میگیرد
+        units = summary.get("target_units", "pct")
+        detail = (
+            "(offset = (future − close) / ATR14 — price = close + mult × ATR14)"
+            if units == "atr"
+            else "(offset = (future − close) / close — legacy)"
+        )
+        print(f"  target units   : {units} {detail}")
     print(
         f"  causal input  : {summary.get('feature_columns', 0)} features; "
         f"excluded {summary.get('excluded_features', 0)} non-causal/unknown"
@@ -676,16 +685,44 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
 
     if role.name == "range":
         from ShadBotTrader.infrastructure.ai.dual_predictor import RangePredictor
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
 
-        forecast = RangePredictor(horizon=role.horizon, timeframe=timeframe).forecast(
-            outcome["artifact"], window, reference_close=last_close
+        target_units = getattr(dataset, "target_units", "pct") or "pct"
+        atr_reference = None
+        if target_units == "atr":
+            # فاز ۹۵: مدل ATR به ATR(14) کندل مرجع نیاز دارد
+            atr_value = atr_from_candles(candles, period=14)
+            atr_reference = float(atr_value) if atr_value else None
+
+        forecast = RangePredictor(
+            horizon=role.horizon, timeframe=timeframe, target_units=target_units
+        ).forecast(
+            outcome["artifact"],
+            window,
+            reference_close=last_close,
+            atr_reference=atr_reference,
         )
         print(f"\n  PREDICTION for the next {role.horizon} {timeframe} candles:")
         print(f"    current close  : {forecast.reference_close:.2f}")
-        print(
-            f"    highest high   : {forecast.predicted_high:.2f} " f"({forecast.high_offset:+.3%})"
-        )
-        print(f"    lowest low     : {forecast.predicted_low:.2f} " f"({forecast.low_offset:+.3%})")
+        if target_units == "atr":
+            print(f"    ATR(14) ref    : {forecast.atr_reference:.2f}")
+            print(
+                f"    highest high   : {forecast.predicted_high:.2f} "
+                f"({forecast.high_atr_mult:+.2f}×ATR | {forecast.high_offset:+.3%})"
+            )
+            print(
+                f"    lowest low     : {forecast.predicted_low:.2f} "
+                f"({forecast.low_atr_mult:+.2f}×ATR | {forecast.low_offset:+.3%})"
+            )
+        else:
+            print(
+                f"    highest high   : {forecast.predicted_high:.2f} "
+                f"({forecast.high_offset:+.3%})"
+            )
+            print(
+                f"    lowest low     : {forecast.predicted_low:.2f} "
+                f"({forecast.low_offset:+.3%})"
+            )
         ratio = forecast.reward_risk()
         print(f"    reward / risk  : {'n/a' if ratio is None else f'{ratio:.2f}'}")
         if not forecast.is_coherent:
@@ -855,6 +892,12 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
                 learning_rate=float(logs.get("learning_rate", learning_rate)),
                 loss_function=role.loss,
                 horizon=int(role.horizon),
+                # فاز ۹۵: واحد تارگت — مدل رنج ATR پس پیش‌بینی در ضرایب ATR است
+                target_units=(
+                    (getattr(dataset, "target_units", "pct") or "pct")
+                    if role.name == "range"
+                    else "pct"
+                ),
                 metrics={k: float(v) for k, v in logs.items()},
                 note=(f"best epoch {epoch + 1}/{total_epochs} " f"({metric_name} {score:.6f})"),
             )
@@ -962,6 +1005,10 @@ def save_model(
         learning_rate=float(learning_rate),
         loss_function=role.loss,
         horizon=int(role.horizon),
+        # فاز ۹۵: واحد تارگت — مدل رنج ATR پس پیش‌بینی در ضرایب ATR است
+        target_units=(
+            (getattr(dataset, "target_units", "pct") or "pct") if role.name == "range" else "pct"
+        ),
         metrics={key: float(value) for key, value in metrics.items()},
     )
     path = catalogue.write(record)

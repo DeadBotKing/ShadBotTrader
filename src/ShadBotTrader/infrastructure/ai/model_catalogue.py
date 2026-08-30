@@ -69,6 +69,11 @@ class ModelRecord:
     trained_at: str = ""
     metrics: Dict[str, float] = field(default_factory=dict)
     note: str = ""
+    #: Normalization of the range model's training targets (فاز ۹۵):
+    #: "pct" = fraction of close (legacy), "atr" = ATR multiples.
+    #: The predictor needs this to convert outputs back into prices.
+    #: Signal models always carry the default "pct" (unused).
+    target_units: str = "pct"
 
     @property
     def threshold_percent(self) -> str:
@@ -111,6 +116,7 @@ class ModelRecord:
             "trained_at": self.trained_at,
             "metrics": dict(self.metrics),
             "note": self.note,
+            "target_units": self.target_units,
         }
 
     @classmethod
@@ -136,6 +142,7 @@ class ModelRecord:
                 str(key): float(value) for key, value in (payload.get("metrics") or {}).items()
             },
             note=str(payload.get("note", "")),
+            target_units=str(payload.get("target_units", "") or "pct"),
         )
 
     def summary_lines(self) -> List[str]:

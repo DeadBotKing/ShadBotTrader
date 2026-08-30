@@ -324,7 +324,7 @@ class TestComputeFeaturesCommand:
         # counts moved into the detail lines because one run may now
         # cover several timeframes.
         assert "5M" in result.message
-        assert "227" in "\n".join(result.lines)
+        assert "229" in "\n".join(result.lines)
         assert any("feature set" in line for line in result.lines)
 
     def test_the_definitions_reach_the_database(self, tmp_path):
@@ -342,7 +342,7 @@ class TestComputeFeaturesCommand:
         database = Database(database_path)
         stored = database.row_count("feature_definition")
         database.close()
-        assert stored == 227
+        assert stored == 229
 
     def test_the_service_contract_the_handler_relies_on_exists(self):
         """Guards the exact mismatch that caused the bug."""

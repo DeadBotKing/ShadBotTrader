@@ -5,8 +5,11 @@ signal model is deliberately binary: it predicts only SELL or BUY.  HOLD
 is not a model class; the strategy may still return a HOLD decision when a
 probability threshold, range check or risk rule says not to trade.
 
-Both price-range targets are expressed as fractions of the current close
-rather than absolute prices.
+Price-range targets are expressed as dimensionless offsets rather than
+absolute prices: fractions of the current close for legacy ``"pct"``
+models, ATR multiples for the فاز ۹۵ ``"atr"`` models (the pct target
+made every prediction collapse to one constant percentage; see
+``docs/Report/PHASE95_REPORT.md``).
 """
 
 from __future__ import annotations
@@ -94,7 +97,21 @@ class PredictionTarget:
 
 @dataclass(frozen=True)
 class RangeForecast:
-    """Predicted price extremes over the horizon."""
+    """Predicted price extremes over the horizon.
+
+    ``target_units`` declares how ``high_offset``/``low_offset`` read:
+
+    * ``"pct"`` (legacy) — fractions of ``reference_close``;
+      ``predicted_high = reference_close · (1 + high_offset)``.
+    * ``"atr"`` (فاز ۹۵) — ATR multiples;
+      ``predicted_high = reference_close + high_atr_mult · atr_reference``.
+      ``high_offset`` is kept in sync as the equivalent fraction so every
+      existing percent display stays honest.
+
+    The ATR conversion happens once, here and in the predictor — every
+    consumer (bracket, backtest, strategy, GUI) keeps reading absolute
+    prices and never needs to know the model's target units.
+    """
 
     reference_close: float
     high_offset: float
@@ -102,17 +119,35 @@ class RangeForecast:
     horizon: int
     timeframe: str = ""
     generated_at: str = ""
+    target_units: str = "pct"
+    #: ATR(period) at the reference candle; only meaningful for "atr".
+    atr_reference: float = 0.0
+    high_atr_mult: float = 0.0
+    low_atr_mult: float = 0.0
 
     def __post_init__(self) -> None:
         if self.reference_close <= 0:
             raise ValidationError("reference_close must be positive")
+        if self.target_units not in ("pct", "atr"):
+            raise ValidationError(
+                f"Unknown range target units: {self.target_units!r} (use 'pct' or 'atr')"
+            )
+        if self.target_units == "atr" and self.atr_reference <= 0:
+            raise ValidationError(
+                "An ATR-unit forecast needs a positive atr_reference; without "
+                "it the ATR multiples cannot be turned into prices"
+            )
 
     @property
     def predicted_high(self) -> float:
+        if self.target_units == "atr":
+            return self.reference_close + self.high_atr_mult * self.atr_reference
         return self.reference_close * (1.0 + self.high_offset)
 
     @property
     def predicted_low(self) -> float:
+        if self.target_units == "atr":
+            return self.reference_close + self.low_atr_mult * self.atr_reference
         return self.reference_close * (1.0 + self.low_offset)
 
     @property
@@ -152,6 +187,10 @@ class RangeForecast:
             "horizon": self.horizon,
             "timeframe": self.timeframe,
             "generated_at": self.generated_at,
+            "target_units": self.target_units,
+            "atr_reference": self.atr_reference,
+            "high_atr_mult": self.high_atr_mult,
+            "low_atr_mult": self.low_atr_mult,
         }
 
 

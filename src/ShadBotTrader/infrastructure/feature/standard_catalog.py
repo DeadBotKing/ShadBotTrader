@@ -394,6 +394,9 @@ def _build_definitions() -> List[FeatureDefinition]:
         _definition("kalman_gain",     "Kalman Gain",                   FeatureType.STATISTICAL,  {"kind": "kalman_gain",      "Q": 1e-3, "R": 1e-2},  1,  "price_filter", description="Kalman Gain — نزدیک 1=نویز بالا، نزدیک 0=روند پایدار"),
         _definition("kalman_residual", "Kalman Residual (Innovation)",  FeatureType.STATISTICAL,  {"kind": "kalman_residual",  "Q": 1e-3, "R": 1e-2},  1,  "price_filter", description="خطای نوآوری Kalman — قیمت منهای تخمین"),
         _definition("kalman_distance", "Price vs Kalman (relative)",    FeatureType.MOMENTUM,     {"kind": "kalman_distance",  "Q": 1e-3, "R": 1e-2},  1,  "price_filter", description="فاصله نسبی قیمت از Kalman — مثبت=بالاتر از روند"),
+        # فاز ۹۴: فیچرهای موقعیت قیمت — scale-invariant ratios
+        _definition("close_div_sma_20", "Close / SMA 20 (position)",  FeatureType.MOMENTUM,  {"period": 20},  20, "price_context", description="نسبت قیمت به SMA20 — 1.0=روی میانگین"),
+        _definition("close_div_sma_50", "Close / SMA 50 (position)",  FeatureType.MOMENTUM,  {"period": 50},  50, "price_context", description="نسبت قیمت به SMA50 — به مدل مقیاس قیمت را می‌دهد"),
     ]
     # Savitzky-Golay causal
     definitions += [

@@ -5,43 +5,54 @@ from __future__ import annotations
 from typing import Dict
 
 from ShadBotTrader.domain.feature.ports import FeatureCalculator
+from ShadBotTrader.infrastructure.feature.calculators.adaptive_filters import (
+    AdaptiveFiltersCalculator,
+)
 from ShadBotTrader.infrastructure.feature.calculators.atr import AtrCalculator
 from ShadBotTrader.infrastructure.feature.calculators.balance import BalanceCalculator
 from ShadBotTrader.infrastructure.feature.calculators.bollinger import BollingerCalculator
 from ShadBotTrader.infrastructure.feature.calculators.bollinger_bands import (
     BollingerBandsCalculator,
 )
-from ShadBotTrader.infrastructure.feature.calculators.adaptive_filters import AdaptiveFiltersCalculator
 from ShadBotTrader.infrastructure.feature.calculators.candle_pattern import CandlePatternCalculator
 from ShadBotTrader.infrastructure.feature.calculators.divergence import DivergenceCalculator
-from ShadBotTrader.infrastructure.feature.calculators.ehlers_advanced import EhlersAdvancedCalculator
+from ShadBotTrader.infrastructure.feature.calculators.ehlers_advanced import (
+    EhlersAdvancedCalculator,
+)
 from ShadBotTrader.infrastructure.feature.calculators.ehlers_cycle import EhlersCycleCalculator
-from ShadBotTrader.infrastructure.feature.calculators.fractal_stats import FractalStatsCalculator
-from ShadBotTrader.infrastructure.feature.calculators.prado_features import PradoFeaturesCalculator
-from ShadBotTrader.infrastructure.feature.calculators.structure_features import StructureFeaturesCalculator
 from ShadBotTrader.infrastructure.feature.calculators.ema import EmaCalculator
 from ShadBotTrader.infrastructure.feature.calculators.fourier import FourierCalculator
+from ShadBotTrader.infrastructure.feature.calculators.fractal_stats import FractalStatsCalculator
 from ShadBotTrader.infrastructure.feature.calculators.ichimoku import IchimokuCalculator
 from ShadBotTrader.infrastructure.feature.calculators.macd import MacdCalculator
 from ShadBotTrader.infrastructure.feature.calculators.market_regime import MarketRegimeCalculator
 from ShadBotTrader.infrastructure.feature.calculators.mean_reversion import MeanReversionCalculator
-from ShadBotTrader.infrastructure.feature.calculators.momentum_advanced import MomentumAdvancedCalculator
+from ShadBotTrader.infrastructure.feature.calculators.momentum_advanced import (
+    MomentumAdvancedCalculator,
+)
 from ShadBotTrader.infrastructure.feature.calculators.noise_filter import (
     NoiseFilterCalculator,
 )
 from ShadBotTrader.infrastructure.feature.calculators.pca import PcaCalculator
+from ShadBotTrader.infrastructure.feature.calculators.prado_features import PradoFeaturesCalculator
+from ShadBotTrader.infrastructure.feature.calculators.price_context import PriceContextCalculator
 from ShadBotTrader.infrastructure.feature.calculators.price_filter import PriceFilterCalculator
 from ShadBotTrader.infrastructure.feature.calculators.returns import ReturnsCalculator
 from ShadBotTrader.infrastructure.feature.calculators.rsi import RsiCalculator
 from ShadBotTrader.infrastructure.feature.calculators.session_time import SessionTimeCalculator
 from ShadBotTrader.infrastructure.feature.calculators.sma import SmaCalculator
 from ShadBotTrader.infrastructure.feature.calculators.stochastic import StochasticCalculator
+from ShadBotTrader.infrastructure.feature.calculators.structure_features import (
+    StructureFeaturesCalculator,
+)
 from ShadBotTrader.infrastructure.feature.calculators.target import TargetCalculator
 from ShadBotTrader.infrastructure.feature.calculators.trend_strength import TrendStrengthCalculator
 from ShadBotTrader.infrastructure.feature.calculators.volatility_breakout import (
     VolatilityBreakoutCalculator,
 )
-from ShadBotTrader.infrastructure.feature.calculators.volume_analysis import VolumeAnalysisCalculator
+from ShadBotTrader.infrastructure.feature.calculators.volume_analysis import (
+    VolumeAnalysisCalculator,
+)
 
 
 class CalculatorRegistry:
@@ -94,6 +105,8 @@ class CalculatorRegistry:
             "ehlers_advanced": EhlersAdvancedCalculator(),
             "prado_features": PradoFeaturesCalculator(),
             "structure_features": StructureFeaturesCalculator(),
+            # --- فاز ۹۴: فیچرهای موقعیت قیمت (scale-invariant ratio) ---
+            "price_context": PriceContextCalculator(),
         }
 
     def resolve(self, family: str) -> FeatureCalculator | None:

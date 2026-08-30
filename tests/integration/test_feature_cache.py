@@ -144,7 +144,7 @@ class TestFeaturesAreReusedUntilTheDatasetChanges:
 
         assert result.reused_count == 0
         assert not result.from_cache
-        assert len(result.outcomes) == 227
+        assert len(result.outcomes) == 229
 
     def test_the_second_run_reuses_everything(self, tmp_path):
         candles = make_candles(300)
@@ -153,7 +153,7 @@ class TestFeaturesAreReusedUntilTheDatasetChanges:
         result = compute(tmp_path, candles)
 
         assert result.from_cache
-        assert result.reused_count == 227
+        assert result.reused_count == 229
 
     def test_reuse_does_not_write_a_new_version(self, tmp_path):
         candles = make_candles(300)
@@ -236,7 +236,7 @@ class TestTheModelActuallyReceivesTheCatalogue:
     14-column fallback again.
     """
 
-    def test_the_matrix_carries_all_227_catalogue_features(self):
+    def test_the_matrix_carries_all_229_catalogue_features(self):
         matrix = build_feature_matrix(
             make_candles(400),
             Symbol("XAUUSD"),
@@ -247,9 +247,9 @@ class TestTheModelActuallyReceivesTheCatalogue:
 
         catalogue = matrix.column_names[len(CANDLE_COLUMNS) :]
 
-        assert matrix.width == 241
+        assert matrix.width == 243
         assert len(CANDLE_COLUMNS) == 14
-        assert len(catalogue) == 227
+        assert len(catalogue) == 229
 
     def test_named_indicators_are_present_by_name(self):
         matrix = build_feature_matrix(
@@ -263,7 +263,7 @@ class TestTheModelActuallyReceivesTheCatalogue:
         for feature_id in ("atr_14", "rsi_14", "macd_12_26_9", "bollinger_20_2", "tenkan"):
             assert feature_id in matrix.column_names, feature_id
 
-    def test_the_prepared_training_dataset_is_causal_177_columns_wide(self):
+    def test_the_prepared_training_dataset_is_causal_179_columns_wide(self):
         service = DualModelService(
             feature_set=standard_feature_set(),
             resolver=CalculatorRegistry(),
@@ -277,7 +277,7 @@ class TestTheModelActuallyReceivesTheCatalogue:
             signal_model_role(window_size=40),
         )
 
-        assert prepared.summary()["feature_columns"] == 177
+        assert prepared.summary()["feature_columns"] == 179
 
     def test_without_the_catalogue_it_is_only_14_columns(self):
         """The reduced path exists; this pins the difference."""
@@ -315,4 +315,4 @@ class TestTheModelActuallyReceivesTheCatalogue:
             resolver=CalculatorRegistry(),
         )
 
-        assert matrix.width == 241
+        assert matrix.width == 243

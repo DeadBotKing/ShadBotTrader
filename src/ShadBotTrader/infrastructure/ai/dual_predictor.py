@@ -56,13 +56,38 @@ def _load(artifact: ModelArtifact) -> Any:
 
 
 class RangePredictor:
-    """Predicts the future high/low offsets of the next N candles."""
+    """Predicts the future high/low offsets of the next N candles.
 
-    def __init__(self, horizon: int = 5, timeframe: str = "1H") -> None:
+    ``target_units`` must match how the model was trained (فاز ۹۵):
+
+    * ``"pct"`` — the output already is a fraction of the close (legacy);
+    * ``"atr"`` — the output is an ATR multiple and ``forecast`` needs
+      ``atr_reference`` (ATR(period) at the reference candle, computed
+      with :func:`wilder_atr_series` on candles up to that candle) to
+      turn the multiples into prices. Missing ATR is a hard error: an
+      unconvertible forecast must never reach the trading path silently.
+    """
+
+    def __init__(
+        self,
+        horizon: int = 5,
+        timeframe: str = "1H",
+        target_units: str = "pct",
+    ) -> None:
+        if target_units not in ("pct", "atr"):
+            raise ValidationError(
+                f"Unknown range target units: {target_units!r} (use 'pct' or 'atr')"
+            )
         self._horizon = horizon
         self._timeframe = timeframe
+        self._target_units = target_units
         self._model: Any = None
         self._model_key: Any = None
+
+    @property
+    def target_units(self) -> str:
+        """The training units this predictor expects ("pct" or "atr")."""
+        return self._target_units
 
     def forecast(
         self,
@@ -70,14 +95,34 @@ class RangePredictor:
         window: Sequence[Sequence[float]],
         reference_close: float,
         generated_at: str = "",
+        atr_reference: Any = None,
     ) -> RangeForecast:
         """Run the range model over one window.
 
         ``reference_close`` is the close the offsets are measured
         against — the last known price, never a future one.
+        ``atr_reference`` (ATR-unit models only) is ATR(period) at the
+        reference candle; the forecast's prices become
+        ``close + mult × ATR``.
         """
         if reference_close <= 0:
             raise ValidationError("reference_close must be positive")
+        if self._target_units == "atr":
+            try:
+                atr_value = float(atr_reference)
+            except (TypeError, ValueError):
+                atr_value = 0.0
+            if atr_value <= 0:
+                raise ValidationError(
+                    "This model was trained on ATR-normalized targets, so "
+                    "forecast() needs atr_reference = ATR(period) at the "
+                    "reference candle; got "
+                    f"{atr_reference!r}. Compute it with "
+                    "target_builder.atr_from_candles on candles up to and "
+                    "including the reference candle."
+                )
+        else:
+            atr_value = 0.0
 
         key = (artifact.model_id.value, artifact.version.number, artifact.checksum)
         if self._model is None or self._model_key != key:
@@ -94,39 +139,51 @@ class RangePredictor:
             # seq2seq: shape=[window, horizon*2]
             # آخرین timestep = پیش‌بینی برای آخرین کندل window
             # layout: [high_1, low_1, high_2, low_2, ..., high_H, low_H]
-            last_step = raw[-1]                          # [horizon*2]
+            last_step = raw[-1]  # [horizon*2]
             n_pairs = len(last_step) // 2
 
             if n_pairs == 1:
                 # horizon=1: دقیقاً high و low فردا
                 best_high = float(last_step[0])
-                best_low  = float(last_step[1])
+                best_low = float(last_step[1])
             else:
                 # horizon>1: worst-case high/low در کل افق
-                highs = [float(last_step[k * 2])     for k in range(n_pairs)]
-                lows  = [float(last_step[k * 2 + 1]) for k in range(n_pairs)]
+                highs = [float(last_step[k * 2]) for k in range(n_pairs)]
+                lows = [float(last_step[k * 2 + 1]) for k in range(n_pairs)]
                 best_high = max(highs)
-                best_low  = min(lows)
+                best_low = min(lows)
         elif raw.ndim == 1 and len(raw) >= 2:
             # scalar output (قدیمی)
             best_high = float(raw[0])
-            best_low  = float(raw[1])
+            best_low = float(raw[1])
         elif raw.ndim == 2 and raw.shape[0] == 1:
             # [1, 2] شکل قدیمی batch=1
             best_high = float(raw[0, 0])
-            best_low  = float(raw[0, 1])
+            best_low = float(raw[0, 1])
         else:
-            raise ValidationError(
-                f"Unexpected range model output shape: {raw.shape}"
-            )
+            raise ValidationError(f"Unexpected range model output shape: {raw.shape}")
+
+        # فاز ۹۵: خروجی مدل در units تارگتِ آموزش است. برای مدل ATR،
+        # دلار = close + mult × ATR؛ معادل کسریِ close هم ذخیره میشه تا
+        # همهٔ نمایش‌های درصدی قدیمی درست بمونن.
+        if self._target_units == "atr":
+            high_offset = best_high * atr_value / reference_close
+            low_offset = best_low * atr_value / reference_close
+        else:
+            high_offset = best_high
+            low_offset = best_low
 
         return RangeForecast(
             reference_close=float(reference_close),
-            high_offset=best_high,
-            low_offset=best_low,
+            high_offset=high_offset,
+            low_offset=low_offset,
             horizon=self._horizon,
             timeframe=self._timeframe,
             generated_at=generated_at,
+            target_units=self._target_units,
+            atr_reference=atr_value if self._target_units == "atr" else 0.0,
+            high_atr_mult=best_high if self._target_units == "atr" else 0.0,
+            low_atr_mult=best_low if self._target_units == "atr" else 0.0,
         )
 
 

@@ -18,11 +18,21 @@ from ShadBotTrader.domain.market.candle import Candle
 
 @dataclass(frozen=True)
 class RangeLabels:
-    """Future high/low offsets, aligned to rows with complete futures."""
+    """Future high/low offsets, aligned to rows with complete futures.
+
+    ``units`` declares the normalization of the offsets:
+
+    * ``"pct"`` — fraction of the current close (legacy models);
+    * ``"atr"`` — multiples of ATR(period) at the current candle
+      (فاز ۹۵). The constant-offset collapse of the pct target came
+      from a scale-blind input plus a scale-blind target; ATR units
+      give the model a volatility-scaled, regime-aware question.
+    """
 
     high_offset: List[float]
     low_offset: List[float]
     source_index: List[int]
+    units: str = "pct"
 
     def __len__(self) -> int:
         return len(self.high_offset)
@@ -60,6 +70,73 @@ class SignalLabels:
             return True
         total = len(self.labels)
         return any(count / total < minimum_share for count in self.distribution().values())
+
+
+def wilder_atr_series(
+    highs: Sequence[float],
+    lows: Sequence[float],
+    closes: Sequence[float],
+    period: int = 14,
+) -> List[float]:
+    """Causal Wilder ATR for every candle (فاز ۹۵).
+
+    TR[0] = high−low; TR[t] = max(high−low, |high−close[t−1]|, |low−close[t−1]|).
+    For the first ``period`` candles the ATR is the expanding mean of the
+    TRs seen so far (a total, causal definition); from candle ``period``
+    on it is the classic Wilder smoothing
+    ``atr = (prev·(period−1) + TR) / period`` seeded with the mean of the
+    first ``period`` TRs.
+
+    Training labels and inference must both call **this** function so the
+    normalization at label time and the de-normalization at forecast time
+    agree exactly.
+    """
+    if period < 1:
+        raise ValidationError("ATR period must be >= 1")
+    n = len(closes)
+    if not (len(highs) == len(lows) == n):
+        raise ValidationError("highs, lows and closes must have equal length")
+    if n == 0:
+        return []
+
+    atr: List[float] = []
+    tr_sum = 0.0
+    previous_close: Optional[float] = None
+    for index in range(n):
+        high = float(highs[index])
+        low = float(lows[index])
+        close = float(closes[index])
+        true_range = high - low
+        if previous_close is not None:
+            true_range = max(
+                true_range,
+                abs(high - previous_close),
+                abs(low - previous_close),
+            )
+        previous_close = close
+
+        if index < period:
+            tr_sum += true_range
+            atr.append(tr_sum / (index + 1))
+        else:
+            smoothed = (atr[index - 1] * (period - 1) + true_range) / period
+            atr.append(smoothed)
+    return atr
+
+
+def atr_from_candles(candles: Sequence[Candle], period: int = 14) -> Optional[float]:
+    """ATR of the **last** candle of ``candles`` (causal — uses only history).
+
+    Returns ``None`` for an empty slice. This is the value that de-normalizes
+    an ATR-unit forecast back into dollars at inference time; it must be
+    computed on candles up to and including the reference candle, never beyond.
+    """
+    if not candles:
+        return None
+    highs = [float(candle.high.amount) for candle in candles]
+    lows = [float(candle.low.amount) for candle in candles]
+    closes = [float(candle.close.amount) for candle in candles]
+    return wilder_atr_series(highs, lows, closes, period=period)[-1]
 
 
 class _ExtremaIndex:
@@ -125,66 +202,127 @@ def _validate(candles: Sequence[Candle], horizon: int) -> None:
         )
 
 
-def build_range_labels(candles: Sequence[Candle], horizon: int = 5) -> RangeLabels:
-    """Label the highest high and lowest low of the next N bars."""
+def build_range_labels(
+    candles: Sequence[Candle],
+    horizon: int = 5,
+    units: str = "atr",
+    atr_period: int = 14,
+) -> RangeLabels:
+    """Label the highest high and lowest low of the next N bars.
+
+    ``units="atr"`` (فاز ۹۵): offsets are ATR multiples,
+    ``(high[t+k] − close[t]) / ATR_period[t]``. ``units="pct"`` keeps the
+    legacy fraction-of-close target for comparisons and old models.
+    """
     _validate(candles, horizon)
+    if units not in ("pct", "atr"):
+        raise ValidationError(f"Unknown range target units: {units!r} (use 'pct' or 'atr')")
     highs: List[float] = []
     lows: List[float] = []
     indices: List[int] = []
 
+    close_series = [float(candle.close.amount) for candle in candles]
+    high_series = [float(candle.high.amount) for candle in candles]
+    low_series = [float(candle.low.amount) for candle in candles]
+    atr = (
+        wilder_atr_series(high_series, low_series, close_series, period=atr_period)
+        if units == "atr"
+        else None
+    )
+
     for index in range(len(candles) - horizon):
-        close = float(candles[index].close.amount)
+        close = close_series[index]
         if close <= 0:
             raise ValidationError(f"Candle {index} has a non-positive close")
         window = candles[index + 1 : index + 1 + horizon]
         future_high = max(float(candle.high.amount) for candle in window)
         future_low = min(float(candle.low.amount) for candle in window)
-        highs.append((future_high - close) / close)
-        lows.append((future_low - close) / close)
+        if units == "atr":
+            scale = atr[index]
+            if scale is None or scale <= 0:
+                raise ValidationError(
+                    f"ATR is zero at candle {index}; cannot build ATR-normalized "
+                    "labels from a flat price series"
+                )
+            highs.append((future_high - close) / scale)
+            lows.append((future_low - close) / scale)
+        else:
+            highs.append((future_high - close) / close)
+            lows.append((future_low - close) / close)
         indices.append(index)
 
-    return RangeLabels(high_offset=highs, low_offset=lows, source_index=indices)
+    return RangeLabels(high_offset=highs, low_offset=lows, source_index=indices, units=units)
 
 
 def build_range_labels_seq2seq(
     candles: Sequence[Candle],
     horizon: int = 5,
+    units: str = "atr",
+    atr_period: int = 14,
 ) -> "RangeLabelsSeq2Seq":
-    """Seq2seq targets: برای هر کندل t، high و low در t+1 .. t+horizon.
+    """Seq2seq targets: برای هر کندل t، offset هر k=1..horizon.
 
     فاز ۵۵: بجای یک scalar، برای هر کندل در window یه target داریم.
-    این gradient flow رو 75× قوی‌تر می‌کنه و collapse رو جلوگیری می‌کنه.
+    این gradient flow رو 75× قوی‌تر میکنه و collapse رو جلوگیری میکنه.
+
+    فاز ۹۵ — units="atr" (پیش‌فرض جدید):
+      high_seq[t][k] = (high[t+k] − close[t]) / ATR_period[t]
+      low_seq[t][k]  = (low[t+k]  − close[t]) / ATR_period[t]
+      → مدل «چند ATR» پیش‌بینی میکنه، نه درصد خام. چون ATR خودش جزو
+      فیچرهای ورودی هست، مدل میتونه رابطهٔ رژیم بازار → دامنهٔ حرکت رو
+      یاد بگیره و خروجی دیگه برای همهٔ کندل‌ها ثابت نمیمونه.
+      در مصرف: price = close + mult × ATR_14(همان کندل).
+
+    units="pct" (رفتار قدیمی):
+      high_seq[t][k] = (high[t+k] − close[t]) / close[t]
 
     horizon=1 (پیشنهاد نهایی):
-      high_seq[t][0] = (high[t+1] - close[t]) / close[t]
-      low_seq[t][0]  = (low[t+1]  - close[t]) / close[t]
-      → پیش‌بینی high و low فردا (دقیق‌ترین حالت)
+      high_seq[t][0] = high و low فردا (دقیق‌ترین حالت)
       → target واضح، بدون accumulation error
 
     horizon=N (عمومی):
-      high_seq[t, k] = (high[t+k] - close[t]) / close[t]   k=1..N
-      low_seq[t, k]  = (low[t+k]  - close[t]) / close[t]   k=1..N
+      high_seq[t, k] برای k=1..N
 
     Loss فقط روی آخرین horizon timestep seq اعمال میشه (با وزن بیشتر).
     """
     _validate(candles, horizon)
+    if units not in ("pct", "atr"):
+        raise ValidationError(f"Unknown range target units: {units!r} (use 'pct' or 'atr')")
 
     # برای هر کندل t، offsets تا horizon کندل بعد
     high_seqs: List[List[float]] = []
     low_seqs: List[List[float]] = []
     indices: List[int] = []
 
+    close_series = [float(candle.close.amount) for candle in candles]
+    high_series = [float(candle.high.amount) for candle in candles]
+    low_series = [float(candle.low.amount) for candle in candles]
+    atr = (
+        wilder_atr_series(high_series, low_series, close_series, period=atr_period)
+        if units == "atr"
+        else None
+    )
+
     n = len(candles)
     for t in range(n - horizon):
-        close_t = float(candles[t].close.amount)
+        close_t = close_series[t]
         if close_t <= 0:
             raise ValidationError(f"Candle {t} has non-positive close")
+        if units == "atr":
+            scale = atr[t]
+            if scale is None or scale <= 0:
+                raise ValidationError(
+                    f"ATR is zero at candle {t}; cannot build ATR-normalized "
+                    "labels from a flat price series"
+                )
+        else:
+            scale = close_t
         h_seq = []
         l_seq = []
         for k in range(1, horizon + 1):
             future = candles[t + k]
-            h_seq.append((float(future.high.amount)  - close_t) / close_t)
-            l_seq.append((float(future.low.amount)   - close_t) / close_t)
+            h_seq.append((float(future.high.amount) - close_t) / scale)
+            l_seq.append((float(future.low.amount) - close_t) / scale)
         high_seqs.append(h_seq)
         low_seqs.append(l_seq)
         indices.append(t)
@@ -194,17 +332,22 @@ def build_range_labels_seq2seq(
         low_seq=low_seqs,
         source_index=indices,
         horizon=horizon,
+        units=units,
     )
 
 
 @dataclass(frozen=True)
 class RangeLabelsSeq2Seq:
-    """Seq2seq range labels: برای هر کندل t، offset هر k=1..horizon."""
+    """Seq2seq range labels: برای هر کندل t، offset هر k=1..horizon.
 
-    high_seq: List[List[float]]   # shape [N, horizon]
-    low_seq:  List[List[float]]   # shape [N, horizon]
+    ``units``: ``"atr"`` = ضرایب ATR (فاز ۹۵) یا ``"pct"`` = کسری از close (قدیمی).
+    """
+
+    high_seq: List[List[float]]  # shape [N, horizon]
+    low_seq: List[List[float]]  # shape [N, horizon]
     source_index: List[int]
     horizon: int
+    units: str = "pct"
 
     def __len__(self) -> int:
         return len(self.high_seq)
@@ -216,11 +359,11 @@ class RangeLabelsSeq2Seq:
     def to_flat_targets(self) -> List[List[float]]:
         """[high_1, low_1, high_2, low_2, ..., high_H, low_H] برای هر کندل."""
         result = []
-        for h_seq, l_seq in zip(self.high_seq, self.low_seq):
+        for h_seq, l_seq in zip(self.high_seq, self.low_seq, strict=True):
             flat = []
-            for h, l in zip(h_seq, l_seq):
-                flat.append(h)
-                flat.append(l)
+            for high_value, low_value in zip(h_seq, l_seq, strict=True):
+                flat.append(high_value)
+                flat.append(low_value)
             result.append(flat)
         return result
 

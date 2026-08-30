@@ -298,6 +298,20 @@ class LiveDecisionService:
     def _predict_range(self, window: Any) -> Optional[RangeForecast]:
         if self._range_predictor is None or self._range_artifact is None:
             return None
+        # فاز ۹۵: فقط پیش‌بینی‌کننده‌های ATR-unit (که target_units="atr"
+        # اعلام می‌کنند) کلمهٔ atr_reference را می‌گیرند — استاب‌ها و
+        # پیش‌بینی‌کننده‌های با امضای قدیمی بی‌تغییر کار می‌کنند. مدل
+        # ATR-unit بدون ATR داخل خودِ RangePredictor با خطای واضح رد می‌شود.
+        units = str(getattr(self._range_predictor, "target_units", "pct") or "pct")
+        atr_reference = float(getattr(window, "atr_reference", 0.0) or 0.0)
+        if units == "atr" and atr_reference > 0:
+            return self._range_predictor.forecast(
+                self._range_artifact,
+                window.rows,
+                reference_close=window.reference_close,
+                generated_at=window.last_timestamp,
+                atr_reference=atr_reference,
+            )
         return self._range_predictor.forecast(
             self._range_artifact,
             window.rows,

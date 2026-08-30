@@ -36,6 +36,9 @@ class LiveWindow:
     last_timestamp: str
     buffered_candles: int
     warmup_dropped: int
+    #: ATR(14) at the reference candle (فاز ۹۵) — de-normalizes an
+    #: ATR-unit range forecast back into dollars. 0.0 when unavailable.
+    atr_reference: float = 0.0
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -49,6 +52,7 @@ class LiveWindow:
             "last_timestamp": self.last_timestamp,
             "buffered_candles": self.buffered_candles,
             "warmup_dropped": self.warmup_dropped,
+            "atr_reference": self.atr_reference,
         }
 
 
@@ -109,6 +113,16 @@ class LiveMatrixBuilder:
         rows = [list(row) for row in matrix.rows[-self._window_rows :]]
         last_candle = candles[-1]
 
+        # فاز ۹۵: ATR(14) روی همان بافر — برای مدل رنج ATR-unit
+        atr_reference = 0.0
+        try:
+            from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+            atr_value = atr_from_candles(list(candles), period=14)
+            atr_reference = float(atr_value) if atr_value is not None else 0.0
+        except ValidationError:
+            atr_reference = 0.0
+
         return LiveWindow(
             rows=rows,
             column_names=list(matrix.column_names),
@@ -117,6 +131,7 @@ class LiveMatrixBuilder:
             last_timestamp=str(last_candle.open_time),
             buffered_candles=len(candles),
             warmup_dropped=matrix.dropped_warmup,
+            atr_reference=atr_reference,
         )
 
     def try_build(self, buffer: RollingCandleBuffer) -> tuple[Optional[LiveWindow], str]:

@@ -198,12 +198,20 @@ class TestTraining:
         assert all(loss >= 0 for loss in outcome["fold_losses"])
 
         from ShadBotTrader.infrastructure.ai.dual_predictor import RangePredictor
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
 
         dataset = service.prepare(wave(140), SYMBOL, HOURLY, role)
         window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
+        candles = wave(140)
+        atr_reference = atr_from_candles(candles, period=14)
 
-        forecast = RangePredictor(horizon=role.horizon).forecast(
-            outcome["artifact"], window, reference_close=2000.0
+        forecast = RangePredictor(
+            horizon=role.horizon, target_units=getattr(dataset, "target_units", "pct")
+        ).forecast(
+            outcome["artifact"],
+            window,
+            reference_close=2000.0,
+            atr_reference=atr_reference,
         )
 
         assert forecast.predicted_high > 0
@@ -276,11 +284,13 @@ class TestReproducibility:
 
     def test_two_identical_runs_produce_the_same_forecast(self, service):
         from ShadBotTrader.infrastructure.ai.dual_predictor import RangePredictor
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
 
         candles = wave(140)
         role = range_model_role(window_size=12)
         dataset = service.prepare(candles, SYMBOL, HOURLY, role)
         window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
+        atr_reference = atr_from_candles(candles, period=14)
 
         forecasts = []
         for attempt in range(2):
@@ -294,8 +304,13 @@ class TestReproducibility:
                 max_folds=1,
             )
             forecasts.append(
-                RangePredictor(horizon=role.horizon).forecast(
-                    outcome["artifact"], window, reference_close=2000.0
+                RangePredictor(
+                    horizon=role.horizon, target_units=getattr(dataset, "target_units", "pct")
+                ).forecast(
+                    outcome["artifact"],
+                    window,
+                    reference_close=2000.0,
+                    atr_reference=atr_reference,
                 )
             )
 

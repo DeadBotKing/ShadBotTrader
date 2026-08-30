@@ -76,11 +76,11 @@ class TestColumnLayout:
         assert "close_rel" in RAW_PRICE_COLUMNS
         assert len(RAW_PRICE_COLUMNS) == 8
 
-    def test_the_matrix_is_one_hundred_and_eighty_eight_columns_wide(self, service, spec):
+    def test_the_matrix_is_one_hundred_and_ninety_columns_wide(self, service, spec):
         record, rows, columns, _ = service.build_slice(candles(400), SYMBOL, "5M", 400)
 
-        assert record.feature_columns == 188
-        assert len(columns) == 188
+        assert record.feature_columns == 190
+        assert len(columns) == 190
         assert len(CANDLE_COLUMNS) == 14  # 8 raw + 6 derived
 
     def test_close_relative_to_itself_is_always_zero(self, service):
@@ -117,7 +117,7 @@ class TestDatasetBuild:
         stored = service.load_matrix(SYMBOL, "5M")
 
         assert stored is not None
-        assert stored.width == 188
+        assert stored.width == 190
         assert len(stored) == manifest.slices["5M"].feature_rows
         assert matrix_digest(stored.rows) == manifest.slices["5M"].digest
 
@@ -202,7 +202,7 @@ class TestLiveMatrix:
         )
         window = builder.build(live.buffer("5M"))
 
-        assert window.shape == (500, 188)
+        assert window.shape == (500, 190)
         assert window.buffered_candles == 800
 
     def test_the_window_holds_the_newest_rows(self):
@@ -230,7 +230,7 @@ class TestLiveMatrix:
         after = builder.build(live.buffer("5M"))
 
         assert after.last_timestamp != before.last_timestamp
-        assert after.shape == (500, 188)
+        assert after.shape == (500, 190)
         assert live.buffer("5M").size == 800  # still exactly 800
 
     def test_too_little_history_refuses_instead_of_padding(self):

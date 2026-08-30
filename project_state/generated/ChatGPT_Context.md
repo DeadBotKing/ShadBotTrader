@@ -6,15 +6,15 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T11:29:26.064172+00:00
+- Snapshot generated at: 2026-08-30T13:42:54.138435+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 318
-- Test modules: 133
+- Source modules: 319
+- Test modules: 136
 
 ## Current Phase
 
@@ -27,9 +27,12 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 0b008a9dd26d0314f3a0f245c66d7e0a64a7705b
-- Dirty: yes (1 files)
+- Commit: 1f1515679cf81719cb1d35b043bd4a841b600b52
+- Dirty: yes (53 files)
 - Recent commits:
+  - 1f15156 docs: root cause analysis — constant offset is a structural limitation, not a code bug
+  - dd52ad0 docs: range model constant-offset analysis — structural limitation of minmax-scaled input + percentage targets
+  - 0ef5eeb Phase 94: fix bug 58 — statsHtml was const but received += Base price
   - 0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table
   - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
   - 53b78ae Phase 92: fix forecast path never drawing on /data — renderForecast was missing forecastPath wiring
@@ -37,9 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom
   - 39f3ed7 Phase 89: restore range model dropdown JS + extend candles to 5000
   - dc2dfc8 Phase 88: fix signal markers not drawing — index mismatch between computeSignals (local) and indexOf (global)
-  - e84a8f0 Phase 87: restore /data signal code lost in Phase 86 draw rewrite
-  - e5b9d24 Phase 86: drawing tools (trend/h-line/v-line) + time axis labels on both charts
-  - 2d0fd0c Phase 85b: draw the range forecast path graphically on the /data chart
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 806
-- Source files: 318
-- Test files: 133
-- Documentation files: 137
+- Total files: 812
+- Source files: 319
+- Test files: 136
+- Documentation files: 139
 - Legacy files: 176
-- Total Python lines: 116942
-- Modules: 451
-- Classes: 765
-- Functions: 4362
+- Total Python lines: 118014
+- Modules: 455
+- Classes: 777
+- Functions: 4410
 - External dependencies: 14

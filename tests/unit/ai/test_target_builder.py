@@ -59,7 +59,7 @@ class TestRangeLabels:
             candle(2, 102.0, high=103.0, low=95.0),
             candle(3, 100.0),
         ]
-        labels = build_range_labels(candles, horizon=2)
+        labels = build_range_labels(candles, horizon=2, units="pct")
 
         # row 0: window is bars 1-2 -> high 105, low 95, close 100
         assert labels.high_offset[0] == pytest.approx(0.05)
@@ -72,7 +72,7 @@ class TestRangeLabels:
             candle(1, 100.0, high=101.0, low=99.0),
             candle(2, 100.0, high=101.0, low=99.0),
         ]
-        labels = build_range_labels(candles, horizon=2)
+        labels = build_range_labels(candles, horizon=2, units="pct")
 
         assert labels.high_offset[0] == pytest.approx(0.01)
         assert labels.low_offset[0] == pytest.approx(-0.01)
@@ -102,8 +102,8 @@ class TestRangeLabels:
                 for index, close in enumerate(closes)
             ]
 
-        cheap = build_range_labels(proportional([100.0, 101.0, 102.0]), horizon=1)
-        dear = build_range_labels(proportional([1000.0, 1010.0, 1020.0]), horizon=1)
+        cheap = build_range_labels(proportional([100.0, 101.0, 102.0]), horizon=1, units="pct")
+        dear = build_range_labels(proportional([1000.0, 1010.0, 1020.0]), horizon=1, units="pct")
         assert cheap.high_offset[0] == pytest.approx(dear.high_offset[0], rel=1e-9)
         assert cheap.low_offset[0] == pytest.approx(dear.low_offset[0], rel=1e-9)
 

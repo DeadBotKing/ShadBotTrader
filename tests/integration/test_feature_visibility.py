@@ -241,10 +241,10 @@ class TestFeatureProgressIsReported:
         assert "FEATURES" in output
         assert "XAUUSD 5M" in output
         assert "atr_14" in output
-        assert "/227" in output  # "n/227" counter
+        assert "/229" in output  # "n/227" counter
         assert "%" in output  # progress bar
         assert "stored v1" in output
-        assert "227/227 stored" in output
+        assert "229/229 stored" in output
 
     def test_the_counter_reaches_the_total(self, tmp_path):
         import io
@@ -261,7 +261,7 @@ class TestFeatureProgressIsReported:
             dataset_version=1,
         )
 
-        assert "227/227 |" in stream.getvalue()
+        assert "229/229 |" in stream.getvalue()
 
     def test_the_default_service_stays_silent(self, tmp_path, capsys):
         service, _, _ = _build_service(tmp_path)

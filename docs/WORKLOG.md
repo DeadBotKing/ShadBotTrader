@@ -2746,3 +2746,75 @@ ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
 ruff ✅ black ✅  pytest 1504 passed, 54 skipped
 ```
+
+---
+
+## 2026-08-30 — فاز ۹۵: تارگت مدل رنج ATR-نرمال‌شده + تبدیل قیمت در همه‌جای مصرف
+
+**درخواست اپراتور:** «تارگت رو با ATR اصلاح کن؛ بعد توی بکتست و هرجایی که
+قراره قیمت پیش‌بینی بشه، نحوهٔ محاسبهٔ قیمت پیش‌بینی رو هم اصلاح کن.»
+
+### ریشه (از تحلیل فاز ۹۴)
+
+تارگت قبلی `(high[t+k] − close[t]) / close[t]` درصدِ خام بود؛ ورودی هم
+minmax روی [-2,+2]. مدل نه مقیاس قیمت می‌دید نه مقیاس نوسان → بهینه‌ترین
+جواب = میانگین ثابت دیتاست (±0.06% در 1H، ±0.60% در 1D) برای همهٔ کندل‌ها.
+
+### تعریف تارگت جدید
+
+```
+high_seq[t,k] = (high[t+k] − close[t]) / ATR14[t]
+low_seq[t,k]  = (low[t+k]  − close[t]) / ATR14[t]
+```
+
+ATR با `wilder_atr_series` (علوی، تعریف expand-seed + هموارسازی Wilder)
+محاسبه می‌شود — همان تعریف در لیبل‌سازیِ آموزش و de-normalize در پیش‌بینی.
+
+### معماری تبدیل (یک‌باره، در مرز پیش‌بینی‌کننده)
+
+- `RangePredictor(target_units="atr")` خروجی مدل را «ضریب ATR» می‌داند؛
+  با `atr_reference = ATR14(کندل مرجع)` قیمت‌ها می‌شوند
+  `close + mult × ATR` و معادلِ کسریِ close هم در `high_offset` ذخیره
+  می‌شود تا همهٔ نمایش‌های درصدی قدیمی درست بمانند.
+- `RangeForecast` فیلدهای `target_units / atr_reference /
+  high_atr_mult / low_atr_mult` گرفت؛ `predicted_high/low` در حالت atr
+  با فرمول ATR محاسبه می‌شوند → براکت، بکتست، استراتژی و GUI بدون تغییر
+  قیمتِ درست می‌گیرند.
+- مدل‌های قدیمی: `ModelRecord.target_units` (پیش‌فرض "pct") مسیر قدیمی را
+  حفظ می‌کند — هیچ مدل ذخیره‌شده‌ای خراب نمی‌شود.
+
+### سیم‌کشی atr_reference (فقط مصرف‌کنندهٔ واقعی)
+
+| مسیر | منبع ATR |
+|------|----------|
+| بکتست (`DualModelPredictionSource`) | کندل‌های رنجِ تحویل‌شده تا آخرین کندل بسته (memoized per bar) |
+| GUI /data (`RangeForecastInspector`) | کندل‌ها تا کندل کلیک‌شده |
+| زنده (`LiveMatrixBuilder` → `LiveWindow.atr_reference`) | بافر ۱H |
+| sanity-check آموزش (`run_dual_models`) | کل سری کندل‌ها |
+
+پارامتر `atr_reference` فقط به پیش‌بینی‌کننده‌های ATR-unit پاس می‌شود تا
+استاب‌ها/امضاهای قدیمی نشکنند؛ مدل ATR بدون ATR با خطای واضح رد می‌شود
+(هرگز قیمت غلط خاموش).
+
+### گزارش و رکورد
+
+- `ModelRecord.target_units` + نمایش `range units` در خلاصهٔ بکتست و
+  `target units` در سربرگ آموزش رنج.
+- جدول forecast در /data برای مدل ATR ستون `×ATR` نشان می‌دهد.
+
+### بدهی قدیمی که در همین فاز پرداخت شد
+
+تست‌های شمارندهٔ کاتالوگ فیچر (227→229، 188→190، 241→243، 177→179،
+174→176) از فاز ۹۴ آپدیت نشده بودند — حالا سبز شدند. ۳ خطای ruff قدیمی
+در target_builder هم رفع شد.
+
+### تأیید
+
+```
+ruff ✅ (فایل‌های فاز ۹۵ پاک؛ نویز کل‌ریپو کمتر از baseline)
+black ✅
+pytest 1532 passed, 54 skipped  (+28 تست جدید فاز ۹۵)
+```
+
+تست‌های جدید: `test_atr_range_target.py` (13)،
+`test_range_predictor_atr.py` (9)، `test_range_atr_wiring.py` (6).

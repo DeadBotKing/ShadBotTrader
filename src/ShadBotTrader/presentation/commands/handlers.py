@@ -2282,6 +2282,9 @@ class CommandHandlers:
                     f" · range ran: {_pst.get('range_predictions', 0)}"
                     f" · abstains: {_pst.get('abstentions', 0)}"
                 )
+                # فاز ۹۵: واحد تارگت مدل رنج در گزارش بکتست
+                if _pst.get("range_target_units"):
+                    lines.append(f"range units : {_pst['range_target_units']}")
                 for _err, _n in (_pst.get("errors") or {}).items():
                     lines.append(f"  [err x{_n}] {_err}")
         if replay_diagnostics:

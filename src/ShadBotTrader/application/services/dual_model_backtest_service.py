@@ -37,7 +37,6 @@ from ShadBotTrader.infrastructure.simulation.dual_model_prediction_source import
 from ShadBotTrader.infrastructure.trading.dual_model_strategy import DualModelStrategy
 
 
-
 def _pad_or_trim_matrix(matrix: Any, expected: int) -> Any:
     """تعداد feature ستون‌ها رو با expected تطبیق بده.
 
@@ -109,9 +108,14 @@ class DualModelBacktestService:
         filter_zero_bar: bool = False,
         allowed_hours_utc: Optional[Sequence[int]] = None,
         min_sl_distance: float = 0.0,
+        range_target_units: str = "pct",
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
+        if range_target_units not in ("pct", "atr"):
+            raise ValidationError(
+                f"Unknown range target units: {range_target_units!r} (use 'pct' or 'atr')"
+            )
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
@@ -147,6 +151,8 @@ class DualModelBacktestService:
         # فاز ۵۲: فیلترهای session و SL
         self._allowed_hours_utc = allowed_hours_utc
         self._min_sl_distance = float(min_sl_distance)
+        # فاز ۹۵: واحد تارگت مدل رنج ("atr" = ضرایب ATR)
+        self._range_target_units = range_target_units
 
     @classmethod
     def from_storage(
@@ -244,6 +250,7 @@ class DualModelBacktestService:
             range_predictor=RangePredictor(
                 horizon=range_horizon,
                 timeframe=range_timeframe,
+                target_units=getattr(range_record, "target_units", "pct") or "pct",
             ),
             signal_window_size=signal_window_size or signal_record.window_size or 100,
             range_window_size=range_window_size or range_record.window_size or 500,
@@ -260,6 +267,7 @@ class DualModelBacktestService:
             filter_zero_bar=filter_zero_bar,
             allowed_hours_utc=allowed_hours_utc,
             min_sl_distance=min_sl_distance,
+            range_target_units=getattr(range_record, "target_units", "pct") or "pct",
         )
 
     @property
@@ -351,6 +359,8 @@ class DualModelBacktestService:
             # فاز ۵۷: spread برای گسترش SL
             spread=self._configuration.spread if self._configuration.spread > 0 else None,
             spread_pct=getattr(self._configuration, "spread_pct", None),
+            # فاز ۹۵: واحد تارگت مدل رنج — مدل ATR به ATR مرجع نیاز داره
+            range_target_units=self._range_target_units,
         )
 
         _active_config = self._configuration

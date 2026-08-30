@@ -552,13 +552,27 @@ function renderForecast(f, localIdx, symbolTf) {
   statsHtml +=
     `<div class="stat"><div class="k">Base price</div>` +
     `<div class="v">${f.reference_close.toFixed(2)}</div></div>`;
+  // فاز ۹۵: مدل ATR — واحد و ATR مرجع را نشان بده
+  if (f.target_units === 'atr') {
+    statsHtml +=
+      `<div class="stat"><div class="k">Units</div>` +
+      `<div class="v">ATR mult</div></div>` +
+      `<div class="stat"><div class="k">ATR(14)</div>` +
+      `<div class="v">${Number(f.atr_reference || 0).toFixed(2)}</div></div>`;
+  }
   document.getElementById('rf-stats').innerHTML = statsHtml;
   const rows = document.getElementById('rf-rows');
   rows.innerHTML = '';
+  const offText = (p, key, multKey) => {
+    if (p[multKey] !== undefined && p[multKey] !== null) {
+      return `${p[multKey].toFixed(2)}×ATR (${(p[key]*100).toFixed(2)}%)`;
+    }
+    return `(${(p[key]*100).toFixed(2)}%)`;
+  };
   f.points.forEach(p => {
     const tr = document.createElement('tr');
-    [[`+${p.k}`], [`${p.high.toFixed(2)} (${(p.high_offset*100).toFixed(2)}%)`],
-     [`${p.low.toFixed(2)} (${(p.low_offset*100).toFixed(2)}%)`]].forEach(([text]) => {
+    [[`+${p.k}`], [`${p.high.toFixed(2)} ${offText(p, 'high_offset', 'high_atr_mult')}`],
+     [`${p.low.toFixed(2)} ${offText(p, 'low_offset', 'low_atr_mult')}`]].forEach(([text]) => {
       const td = document.createElement('td');
       td.textContent = text;
       tr.appendChild(td);

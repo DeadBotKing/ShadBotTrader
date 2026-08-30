@@ -64,6 +64,9 @@ class PreparedDataset:
     #: gap alone cannot prove that a training label stayed before validation.
     sample_label_ends: Optional[List[int]] = None
     excluded_features: Dict[str, str] = field(default_factory=dict)
+    #: Normalization of the range targets inside ``series`` (فاز ۹۵):
+    #: "atr" = ATR multiples, "pct" = fraction of close (signal: unused).
+    target_units: str = "pct"
 
     @property
     def row_count(self) -> int:
@@ -83,6 +86,7 @@ class PreparedDataset:
             "degenerate": self.degenerate,
             "excluded_features": len(self.excluded_features),
             "excluded_feature_reasons": dict(self.excluded_features),
+            "target_units": self.target_units,
             "training_windows": (
                 len(self.sample_ends)
                 if self.sample_ends is not None
@@ -157,10 +161,12 @@ class DualModelService:
             _use_seq2seq = getattr(role, "seq2seq", False)
             if _use_seq2seq:
                 # فاز ۵۵: seq2seq labels — برای هر کندل t، offsets تا horizon k
+                # فاز ۹۵: units="atr" (پیش‌فرض builder) — ضرایب ATR بجای درصد
                 labels_s2s = build_range_labels_seq2seq(candles, horizon=role.horizon)
                 targets = labels_s2s.to_flat_targets()
                 target_names = labels_s2s.target_names()
                 source_index = labels_s2s.source_index
+                range_units = labels_s2s.units
             else:
                 labels = build_range_labels(candles, horizon=role.horizon)
                 targets = [
@@ -169,6 +175,7 @@ class DualModelService:
                 ]
                 target_names = ["future_high_offset", "future_low_offset"]
                 source_index = labels.source_index
+                range_units = labels.units
             series, column_names, _ = attach_targets(
                 matrix=matrix,
                 targets=targets,
@@ -242,6 +249,7 @@ class DualModelService:
             sample_ends=sample_ends,
             sample_label_ends=sample_label_ends,
             excluded_features=dict(matrix.excluded_features),
+            target_units=(range_units if role.target.kind is TargetKind.PRICE_RANGE else "pct"),
         )
 
     # ------------------------------------------------------ training --
@@ -280,6 +288,9 @@ class DualModelService:
                 "depth_multiplier": getattr(role, "depth_multiplier", 8),
                 "l2": float(getattr(role, "l2", 2.5e-4)),
                 "dropout": float(getattr(role, "dropout", 0.10)),
+                # فاز ۹۵: واحد تارگت رنج — "atr" یا "pct" — برای تبدیل
+                # خروجی مدل به قیمت در زمان پیش‌بینی
+                "target_units": (dataset.target_units if is_regression else "pct"),
             },
             input_schema={
                 "window_size": role.window_size,

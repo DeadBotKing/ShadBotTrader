@@ -134,7 +134,7 @@ class TestLoadedAndComputedMatricesAreIdentical:
         assert loaded.source_index == computed.source_index
         assert loaded.dropped_warmup == computed.dropped_warmup
         assert loaded.dropped_tail == computed.dropped_tail
-        assert loaded.width == 241
+        assert loaded.width == 243
 
     def test_the_warmup_survives_the_round_trip(self, tmp_path):
         """Warm-up is metadata, not a value — it must still be stored."""
@@ -262,5 +262,5 @@ class TestTheStoreIsRefusedWhenItDoesNotMatch:
         )
         record, *_ = service.build_slice(candles, "XAUUSD", "1H", len(candles))
 
-        assert record.feature_columns == 188
+        assert record.feature_columns == 190
         assert "computed" in service.last_source

@@ -97,11 +97,11 @@ def test_full_feature_pipeline(tmp_path):
         dataset_version=ingestion.version,
     )
 
-    assert len(result.outcomes) == 227
+    assert len(result.outcomes) == 229
     assert len(result.quarantined_ids) == 0
-    assert len(computed_events) == 227
+    assert len(computed_events) == 229
     assert len(set_events) == 1
-    assert set_events[0].payload["computed"] == 227
+    assert set_events[0].payload["computed"] == 229
 
     # Features are stored under their own series (Phase 37), so the check
     # must ask the store scoped to the symbol and timeframe that produced
@@ -111,7 +111,7 @@ def test_full_feature_pipeline(tmp_path):
         assert stored.exists(outcome.feature_id, outcome.version)
 
     # registry has all definitions
-    assert len(registry.list_all()) == 227
+    assert len(registry.list_all()) == 229
 
 
 def test_feature_quality_flags_bad_range(tmp_path):
