@@ -281,8 +281,13 @@ function draw() {
   // ── volume ──
   // ── فاز ۸۴: نقاط سیگنال ──
   if (currentSignals.length) {
+    // c.i (سراسری از data_inspector) ↔ s.i (محلی نسبت به CANDLES)
+    // → با اندیس سراسری match کن
     const indexOf = new Map();
-    slice.forEach((c, i) => indexOf.set(c.i, i));
+    slice.forEach((c, i) => {
+      if (c.i !== undefined) indexOf.set(c.i, i);       // سراسری
+      else indexOf.set(i, i);                            // fallback
+    });
     currentSignals.forEach(s => {
       const local = indexOf.get(s.i);
       if (local === undefined) return;
@@ -430,8 +435,10 @@ function _barAtX(x) {
 // قانون دقیقاً مثل آموزش: اولین close که ±threshold را بزند؛
 // BUY معتبر تا وقتی Low زیر Lowِ کندل شروع نرود (و برعکس برای SELL).
 function computeSignals(threshold) {
-  const signals = [];   // {i, side}
+  const signals = [];   // {i: سراسری, side}
   const n = CANDLES.length;
+  if (!n) return signals;
+  const base = CANDLES[0].i !== undefined ? CANDLES[0].i : 0;
   for (let start = 0; start < n - 1; start++) {
     const c0 = CANDLES[start];
     const upper = c0.c * (1 + threshold);
@@ -449,7 +456,7 @@ function computeSignals(threshold) {
       if (buyInvalid) break;
       if (sellInvalid) break;
     }
-    if (label) signals.push({ i: start, side: label });
+    if (label) signals.push({ i: base + start, side: label });
   }
   return signals;
 }
