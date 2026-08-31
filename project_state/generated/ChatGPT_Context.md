@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T15:53:26.149394+00:00
+- Snapshot generated at: 2026-08-31T05:03:13.216911+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ce5676d707b44d10ca717a6a1f29485e0cfd9e74
-- Dirty: yes (3 files)
+- Commit: 9f21e684541fee7f68244c1b389b1e8a5bad1e7d
+- Dirty: yes (2 files)
 - Recent commits:
+  - 9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline
   - ce5676d docs: remove stale '109-feature' banner/help/docstrings
   - 4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere
   - 1f15156 docs: root cause analysis — constant offset is a structural limitation, not a code bug
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
   - 53b78ae Phase 92: fix forecast path never drawing on /data — renderForecast was missing forecastPath wiring
   - bb21be6 Phase 91: vertical pan on the price axis (when zoomed)
-  - 8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 137
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 118178
+- Total Python lines: 118202
 - Modules: 456
 - Classes: 777
 - Functions: 4415

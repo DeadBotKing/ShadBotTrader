@@ -516,7 +516,7 @@ class WavenetTrainer(ModelTrainer):
                 "categorical_crossentropy",
                 "focal",
             ):
-                _min_lr = max(learning_rate * 1e-3, 1e-7)
+                _min_lr = max(learning_rate * 0.02, 1e-6)
                 # ReduceLR patience: 10% epochs (min=5, max=30) — یا override
                 _rlr_patience = self._rlr_patience_override or max(5, min(30, self._epochs // 10))
                 callbacks.append(
@@ -526,7 +526,11 @@ class WavenetTrainer(ModelTrainer):
                         patience=_rlr_patience,
                         verbose=0,
                         mode="min",
-                        min_delta=1e-6,
+                        # فاز ۹۵-ج: min_delta=1e-6 نویزِ float (±3e-7) را
+                        # «بدتر شدن» می‌شمرد → کاسکید decay تا LR مرده
+                        # (ران اپراتور: 8e-4 → 1e-6، فولد آخر یخ زد).
+                        # 1e-4 روی val_loss ~0.6 یعنی آستانهٔ ~0.017%.
+                        min_delta=1e-4,
                         cooldown=2,
                         min_lr=_min_lr,
                     )
@@ -541,7 +545,9 @@ class WavenetTrainer(ModelTrainer):
                     monitor="val_loss",
                     patience=_es_patience,
                     mode="min",
-                    min_delta=1e-6,
+                    # فاز ۹۵-ج: همان دلیل RLR — نویز 1e-6 شمارندهٔ ES را
+                    # ریست می‌کرد و ES هرگز fire نمی‌شد (300 epoch کامل).
+                    min_delta=1e-4,
                     restore_best_weights=False,
                     verbose=0,
                 )

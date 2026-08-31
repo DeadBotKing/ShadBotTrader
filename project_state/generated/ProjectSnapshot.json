@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "918c80749fc7e0efa884d0fdeb06b6b96931efb577c0889224eb920c93d4ec5f",
-      "size_bytes": 144609
+      "sha256": "832cb567c67e0a5b7905984d87a113ba9ad883ec8cb06fa5a2094e27e477cda2",
+      "size_bytes": 146648
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
+      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
       "size_bytes": 26005
     },
     {
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "3b8243f2d9a29335bedc423e5f43e35fa4a9d0db7abeaffed9cbaf08dd1583dd",
-      "size_bytes": 52265
+      "sha256": "14d36858565d44ddc187dee5b7b5072f05bb0d61d9aae94d13b9fb2d191a30a7",
+      "size_bytes": 53540
     },
     {
       "category": "script",
@@ -3273,8 +3273,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "f1277d013e91b3168b72f3c4fde2f28fe3374146d2301b7edb7ed6676b441d16",
-      "size_bytes": 49289
+      "sha256": "72f1443cc99174d86db02193e87cd7fd727bad22e2ef20587c879b57f1b9fe61",
+      "size_bytes": 49862
     },
     {
       "category": "source",
@@ -4945,14 +4945,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-30T15:53:26.149394+00:00",
+  "generated_at": "2026-08-31T05:03:13.216911+00:00",
   "git": {
     "branch": "main",
-    "commit": "ce5676d707b44d10ca717a6a1f29485e0cfd9e74",
+    "commit": "9f21e684541fee7f68244c1b389b1e8a5bad1e7d",
     "dirty": true,
-    "dirty_files": 3,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline",
       "ce5676d docs: remove stale '109-feature' banner/help/docstrings",
       "4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere",
       "1f15156 docs: root cause analysis \u2014 constant offset is a structural limitation, not a code bug",
@@ -4961,8 +4962,7 @@
       "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table",
       "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black",
       "53b78ae Phase 92: fix forecast path never drawing on /data \u2014 renderForecast was missing forecastPath wiring",
-      "bb21be6 Phase 91: vertical pan on the price axis (when zoomed)",
-      "8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom"
+      "bb21be6 Phase 91: vertical pan on the price axis (when zoomed)"
     ]
   },
   "modules": [
@@ -11334,11 +11334,11 @@
     "legacy_file_count": 176,
     "module_count": 456,
     "source_file_count": 319,
-    "source_lines": 50138,
+    "source_lines": 50144,
     "test_file_count": 137,
     "test_lines": 23113,
     "total_file_count": 814,
-    "total_lines": 118178
+    "total_lines": 118202
   },
   "test_file_count": 137
 }

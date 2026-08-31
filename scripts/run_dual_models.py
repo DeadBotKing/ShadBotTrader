@@ -1142,20 +1142,38 @@ def print_quality(
                 else:
                     print("    USD translation skipped: no reference close was supplied.")
 
-            # فاز ۹۵: حکم مستقیم مقابل پیش‌بینی ثابت — ریشهٔ مشکل آفست
-            # ثابت همین‌جا قابل سنجش است.
+            # فاز ۹۵-ج: حکم باید روی «آخرین timestep» باشد — همان خروجی که
+            # inference مصرف می‌کند. val_mae کراس روی هر ۱۵۰ موقعیت پنجره
+            # میانگین می‌گیرد و موقعیت‌های اولِ پنجره عمداً کمتر آموزش
+            # می‌بینند (وزن loss: 40% کل، 60% آخرین) → val_mae تمام-سکانس
+            # همیشه بدتر از توان واقعی مدل دیده می‌شود.
+            high_mae = final.get("val_high_mae")
+            low_mae = final.get("val_low_mae")
+            if high_mae is not None and low_mae is not None:
+                last_step_mae = (high_mae + low_mae) / 2.0
+                print(
+                    f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
+                    f"— full-sequence val_mae {mae:.4f} averages every window "
+                    f"position and is NOT the trading number."
+                )
+            else:
+                last_step_mae = mae
+
+            # حکم مستقیم مقابل پیش‌بینی ثابت — ریشهٔ مشکل آفست ثابت همین‌جا
+            # قابل سنجش است (baseline روی همان ردیف‌های فولد آخر است).
             if val_baseline is not None:
-                if mae < val_baseline:
+                if last_step_mae < val_baseline:
                     print(
                         f"    vs constant baseline {val_baseline:.4f}: the model "
                         f"BEATS always predicting the train median by "
-                        f"{val_baseline - mae:.4f}."
+                        f"{val_baseline - last_step_mae:.4f} "
+                        f"({(val_baseline - last_step_mae) / val_baseline:.0%} better)."
                     )
                 else:
                     print(
-                        f"    vs constant baseline {val_baseline:.4f}: the model is "
-                        f"NO BETTER than a constant prediction — it has not "
-                        f"learned anything usable yet."
+                        f"    vs constant baseline {val_baseline:.4f}: the final-step "
+                        f"MAE {last_step_mae:.4f} is NO BETTER than a constant "
+                        f"prediction — it has not learned anything usable yet."
                     )
 
             bound_labels = (
