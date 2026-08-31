@@ -721,7 +721,7 @@ class WavenetTrainer(ModelTrainer):
             actual = actual[:count, :2].astype(np.float64)
             predicted = predicted[:count, :2].astype(np.float64)
         error = predicted - actual
-        return {
+        metrics = {
             "val_high_mae": float(np.mean(np.abs(error[:, 0]))),
             "val_low_mae": float(np.mean(np.abs(error[:, 1]))),
             "val_high_rmse": float(np.sqrt(np.mean(error[:, 0] ** 2))),
@@ -729,6 +729,14 @@ class WavenetTrainer(ModelTrainer):
             "val_high_bias": float(np.mean(error[:, 0])),
             "val_low_bias": float(np.mean(error[:, 1])),
         }
+        # فاز ۹۵-د: خطا به تفکیک گام k — پروفایل خطا در برابر پروفایل
+        # لیبل نشان می‌دهد منحنی نزولی پیش‌بینی کجا درست و کجا ضعیف است.
+        pairs = error.shape[-1] // 2
+        for k in range(pairs):
+            high_abs = np.abs(error[:, 2 * k])
+            low_abs = np.abs(error[:, 2 * k + 1])
+            metrics[f"val_step{k + 1}_mae"] = float((high_abs.mean() + low_abs.mean()) / 2.0)
+        return metrics
 
     def _dataset_for(self, start: int, stop: int) -> tuple:
         """Training inputs for one fold, streamed when they are large.

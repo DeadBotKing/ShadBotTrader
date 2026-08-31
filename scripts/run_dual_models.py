@@ -599,6 +599,33 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 f"{resolved} rows — the model must beat this)"
             )
 
+    # فاز ۹۵-د: پروفایل لیبل بر حسب k — منحنی «اقلیم» داده. خروجیِ
+    # بدون‌مهارت مدل دقیقاً همین منحنی است؛ مقایسهٔ خروجی مدل با آن
+    # نشان می‌دهد منحنی نزولی پیش‌بینی «حقیقت داده»ست یا artifact.
+    if role.name == "range" and getattr(role, "seq2seq", False):
+        from ShadBotTrader.infrastructure.ai.target_builder import seq2seq_label_profile
+
+        profile = seq2seq_label_profile(dataset.series, dataset.target_columns, resolved)
+        if profile:
+            pairs = len(dataset.target_columns) // 2
+            train_p = profile.get("train", {})
+            recent_p = profile.get("recent", {})
+            print(
+                "  label profile  : median label by step — a no-skill model "
+                "lands exactly here (units follow the target)"
+            )
+            for k in range(pairs):
+                parts = [f"    k={k + 1:>2}:"]
+                if train_p:
+                    parts.append(
+                        f"train high {train_p['high'][k]:+.3f} low {train_p['low'][k]:+.3f}"
+                    )
+                if recent_p:
+                    parts.append(
+                        f"| recent high {recent_p['high'][k]:+.3f} low {recent_p['low'][k]:+.3f}"
+                    )
+                print("  ".join(parts))
+
     try:
         import tensorflow  # noqa: F401
     except ImportError:
@@ -1187,6 +1214,23 @@ def print_quality(
             for key, label in bound_labels:
                 if key in final:
                     print(f"    {label:<10}: {final[key]:+.6f}")
+
+            # فاز ۹۵-د: خطا به تفکیک گام k — کنار «label profile» سربرگ،
+            # مشخص می‌کند منحنی مدل در کدام گام‌ها از اقلیم بدتر/بهتر است.
+            def _step_order(name: str) -> int:
+                tail = name.removeprefix("val_step").split("_")[0]
+                return int(tail) if tail.isdigit() else 999
+
+            step_keys = sorted(
+                (key for key in final if key.startswith("val_step") and key.endswith("_mae")),
+                key=_step_order,
+            )
+            if step_keys:
+                cells = " | ".join(
+                    f"k{key.removeprefix('val_step').split('_')[0]} {final[key]:.3f}"
+                    for key in step_keys
+                )
+                print(f"    per-step MAE: {cells}")
 
 
 def main(argv: list[str] | None = None) -> int:

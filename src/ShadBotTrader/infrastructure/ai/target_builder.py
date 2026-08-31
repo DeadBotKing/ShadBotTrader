@@ -544,3 +544,45 @@ def align_to_labels(
         aligned.append(list(row))
         kept.append(position)
     return aligned, kept
+
+
+def seq2seq_label_profile(
+    series: Sequence[Sequence[float]],
+    target_columns: Sequence[int],
+    val_size: int = 0,
+) -> Dict[str, Dict[str, List[float]]]:
+    """Median of each step's high/low label, train vs the most recent rows.
+
+    فاز ۹۵-د: منحنی «اقلیم» لیبل‌ها بر حسب k. چون خروجی استنتاج از
+    آخرین موقعیت پنجره می‌آید، یک مدلِ بی‌اطلاع دقیقاً به همین پروفایل
+    می‌رسد (میانه = بهینهٔ MAE). مقایسهٔ خروجی مدل با این پروفایل مشخص
+    می‌کند منحنی پیش‌بینی «حقیقت داده»ست یا فقط میانگینِ بدون مهارت.
+
+    ``series`` rows are ``features + flat targets`` as produced by
+    ``attach_targets``; ``target_columns`` is ``[h1, l1, h2, l2, ...]``.
+    """
+    if not series or not target_columns:
+        return {}
+    pairs = len(target_columns) // 2
+    if pairs == 0 or len(target_columns) % 2 != 0:
+        return {}
+
+    cut = max(len(series) - max(int(val_size), 0), 0)
+    segments = {"train": series[:cut], "recent": series[cut:]}
+
+    def _median(rows: Sequence[Sequence[float]], column: int) -> float:
+        values = sorted(float(row[column]) for row in rows)
+        middle = len(values) // 2
+        if len(values) % 2:
+            return values[middle]
+        return (values[middle - 1] + values[middle]) / 2.0
+
+    profile: Dict[str, Dict[str, List[float]]] = {}
+    for name, rows in segments.items():
+        if not rows:
+            continue
+        profile[name] = {
+            "high": [_median(rows, target_columns[2 * k]) for k in range(pairs)],
+            "low": [_median(rows, target_columns[2 * k + 1]) for k in range(pairs)],
+        }
+    return profile

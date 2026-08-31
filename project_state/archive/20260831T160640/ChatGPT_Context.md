@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-08-30T13:29:00.501591+00:00
+- Snapshot generated at: 2026-08-31T05:03:13.216911+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 319
-- Test modules: 136
+- Test modules: 137
 
 ## Current Phase
 
@@ -27,9 +27,12 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 1f1515679cf81719cb1d35b043bd4a841b600b52
-- Dirty: yes (53 files)
+- Commit: 9f21e684541fee7f68244c1b389b1e8a5bad1e7d
+- Dirty: yes (2 files)
 - Recent commits:
+  - 9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline
+  - ce5676d docs: remove stale '109-feature' banner/help/docstrings
+  - 4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere
   - 1f15156 docs: root cause analysis — constant offset is a structural limitation, not a code bug
   - dd52ad0 docs: range model constant-offset analysis — structural limitation of minmax-scaled input + percentage targets
   - 0ef5eeb Phase 94: fix bug 58 — statsHtml was const but received += Base price
@@ -37,9 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
   - 53b78ae Phase 92: fix forecast path never drawing on /data — renderForecast was missing forecastPath wiring
   - bb21be6 Phase 91: vertical pan on the price axis (when zoomed)
-  - 8ad4bd8 Phase 90: warmup pad for /data forecast + price-axis wheel zoom
-  - 39f3ed7 Phase 89: restore range model dropdown JS + extend candles to 5000
-  - dc2dfc8 Phase 88: fix signal markers not drawing — index mismatch between computeSignals (local) and indexOf (global)
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 812
+- Total files: 814
 - Source files: 319
-- Test files: 136
-- Documentation files: 139
+- Test files: 137
+- Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 118014
-- Modules: 455
+- Total Python lines: 118202
+- Modules: 456
 - Classes: 777
-- Functions: 4410
+- Functions: 4415
 - External dependencies: 14
