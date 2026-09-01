@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 # ── Windows console UTF-8 fix ──────────────────────────────────────────────
 # Windows cmd/PowerShell default encoding is cp1252 which cannot print
@@ -742,9 +743,11 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         target_units=_units,
         atr_reference=_atr_last,
     )
-    save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
+    # فاز ۹۵-و: sanity prediction باید همان مدلی باشد که ذخیره شد
+    saved_artifact = save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
 
     # ---- one live prediction so the output is concrete -----------------
+    sanity_artifact = saved_artifact if saved_artifact is not None else outcome["artifact"]
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
     last_close = float(candles[-1].close.amount)
 
@@ -762,7 +765,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         forecast = RangePredictor(
             horizon=role.horizon, timeframe=timeframe, target_units=target_units
         ).forecast(
-            outcome["artifact"],
+            sanity_artifact,
             window,
             reference_close=last_close,
             atr_reference=atr_reference,
@@ -799,7 +802,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         from ShadBotTrader.infrastructure.ai.dual_predictor import SignalPredictor
 
         forecast = SignalPredictor(horizon=role.horizon, timeframe=timeframe).forecast(
-            outcome["artifact"], window
+            sanity_artifact, window
         )
         print(f"\n  PREDICTION for the next {role.horizon} {timeframe} candles:")
         print(f"    sell : {forecast.sell_probability:6.1%}")
@@ -984,7 +987,7 @@ def save_model(
     dataset,
     checkpoint=None,
     learning_rate: float = 1.5e-4,
-) -> None:
+) -> Any:
     """Persist the trained artifact and record what produced it.
 
     Phase 40: training used to fit a network, print a prediction and
@@ -994,9 +997,14 @@ def save_model(
 
     The sidecar record is what lets the dashboard list models by role
     and dataset instead of asking the operator to decode a filename.
+
+    فاز ۹۵-و: آرتیفکتِ واقعاً ذخیره‌شده برگردانده می‌شود تا sanity
+    prediction بعد از save_model همان مدلی را بسنجد که روی دیسک است
+    (قبلاً مدلِ خامِ آخرین فولد سنجیده می‌شد، نه best checkpoint).
     """
     from pathlib import Path
 
+    from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
     from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
         FilesystemArtifactStore,
     )
@@ -1032,14 +1040,24 @@ def save_model(
                 f"NOT written over the best one"
             )
             print(f"    record  : {catalogue.record_path(role.model_id, version)}")
-            return
+            # فاز ۹۵-و: همان best checkpoint برگردد تا sanity prediction
+            # مدلِ ذخیره‌شده را بسنجد، نه مدل خام آخرین فولد را
+            try:
+                return FilesystemArtifactStore(root).load(
+                    ModelId(role.model_id), ModelVersion(version)
+                )
+            except Exception:
+                return None
         # The last epoch WAS the best; the checkpoint already stored it.
         print(
             f"\n  KEPT   {role.model_id} v{version} from the final epoch "
             f"({label} {final:.6f}, the best of the run)"
         )
         print(f"    record  : {catalogue.record_path(role.model_id, version)}")
-        return
+        try:
+            return FilesystemArtifactStore(root).load(ModelId(role.model_id), ModelVersion(version))
+        except Exception:
+            return None
 
     version = catalogue.next_version(role.model_id)
 
@@ -1052,7 +1070,7 @@ def save_model(
         print(f"  [!] artifact v{version} already exists; keeping the existing file")
     except Exception as error:
         print(f"  [!] could not save the artifact: {type(error).__name__}: {error}")
-        return
+        return None
 
     record = ModelRecord(
         model_id=role.model_id,
@@ -1082,6 +1100,11 @@ def save_model(
     print(f"    quality : {record.headline_metric}")
     print(f"    loss fn : {record.loss_function}")
     print(f"    record  : {path}")
+    # فاز ۹۵-و: همان آرتیفکت ذخیره‌شده برگردد
+    try:
+        return FilesystemArtifactStore(root).load(ModelId(role.model_id), ModelVersion(version))
+    except Exception:
+        return None
 
 
 def print_quality(
@@ -1178,11 +1201,18 @@ def print_quality(
             low_mae = final.get("val_low_mae")
             if high_mae is not None and low_mae is not None:
                 last_step_mae = (high_mae + low_mae) / 2.0
-                print(
-                    f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
-                    f"— full-sequence val_mae {mae:.4f} averages every window "
-                    f"position and is NOT the trading number."
-                )
+                if abs(last_step_mae - mae) < 5e-4:
+                    # فاز ۹۵-و: horizon=1 — فقط یک گام داریم؛ دو عدد یکی‌اند
+                    print(
+                        f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
+                        f"(horizon=1, identical to the full-sequence average)."
+                    )
+                else:
+                    print(
+                        f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
+                        f"— full-sequence val_mae {mae:.4f} averages every window "
+                        f"position and is NOT the trading number."
+                    )
             else:
                 last_step_mae = mae
 
@@ -1201,6 +1231,12 @@ def print_quality(
                         f"    vs constant baseline {val_baseline:.4f}: the final-step "
                         f"MAE {last_step_mae:.4f} is NO BETTER than a constant "
                         f"prediction — it has not learned anything usable yet."
+                    )
+                    print(
+                        "    hint: single-candle wick size (in ATR units) is nearly "
+                        "unpredictable — the median IS near-optimal there. Skill "
+                        "shows up at longer horizons where drift accumulates "
+                        "(retrain with --horizon 2..5 and compare the verdicts)."
                     )
 
             bound_labels = (

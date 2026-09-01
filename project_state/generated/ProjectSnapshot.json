@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "5887d51ee0229d5e790042fe38773f3cd23c96ad0798dd8d4c19799bba10615a",
-      "size_bytes": 151564
+      "sha256": "ecccc9b10cea7167003973c1f0ecd3d34d1279d7c580c036d94d5de25f55675f",
+      "size_bytes": 153015
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
+      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
     },
     {
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "7e5253ebb6ee9020f52d6480935d1a33c84584c2d84a90777d25305c414d9073",
-      "size_bytes": 55798
+      "sha256": "0d4640df1361bb3ec8ce57cf03cf3caba83beda16673821befe1c930d0c31154",
+      "size_bytes": 57997
     },
     {
       "category": "script",
@@ -4951,14 +4951,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-01T05:16:49.854398+00:00",
+  "generated_at": "2026-09-01T05:46:05.462328+00:00",
   "git": {
     "branch": "main",
-    "commit": "e96d1b3a3eb3ffce7daa63db8c5b3768517f63e9",
+    "commit": "2be2db08ee6ec4b52b71d5c98b1d67f64cbb343b",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "2be2db0 Phase 95e: actually draw the /data forecast path on the chart",
       "e96d1b3 Phase 95d: per-step label profile + per-step validation MAE",
       "e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention",
       "9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline",
@@ -4967,8 +4968,7 @@
       "1f15156 docs: root cause analysis \u2014 constant offset is a structural limitation, not a code bug",
       "dd52ad0 docs: range model constant-offset analysis \u2014 structural limitation of minmax-scaled input + percentage targets",
       "0ef5eeb Phase 94: fix bug 58 \u2014 statsHtml was const but received += Base price",
-      "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table",
-      "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black"
+      "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table"
     ]
   },
   "modules": [
@@ -11358,7 +11358,7 @@
     "test_file_count": 138,
     "test_lines": 23216,
     "total_file_count": 815,
-    "total_lines": 118406
+    "total_lines": 118442
   },
   "test_file_count": 138
 }

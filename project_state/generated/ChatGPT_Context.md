@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-01T05:16:49.854398+00:00
+- Snapshot generated at: 2026-09-01T05:46:05.462328+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: e96d1b3a3eb3ffce7daa63db8c5b3768517f63e9
+- Commit: 2be2db08ee6ec4b52b71d5c98b1d67f64cbb343b
 - Dirty: yes (1 files)
 - Recent commits:
+  - 2be2db0 Phase 95e: actually draw the /data forecast path on the chart
   - e96d1b3 Phase 95d: per-step label profile + per-step validation MAE
   - e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention
   - 9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - dd52ad0 docs: range model constant-offset analysis — structural limitation of minmax-scaled input + percentage targets
   - 0ef5eeb Phase 94: fix bug 58 — statsHtml was const but received += Base price
   - 0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table
-  - 1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw — SyntaxError made /data chart black
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 138
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 118406
+- Total Python lines: 118442
 - Modules: 457
 - Classes: 779
 - Functions: 4425
