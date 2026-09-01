@@ -776,6 +776,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="1 = فقط ساعت‌های خوب: 2,5,6,10,14,15,16,18 UTC",
                 ),
                 CommandField(
+                    "trend_filter",
+                    "Daily trend filter",
+                    "none",
+                    kind="select",
+                    options=("none", "ema50"),
+                    hint=(
+                        "ema50 = SHORT ممنوع وقتی قیمت بالای EMA50 روزانه و LONG "
+                        "ممنوع وقتی زیر آن (ضد ترند-شکنی)"
+                    ),
+                ),
+                CommandField(
                     "min_sl_distance",
                     "Min SL distance ($)",
                     "0",
@@ -2058,6 +2069,7 @@ class CommandHandlers:
                     filter_zero_bar=command.text("filter_zero_bar", "0").strip() == "1",
                     allowed_hours_utc=_allowed_hours,
                     min_sl_distance=_min_sl,
+                    trend_filter=command.text("trend_filter", "none").strip() or "none",
                 )
                 result = dual.run(
                     session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
@@ -2275,6 +2287,14 @@ class CommandHandlers:
                 )
             ),
             (
+                "trend filt : "
+                + (
+                    "ema50 — anti-trend entries blocked"
+                    if (command.text("trend_filter", "none").strip() or "none") == "ema50"
+                    else "off"
+                )
+            ),
+            (
                 f"min SL dist : {command.number('min_sl_distance', 0.0):g}$"
                 if command.number("min_sl_distance", 0.0) > 0
                 else "min SL dist : off"
@@ -2338,6 +2358,12 @@ class CommandHandlers:
                     f" · range ran: {_pst.get('range_predictions', 0)}"
                     f" · abstains: {_pst.get('abstentions', 0)}"
                 )
+                # فاز ۹۶-ب: بلوک‌های فیلتر ترند
+                if _pst.get("trend_blocked"):
+                    lines.append(
+                        f"trend blocks: {_pst['trend_blocked']} anti-trend entries "
+                        f"refused by ema50 filter"
+                    )
                 # فاز ۹۵/۹۶: واحد تارگت مدل رنج — مدل قدیمی (pct) هشدار بلند
                 if _pst.get("range_target_units"):
                     if _pst["range_target_units"] == "pct":

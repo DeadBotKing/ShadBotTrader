@@ -109,6 +109,7 @@ class DualModelBacktestService:
         allowed_hours_utc: Optional[Sequence[int]] = None,
         min_sl_distance: float = 0.0,
         range_target_units: str = "pct",
+        trend_filter: str = "none",
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -116,6 +117,8 @@ class DualModelBacktestService:
             raise ValidationError(
                 f"Unknown range target units: {range_target_units!r} (use 'pct' or 'atr')"
             )
+        if trend_filter not in ("none", "ema50"):
+            raise ValidationError(f"Unknown trend filter: {trend_filter!r} (use 'none' or 'ema50')")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
@@ -153,6 +156,8 @@ class DualModelBacktestService:
         self._min_sl_distance = float(min_sl_distance)
         # فاز ۹۵: واحد تارگت مدل رنج ("atr" = ضرایب ATR)
         self._range_target_units = range_target_units
+        # فاز ۹۶-ب: فیلتر ترند روزانه ("ema50" یا "none")
+        self._trend_filter = trend_filter
 
     @classmethod
     def from_storage(
@@ -176,6 +181,7 @@ class DualModelBacktestService:
         filter_zero_bar: bool = False,
         allowed_hours_utc: Optional[Sequence[int]] = None,
         min_sl_distance: float = 0.0,
+        trend_filter: str = "none",
     ) -> "DualModelBacktestService":
         """Load both artifacts and their ``training.json`` metadata.
 
@@ -268,6 +274,7 @@ class DualModelBacktestService:
             allowed_hours_utc=allowed_hours_utc,
             min_sl_distance=min_sl_distance,
             range_target_units=getattr(range_record, "target_units", "pct") or "pct",
+            trend_filter=trend_filter,
         )
 
     @property
@@ -361,6 +368,8 @@ class DualModelBacktestService:
             spread_pct=getattr(self._configuration, "spread_pct", None),
             # فاز ۹۵: واحد تارگت مدل رنج — مدل ATR به ATR مرجع نیاز داره
             range_target_units=self._range_target_units,
+            # فاز ۹۶-ب: فیلتر ترند روزانه
+            trend_filter=self._trend_filter,
         )
 
         _active_config = self._configuration

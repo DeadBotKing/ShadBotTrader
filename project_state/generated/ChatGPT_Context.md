@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-01T15:25:18.504873+00:00
+- Snapshot generated at: 2026-09-01T16:02:33.286435+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 319
-- Test modules: 139
+- Test modules: 140
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 1c07444bc9f5a453ecf50ff4465b8772977814f9
-- Dirty: yes (2 files)
+- Commit: d338503fad2cc4065536159db42b9fc0453ceb37
+- Dirty: yes (4 files)
 - Recent commits:
+  - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
   - 1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)
   - 0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes
   - 2be2db0 Phase 95e: actually draw the /data forecast path on the chart
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - ce5676d docs: remove stale '109-feature' banner/help/docstrings
   - 4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere
   - 1f15156 docs: root cause analysis — constant offset is a structural limitation, not a code bug
-  - dd52ad0 docs: range model constant-offset analysis — structural limitation of minmax-scaled input + percentage targets
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 816
+- Total files: 817
 - Source files: 319
-- Test files: 139
+- Test files: 140
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 118661
-- Modules: 458
-- Classes: 780
-- Functions: 4433
+- Total Python lines: 118907
+- Modules: 459
+- Classes: 785
+- Functions: 4450
 - External dependencies: 14

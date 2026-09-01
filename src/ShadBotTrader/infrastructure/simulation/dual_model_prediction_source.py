@@ -62,6 +62,7 @@ class DualModelPredictionSource(PredictionSource):
         spread: Optional[Decimal] = None,
         spread_pct: Optional[Decimal] = None,
         range_target_units: str = "pct",
+        trend_filter: str = "none",
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -69,6 +70,8 @@ class DualModelPredictionSource(PredictionSource):
             raise ValidationError(
                 f"Unknown range target units: {range_target_units!r} (use 'pct' or 'atr')"
             )
+        if trend_filter not in ("none", "ema50"):
+            raise ValidationError(f"Unknown trend filter: {trend_filter!r} (use 'none' or 'ema50')")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if not 0.0 <= hold_confidence_penalty <= 1.0:
@@ -99,6 +102,12 @@ class DualModelPredictionSource(PredictionSource):
         self._range_target_units = range_target_units
         self._atr_cache_key: Any = None
         self._atr_cache_value: float = 0.0
+        # فاز ۹۶-ب: فیلتر ترند روزانه — "ema50": SHORT ممنوع وقتی close
+        # بالای EMA50(1D) و LONG ممنوع وقتی زیر آن (دو دیتاست پشت‌سرهم
+        # نشان دادند ضرر اصلی short-در-روند-صعودی است).
+        self._trend_filter = trend_filter
+        self._trend_blocks = 0
+        self._last_trend_block = ""
         self._signal_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(signal_candles)
         }
@@ -187,6 +196,8 @@ class DualModelPredictionSource(PredictionSource):
             "range_window_size": self._range_window_size,
             "min_signal_confidence": self._min_signal_confidence,
             "range_target_units": self._range_target_units,
+            "trend_filter": self._trend_filter,
+            "trend_blocked": self._trend_blocks,
         }
 
     # ------------------------------------------------------------- port --
@@ -259,6 +270,18 @@ class DualModelPredictionSource(PredictionSource):
         if not signal.is_actionable(self._min_signal_confidence):
             return self._last_value
 
+        # فاز ۹۶-ب: فیلتر ترند روزانه — قبل از مصرف مدل رنج.
+        # "ema50": SHORT ممنوع وقتی آخرین close رنج بالای EMA50 است
+        # (بازار صعودی) و LONG ممنوع وقتی زیر آن (بازار نزولی).
+        # EMA کاملاً علوی از کندل‌های تحویل‌شده؛ دادهٔ کمتر از دوره →
+        # فیلتر بی‌اثر (اجازه) و شمرده می‌شود.
+        if self._trend_filter == "ema50":
+            blocked, reason = self._trend_blocks_signal(signal)
+            if blocked:
+                self._trend_blocks += 1
+                self._last_trend_block = reason
+                return self._last_value
+
         if len(self._range_candles) < self._range_window_size:
             self._abstentions += 1
             return self._last_value
@@ -289,7 +312,7 @@ class DualModelPredictionSource(PredictionSource):
                 range_window,
                 reference_close=float(latest_range.close.amount),
                 generated_at=str(latest_range.open_time),
-                **forecast_kwargs
+                **forecast_kwargs,
             )
             self._range_predictions += 1
         except Exception as error:
@@ -298,6 +321,36 @@ class DualModelPredictionSource(PredictionSource):
             self._error_counts[key] = self._error_counts.get(key, 0) + 1
             self._last_range = None
         return self._last_value
+
+    def _ema(self, values: Sequence[float], period: int) -> float:
+        """EMA علوی با seed از اولین قیمت (دترمینیستیک، بدون lookahead)."""
+        alpha = 2.0 / (period + 1.0)
+        result = float(values[0])
+        for value in values[1:]:
+            result = alpha * float(value) + (1.0 - alpha) * result
+        return result
+
+    def _trend_blocks_signal(self, signal: Any) -> tuple[bool, str]:
+        """True وقتی جهت سیگنال خلاف ترند EMA50 روزانه است (فاز ۹۶-ب)."""
+        candles = list(self._range_candles)
+        period = 50
+        if len(candles) < period:
+            return False, ""
+        closes = [float(candle.close.amount) for candle in candles]
+        ema = self._ema(closes, period)
+        last_close = closes[-1]
+        direction = signal.predicted_class.label
+        if direction == "sell" and last_close > ema:
+            return True, (
+                f"trend ema50: SHORT blocked — close {last_close:.2f} > "
+                f"EMA50 {ema:.2f} (uptrend)"
+            )
+        if direction == "buy" and last_close < ema:
+            return True, (
+                f"trend ema50: LONG blocked — close {last_close:.2f} < "
+                f"EMA50 {ema:.2f} (downtrend)"
+            )
+        return False, ""
 
     def _reference_atr(self, latest_range: Candle) -> Optional[float]:
         """ATR(period) at the latest closed range candle (فاز ۹۵).
@@ -344,6 +397,8 @@ class DualModelPredictionSource(PredictionSource):
         self._error_counts = {}
         self._atr_cache_key = None
         self._atr_cache_value = 0.0
+        self._trend_blocks = 0
+        self._last_trend_block = ""
 
     # -------------------------------------------------------- brackets --
     def bracket_for(
