@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "6c5b0034b8bb002adf033671b7c48f11364a1e5dcd9e668648f87c2568dda68c",
-      "size_bytes": 149057
+      "sha256": "5887d51ee0229d5e790042fe38773f3cd23c96ad0798dd8d4c19799bba10615a",
+      "size_bytes": 151564
     },
     {
       "category": "legacy",
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "c432e0650434a6775ff96eb8a9c937a6ee54d7b8bb18b38671ddd414d53927e8",
-      "size_bytes": 40241
+      "sha256": "f31203716533c0829e36f750a4319a49748656a0d38938b5da9c2de93f9a5ad6",
+      "size_bytes": 40697
     },
     {
       "category": "source",
@@ -4951,14 +4951,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-08-31T16:06:40.308423+00:00",
+  "generated_at": "2026-09-01T05:16:49.854398+00:00",
   "git": {
     "branch": "main",
-    "commit": "e3dab5362501ed6570dcbfaf87b5a498ec7c432a",
+    "commit": "e96d1b3a3eb3ffce7daa63db8c5b3768517f63e9",
     "dirty": true,
-    "dirty_files": 4,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "e96d1b3 Phase 95d: per-step label profile + per-step validation MAE",
       "e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention",
       "9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline",
       "ce5676d docs: remove stale '109-feature' banner/help/docstrings",
@@ -4967,8 +4968,7 @@
       "dd52ad0 docs: range model constant-offset analysis \u2014 structural limitation of minmax-scaled input + percentage targets",
       "0ef5eeb Phase 94: fix bug 58 \u2014 statsHtml was const but received += Base price",
       "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table",
-      "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black",
-      "53b78ae Phase 92: fix forecast path never drawing on /data \u2014 renderForecast was missing forecastPath wiring"
+      "1e66be8 Phase 93: remove duplicate plotW/step/yP/xOf declarations in draw \u2014 SyntaxError made /data chart black"
     ]
   },
   "modules": [
@@ -11354,11 +11354,11 @@
     "legacy_file_count": 176,
     "module_count": 457,
     "source_file_count": 319,
-    "source_lines": 50194,
+    "source_lines": 50201,
     "test_file_count": 138,
     "test_lines": 23216,
     "total_file_count": 815,
-    "total_lines": 118399
+    "total_lines": 118406
   },
   "test_file_count": 138
 }

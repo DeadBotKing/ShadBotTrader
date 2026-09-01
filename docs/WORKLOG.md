@@ -2957,3 +2957,35 @@ ruff ✅ black ✅  pytest full suite green
 ```
 ruff ✅ black ✅  pytest full suite green
 ```
+
+---
+
+## 2026-08-30 — فاز ۹۵-ه: رسم مسیر forecast روی چارت /data
+
+**گزارش اپراتور:** «توی /data پیش‌بینی‌ها روی کندل‌ها نمایش داده نمی‌شه؛
+فقط عددها رو پرینت می‌کنه.»
+
+### ریشه — دو باگ مستقل
+
+1. **`renderForecast` هرگز `draw()` صدا نمی‌زد.** forecastPath ست می‌شد
+   ولی چارت تا بلور بعدی (اسکرول/زوم/تغییر مدل) دوباره رسم نمی‌شد →
+   اپراتور فقط جدول عددی می‌دید.
+2. **click handler اندیس گلوبال را به‌جای لوکال می‌فرستاد.**
+   `idx = base + rel*visible` گلوبال است؛ پاس‌دادنش به‌عنوان localIdx
+   یعنی draw() بعدی انکر را جای دور فرض می‌کرد → totalSlots منفجر
+   (base+5000+12 اسلات) → step زیرپیکسلی → چارت له و مسیر بیرون بوم.
+   باگ ۲ با باگ ۱ ماسک شده بود (draw اصلاً صدا زده نمی‌شد).
+
+### رفع
+
+- `renderForecast`: بعد از ست کردن forecastPath → `draw()` فوری.
+- کلیک: `const localIdx = idx - base;` → پاس به fetchForecast و
+  `_clickedLocalIdx` (کامنت غلط هم اصلاح شد).
+
+### تأیید
+
+```
+node --check روی _CHART_SCRIPT ✅
+assert دو فیکس در اسکریپت ✅
+pytest full suite green
+```

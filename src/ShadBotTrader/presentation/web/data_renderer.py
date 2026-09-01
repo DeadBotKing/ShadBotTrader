@@ -586,6 +586,9 @@ function renderForecast(f, localIdx, symbolTf) {
       localIdx: localIdx,
       points: f.points.map(p => ({ high: p.high, low: p.low })),
     };
+    // فاز ۹۵-ه: بدون draw() مسیر فقط با بلور بعدی (اسکرول/زوم) ظاهر
+    // می‌شد — اپراتور فقط جدول عددی می‌دید.
+    draw();
   }
 }
 
@@ -760,8 +763,12 @@ if (chartCanvas) {
       [symbol, timeframe] = symSel.value.split('|');
     }
     updateRfStatus(`bar #${bar.i ?? idx} — predicting…`);
-    window._clickedLocalIdx = idx;   // موقعیت در slice — برای رسم روی چارت
-    fetchForecast(bar.i !== undefined ? bar.i : idx, symbol, timeframe, idx);
+    // فاز ۹۵-ه: localIdx باید «موقعیت در slice» باشد نه اندیس گلوبال —
+    // draw() با xOf(localIdx) رسم می‌کند و گلوبال مسیر را بیرون بوم
+    // می‌برد و totalSlots را منفجر می‌کرد.
+    const localIdx = idx - base;
+    window._clickedLocalIdx = localIdx;
+    fetchForecast(bar.i !== undefined ? bar.i : idx, symbol, timeframe, localIdx);
   });
 }
 
