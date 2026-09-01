@@ -190,6 +190,21 @@ def saved_learning_rate(storage_root: str | Path, model_id: str) -> float:
         return DEFAULT_LEARNING_RATE
 
 
+def _split_model_spec(text: str, default_id: str) -> tuple[str, int | None]:
+    """فاز ۹۶: «id» یا «id:vN» → (model_id, version|None).
+
+    خالی → (default_id, None) یعنی جدیدترین نسخه.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return default_id, None
+    if ":" in raw:
+        model_id, _, version = raw.partition(":")
+        version = version.strip().lstrip("vV")  # «v1» یا «1» هر دو قبول
+        return (model_id.strip() or default_id), (int(version) if version.isdigit() else None)
+    return raw, None
+
+
 def percent_to_fraction(raw: str, default: float) -> float:
     """Turn a percent typed by a human into the fraction the code uses.
 
@@ -533,6 +548,22 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "1D",
                     hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین",
                 ),
+                CommandField(
+                    "signal_model",
+                    "Signal model (id or id:vN)",
+                    "",
+                    hint="خالی = gold_signal_5m جدیدترین نسخه؛ نسخهٔ خاص: gold_signal_5m:v1",
+                ),
+                CommandField(
+                    "range_model",
+                    "Range model (id or id:vN)",
+                    "",
+                    hint=(
+                        "خالی = gold_range_{tf} جدیدترین نسخه. فاز ۹۵: مدل ATR را "
+                        "صریح انتخاب کن (مثلا gold_range_1d:v1) — نسخه‌های قدیمی "
+                        "(pct) آفست ثابتِ درصدی می‌دهند"
+                    ),
+                ),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
                 CommandField("range_window", "Range window (0 = model)", "0", kind="number"),
@@ -652,6 +683,22 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Range timeframe",
                     "1D",
                     hint="1D = پیش‌بینی high/low فردا (horizon=1) — دقیق‌ترین",
+                ),
+                CommandField(
+                    "signal_model",
+                    "Signal model (id or id:vN)",
+                    "",
+                    hint="خالی = gold_signal_5m جدیدترین نسخه؛ نسخهٔ خاص: gold_signal_5m:v1",
+                ),
+                CommandField(
+                    "range_model",
+                    "Range model (id or id:vN)",
+                    "",
+                    hint=(
+                        "خالی = gold_range_{tf} جدیدترین نسخه. فاز ۹۵: مدل ATR را "
+                        "صریح انتخاب کن (مثلا gold_range_1d:v1) — نسخه‌های قدیمی "
+                        "(pct) آفست ثابتِ درصدی می‌دهند"
+                    ),
                 ),
                 CommandField("threshold_pct", "Signal probability %", "60", kind="number"),
                 CommandField("signal_window", "Signal window (0 = model)", "0", kind="number"),
@@ -1985,12 +2032,23 @@ class CommandHandlers:
 
                 # range_model_id از range_timeframe ساخته میشه
                 # gold_range_1h یا gold_range_1d بسته به انتخاب کاربر
+                # فاز ۹۶: «id:vN» نسخهٔ صریح را انتخاب می‌کند — بدون آن
+                # latest_version (بزرگ‌ترین شماره) لود می‌شود که ممکن است
+                # مدل قدیمیِ قبل از فاز ۹۵ باشد.
                 _default_range_id = f"gold_range_{range_timeframe.lower()}"
+                _signal_id, _signal_ver = _split_model_spec(
+                    command.text("signal_model", ""), "gold_signal_5m"
+                )
+                _range_id, _range_ver = _split_model_spec(
+                    command.text("range_model", ""), _default_range_id
+                )
                 dual = DualModelBacktestService.from_storage(
                     storage_root=self._storage_root,
                     symbol=symbol_text,
-                    signal_model_id=command.text("signal_model", "gold_signal_5m"),
-                    range_model_id=command.text("range_model", _default_range_id),
+                    signal_model_id=_signal_id,
+                    range_model_id=_range_id,
+                    signal_version=_signal_ver,
+                    range_version=_range_ver,
                     min_signal_confidence=command.number("threshold_pct", 60.0) / 100.0,
                     signal_window_size=command.integer("signal_window", 0) or None,
                     range_window_size=command.integer("range_window", 0) or None,
@@ -2016,10 +2074,8 @@ class CommandHandlers:
                 )
                 self._last_run_context = {
                     "symbol_line": f"{symbol_text} {signal_timeframe} + {range_timeframe} (range)",
-                    "models_line": (
-                        f"{command.text('signal_model', 'gold_signal_5m')}"
-                        f" + {command.text('range_model', _default_range_id)}"
-                    ),
+                    "models_line": f"{_signal_id}:{_signal_ver or 'latest'}"
+                    f" + {_range_id}:{_range_ver or 'latest'}",
                 }
                 return result, "dual", ""
             except Exception as _dual_err:
@@ -2282,9 +2338,17 @@ class CommandHandlers:
                     f" · range ran: {_pst.get('range_predictions', 0)}"
                     f" · abstains: {_pst.get('abstentions', 0)}"
                 )
-                # فاز ۹۵: واحد تارگت مدل رنج در گزارش بکتست
+                # فاز ۹۵/۹۶: واحد تارگت مدل رنج — مدل قدیمی (pct) هشدار بلند
                 if _pst.get("range_target_units"):
-                    lines.append(f"range units : {_pst['range_target_units']}")
+                    if _pst["range_target_units"] == "pct":
+                        lines.append(
+                            "range units : pct ‼️ PRE-Phase95 model — offsets are a "
+                            "CONSTANT % of price. Select the ATR model "
+                            "(range_model = id:vN, e.g. gold_range_1d:v1) or archive "
+                            "the old version; results are not comparable."
+                        )
+                    else:
+                        lines.append(f"range units : {_pst['range_target_units']}")
                 for _err, _n in (_pst.get("errors") or {}).items():
                     lines.append(f"  [err x{_n}] {_err}")
         if replay_diagnostics:
