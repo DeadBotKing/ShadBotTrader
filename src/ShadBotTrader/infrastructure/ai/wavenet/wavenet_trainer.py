@@ -718,8 +718,11 @@ class WavenetTrainer(ModelTrainer):
             actual = actual[:count, -1, :].astype(np.float64)
             predicted = predicted[:count, -1, :].astype(np.float64)
         else:
-            actual = actual[:count, :2].astype(np.float64)
-            predicted = predicted[:count, :2].astype(np.float64)
+            # فاز ۹۵-ز: 2D یا legacy [N, 2] است یا [N, H*2] تخت — هر دو
+            # کامل نگه داشته می‌شوند؛ برش قدیمیِ [:, :2] گام‌های k>1 را
+            # خاموش حذف می‌کرد.
+            actual = actual[:count].astype(np.float64)
+            predicted = predicted[:count].astype(np.float64)
         error = predicted - actual
         metrics = {
             "val_high_mae": float(np.mean(np.abs(error[:, 0]))),
@@ -736,6 +739,21 @@ class WavenetTrainer(ModelTrainer):
             high_abs = np.abs(error[:, 2 * k])
             low_abs = np.abs(error[:, 2 * k + 1])
             metrics[f"val_step{k + 1}_mae"] = float((high_abs.mean() + low_abs.mean()) / 2.0)
+        # فاز ۹۵-ز: خطای «سطح براکت» — براکت worst-case روی گام‌ها را
+        # مصرف می‌کند (max/min روی k)؛ مقایسهٔ منصفانه هم worst-case با
+        # worst-case است، نه k1 با میانگین همهٔ ستون‌ها.
+        if pairs > 1:
+            actual_wc_high = actual[:, 0::2].max(axis=1)
+            actual_wc_low = actual[:, 1::2].min(axis=1)
+            predicted_wc_high = predicted[:, 0::2].max(axis=1)
+            predicted_wc_low = predicted[:, 1::2].min(axis=1)
+            bracket_high_mae = float(np.mean(np.abs(predicted_wc_high - actual_wc_high)))
+            bracket_low_mae = float(np.mean(np.abs(predicted_wc_low - actual_wc_low)))
+            metrics["val_bracket_high_mae"] = bracket_high_mae
+            metrics["val_bracket_low_mae"] = bracket_low_mae
+            metrics["val_bracket_mae"] = (bracket_high_mae + bracket_low_mae) / 2.0
+        else:
+            metrics["val_bracket_mae"] = metrics["val_step1_mae"]
         return metrics
 
     def _dataset_for(self, start: int, stop: int) -> tuple:

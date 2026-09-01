@@ -580,6 +580,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     # MAE یک پیش‌بینی‌کنندهٔ ثابت (میانهٔ train) روی همان فولد ولید.
     # اگر val_mae مدل از این عدد کمتر نباشد، مدل چیزی یاد نگرفته.
     _units = getattr(dataset, "target_units", "pct") or "pct"
+    val_bracket_baseline: float | None = None  # فاز ۹۵-ز: worst-case vs worst-case
     if role.name == "range" and 0 < resolved < len(dataset.series):
         import statistics as _stats
 
@@ -588,10 +589,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         _train_rows = _rows[: len(_rows) - resolved]
         _val_rows = _rows[len(_rows) - resolved :]
         if _train_rows and _val_rows:
+            _medians = {c: _stats.median(r[c] for r in _train_rows) for c in _tcols}
             _total = 0.0
             for _c in _tcols:
-                _med = _stats.median(row[_c] for row in _train_rows)
-                _total += sum(abs(row[_c] - _med) for row in _val_rows) / len(_val_rows)
+                _total += sum(abs(row[_c] - _medians[_c]) for row in _val_rows) / len(_val_rows)
             val_fold_baseline = _total / len(_tcols)
             unit_tag = "ATR14" if _units == "atr" else "frac"
             print(
@@ -599,6 +600,42 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 f"(MAE of always predicting the train median on the last "
                 f"{resolved} rows — the model must beat this)"
             )
+
+            # فاز ۹۵-ز: برای h>1 براکت worst-case مصرف می‌کند — قضاوتِ
+            # درست هم worst-case با worst-case است. constant base بالا
+            # میانگین همهٔ ستون‌هاست و k1 را با k2 قاطی می‌کند.
+            _pairs = len(_tcols) // 2
+            if _pairs > 1:
+                _step_cells = []
+                for _k in range(_pairs):
+                    _step = 0.0
+                    for _c in (_tcols[2 * _k], _tcols[2 * _k + 1]):
+                        _step += sum(abs(r[_c] - _medians[_c]) for r in _val_rows) / len(
+                            _val_rows
+                        )
+                    _step_cells.append(_step / 2)
+                print(
+                    "  climate/step   : "
+                    + " | ".join(f"k{i + 1} {v:.4f}" for i, v in enumerate(_step_cells))
+                    + f"  ({unit_tag}; per-step constant MAE — pair with per-step MAE in QUALITY)"
+                )
+
+                _wc_high = max(_medians[_tcols[2 * _k]] for _k in range(_pairs))
+                _wc_low = min(_medians[_tcols[2 * _k + 1]] for _k in range(_pairs))
+                _bh = sum(
+                    abs(max(r[_tcols[2 * _k]] for _k in range(_pairs)) - _wc_high)
+                    for r in _val_rows
+                ) / len(_val_rows)
+                _bl = sum(
+                    abs(min(r[_tcols[2 * _k + 1]] for _k in range(_pairs)) - _wc_low)
+                    for r in _val_rows
+                ) / len(_val_rows)
+                val_bracket_baseline = (_bh + _bl) / 2
+                print(
+                    f"  bracket base   : {val_bracket_baseline:.4f} {unit_tag} "
+                    f"(worst-case constant vs actual worst-case — THE number a "
+                    f"bracket must beat; inference consumes max/min over k)"
+                )
 
     # فاز ۹۵-د: پروفایل لیبل بر حسب k — منحنی «اقلیم» داده. خروجیِ
     # بدون‌مهارت مدل دقیقاً همین منحنی است؛ مقایسهٔ خروجی مدل با آن
@@ -742,6 +779,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         val_baseline=val_fold_baseline,
         target_units=_units,
         atr_reference=_atr_last,
+        bracket_baseline=val_bracket_baseline,
     )
     # فاز ۹۵-و: sanity prediction باید همان مدلی باشد که ذخیره شد
     saved_artifact = save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
@@ -1114,6 +1152,7 @@ def print_quality(
     val_baseline: float | None = None,
     target_units: str = "pct",
     atr_reference: float | None = None,
+    bracket_baseline: float | None = None,
 ) -> None:
     """Report how good the model actually is, not just that it ran.
 
@@ -1204,21 +1243,50 @@ def print_quality(
                 if abs(last_step_mae - mae) < 5e-4:
                     # فاز ۹۵-و: horizon=1 — فقط یک گام داریم؛ دو عدد یکی‌اند
                     print(
-                        f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
+                        f"    step-1 MAE (what inference uses): {last_step_mae:.4f} "
                         f"(horizon=1, identical to the full-sequence average)."
                     )
                 else:
+                    # فاز ۹۵-ز: برای h>1 این فقط گام ۱ است — عددِ براکت
+                    # worst-case روی k است (پایین‌تر چاپ می‌شود).
                     print(
-                        f"    final-step MAE (what inference uses): {last_step_mae:.4f} "
-                        f"— full-sequence val_mae {mae:.4f} averages every window "
-                        f"position and is NOT the trading number."
+                        f"    step-1 MAE: {last_step_mae:.4f} — full-sequence val_mae "
+                        f"{mae:.4f} averages every window position and is NOT the "
+                        f"trading number."
                     )
             else:
                 last_step_mae = mae
 
-            # حکم مستقیم مقابل پیش‌بینی ثابت — ریشهٔ مشکل آفست ثابت همین‌جا
-            # قابل سنجش است (baseline روی همان ردیف‌های فولد آخر است).
-            if val_baseline is not None:
+            # فاز ۹۵-ز: قضاوت براکت — برای h>1 باید worst-case با
+            # worst-case مقایسه شود؛ k1 تنها، k2 خراب را پنهان می‌کند.
+            bracket_mae = final.get("val_bracket_mae")
+            use_bracket = (
+                bracket_mae is not None and bracket_baseline is not None and bracket_mae > 0
+            )
+            if use_bracket and bracket_mae != last_step_mae:
+                print(
+                    f"    bracket MAE (worst-case over k — what TP/SL consumes): "
+                    f"{bracket_mae:.4f}  "
+                    f"vs constant-bracket base {bracket_baseline:.4f}."
+                )
+
+            if use_bracket:
+                if bracket_mae < bracket_baseline:
+                    print(
+                        f"    VERDICT (bracket level): BEATS the constant worst-case "
+                        f"predictor by {bracket_baseline - bracket_mae:.4f} "
+                        f"({(bracket_baseline - bracket_mae) / bracket_baseline:.0%} better) "
+                        f"— the bracket the model builds is genuinely smarter than climate."
+                    )
+                else:
+                    print(
+                        f"    VERDICT (bracket level): NO BETTER than the constant "
+                        f"worst-case predictor ({bracket_mae:.4f} vs "
+                        f"{bracket_baseline:.4f}) — its TP/SL levels carry no usable "
+                        f"information beyond the climate; trade with care."
+                    )
+            elif val_baseline is not None:
+                # fallback: h1 یا بدون bracket metrics
                 if last_step_mae < val_baseline:
                     print(
                         f"    vs constant baseline {val_baseline:.4f}: the model "
@@ -1267,6 +1335,12 @@ def print_quality(
                     for key in step_keys
                 )
                 print(f"    per-step MAE: {cells}")
+            for key, label in (
+                ("val_bracket_high_mae", "bracket high MAE"),
+                ("val_bracket_low_mae", "bracket low MAE"),
+            ):
+                if key in final:
+                    print(f"    {label:<17}: {final[key]:+.6f}")
 
 
 def main(argv: list[str] | None = None) -> int:

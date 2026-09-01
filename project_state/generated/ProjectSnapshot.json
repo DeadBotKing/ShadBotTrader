@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ecccc9b10cea7167003973c1f0ecd3d34d1279d7c580c036d94d5de25f55675f",
-      "size_bytes": 153015
+      "sha256": "8219340188da031598e44a39bfadbb25e3f8e9413fa8637a1dd2c0d0a0d0406e",
+      "size_bytes": 155496
     },
     {
       "category": "legacy",
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "0d4640df1361bb3ec8ce57cf03cf3caba83beda16673821befe1c930d0c31154",
-      "size_bytes": 57997
+      "sha256": "99097969e0df6f865f97a0c304f8ef70152279d5f2864fee597537673f727850",
+      "size_bytes": 61909
     },
     {
       "category": "script",
@@ -3273,8 +3273,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "87456ca0c943f4f2d867e7565ea04578c7526eb8f678e199d55ea56d6226225b",
-      "size_bytes": 50387
+      "sha256": "03ca7f1754fc88f1e1e1e89a980256e4309fd3fc8507f0f565dee1494c050312",
+      "size_bytes": 51655
     },
     {
       "category": "source",
@@ -4395,8 +4395,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_label_profile_and_step_mae.py",
-      "sha256": "d022dc55406519ecf8b30437e46ce31e5ee1306d93153d603266c39ce3077c2e",
-      "size_bytes": 4354
+      "sha256": "48d6e04814aca332cdc406a83bb22b25a8568675ff5f83721ffd858a91bfe445",
+      "size_bytes": 6138
     },
     {
       "category": "test",
@@ -4951,14 +4951,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-01T05:46:05.462328+00:00",
+  "generated_at": "2026-09-01T06:45:51.425014+00:00",
   "git": {
     "branch": "main",
-    "commit": "2be2db08ee6ec4b52b71d5c98b1d67f64cbb343b",
+    "commit": "0b7d156244864b6d398daf60cd8c44dfcbdbb279",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 12,
     "is_repo": true,
     "recent_commits": [
+      "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes",
       "2be2db0 Phase 95e: actually draw the /data forecast path on the chart",
       "e96d1b3 Phase 95d: per-step label profile + per-step validation MAE",
       "e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention",
@@ -4967,8 +4968,7 @@
       "4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere",
       "1f15156 docs: root cause analysis \u2014 constant offset is a structural limitation, not a code bug",
       "dd52ad0 docs: range model constant-offset analysis \u2014 structural limitation of minmax-scaled input + percentage targets",
-      "0ef5eeb Phase 94: fix bug 58 \u2014 statsHtml was const but received += Base price",
-      "0b008a9 Phase 94: silence browser-abort errors in server; show base price in forecast table"
+      "0ef5eeb Phase 94: fix bug 58 \u2014 statsHtml was const but received += Base price"
     ]
   },
   "modules": [
@@ -9986,7 +9986,7 @@
         "numpy",
         "pytest"
       ],
-      "functions": 8,
+      "functions": 9,
       "internal_imports": [
         "ShadBotTrader.infrastructure.ai.target_builder",
         "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer"
@@ -11349,16 +11349,16 @@
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4425,
+    "function_count": 4426,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 457,
     "source_file_count": 319,
-    "source_lines": 50201,
+    "source_lines": 50219,
     "test_file_count": 138,
-    "test_lines": 23216,
+    "test_lines": 23249,
     "total_file_count": 815,
-    "total_lines": 118442
+    "total_lines": 118567
   },
   "test_file_count": 138
 }

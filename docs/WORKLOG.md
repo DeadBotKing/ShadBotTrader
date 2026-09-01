@@ -3036,3 +3036,46 @@ pytest full suite green
 ```
 ruff ✅ black ✅  pytest full suite green
 ```
+
+---
+
+## 2026-08-30 — فاز ۹۵-ز: حکم سطح-براکت (worst-case vs worst-case)
+
+**ران اپراتور (1D, horizon=2, 50×3، کال‌بک‌های فیکس‌شده):**
+- پروفایل لیبل: high با k رشد می‌کند (+0.401→+0.499)، low ~ثابت →
+  فرضیهٔ فاز ۹۵-د تأیید: منحنی 1Hِ GUI ترکیبی از اقلیم + artifact بود.
+- per-step MAE: k1=0.336 (خوب، ~۱۵٪ بهتر از اقلیمش) ولی
+  **k2=0.649 (خیلی بدتر از اقلیمِ ~0.44)** → مدل گام ۲ را نمی‌بیند
+  (وزن‌دهی 40/60 loss + پخشِ بزرگ‌ترِ k2).
+- LR فولد آخر 0.000218 → زنده؛ کاسکید مرگ رفع شده ✓.
+
+### باگی که حکم این ران آشکار کرد
+
+حکم «BEATS 28%» با خطای k1 (0.3355) در برابر baselineای که میانگین
+ستون‌های k1+k2 بود (0.4654) داده شد — در حالی که براکتِ واقعی از
+worst-case روی k مصرف می‌کند (RangePredictor: max/min روی گام‌ها).
+k1 خوب، k2 خراب را پنهان می‌کند.
+
+### رفع (فاز ۹۵-ز)
+
+1. `_range_validation_metrics`: + `val_bracket_{high,low,}_mae` —
+   MAEِ (max_k high، min_k low) پیش‌بینی در برابر (max_k، min_k) واقعی.
+   برای h1 برابر step1.
+2. برش قدیمی `[:, :2]` در شاخهٔ 2D حذف شد (ورودی تختِ [N, H*2] را به
+   k1 محدود می‌کرد — فقط legacy [N,2]/[N,H*2] کامل نگه داشته می‌شود).
+3. سربرگ: + `climate/step` (MAE ثابتِ هر گام) و + `bracket base`
+   (constant worst-case vs actual worst-case — مقایسهٔ منصفانه).
+4. `print_quality`: برای h>1 حکم با bracket MAE در برابر bracket base
+   (`VERDICT (bracket level)`)؛ پیام step-1 دیگر ادعای «what inference
+   uses» را برای h>1 ندارد.
+
+### پیامد برای اپراتور
+
+ران بعدی h2/h5 حکم جدید را نشان می‌دهد: اگر VERDICT (bracket level)
+NO BETTER بود، یعنی باندِ worst-case مدل از اقلیم بدتر است (k2 خراب
+براکت را مسموم می‌کند) → یا h2 با مصرفِ فقط-گام-۱، یا وزن‌دهی per-step
+loss. تصمیم با دادهٔ ران بعدی.
+
+```
+ruff ✅ black ✅  pytest full suite green (+1 تست براکت)
+```

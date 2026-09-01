@@ -101,3 +101,36 @@ class TestPerStepValidationMetrics:
         metrics = self._metrics(actual, predicted)
         assert metrics["val_step1_mae"] == pytest.approx(0.10)
         assert "val_step2_mae" not in metrics
+        # h1: bracket == step1
+        assert metrics["val_bracket_mae"] == pytest.approx(0.10)
+
+    def test_bracket_mae_is_worst_case_vs_worst_case(self):
+        # h2: خطای k2 بزرگ — براکت worst-case مصرف می‌کند؛ خطای سطح
+        # براکت باید از max/min محاسبه شود نه میانگین k1/k2
+        actual = np.zeros((2, 4))
+        actual[:, 0] = [0.40, 0.50]  # h1
+        actual[:, 1] = [-0.38, -0.42]  # l1
+        actual[:, 2] = [0.50, 0.55]  # h2 — actual worst-case high = 0.50/0.55
+        actual[:, 3] = [-0.60, -0.38]  # l2 — actual worst-case low = -0.60/-0.42
+
+        predicted = np.zeros((2, 4))
+        predicted[:, 0] = [0.30, 0.35]  # h1 pred — خوب
+        predicted[:, 1] = [-0.30, -0.30]  # l1 pred — خوب
+        predicted[:, 2] = [1.20, 1.30]  # h2 pred — خیلی بالا
+        predicted[:, 3] = [-0.20, -0.25]  # l2 pred — خیلی کم‌عمق
+
+        metrics = self._metrics(actual, predicted)
+
+        # worst-case پیش‌بینی high = 1.20/1.30 در برابر 0.50/0.55 واقعی
+        assert metrics["val_bracket_high_mae"] == pytest.approx(
+            (abs(1.20 - 0.50) + abs(1.30 - 0.55)) / 2
+        )
+        # worst-case پیش‌بینی low = -0.30/-0.30 در برابر -0.60/-0.42 واقعی
+        assert metrics["val_bracket_low_mae"] == pytest.approx(
+            (abs(-0.30 + 0.60) + abs(-0.30 + 0.42)) / 2
+        )
+        assert metrics["val_bracket_mae"] == pytest.approx(
+            (metrics["val_bracket_high_mae"] + metrics["val_bracket_low_mae"]) / 2
+        )
+        # و براکت از k1-only بدتر است — دقیقاً سیگنالی که باید دیده شود
+        assert metrics["val_bracket_mae"] > metrics["val_step1_mae"]
