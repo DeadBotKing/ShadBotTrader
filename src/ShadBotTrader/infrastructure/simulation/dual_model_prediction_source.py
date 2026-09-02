@@ -63,6 +63,13 @@ class DualModelPredictionSource(PredictionSource):
         spread_pct: Optional[Decimal] = None,
         range_target_units: str = "pct",
         trend_filter: str = "none",
+        daily_artifact: Any = None,
+        daily_predictor: Any = None,
+        daily_timeframe: Timeframe = Timeframe("1D"),
+        daily_candles: Sequence[Candle] = (),
+        daily_matrix: Any = None,
+        daily_window_size: int = 150,
+        slope_mode: str = "both",
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -72,6 +79,12 @@ class DualModelPredictionSource(PredictionSource):
             )
         if trend_filter not in ("none", "ema50"):
             raise ValidationError(f"Unknown trend filter: {trend_filter!r} (use 'none' or 'ema50')")
+        if slope_mode not in ("both", "either", "high", "low"):
+            raise ValidationError(
+                f"Unknown slope mode: {slope_mode!r} (use 'both', 'either', 'high' or 'low')"
+            )
+        if daily_predictor is not None and daily_window_size < 2:
+            raise ValidationError("daily_window_size must be >= 2 when a daily model is set")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if not 0.0 <= hold_confidence_penalty <= 1.0:
@@ -108,6 +121,33 @@ class DualModelPredictionSource(PredictionSource):
         self._trend_filter = trend_filter
         self._trend_blocks = 0
         self._last_trend_block = ""
+        # فاز ۹۷ — استراتژی سه‌تایم‌فریمی: مدل رنج 1D برای ترند روز
+        # (مجوز ۲: شیب High/Low پیش‌بینی D1 نسبت به D0) و براکت TP/SL
+        # از مدل رنج 4H با fallback های D0 و کندل‌های 5M امروز.
+        self._daily_artifact = daily_artifact
+        self._daily_predictor = daily_predictor
+        self._daily_timeframe = daily_timeframe
+        self._daily_matrix = daily_matrix
+        self._daily_window_size = daily_window_size
+        self._slope_mode = slope_mode
+        self._all_daily_candles = sorted(daily_candles, key=lambda c: c.open_time.value)
+        self._daily_candle_index = {
+            candle.open_time.value: index for index, candle in enumerate(self._all_daily_candles)
+        }
+        self._daily_cursor = 0
+        self._daily_delta = _timeframe_delta(str(daily_timeframe))
+        self._last_daily: Optional[RangeForecast] = None
+        self._last_d0: Optional[Candle] = None
+        self._daily_cache_key: Any = None
+        self._daily_cache_value: Optional[RangeForecast] = None
+        self._daily_window_cache: Dict[Any, Any] = {}
+        self._daily_predictions = 0
+        self._daily_blocked = 0
+        self._sl_fallback_d0 = 0
+        self._sl_fallback_today = 0
+        self._license3_refused = 0
+        self._rr_refused = 0
+        self._no_sl_found = 0
         self._signal_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(signal_candles)
         }
@@ -118,6 +158,9 @@ class DualModelPredictionSource(PredictionSource):
         )
         self._range_candles: Deque[Candle] = deque(
             maxlen=max(range_window_size * 2, range_window_size + 100)
+        )
+        self._daily_feed: Deque[Candle] = deque(
+            maxlen=max(daily_window_size * 2, daily_window_size + 100)
         )
         self._all_range_candles = sorted(range_candles, key=lambda candle: candle.open_time.value)
         self._range_candle_index = {
@@ -198,6 +241,14 @@ class DualModelPredictionSource(PredictionSource):
             "range_target_units": self._range_target_units,
             "trend_filter": self._trend_filter,
             "trend_blocked": self._trend_blocks,
+            "slope_mode": self._slope_mode,
+            "daily_predictions": self._daily_predictions,
+            "daily_blocked": self._daily_blocked,
+            "sl_fallback_d0": self._sl_fallback_d0,
+            "sl_fallback_today": self._sl_fallback_today,
+            "license3_refused": self._license3_refused,
+            "rr_refused": self._rr_refused,
+            "no_sl_found": self._no_sl_found,
         }
 
     # ------------------------------------------------------------- port --
@@ -221,6 +272,14 @@ class DualModelPredictionSource(PredictionSource):
                 break
             self._range_candles.append(candidate)
             self._range_cursor += 1
+        # فاز ۹۷: خوراک کندل‌های 1D — فقط کندل‌های بسته تا زمان تصمیم
+        while self._daily_cursor < len(self._all_daily_candles):
+            candidate = self._all_daily_candles[self._daily_cursor]
+            close_time = candidate.open_time.value + self._daily_delta
+            if close_time > decision_time:
+                break
+            self._daily_feed.append(candidate)
+            self._daily_cursor += 1
 
     def predict(self, event: MarketEvent) -> Optional[float]:
         """Predict signal first; call the range model only when actionable."""
@@ -281,6 +340,46 @@ class DualModelPredictionSource(PredictionSource):
                 self._trend_blocks += 1
                 self._last_trend_block = reason
                 return self._last_value
+
+        # ── فاز ۹۷ — مجوز ۲: ترند روزانه از مدل رنج 1D ──────────────
+        # پیش‌بینی High/Low روز D1 از کندل‌های روزانه تا D0؛ شیب نسبت به
+        # D0 واقعی. خرید: شیب‌ها >= ۰ (بر اساس slope_mode)؛ فروش برعکس.
+        # اگر رد شود مدل 4H اجرا نمی‌شود → براکت None → ترید نه.
+        if self._daily_predictor is not None:
+            daily_forecast, d0 = self._daily_context()
+            if daily_forecast is None or d0 is None:
+                self._abstentions += 1
+                return self._last_value
+            slope_high = daily_forecast.predicted_high - float(d0.high.amount)
+            slope_low = daily_forecast.predicted_low - float(d0.low.amount)
+            wants_buy = signal.predicted_class.label == "buy"
+            if self._slope_mode == "both":
+                ok = (
+                    (slope_high >= 0 and slope_low >= 0)
+                    if wants_buy
+                    else (slope_high <= 0 and slope_low <= 0)
+                )
+            elif self._slope_mode == "either":
+                ok = (
+                    (slope_high >= 0 or slope_low >= 0)
+                    if wants_buy
+                    else (slope_high <= 0 or slope_low <= 0)
+                )
+            elif self._slope_mode == "high":
+                ok = slope_high >= 0 if wants_buy else slope_high <= 0
+            else:  # low
+                ok = slope_low >= 0 if wants_buy else slope_low <= 0
+            if not ok:
+                self._daily_blocked += 1
+                self._last_block_reason = (
+                    f"daily slope: {signal.predicted_class.label.upper()} blocked "
+                    f"(mode={self._slope_mode}, slope_high={slope_high:+.2f}, "
+                    f"slope_low={slope_low:+.2f})"
+                )
+                return self._last_value
+            self._last_daily = daily_forecast
+            self._last_d0 = d0
+            self._daily_predictions += 1
 
         if len(self._range_candles) < self._range_window_size:
             self._abstentions += 1
@@ -352,6 +451,155 @@ class DualModelPredictionSource(PredictionSource):
             )
         return False, ""
 
+    def _daily_context(self) -> tuple[Optional[RangeForecast], Optional[Candle]]:
+        """پیش‌بینی D1 + کندل D0 — کش per-day (ورودی در طول روز ثابت است)."""
+        if not self._daily_feed:
+            return None, None
+        d0 = self._daily_feed[-1]
+        key = d0.open_time.value
+        if self._daily_cache_key == key:
+            return self._daily_cache_value, d0
+
+        window = self._daily_window_cache.get(key)
+        if window is None:
+            window = self._build_window(
+                list(self._daily_feed),
+                self._daily_timeframe,
+                None,
+                self._daily_window_size,
+                matrix=self._daily_matrix,
+                original_index=self._daily_candle_index.get(key),
+                model_role="range",
+            )
+            if window is None:
+                return None, None
+            self._daily_window_cache[key] = window
+
+        try:
+            from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+            atr_value = atr_from_candles(list(self._daily_feed), period=14)
+        except ValidationError:
+            atr_value = None
+        try:
+            forecast = self._daily_predictor.forecast(
+                self._daily_artifact,
+                window,
+                reference_close=float(d0.close.amount),
+                generated_at=str(d0.open_time),
+                atr_reference=float(atr_value) if atr_value else None,
+            )
+        except TypeError:
+            # پیش‌بینی‌کنندهٔ با امضای قدیمی (بدون atr_reference)
+            forecast = self._daily_predictor.forecast(
+                self._daily_artifact,
+                window,
+                reference_close=float(d0.close.amount),
+                generated_at=str(d0.open_time),
+            )
+        except Exception:
+            return None, None
+        self._daily_cache_key = key
+        self._daily_cache_value = forecast
+        return forecast, d0
+
+    def _today_signal_candles(self, day_value: Any) -> List[Candle]:
+        """کندل‌های 5M بستهٔ «همان روز» تصمیم (برای fallback دوم SL)."""
+        return [
+            candle
+            for candle in self._signal_candles
+            if str(candle.open_time.value)[:10] == str(day_value)[:10]
+        ]
+
+    def _triple_bracket(
+        self,
+        event: MarketEvent,
+        side: OrderSide,
+        entry_reference: Price,
+    ) -> Optional[TradeBracket]:
+        """براکت سه‌تایم‌فریمی (فاز ۹۷).
+
+        TP/SL از پیش‌بینی کندل 4H بعدی؛ fallback اول: Low/High روز D0؛
+        fallback دوم: کمترین Low زیر ورود (خرید) از کندل‌های 5M امروز
+        منهای اسپرد / بیشترین High بالای ورود (فروش) به‌علاوهٔ اسپرد.
+        """
+        range_fc = self._last_range
+        d0 = self._last_d0
+        if range_fc is None or d0 is None or event.candle is None:
+            return None
+        entry = float(entry_reference.amount)
+        spread_abs = Decimal("0")
+        if self._spread_pct_val:
+            spread_abs = Decimal(str(float(entry) * float(self._spread_pct_val)))
+
+        is_buy = side is OrderSide.BUY
+        tp = range_fc.predicted_high if is_buy else range_fc.predicted_low
+        sl = range_fc.predicted_low if is_buy else range_fc.predicted_high
+
+        # fallback 1 — D0
+        if is_buy and sl >= entry:
+            sl = float(d0.low.amount)
+            self._sl_fallback_d0 += 1
+        if not is_buy and sl <= entry:
+            sl = float(d0.high.amount)
+            self._sl_fallback_d0 += 1
+
+        # fallback 2 — کندل‌های 5M امروز
+        if is_buy and sl >= entry:
+            lows = [
+                float(c.low.amount)
+                for c in self._today_signal_candles(event.candle.open_time.value)
+                if float(c.low.amount) < entry
+            ]
+            if not lows:
+                self._no_sl_found += 1
+                return None
+            sl = min(lows) - float(spread_abs)
+            self._sl_fallback_today += 1
+        if not is_buy and sl <= entry:
+            highs = [
+                float(c.high.amount)
+                for c in self._today_signal_candles(event.candle.open_time.value)
+                if float(c.high.amount) > entry
+            ]
+            if not highs:
+                self._no_sl_found += 1
+                return None
+            sl = max(highs) + float(spread_abs)
+            self._sl_fallback_today += 1
+
+        # مجوز ۳ — سمت TP
+        if is_buy and tp <= entry:
+            self._license3_refused += 1
+            return None
+        if not is_buy and tp >= entry:
+            self._license3_refused += 1
+            return None
+
+        # R/R (فیلد GUI — اپراتور خواست اعمال بماند)
+        multiplier = self._reward_risk_multiplier
+        if multiplier:
+            tp_dist = abs(tp - entry)
+            sl_dist = abs(entry - sl)
+            if sl_dist <= 0 or tp_dist < multiplier * sl_dist:
+                self._rr_refused += 1
+                return None
+
+        try:
+            return TradeBracket(
+                side=side,
+                entry_reference=entry_reference,
+                take_profit=Price(Decimal(str(tp))),
+                stop_loss=Price(Decimal(str(sl))),
+                created_at=event.event_time,
+                model_high=Price(Decimal(str(range_fc.predicted_high))),
+                model_low=Price(Decimal(str(range_fc.predicted_low))),
+                model_reference=Price(Decimal(str(range_fc.reference_close))),
+                recentered=(self._sl_fallback_d0 + self._sl_fallback_today) > 0,
+            )
+        except ValidationError:
+            return None
+
     def _reference_atr(self, latest_range: Candle) -> Optional[float]:
         """ATR(period) at the latest closed range candle (فاز ۹۵).
 
@@ -399,6 +647,20 @@ class DualModelPredictionSource(PredictionSource):
         self._atr_cache_value = 0.0
         self._trend_blocks = 0
         self._last_trend_block = ""
+        self._last_daily = None
+        self._last_d0 = None
+        self._daily_cache_key = None
+        self._daily_cache_value = None
+        self._daily_window_cache = {}
+        self._daily_predictions = 0
+        self._daily_blocked = 0
+        self._sl_fallback_d0 = 0
+        self._sl_fallback_today = 0
+        self._license3_refused = 0
+        self._rr_refused = 0
+        self._no_sl_found = 0
+        self._daily_feed.clear()
+        self._daily_cursor = 0
 
     # -------------------------------------------------------- brackets --
     def bracket_for(
@@ -411,7 +673,12 @@ class DualModelPredictionSource(PredictionSource):
 
         فاز ۵۷: spread به from_model_levels پاس میشه
         تا SL به اندازه spread گسترش پیدا کنه.
+
+        فاز ۹۷: حالت سه‌تایم‌فریمی (مدل روزانه تنظیم شده باشد) →
+        براکت از 4H + fallback های روزانه ساخته می‌شود.
         """
+        if self._daily_predictor is not None:
+            return self._triple_bracket(event, side, entry_reference)
         forecast = self._last_range
         if forecast is None or not forecast.is_coherent:
             return None

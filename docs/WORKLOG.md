@@ -3325,3 +3325,57 @@ ruff ✅ black ✅  pytest full suite green
 ```
 ruff ✅ black ✅  pytest full suite green
 ```
+
+---
+
+## 2026-09-02 — فاز ۹۷: استراتژی سه‌تایم‌فریمی (5M سیگنال · 4H براکت · 1D ترند)
+
+**طرح اپراتور** — بکتست دقیقاً این شکلی بشه (بعد از A/B سؤالات، پاسخ‌ها):
+- **مجوز ۱:** سیگنال 5M با احتمال > آستانهٔ GUI (موجود).
+- **مجوز ۲:** از 150 کندل روزانه تا D0 → مدل رنج 1D → High/Low پیش‌بینی D1؛
+  شیب High و Low نسبت به D0 واقعی. خرید: شیب‌ها ≥ ۰؛ فروش ≤ ۰.
+  **حالت شیب در GUI انتخابی:** both / either / high / low (برای A/B).
+- **مجوز ۳:** سمت TP (خرید: TP > ورود).
+- **براکت از مدل 4H** (150 کندل 4H تا H0 → پیش‌بینی کندل بعدی):
+  خرید TP=High، SL=Low؛ فروش برعکس.
+- **fallback SL (خرید):** اگر SL ≥ ورود → SL = Low(D0)؛ اگر هنوز ≥ ورود →
+  کمترین Low **زیر ورود** از کندل‌های 5M امروز − اسپرد؛ نبود → رد.
+  فروش آینه‌ای (+اسپرد روی High).
+- **R/R:** طبق خواستهٔ اپراتور اعمال می‌ماند (فیلد GUI).
+- **اسپرد درصدی GUI** — برخورد TP/SL روی BID/ASK: موتور در حالت pct
+  حالا اسپرد per-candle را به `bracket.trigger` هم می‌دهد (قبلاً فقط
+  در خروج اعمال می‌شد، نه در چک لمس).
+
+### پیاده‌سازی
+
+- `DualModelPredictionSource`: مدل روزانه دوم (artifact/predictor/1D
+  candles/matrix) + خوراک علوی 1D در observe + گیت شیب در predict
+  (قبل از اجرای 4H) + `_triple_bracket` در bracket_for + آمار جدید
+  (`daily_predictions/blocked`, `sl_fallback_d0/today`,
+  `license3_refused`, `rr_refused`, `no_sl_found`).
+- `DualModelBacktestService`: `strategy="classic|triple"`,
+  `slope_mode`, `daily_model_id/version` → from_storage رکورد/آرتیفکت
+  1D را لود و `run(daily_candles=...)` ماتریس روزانه می‌سازد.
+- فرم‌های بکتست/replay: فیلدهای Strategy (triple/classic) و Slope mode؛
+  در triple باید Range timeframe = 4H و دیتاست 1D موجود باشد (وگرنه
+  پیام واضح). سربرگ: `strategy:` و `slope mode:`؛ نتیجه: `daily gate`,
+  `sl fallback`, `lic-3/rr` خطوط.
+- پیش‌فرض فرم = triple؛ فراخوانی بدون پارامتر (تست‌ها) = classic.
+
+### تست‌ها
+
+`test_triple_strategy.py` (14): مجوز ۲ در ۴ حالت شیب، براکت استاندارد،
+fallback D0، fallback 5M-امروز−اسپرد، ردِ بدون-SL، مجوز ۳، R/R، فروش
+آینه‌ای. کل تست‌سوت سبز.
+
+### گام اپراتور
+
+1. بکتست: `strategy=triple`، `range_timeframe=4H`، `range_model=gold_range_4h`،
+   `slope_mode=both` (بعداً حالت‌های دیگر برای A/B)، R/R=1، conf 60-70.
+2. خروجی باید `range units: atr` (مدل 4H) + خطوط `daily gate / sl
+   fallback / lic-3/rr` را نشان دهد.
+3. A/B پیشنهادی: slope_mode ∈ {both, either, high} — همان دیتاست.
+
+```
+ruff ✅ black ✅  pytest full suite green (+14)
+```

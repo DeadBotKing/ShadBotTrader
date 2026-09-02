@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 from ShadBotTrader.application.persistence_context import PersistenceContext
 from ShadBotTrader.application.services.backtest_service import BacktestService
@@ -110,6 +110,12 @@ class DualModelBacktestService:
         min_sl_distance: float = 0.0,
         range_target_units: str = "pct",
         trend_filter: str = "none",
+        strategy: str = "classic",
+        slope_mode: str = "both",
+        daily_artifact: Any = None,
+        daily_predictor: Any = None,
+        daily_window_size: int = 150,
+        expected_daily_features: Optional[int] = None,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -119,6 +125,14 @@ class DualModelBacktestService:
             )
         if trend_filter not in ("none", "ema50"):
             raise ValidationError(f"Unknown trend filter: {trend_filter!r} (use 'none' or 'ema50')")
+        if strategy not in ("classic", "triple"):
+            raise ValidationError(f"Unknown strategy: {strategy!r} (use 'classic' or 'triple')")
+        if slope_mode not in ("both", "either", "high", "low"):
+            raise ValidationError(
+                f"Unknown slope mode: {slope_mode!r} (use 'both', 'either', 'high' or 'low')"
+            )
+        if strategy == "triple" and daily_predictor is None:
+            raise ValidationError("Triple strategy needs the daily (1D) range model")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
@@ -158,6 +172,13 @@ class DualModelBacktestService:
         self._range_target_units = range_target_units
         # فاز ۹۶-ب: فیلتر ترند روزانه ("ema50" یا "none")
         self._trend_filter = trend_filter
+        # فاز ۹۷: استراتژی سه‌تایم‌فریمی
+        self._strategy = strategy
+        self._slope_mode = slope_mode
+        self._daily_artifact = daily_artifact
+        self._daily_predictor = daily_predictor
+        self._daily_window_size = daily_window_size
+        self._expected_daily_features = expected_daily_features
 
     @classmethod
     def from_storage(
@@ -182,6 +203,10 @@ class DualModelBacktestService:
         allowed_hours_utc: Optional[Sequence[int]] = None,
         min_sl_distance: float = 0.0,
         trend_filter: str = "none",
+        strategy: str = "classic",
+        slope_mode: str = "both",
+        daily_model_id: str = "gold_range_1d",
+        daily_version: Optional[int] = None,
     ) -> "DualModelBacktestService":
         """Load both artifacts and their ``training.json`` metadata.
 
@@ -189,7 +214,13 @@ class DualModelBacktestService:
         hard-coded guess.  This matters in the checked-in project: the
         signal model was trained on 100 rows while the range model was
         trained on 500 rows.
+
+        فاز ۹۷: ``strategy="triple"`` — مدل رنج 1D (``daily_model_id``)
+        برای ترند روز (مجوز ۲) و براکت TP/SL از مدل رنج اصلی (4H) با
+        fallback های D0/5M ساخته می‌شود.
         """
+        if strategy not in ("classic", "triple"):
+            raise ValidationError(f"Unknown strategy: {strategy!r} (use 'classic' or 'triple')")
         root = Path(storage_root)
         catalogue = ModelCatalogue(root)
         signal_record = _require_record(catalogue, signal_model_id, signal_version)
@@ -245,6 +276,39 @@ class DualModelBacktestService:
             feature_set = standard_feature_set_v1()
             resolver = resolver or CalculatorRegistry()
 
+        daily_artifact = None
+        daily_predictor = None
+        daily_window_size = 150
+        expected_daily_features = None
+        if strategy == "triple":
+            daily_catalogue_version = daily_version or catalogue.latest_version(daily_model_id)
+            daily_record = (
+                catalogue.read(daily_model_id, daily_catalogue_version)
+                if daily_catalogue_version
+                else None
+            )
+            if daily_record is None:
+                raise ValidationError(
+                    f"Triple strategy needs a saved {daily_model_id!r} model "
+                    "(the 1D range model for the daily trend license)"
+                )
+            if daily_record.role != "range":
+                raise ValidationError(f"{daily_model_id} is recorded as {daily_record.role}")
+            daily_artifact = artifact_store.load(
+                ModelId(daily_model_id), ModelVersion(daily_catalogue_version)
+            )
+            if daily_artifact is None:
+                raise ValidationError(
+                    f"Missing artifact for {daily_model_id} v{daily_catalogue_version}"
+                )
+            daily_predictor = RangePredictor(
+                horizon=daily_record.horizon or 1,
+                timeframe=daily_record.timeframe or "1D",
+                target_units=getattr(daily_record, "target_units", "pct") or "pct",
+            )
+            daily_window_size = daily_record.window_size or 150
+            expected_daily_features = daily_record.feature_columns or None
+
         return cls(
             symbol=Symbol(symbol),
             signal_artifact=signal_artifact,
@@ -275,6 +339,12 @@ class DualModelBacktestService:
             min_sl_distance=min_sl_distance,
             range_target_units=getattr(range_record, "target_units", "pct") or "pct",
             trend_filter=trend_filter,
+            strategy=strategy,
+            slope_mode=slope_mode,
+            daily_artifact=daily_artifact,
+            daily_predictor=daily_predictor,
+            daily_window_size=daily_window_size,
+            expected_daily_features=expected_daily_features,
         )
 
     @property
@@ -297,12 +367,21 @@ class DualModelBacktestService:
         reporter: Any = None,
         record_replay: bool = False,
         test_ratio: float = 0.0,
+        daily_candles: Sequence[Candle] = (),
     ) -> Any:
-        """Execute the signal-first, fixed-bracket backtest."""
+        """Execute the signal-first, fixed-bracket backtest.
+
+        فاز ۹۷: ``daily_candles`` (1D) در حالت triple الزامی است.
+        """
         if not signal_candles:
             raise ValueError("A dual-model backtest needs signal candles")
         if not range_candles:
             raise ValueError("A dual-model backtest needs range candles")
+        if self._strategy == "triple" and not daily_candles:
+            raise ValueError(
+                "Triple strategy needs stored 1D candles (daily trend license) — "
+                "fetch XAUUSD 1D first"
+            )
         if not 0.0 <= test_ratio < 1.0:
             raise ValidationError("test_ratio must be in [0, 1)")
 
@@ -333,6 +412,24 @@ class DualModelBacktestService:
             causal_only=True,
             model_role="range",
         )
+        # فاز ۹۷: ماتریس روزانه برای مجوز ترند
+        daily_matrix = None
+        ordered_daily: List[Candle] = []
+        if self._strategy == "triple":
+            ordered_daily = sorted(daily_candles, key=lambda candle: candle.open_time.value)
+            daily_matrix = build_feature_matrix(
+                candles=ordered_daily,
+                symbol=self._symbol,
+                timeframe=Timeframe(str(ordered_daily[0].timeframe)),
+                feature_set=self._feature_set,
+                resolver=self._resolver,
+                include_features=include_features,
+                source=self._range_feature_source,
+                causal_only=True,
+                model_role="range",
+            )
+            if self._expected_daily_features is not None:
+                daily_matrix = _pad_or_trim_matrix(daily_matrix, self._expected_daily_features)
         # Feature count validation + zero-padding
         # Training و backtest ممکنه تعداد feature کمی متفاوت داشته باشن
         # (برخی calculators در backtest context resolve نمیشن)
@@ -370,6 +467,14 @@ class DualModelBacktestService:
             range_target_units=self._range_target_units,
             # فاز ۹۶-ب: فیلتر ترند روزانه
             trend_filter=self._trend_filter,
+            # فاز ۹۷: استراتژی سه‌تایم‌فریمی
+            daily_artifact=self._daily_artifact,
+            daily_predictor=self._daily_predictor,
+            daily_timeframe=Timeframe("1D"),
+            daily_candles=ordered_daily,
+            daily_matrix=daily_matrix,
+            daily_window_size=self._daily_window_size,
+            slope_mode=self._slope_mode,
         )
 
         _active_config = self._configuration

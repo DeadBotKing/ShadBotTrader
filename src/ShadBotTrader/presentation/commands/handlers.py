@@ -640,6 +640,25 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="1 = فقط ساعت‌های خوب: 2,5,6,10,14,15,16,18 UTC (WR=45.7% بجای 33.5%)",
                 ),
                 CommandField(
+                    "strategy",
+                    "Strategy",
+                    "triple",
+                    kind="select",
+                    options=("triple", "classic"),
+                    hint=(
+                        "triple = 5M سیگنال · 4H براکت TP/SL · 1D ترند (نیاز به "
+                        "دیتاست 1D و 4H و مدل‌هاشون) | classic = تک مدل رنج"
+                    ),
+                ),
+                CommandField(
+                    "slope_mode",
+                    "Slope mode (triple)",
+                    "both",
+                    kind="select",
+                    options=("both", "either", "high", "low"),
+                    hint="مجوز ۲: both = هر دو شیب | either = یکی کافی | high/low = فقط همان",
+                ),
+                CommandField(
                     "min_sl_distance",
                     "Min SL distance ($)",
                     "0",
@@ -785,6 +804,25 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                         "ema50 = SHORT ممنوع وقتی قیمت بالای EMA50 روزانه و LONG "
                         "ممنوع وقتی زیر آن (ضد ترند-شکنی)"
                     ),
+                ),
+                CommandField(
+                    "strategy",
+                    "Strategy",
+                    "triple",
+                    kind="select",
+                    options=("triple", "classic"),
+                    hint=(
+                        "triple = 5M سیگنال · 4H براکت TP/SL · 1D ترند (نیاز به "
+                        "دیتاست 1D و 4H و مدل‌هاشون) | classic = تک مدل رنج"
+                    ),
+                ),
+                CommandField(
+                    "slope_mode",
+                    "Slope mode (triple)",
+                    "both",
+                    kind="select",
+                    options=("both", "either", "high", "low"),
+                    hint="مجوز ۲: both = هر دو شیب | either = یکی کافی | high/low = فقط همان",
                 ),
                 CommandField(
                     "min_sl_distance",
@@ -1994,6 +2032,24 @@ class CommandHandlers:
         dual_note = ""
         range_timeframe = command.text("range_timeframe", "1D")
         range_candles = store.query(symbol, Timeframe(range_timeframe))
+        # فاز ۹۷: استراتژی سه‌تایم‌فریمی — مدل رنج 1D هم لازم است.
+        # وقتی کلید غایب است (فراخوانی قدیمی/تست‌ها) → classic؛ فرم GUI
+        # همیشه فیلد را می‌فرستد (پیش‌فرض فرم = triple).
+        _strategy = command.text("strategy", "classic").strip().lower() or "classic"
+        _slope_mode = command.text("slope_mode", "both").strip().lower() or "both"
+        daily_candles: list = []
+        if mode in ("dual", "auto") and _strategy == "triple":
+            if range_timeframe.upper() != "4H":
+                raise ValueError(
+                    "Triple strategy needs Range timeframe = 4H (TP/SL from the "
+                    "4H model). Set Range timeframe to 4H or use strategy=classic."
+                )
+            daily_candles = list(store.query(symbol, Timeframe("1D")))
+            if not daily_candles:
+                raise LookupError(
+                    "Triple strategy needs stored XAUUSD 1D candles — "
+                    "fetch XAUUSD 1D first (daily trend license)."
+                )
 
         # باگ ۴۹: range candles هرگز با last_n بریده نمی‌شود.
         # ۹٬۰۰۰ کندل 5M یعنی ~۳۱ روز؛ برش زمانیِ range با همان cutoff
@@ -2070,6 +2126,8 @@ class CommandHandlers:
                     allowed_hours_utc=_allowed_hours,
                     min_sl_distance=_min_sl,
                     trend_filter=command.text("trend_filter", "none").strip() or "none",
+                    strategy=_strategy,
+                    slope_mode=_slope_mode,
                 )
                 result = dual.run(
                     session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
@@ -2077,6 +2135,7 @@ class CommandHandlers:
                     range_candles=range_candles,
                     record_replay=record_replay,
                     test_ratio=command.number("test_ratio", 0.0) / 100.0,
+                    daily_candles=daily_candles,
                 )
                 # باگ ۴۹-completion: مسیر dual هم باید خوراک رنج را گزارش کند
                 self._last_range_feed = (
@@ -2295,6 +2354,16 @@ class CommandHandlers:
                 )
             ),
             (
+                "strategy   : "
+                + (
+                    f"triple — 5M signal · "
+                    f"{command.text('range_timeframe', '1D')} bracket · 1D trend "
+                    f"(slope {command.text('slope_mode', 'both')})"
+                    if (command.text("strategy", "triple").strip() or "triple") == "triple"
+                    else "classic — single range model"
+                )
+            ),
+            (
                 f"min SL dist : {command.number('min_sl_distance', 0.0):g}$"
                 if command.number("min_sl_distance", 0.0) > 0
                 else "min SL dist : off"
@@ -2358,6 +2427,24 @@ class CommandHandlers:
                     f" · range ran: {_pst.get('range_predictions', 0)}"
                     f" · abstains: {_pst.get('abstentions', 0)}"
                 )
+                # فاز ۹۷: گیت‌های استراتژی سه‌تایم‌فریمی
+                if _pst.get("daily_blocked") or _pst.get("daily_predictions"):
+                    lines.append(
+                        f"daily gate : {_pst.get('daily_blocked', 0)} blocked · "
+                        f"{_pst.get('daily_predictions', 0)} passed "
+                        f"(slope {_pst.get('slope_mode', 'both')})"
+                    )
+                if _pst.get("sl_fallback_d0") or _pst.get("sl_fallback_today"):
+                    lines.append(
+                        f"sl fallback: D0 x{_pst.get('sl_fallback_d0', 0)} · "
+                        f"today-5M x{_pst.get('sl_fallback_today', 0)} · "
+                        f"no-SL refused {_pst.get('no_sl_found', 0)}"
+                    )
+                if _pst.get("license3_refused") or _pst.get("rr_refused"):
+                    lines.append(
+                        f"lic-3/rr   : TP-side refused {_pst.get('license3_refused', 0)} · "
+                        f"R/R refused {_pst.get('rr_refused', 0)}"
+                    )
                 # فاز ۹۶-ب: بلوک‌های فیلتر ترند
                 if _pst.get("trend_blocked"):
                     lines.append(

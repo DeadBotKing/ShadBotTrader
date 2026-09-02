@@ -574,10 +574,20 @@ class BacktestEngine:
             self._bracket = None
             return False
 
+        # فاز ۹۷: در حالت spread_pct، اسپرد هر کندل از قیمت همان کندل
+        # محاسبه می‌شود تا برخورد TP/SL واقعاً بر اساس BID/ASK باشد.
+        cfg_spread = self._session.configuration.spread
+        cfg_pct = getattr(self._session.configuration, "spread_pct", None)
+        if cfg_spread > 0:
+            trigger_spread = cfg_spread
+        elif cfg_pct:
+            trigger_spread = Decimal(str(float(event.candle.close.amount) * float(cfg_pct)))
+        else:
+            trigger_spread = Decimal("0")
         reason = bracket.trigger(
             event.candle,
             self._session.configuration.same_bar_policy,
-            spread=self._session.configuration.spread,
+            spread=trigger_spread,
         )
         if reason is None:
             return False
