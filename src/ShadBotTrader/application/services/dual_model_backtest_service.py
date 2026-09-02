@@ -116,6 +116,7 @@ class DualModelBacktestService:
         daily_predictor: Any = None,
         daily_window_size: int = 150,
         expected_daily_features: Optional[int] = None,
+        max_entry_distance_atr: float = 0.0,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -133,6 +134,8 @@ class DualModelBacktestService:
             )
         if strategy == "triple" and daily_predictor is None:
             raise ValidationError("Triple strategy needs the daily (1D) range model")
+        if max_entry_distance_atr < 0:
+            raise ValidationError("max_entry_distance_atr must not be negative")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if reward_risk_multiplier is not None and reward_risk_multiplier <= 0:
@@ -179,6 +182,7 @@ class DualModelBacktestService:
         self._daily_predictor = daily_predictor
         self._daily_window_size = daily_window_size
         self._expected_daily_features = expected_daily_features
+        self._max_entry_distance_atr = float(max_entry_distance_atr)
 
     @classmethod
     def from_storage(
@@ -207,6 +211,7 @@ class DualModelBacktestService:
         slope_mode: str = "both",
         daily_model_id: str = "gold_range_1d",
         daily_version: Optional[int] = None,
+        max_entry_distance_atr: float = 0.0,
     ) -> "DualModelBacktestService":
         """Load both artifacts and their ``training.json`` metadata.
 
@@ -345,6 +350,7 @@ class DualModelBacktestService:
             daily_predictor=daily_predictor,
             daily_window_size=daily_window_size,
             expected_daily_features=expected_daily_features,
+            max_entry_distance_atr=max_entry_distance_atr,
         )
 
     @property
@@ -475,6 +481,7 @@ class DualModelBacktestService:
             daily_matrix=daily_matrix,
             daily_window_size=self._daily_window_size,
             slope_mode=self._slope_mode,
+            max_entry_distance_atr=self._max_entry_distance_atr,
         )
 
         _active_config = self._configuration

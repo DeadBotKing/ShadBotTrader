@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "9ad9e75264952a054abbd15d9e3875251c6eb41111bda2bb65a036d6a87af2a2",
-      "size_bytes": 170475
+      "sha256": "bc38e90d75be72b6171c9477592029c38406b43feeb06e4aab798fe9ec220ae0",
+      "size_bytes": 173760
     },
     {
       "category": "legacy",
@@ -2289,8 +2289,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_backtest_service.py",
-      "sha256": "ac7fd41984682e620e2ecf69ed4e20eec868e63dd327e260cafd33c00c74af7f",
-      "size_bytes": 24750
+      "sha256": "2b800bf1dc0a8a25d6ccb477454dd234a09b49e65f60ba8ebfa4e38167139d29",
+      "size_bytes": 25153
     },
     {
       "category": "source",
@@ -3807,8 +3807,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/dual_model_prediction_source.py",
-      "sha256": "af9772d30e956b120761088de0a0057af43e67ffeed527f04f100f3f46bb2b83",
-      "size_bytes": 33691
+      "sha256": "1c235241d8730e84467ce87aff8a9670c640960d1be81378beb3c506461c81b9",
+      "size_bytes": 36896
     },
     {
       "category": "source",
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "919f285354228a7d1b8f76ef4ae52b0234eabc3690763a97f1c458fae977e0d3",
-      "size_bytes": 159061
+      "sha256": "fc34d262d4c4abbbf218eaee46822e62c7cc99102f2264c4898401f86f520e1c",
+      "size_bytes": 160715
     },
     {
       "category": "source",
@@ -4953,8 +4953,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_triple_strategy.py",
-      "sha256": "7ad6972e29cfb9ecd8f2288e7b8c573e0db99329789dbc0ae5a8e2d90bff75e4",
-      "size_bytes": 14221
+      "sha256": "2524b44d544fc9886f235862c3b1d7485bb20f62ebb2b084d9cc418ead62d314",
+      "size_bytes": 18585
     },
     {
       "category": "test",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-02T15:36:35.268702+00:00",
+  "generated_at": "2026-09-02T16:25:28.260421+00:00",
   "git": {
     "branch": "main",
-    "commit": "6ddd6eeddb79057ae19f998ff157eec4a8d3fe5d",
+    "commit": "1ffd3677e1d724737e458661ff55feffdcf57f5d",
     "dirty": true,
-    "dirty_files": 14,
+    "dirty_files": 4,
     "is_repo": true,
     "recent_commits": [
+      "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
       "6ddd6ee Phase 96v: /data range-model list spans every timeframe",
       "58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)",
       "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error",
@@ -5003,8 +5004,7 @@
       "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning",
       "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)",
       "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes",
-      "2be2db0 Phase 95e: actually draw the /data forecast path on the chart",
-      "e96d1b3 Phase 95d: per-step label profile + per-step validation MAE"
+      "2be2db0 Phase 95e: actually draw the /data forecast path on the chart"
     ]
   },
   "modules": [
@@ -8480,7 +8480,7 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 23,
+      "functions": 24,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -11357,11 +11357,11 @@
       "path": "tests/unit/simulation/test_trend_filter.py"
     },
     {
-      "classes": 6,
+      "classes": 7,
       "external_imports": [
         "pytest"
       ],
-      "functions": 24,
+      "functions": 29,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -11468,20 +11468,20 @@
   "python_version": "3.13.14",
   "source_file_count": 319,
   "statistics": {
-    "class_count": 797,
+    "class_count": 798,
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4513,
+    "function_count": 4519,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 50927,
+    "source_lines": 51014,
     "test_file_count": 144,
-    "test_lines": 24120,
+    "test_lines": 24215,
     "total_file_count": 821,
-    "total_lines": 120146
+    "total_lines": 120328
   },
   "test_file_count": 144
 }

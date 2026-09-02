@@ -70,6 +70,7 @@ class DualModelPredictionSource(PredictionSource):
         daily_matrix: Any = None,
         daily_window_size: int = 150,
         slope_mode: str = "both",
+        max_entry_distance_atr: float = 0.0,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -85,6 +86,8 @@ class DualModelPredictionSource(PredictionSource):
             )
         if daily_predictor is not None and daily_window_size < 2:
             raise ValidationError("daily_window_size must be >= 2 when a daily model is set")
+        if max_entry_distance_atr < 0:
+            raise ValidationError("max_entry_distance_atr must not be negative")
         if not 0.0 <= min_signal_confidence <= 1.0:
             raise ValidationError("min_signal_confidence must be in [0, 1]")
         if not 0.0 <= hold_confidence_penalty <= 1.0:
@@ -130,6 +133,11 @@ class DualModelPredictionSource(PredictionSource):
         self._daily_matrix = daily_matrix
         self._daily_window_size = daily_window_size
         self._slope_mode = slope_mode
+        # فاز ۹۷-ب: مجوز ۴ — ورود باید «نزدیک» سطح روزانه باشد
+        # (خرید: نزدیک Low پیش‌بینی D1؛ فروش: نزدیک High پیش‌بینی D1).
+        # آستانه بر حسب ATR14 روزانه (0 = خاموش).
+        self._max_entry_distance_atr = float(max_entry_distance_atr)
+        self._proximity_blocked = 0
         self._all_daily_candles = sorted(daily_candles, key=lambda c: c.open_time.value)
         self._daily_candle_index = {
             candle.open_time.value: index for index, candle in enumerate(self._all_daily_candles)
@@ -143,6 +151,7 @@ class DualModelPredictionSource(PredictionSource):
         self._daily_window_cache: Dict[Any, Any] = {}
         self._daily_predictions = 0
         self._daily_blocked = 0
+        self._proximity_blocked = 0
         self._sl_fallback_d0 = 0
         self._sl_fallback_today = 0
         self._license3_refused = 0
@@ -244,6 +253,8 @@ class DualModelPredictionSource(PredictionSource):
             "slope_mode": self._slope_mode,
             "daily_predictions": self._daily_predictions,
             "daily_blocked": self._daily_blocked,
+            "max_entry_distance_atr": self._max_entry_distance_atr,
+            "proximity_blocked": self._proximity_blocked,
             "sl_fallback_d0": self._sl_fallback_d0,
             "sl_fallback_today": self._sl_fallback_today,
             "license3_refused": self._license3_refused,
@@ -377,6 +388,35 @@ class DualModelPredictionSource(PredictionSource):
                     f"slope_low={slope_low:+.2f})"
                 )
                 return self._last_value
+
+            # ── فاز ۹۷-ب — مجوز ۴: نزدیکی ورود به سطح روزانه ─────────
+            # خرید: قیمت باید نزدیک Low پیش‌بینی D1 باشد (کف روز)؛
+            # فروش: نزدیک High پیش‌بینی D1 (سقف روز). آستانه بر حسب
+            # ATR14(1D) — از دادهٔ اپراتور: برندگان med $1.7 زیر close روز
+            # بودند و بازندگان $9.3 بالای آن؛ 0.25×ATR (~$10) بریده می‌شود.
+            if self._max_entry_distance_atr > 0 and self._last_value is not None:
+                daily_atr = self._daily_atr14()
+                if daily_atr and daily_atr > 0:
+                    max_dist = self._max_entry_distance_atr * daily_atr
+                    is_buy = signal.predicted_class.label == "buy"
+                    distance = (
+                        float(event.candle.close.amount) - daily_forecast.predicted_low
+                        if is_buy
+                        else daily_forecast.predicted_high - float(event.candle.close.amount)
+                    )
+                    # فاصله منفی یعنی ورود از سطح هم پایین‌تر/بالاتر —
+                    # همچنان «در ناحیه» است (تا وقتی داخل باند روز است)
+                    if distance > max_dist:
+                        self._proximity_blocked += 1
+                        self._last_block_reason = (
+                            f"proximity: {signal.predicted_class.label.upper()} blocked "
+                            f"— entry {float(event.candle.close.amount):.2f} is "
+                            f"{distance:.2f}$ from the daily "
+                            f"{'low' if is_buy else 'high'} forecast "
+                            f"(max {max_dist:.2f}$ = {self._max_entry_distance_atr}×ATR"
+                            f"{daily_atr:.2f})"
+                        )
+                        return self._last_value
             self._last_daily = daily_forecast
             self._last_d0 = d0
             self._daily_predictions += 1
@@ -502,6 +542,15 @@ class DualModelPredictionSource(PredictionSource):
         self._daily_cache_key = key
         self._daily_cache_value = forecast
         return forecast, d0
+
+    def _daily_atr14(self) -> Optional[float]:
+        """ATR14 روزانهٔ آخرین کندل D0 (فاز ۹۷-ب) — مقیاس آستانهٔ نزدیکی."""
+        if not self._daily_feed:
+            return None
+        from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
+
+        value = atr_from_candles(list(self._daily_feed), period=14)
+        return float(value) if value else None
 
     def _today_signal_candles(self, day_value: Any) -> List[Candle]:
         """کندل‌های 5M بستهٔ «همان روز» تصمیم (برای fallback دوم SL)."""
@@ -654,6 +703,7 @@ class DualModelPredictionSource(PredictionSource):
         self._daily_window_cache = {}
         self._daily_predictions = 0
         self._daily_blocked = 0
+        self._proximity_blocked = 0
         self._sl_fallback_d0 = 0
         self._sl_fallback_today = 0
         self._license3_refused = 0

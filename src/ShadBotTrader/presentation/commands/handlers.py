@@ -659,6 +659,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="مجوز ۲: both = هر دو شیب | either = یکی کافی | high/low = فقط همان",
                 ),
                 CommandField(
+                    "max_entry_distance_atr",
+                    "Max entry distance (×daily ATR)",
+                    "0.25",
+                    kind="number",
+                    hint=(
+                        "مجوز ۴ (triple): ورود باید نزدیک سطح روزانه باشد — خرید "
+                        "نزدیک Low پیش‌بینی D1، فروش نزدیک High. 0 = خاموش. "
+                        "پیشنهاد از داده: 0.25 (~$10 در ATR=$40)"
+                    ),
+                ),
+                CommandField(
                     "min_sl_distance",
                     "Min SL distance ($)",
                     "0",
@@ -823,6 +834,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     kind="select",
                     options=("both", "either", "high", "low"),
                     hint="مجوز ۲: both = هر دو شیب | either = یکی کافی | high/low = فقط همان",
+                ),
+                CommandField(
+                    "max_entry_distance_atr",
+                    "Max entry distance (×daily ATR)",
+                    "0.25",
+                    kind="number",
+                    hint=(
+                        "مجوز ۴ (triple): ورود باید نزدیک سطح روزانه باشد — خرید "
+                        "نزدیک Low پیش‌بینی D1، فروش نزدیک High. 0 = خاموش. "
+                        "پیشنهاد از داده: 0.25 (~$10 در ATR=$40)"
+                    ),
                 ),
                 CommandField(
                     "min_sl_distance",
@@ -2128,6 +2150,7 @@ class CommandHandlers:
                     trend_filter=command.text("trend_filter", "none").strip() or "none",
                     strategy=_strategy,
                     slope_mode=_slope_mode,
+                    max_entry_distance_atr=command.number("max_entry_distance_atr", 0.25),
                 )
                 result = dual.run(
                     session_id=("replay-" if record_replay else "dashboard-") + symbol_text,
@@ -2358,7 +2381,8 @@ class CommandHandlers:
                 + (
                     f"triple — 5M signal · "
                     f"{command.text('range_timeframe', '1D')} bracket · 1D trend "
-                    f"(slope {command.text('slope_mode', 'both')})"
+                    f"(slope {command.text('slope_mode', 'both')}, "
+                    f"proximity {command.number('max_entry_distance_atr', 0.25)}×ATR)"
                     if (command.text("strategy", "triple").strip() or "triple") == "triple"
                     else "classic — single range model"
                 )
@@ -2433,6 +2457,12 @@ class CommandHandlers:
                         f"daily gate : {_pst.get('daily_blocked', 0)} blocked · "
                         f"{_pst.get('daily_predictions', 0)} passed "
                         f"(slope {_pst.get('slope_mode', 'both')})"
+                    )
+                if _pst.get("proximity_blocked"):
+                    lines.append(
+                        f"proximity  : {_pst['proximity_blocked']} entries refused — "
+                        f"too far from the daily level "
+                        f"(max {_pst.get('max_entry_distance_atr', 0)}×ATR)"
                     )
                 if _pst.get("sl_fallback_d0") or _pst.get("sl_fallback_today"):
                     lines.append(
