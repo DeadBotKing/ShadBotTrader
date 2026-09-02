@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-02T06:40:16.297730+00:00
+- Snapshot generated at: 2026-09-02T07:06:53.460399+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 319
-- Test modules: 141
+- Test modules: 142
 
 ## Current Phase
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: efe8a58bcc7000feb07a95fa782b823b470cf32f
-- Dirty: yes (12 files)
+- Commit: 132aef6521216448297a95e63e8b42638df85503
+- Dirty: yes (3 files)
 - Recent commits:
+  - 132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error
   - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
   - b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)
   - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - e96d1b3 Phase 95d: per-step label profile + per-step validation MAE
   - e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention
   - 9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline
-  - ce5676d docs: remove stale '109-feature' banner/help/docstrings
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 818
+- Total files: 819
 - Source files: 319
-- Test files: 141
+- Test files: 142
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 119056
-- Modules: 460
-- Classes: 787
-- Functions: 4464
+- Total Python lines: 119228
+- Modules: 461
+- Classes: 790
+- Functions: 4481
 - External dependencies: 14

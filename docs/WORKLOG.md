@@ -3256,3 +3256,40 @@ Watch نبود (یا املایش غلط بود)، copy_rates همان (-1) مب
 ```
 ruff ✅ black ✅  pytest full suite green
 ```
+
+---
+
+## 2026-09-01 — فاز ۹۶-ه: session-first برای اتصال MT5 (اکانت‌های OTP/گواهی‌دار)
+
+**گزارش اپراتور:** بعد از درست شدن mapping (‏XAUUSD -> XAUUSD_i ✓)،
+‏-7 برگشت: `Unsupported authorization mode, OTP or certificate password needed`
+در حالی که ترمینال لاگین است.
+
+### ریشه
+
+پراوایدر اگر پروفایل login/password/server داشته باشد، **همیشه** با
+credential لاگین برنامه‌ای می‌زند. اکانت جدید آلپاری لاگین پسوردیِ
+برنامه‌ای را رد می‌کند (-7) حتی وقتی ترمینالِ لاگین‌شده آماده است.
+ران قبل (-1) از مسیر بدون-credential رفته بود؛ بعد از ذخیرهٔ پروفایل،
+مسیر credential فعال شد و -7 برگشت.
+
+### رفع — session-first
+
+`_ensure_initialized` دو مرحله‌ای شد:
+1. `initialize()` بدون credential (اتصال به نشست ترمینال). ترمینال
+   لاگین باشد → همان استفاده می‌شود؛ credential هرگز ارسال نمی‌شود.
+2. نشست زنده نبود → shutdown + `initialize(login, password, server)`.
+   رد شد → ConnectionError با راهنمای صریح OTP («ترمینال را دستی لاگین کن»).
+
+بدون credential: رفتار قدیمی حفظ شد.
+
+### تست‌ها
+
+`test_mt5_session_first.py` (4): نشست زنده credential نمی‌فرستد؛
+fallback به credential با shutdown بین دو تلاش؛ ردِ لاگین → پیام OTP؛
+بدون credential رفتار قدیمی. تست‌های lifecycle به قرارداد جدید
+آپدیت شدند (`test_live_session_beats_saved_credentials`).
+
+```
+ruff ✅ black ✅  pytest full suite green
+```

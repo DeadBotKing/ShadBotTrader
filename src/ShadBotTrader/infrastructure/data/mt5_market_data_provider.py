@@ -282,7 +282,14 @@ class Mt5MarketDataProvider(MarketDataProvider):
 
     # -- internals ------------------------------------------------------------
     def _ensure_initialized(self) -> Any:
-        """Connect to the terminal once, then reuse the session."""
+        """Connect to the terminal once, then reuse the session.
+
+        فاز ۹۶-ه — session-first: اکانت‌های جدید آلپاری با OTP/گواهی،
+        لاگینِ برنامه‌ایِ پسوردی را رد می‌کنند (-7) حتی وقتی ترمینال
+        خودش لاگین است. پس اول به نشستِ ترمینالِ در حال اجرا وصل
+        می‌شویم؛ فقط اگر نشست زنده نبود، با credential های پروفایل
+        تلاش می‌کنیم.
+        """
         if self._mt5 is None:
             self._mt5 = load_mt5()
         if self._initialized:
@@ -291,21 +298,50 @@ class Mt5MarketDataProvider(MarketDataProvider):
         kwargs: Dict[str, Any] = {}
         if self._terminal_path:
             kwargs["path"] = self._terminal_path
-        if self._login is not None:
-            kwargs["login"] = self._login
-        if self._password:
-            kwargs["password"] = self._password
-        if self._server:
-            kwargs["server"] = self._server
 
-        if not self._mt5.initialize(**kwargs):
+        has_credentials = self._login is not None and bool(self._password) and bool(self._server)
+
+        # گام ۱ — اتصال به ترمینالِ در حال اجرا (نشست خودش)
+        if self._mt5.initialize(**kwargs):
+            if not has_credentials:
+                self._initialized = True
+                return self._mt5
+            terminal = getattr(self._mt5, "terminal_info", lambda: None)()
+            account = getattr(self._mt5, "account_info", lambda: None)()
+            if terminal is not None and account is not None:
+                # ترمینال لاگین است — از نشست استفاده کن، credential نیاز نیست
+                self._initialized = True
+                return self._mt5
+
+        # گام ۲ — نشست زنده نبود: لاگین برنامه‌ای با پروفایل
+        if has_credentials:
+            cred = dict(kwargs)
+            cred.update(
+                {
+                    "login": self._login,
+                    "password": self._password,
+                    "server": self._server,
+                }
+            )
+            try:
+                self._mt5.shutdown()
+            except Exception:  # pragma: no cover — شات‌داون حیاتی نیست
+                pass
+            if self._mt5.initialize(**cred):
+                self._initialized = True
+                return self._mt5
             raise ConnectionError(
                 f"Could not connect to the MetaTrader 5 terminal: "
-                f"{self._last_error(self._mt5)}. Make sure the terminal is "
-                f"installed, running and logged in."
+                f"{self._last_error(self._mt5)}. If the error mentions OTP or a "
+                f"certificate, log the terminal in manually once — those "
+                f"accounts cannot log in from Python."
             )
-        self._initialized = True
-        return self._mt5
+
+        raise ConnectionError(
+            f"Could not connect to the MetaTrader 5 terminal: "
+            f"{self._last_error(self._mt5)}. Make sure the terminal is "
+            f"installed, running and logged in."
+        )
 
     def _resolve_timeframe(self, timeframe: str) -> Any:
         """Translate a platform timeframe into an MT5 constant."""

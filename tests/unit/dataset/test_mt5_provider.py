@@ -8,6 +8,7 @@ the bugs would actually be.
 """
 
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -69,13 +70,18 @@ class FakeMt5:
     TIMEFRAME_H1 = 16385
     TIMEFRAME_D1 = 16408
 
-    def __init__(self, rates=None, symbols=None, initialize_ok=True):
+    def __init__(self, rates=None, symbols=None, initialize_ok=True, logged_in=True):
         self._rates = rates if rates is not None else [make_rate()]
-        self._symbols = symbols if symbols is not None else [
-            FakeSymbol("XAUUSD"),
-            FakeSymbol("EURUSD"),
-        ]
+        self._symbols = (
+            symbols
+            if symbols is not None
+            else [
+                FakeSymbol("XAUUSD"),
+                FakeSymbol("EURUSD"),
+            ]
+        )
         self._initialize_ok = initialize_ok
+        self._logged_in = logged_in
         self.initialize_calls = []
         self.shutdown_calls = 0
         self.last_request = None
@@ -117,7 +123,11 @@ class FakeMt5:
         return True
 
     def account_info(self):
-        return FakeAccount()
+        # فاز ۹۶-ه: None یعنی ترمینال لاگین نیست (نشست زنده نیست)
+        return FakeAccount() if self._logged_in else None
+
+    def terminal_info(self):
+        return SimpleNamespace(name="MetaTrader 5", data_path="C:/MT5")
 
 
 def provider(mt5=None, **kwargs) -> Mt5MarketDataProvider:
@@ -276,15 +286,27 @@ class TestLifecycle:
         instance.fetch_candles("X", "5M", "10")
         assert len(mt5.initialize_calls) == 1
 
-    def test_credentials_are_forwarded_when_supplied(self):
-        mt5 = FakeMt5()
+    def test_credentials_are_forwarded_when_no_session(self):
+        """فاز ۹۶-ه: نشست زنده نیست → لاگین برنامه‌ای با credential."""
+        mt5 = FakeMt5(logged_in=False)
         instance = Mt5MarketDataProvider(
             login=999, password="secret", server="Broker-X", mt5_module=mt5
         )
         instance.fetch_candles("X", "5M", "10")
-        sent = mt5.initialize_calls[0]
+        assert mt5.initialize_calls[0] == {}  # اول تلاش برای نشست
+        sent = mt5.initialize_calls[1]
         assert sent["login"] == 999
         assert sent["server"] == "Broker-X"
+
+    def test_live_session_beats_saved_credentials(self):
+        """ترمینال لاگین است → credential اصلاً فرستاده نمی‌شود (اکانت OTP)."""
+        mt5 = FakeMt5(logged_in=True)
+        instance = Mt5MarketDataProvider(
+            login=999, password="secret", server="Broker-X", mt5_module=mt5
+        )
+        instance.fetch_candles("X", "5M", "10")
+        assert len(mt5.initialize_calls) == 1
+        assert mt5.initialize_calls[0] == {}
 
     def test_no_credentials_uses_the_existing_session(self):
         """Avoids putting a password anywhere near the codebase."""
