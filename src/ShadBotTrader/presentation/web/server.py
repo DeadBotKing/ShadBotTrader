@@ -219,15 +219,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         symbol, timeframe = self._selected_series(query)
 
         try:
-            # فاز ۸۶-ب: همهٔ مدل‌های رنج موجود — نه فقط هم‌تایم‌فریم
+            # فاز ۹۶-و: همهٔ مدل‌های رنج ذخیره‌شده از هر تایم‌فریمی —
+            # لیست هاردکدِ 1D/1H مدل‌های جدید (مثل 4H) را مخفی می‌کرد.
             inspector_rf = RangeForecastInspector(self.storage_root)
-            models_all = inspector_rf.available_models("1D")
-            models_all += [
-                m
-                for m in inspector_rf.available_models("1H")
-                if m["model_id"] not in {x["model_id"] for x in models_all}
-            ]
-            models = models_all
+            models = inspector_rf.all_range_models()
         except Exception:
             models = []
 

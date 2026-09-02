@@ -90,6 +90,33 @@ class RangeForecastInspector:
             seen[item["model_id"]] = item
         return sorted(seen.values(), key=lambda item: item["model_id"])
 
+    def all_range_models(self) -> List[Dict[str, Any]]:
+        """فاز ۹۶-و: هر مدل رنج ذخیره‌شده، از هر تایم‌فریمی.
+
+        یک رکورد per model_id (آخرین نسخه). /data لیست مدل را از این
+        می‌سازد تا مدل‌های جدید (مثل 4H) بدون تغییر کد ظاهر شوند.
+        """
+        from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+
+        catalogue = ModelCatalogue(self._root)
+        out: List[Dict[str, Any]] = []
+        for record in catalogue.list_all():
+            if record is None or record.role != "range":
+                continue
+            out.append(
+                {
+                    "model_id": record.model_id,
+                    "version": record.version,
+                    "horizon": int(record.horizon or 1),
+                    "trained_at": (record.trained_at or "")[:10],
+                    "timeframe": (record.timeframe or "").upper(),
+                }
+            )
+        seen: Dict[str, Dict[str, Any]] = {}
+        for item in sorted(out, key=lambda i: (i["model_id"], i["version"])):
+            seen[item["model_id"]] = item
+        return sorted(seen.values(), key=lambda item: item["model_id"])
+
     # ---------------------------------------------------------- forecast --
     def forecast_at(
         self,

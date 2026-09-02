@@ -505,7 +505,9 @@ if (rfModel) {
   RANGE_MODELS.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.model_id;
-    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${m.trained_at}`;
+    // فاز ۹۶-و: تایم‌فریم مدل در لیست معلوم باشد (4H, 1D, 1H, ...)
+    const tf = m.timeframe || '?';
+    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${tf} · ${m.trained_at}`;
     rfModel.appendChild(opt);
   });
 }
