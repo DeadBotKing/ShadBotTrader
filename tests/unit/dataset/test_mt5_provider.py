@@ -71,7 +71,10 @@ class FakeMt5:
 
     def __init__(self, rates=None, symbols=None, initialize_ok=True):
         self._rates = rates if rates is not None else [make_rate()]
-        self._symbols = symbols if symbols is not None else [FakeSymbol("XAUUSD")]
+        self._symbols = symbols if symbols is not None else [
+            FakeSymbol("XAUUSD"),
+            FakeSymbol("EURUSD"),
+        ]
         self._initialize_ok = initialize_ok
         self.initialize_calls = []
         self.shutdown_calls = 0
@@ -99,6 +102,19 @@ class FakeMt5:
     def symbols_get(self, pattern=None):
         self.last_request = ("symbols", pattern)
         return self._symbols
+
+    def symbol_info(self, symbol):
+        # فاز ۹۶-د: این فیک برای تستِ mapping نرخ‌هاست، پس هر اسمی را
+        # «شناخته‌شده» فرض می‌کند؛ رفتار نمونهٔ ناشناخته در
+        # tests/unit/data/test_mt5_symbol_select.py پوشش داده شده است.
+        for item in self._symbols:
+            if item.name == symbol:
+                return item
+        return type("Info", (), {"name": symbol})()
+
+    def symbol_select(self, symbol, visible=True):
+        self.last_request = ("select", symbol, visible)
+        return True
 
     def account_info(self):
         return FakeAccount()

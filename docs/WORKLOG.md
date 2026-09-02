@@ -3221,3 +3221,38 @@ WR 29.2%، **−9.42%** (تقریباً برابر ران قبل: −9.01%). 0-b
 `trend_filter=ema50` + `session_filter` (ساعت‌های فرم فعلی
 2,5,6,10,14,15,16,18 باید به 2,6,14,17,18 تغییر کند — فاز ۵۲ قدیمی
 بوده) → ران‌های A/B اپراتور. تغییر لیست ساعت‌ها با تأیید اپراتور.
+
+---
+
+## 2026-09-01 — فاز ۹۶-د: symbol_select قبل از هر fetch + پیام خطای قابل‌رفع
+
+**گزارش اپراتور:** fetch 4H با `XAUUSD_I` → `MT5 returned no data:
+(-1, 'Terminal: Call failed')` در حالی که ترمینال لاگین است.
+
+### دو ریشهٔ عملیاتی (بدون کد)
+
+1. **حروف بزرگ/کوچک:** پسوند آلپاری با i کوچک است — `XAUUSD_i` نه
+   `XAUUSD_I`. MT5 اسم‌ها را case-sensitive می‌شناسد.
+2. **نام canonical اشتباه:** فیلد symbol فرم باید `XAUUSD` باشد (نام
+   پلتفرم)؛ `XAUUSD_I` به‌عنوان canonical جدید ذخیره می‌شد و تاریخچه
+   تکه‌تکه می‌شد. چون fetch رد شد چیزی ذخیره نشد — فقط فرم را درست کن.
+
+### ریشهٔ نرم‌افزاری (رفع شد)
+
+پراوایدر MT5 هرگز `symbol_select` صدا نمی‌زد — اگر نمونه در Market
+Watch نبود (یا املایش غلط بود)، copy_rates همان (-1) مبهم را می‌داد.
+
+رفع: `_select_symbol` قبل از هر `copy_rates_from_pos/range`:
+- `symbol_info` هست → `symbol_select` و ادامه
+- نیست → ValidationError با نزدیک‌ترین اسم‌های واقعی بروکر
+  (`symbols_get("*XAUUSD*")`) و یادآوری صریح i کوچک آلپاری.
+
+### تست‌ها
+
+- جدید: `test_mt5_symbol_select.py` (3) — select-before-fetch،
+  خطای قابل‌رفع برای case غلط، مسیر range.
+- `FakeMt5` در test_mt5_provider سطح `symbol_info/symbol_select` گرفت.
+
+```
+ruff ✅ black ✅  pytest full suite green
+```

@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 87
+      "used_by": 88
     },
     {
       "name": "numpy",
@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "02b240002fb799e5768ddec2dc8e2c97b2c741107f9595f34b3be8af5d0cb9c8",
-      "size_bytes": 160467
+      "sha256": "c0371b308665babaa0f4b8ef27f5242b2823c0eab75036f83bc841734a955490",
+      "size_bytes": 165396
     },
     {
       "category": "legacy",
@@ -3339,8 +3339,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/data/mt5_market_data_provider.py",
-      "sha256": "795f704f15dc7330ed4893761c9e9eecfb79a656f27641f625e4d9d049bc9dfd",
-      "size_bytes": 13787
+      "sha256": "db1849fc9971fdd7d263bf475d5c20efb07a6099cb6f60d09b587c543291388d",
+      "size_bytes": 15049
     },
     {
       "category": "source",
@@ -4574,6 +4574,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/data/test_mt5_symbol_select.py",
+      "sha256": "75809f3f39deea86ec33109409a314bef561a79b7f1cda620d2b82adcddd2e92",
+      "size_bytes": 4406
+    },
+    {
+      "category": "test",
       "path": "tests/unit/dataset/__init__.py",
       "sha256": "f57a58e548a259c875519910e1c9e55b1d6502130095e1bda34815c16aacdb9c",
       "size_bytes": 32
@@ -4611,8 +4617,8 @@
     {
       "category": "test",
       "path": "tests/unit/dataset/test_mt5_provider.py",
-      "sha256": "f456c57d75988e28e3b656a619b905867bbb48096ede40c27f5687a2b2ab7ebb",
-      "size_bytes": 11302
+      "sha256": "e636503fe7c9a150294cb6ccfc2ab3e396b93988e06faecd72d9983dc1f9718f",
+      "size_bytes": 11974
     },
     {
       "category": "test",
@@ -4963,14 +4969,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-01T16:02:33.286435+00:00",
+  "generated_at": "2026-09-02T06:40:16.297730+00:00",
   "git": {
     "branch": "main",
-    "commit": "d338503fad2cc4065536159db42b9fc0453ceb37",
+    "commit": "efe8a58bcc7000feb07a95fa782b823b470cf32f",
     "dirty": true,
-    "dirty_files": 4,
+    "dirty_files": 12,
     "is_repo": true,
     "recent_commits": [
+      "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change",
+      "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)",
       "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning",
       "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)",
       "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes",
@@ -4978,9 +4986,7 @@
       "e96d1b3 Phase 95d: per-step label profile + per-step validation MAE",
       "e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention",
       "9f21e68 Phase 95b: ATR-aware training reports + constant-predictor baseline",
-      "ce5676d docs: remove stale '109-feature' banner/help/docstrings",
-      "4a16a84 Phase 95: ATR-normalized range targets + ATR-aware price conversion everywhere",
-      "1f15156 docs: root cause analysis \u2014 constant offset is a structural limitation, not a code bug"
+      "ce5676d docs: remove stale '109-feature' banner/help/docstrings"
     ]
   },
   "modules": [
@@ -7336,7 +7342,7 @@
       "external_imports": [
         "MetaTrader5"
       ],
-      "functions": 19,
+      "functions": 20,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.dataset.ports",
@@ -10399,6 +10405,19 @@
       "path": "tests/unit/core/test_structured_logging.py"
     },
     {
+      "classes": 2,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 11,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.infrastructure.data.mt5_market_data_provider"
+      ],
+      "name": "unit.data.test_mt5_symbol_select",
+      "path": "tests/unit/data/test_mt5_symbol_select.py"
+    },
+    {
       "classes": 0,
       "external_imports": [],
       "functions": 0,
@@ -10489,7 +10508,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 40,
+      "functions": 42,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.dataset.ports",
@@ -11387,20 +11406,20 @@
   "python_version": "3.13.14",
   "source_file_count": 319,
   "statistics": {
-    "class_count": 785,
+    "class_count": 787,
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4450,
+    "function_count": 4464,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
-    "module_count": 459,
+    "module_count": 460,
     "source_file_count": 319,
-    "source_lines": 50373,
-    "test_file_count": 140,
-    "test_lines": 23435,
-    "total_file_count": 817,
-    "total_lines": 118907
+    "source_lines": 50398,
+    "test_file_count": 141,
+    "test_lines": 23559,
+    "total_file_count": 818,
+    "total_lines": 119056
   },
-  "test_file_count": 140
+  "test_file_count": 141
 }

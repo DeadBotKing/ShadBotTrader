@@ -126,6 +126,29 @@ class Mt5MarketDataProvider(MarketDataProvider):
         self._mt5 = mt5_module
         self._initialized = False
 
+    # -- symbol visibility ----------------------------------------------------
+    def _select_symbol(self, mt5: Any, symbol: str) -> None:
+        """Put the symbol into Market Watch before any data call (فاز ۹۶-د).
+
+        ``copy_rates`` fails with ``(-1, 'Terminal: Call failed')`` when
+        the symbol is not in Market Watch **or the spelling/case is off**
+        — MT5 names are case-sensitive (Alpari: ``XAUUSD_i`` با i کوچک).
+        On failure, list the closest real names so the operator can fix
+        the account mapping instead of staring at -1.
+        """
+        if mt5.symbol_info(symbol) is not None:
+            mt5.symbol_select(symbol, True)
+            return
+        base = symbol.split("_")[0]
+        matches = mt5.symbols_get(f"*{base}*") or []
+        names = sorted(getattr(m, "name", "") for m in matches)[:10]
+        hint = "; ".join(names) if names else "the broker exposes no similar name"
+        raise ValidationError(
+            f"MT5 has no symbol {symbol!r} (check case — Alpari uses XAUUSD_i "
+            f"with a lowercase i). Closest names: {hint}. Fix it under "
+            "Accounts -> Map a symbol."
+        )
+
     # -- port contract ------------------------------------------------------
     @property
     def provider_name(self) -> str:
@@ -144,6 +167,7 @@ class Mt5MarketDataProvider(MarketDataProvider):
             raise ValidationError("Bar count must be >= 1")
 
         mt5 = self._ensure_initialized()
+        self._select_symbol(mt5, symbol)
         rates = mt5.copy_rates_from_pos(symbol, self._resolve_timeframe(timeframe), 0, count)
         return self._to_records(rates, symbol, timeframe, mt5)
 
@@ -160,6 +184,7 @@ class Mt5MarketDataProvider(MarketDataProvider):
             raise ValidationError("end must be after start")
 
         mt5 = self._ensure_initialized()
+        self._select_symbol(mt5, symbol)
         rates = mt5.copy_rates_range(
             symbol,
             self._resolve_timeframe(timeframe),
