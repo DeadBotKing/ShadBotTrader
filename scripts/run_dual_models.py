@@ -1382,6 +1382,11 @@ def main(argv: list[str] | None = None) -> int:
     wants_trend = args.model in ("trend",)
 
     planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
+    if wants_trend:
+        trend_tf_planned = (
+            range_timeframes[0].strip().upper() if range_timeframes else ""
+        ) or (args.signal_timeframe or "1D").strip().upper()
+        planned.append(f"trend({trend_tf_planned})")
     if wants_signal:
         planned.append(f"signal({args.signal_timeframe})")
     print(f"training: {', '.join(planned) or 'nothing'}")
@@ -1433,7 +1438,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if wants_trend:
         # فاز ۹۸: برچسب رنگ کندل بعدی روی تایم‌فریم انتخابی — softmax دوکلاسه
-        trend_tf = (args.signal_timeframe or "1D").strip().upper()
+        # اولویت: --range-timeframes (همان «Dataset» در GUI) بعد --signal-timeframe
+        trend_tf = (
+            range_timeframes[0].strip().upper() if range_timeframes else ""
+        ) or (args.signal_timeframe or "1D").strip().upper()
         run_role(
             trend_model_role(
                 timeframe=trend_tf,

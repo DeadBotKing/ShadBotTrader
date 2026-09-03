@@ -3542,3 +3542,14 @@ ruff ✅ black ✅  pytest full suite green
 - `trend_model_role` پیش‌فرض timeframe="1D".
 
 همهٔ تست‌سوت سبز؛ node --check روی اسکریپت چارت OK.
+
+### فاز ۹۸ (رفع ابهام اپراتور): «دیتاست 1D انتخاب کردم ولی مدل 5M آموزش دید»
+
+دو مسیر برای تایم‌فریمِ trend وجود داشت و GUI مسیر اشتباه را می‌فرستاد:
+- اسکریپت trend را از `--signal-timeframe` می‌خواند (پیش‌فرض 5M)؛
+- GUI مقدار Dataset را فقط در `--range-timeframes` می‌فرستاد.
+
+رفع: اسکریپت برای trend اول `--range-timeframes` (همان Dataset) را
+می‌خواند بعد signal-timeframe؛ GUI هم برای trend دیتاست انتخابی را در
+هر دو فلگ می‌فرستد. سربرگ `training:` حالا `trend(1D)` را نشان می‌دهد
+(قبلاً «nothing» چاپ می‌شد). + کل تست‌سوت سبز.

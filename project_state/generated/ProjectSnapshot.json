@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "29d3c3c242dbbe12c4bc9777ade36d0054f5925e636d05809a23fbc12944cbee",
-      "size_bytes": 181609
+      "sha256": "1a8ba8ec1e340ca0563536a4da31db81496afa3f3069400ae1c1fa98945ecede",
+      "size_bytes": 182667
     },
     {
       "category": "legacy",
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "878f4cc6fb88482b56437de2c190d8db2b95b4d801a2d17936d66108eea79b8a",
-      "size_bytes": 62960
+      "sha256": "c49e9e99fb57c499d043da24cf3e945ce082049284501e8a9f5de4f75bf8e35c",
+      "size_bytes": 63391
     },
     {
       "category": "script",
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "2038b8eebaaf66ff0846a38f84b37f924866c7bdc30413ef6550116b61c8270b",
-      "size_bytes": 161315
+      "sha256": "53137b75454eed0e6a100adeeed210fff16a14ce6cb49131db5e8356d59c79e3",
+      "size_bytes": 161480
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T11:15:38.419878+00:00",
+  "generated_at": "2026-09-03T11:31:23.792483+00:00",
   "git": {
     "branch": "main",
-    "commit": "d7e72a222234158bde6a1a2c7cbb6b0a9069ab31",
+    "commit": "440af28292635eac8c5b75888d19032faf465f66",
     "dirty": true,
-    "dirty_files": 5,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)",
       "d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data",
       "aeb3188 Phase 98 part 1: TREND model \u2014 next-candle color (GREEN/RED) classification",
       "dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)",
@@ -5003,8 +5004,7 @@
       "6ddd6ee Phase 96v: /data range-model list spans every timeframe",
       "58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)",
       "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error",
-      "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change",
-      "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)"
+      "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change"
     ]
   },
   "modules": [
@@ -11488,11 +11488,11 @@
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51332,
+    "source_lines": 51334,
     "test_file_count": 144,
     "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120721
+    "total_lines": 120731
   },
   "test_file_count": 144
 }

@@ -3540,10 +3540,12 @@ class AccountCommandHandlers(CommandHandlers):
                 # model and the signal model keeps its own 5M default —
                 # a signal model on daily candles is a different product,
                 # not a variation.
+                # فاز ۹۸: trend هم تایم‌فریمش از «Dataset» می‌آید —
+                # اسکریپت برای trend اول range_timeframes را می‌خواند.
                 "--range-timeframes",
-                dataset if role in ("range", "all") else dataset,
+                dataset,
                 "--signal-timeframe",
-                dataset if role == "signal" else "5M",
+                dataset if role in ("signal", "trend") else "5M",
                 "--epochs",
                 str(max(command.integer("epochs", 1), 1)),
                 "--folds",
