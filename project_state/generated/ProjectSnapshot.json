@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "01fc69294de20340cee2f3ace52d446556d29329001fa04e1679125cf43045cc",
-      "size_bytes": 185237
+      "sha256": "b889039d6bc572e8884358bb3f1f4b65e9c99a8ceecfa8eac4258fb0d4ece369",
+      "size_bytes": 186343
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
+      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
     },
     {
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "049322c88a73ffc3f1597a9901e4664952945ce90184b3ba01052eac6b9c0790",
-      "size_bytes": 42884
+      "sha256": "56e64ab84c1465b2f7dda7749e0ad28467a2e127e5467a068b3fd15d3bf45788",
+      "size_bytes": 43014
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T13:22:20.872917+00:00",
+  "generated_at": "2026-09-03T13:46:16.117046+00:00",
   "git": {
     "branch": "main",
-    "commit": "ff3cdc84b0d4438edb92f84eb36a28df8980b2ec",
+    "commit": "57233d42268162fcc7ed183efe2ec84de1d5082f",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "57233d4 Phase 98 fix: /data trend forecast no longer hangs \u2014 model + feature caches",
       "ff3cdc8 Phase 98: trend model appears in /data dropdown",
       "0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)",
       "1350c6e Phase 98 fix: trend training honors the selected Dataset",
@@ -5003,8 +5004,7 @@
       "aeb3188 Phase 98 part 1: TREND model \u2014 next-candle color (GREEN/RED) classification",
       "dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)",
       "73a06a5 Phase 97b: license 4 \u2014 entry must sit near the daily level",
-      "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
-      "6ddd6ee Phase 96v: /data range-model list spans every timeframe"
+      "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)"
     ]
   },
   "modules": [
@@ -11491,11 +11491,11 @@
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51372,
+    "source_lines": 51373,
     "test_file_count": 144,
     "test_lines": 24275,
     "total_file_count": 821,
-    "total_lines": 120776
+    "total_lines": 120777
   },
   "test_file_count": 144
 }

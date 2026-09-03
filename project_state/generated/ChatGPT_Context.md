@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T13:22:20.872917+00:00
+- Snapshot generated at: 2026-09-03T13:46:16.117046+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ff3cdc84b0d4438edb92f84eb36a28df8980b2ec
+- Commit: 57233d42268162fcc7ed183efe2ec84de1d5082f
 - Dirty: yes (1 files)
 - Recent commits:
+  - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
   - ff3cdc8 Phase 98: trend model appears in /data dropdown
   - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
   - 1350c6e Phase 98 fix: trend training honors the selected Dataset
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
   - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
   - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
-  - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120776
+- Total Python lines: 120777
 - Modules: 463
 - Classes: 800
 - Functions: 4531
