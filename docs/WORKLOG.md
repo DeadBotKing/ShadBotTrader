@@ -3553,3 +3553,14 @@ ruff ✅ black ✅  pytest full suite green
 می‌خواند بعد signal-timeframe؛ GUI هم برای trend دیتاست انتخابی را در
 هر دو فلگ می‌فرستد. سربرگ `training:` حالا `trend(1D)` را نشان می‌دهد
 (قبلاً «nothing» چاپ می‌شد). + کل تست‌سوت سبز.
+
+### فاز ۹۸ (رفع باگ اپراتور): «sample_end_indices and label_end_indices must be supplied together»
+
+شاخهٔ trend در prepare صریحاً sample_ends می‌ساخت بدون
+sample_label_ends → trainer جفتِ ناقص را رد می‌کرد. برچسب trend
+ثابتِ یک‌کندله است — حالا مثل range دیتاستِ stride-1 ساده می‌سازد
+(sample_ends=None) و purge ویژه لازم ندارد.
+تأیید سرتاسری در سندباکس (TF نصب شد): prepare → train (1 epoch،
+2 فولد) → val_accuracy 55.6% روی دادهٔ تصادفی → SignalPredictor
+P(GREEN)=0.505. + کل tests/unit سبز (1034) — دو تست
+test_threshold_recorded محیط‌اند (در HEAD هم fail؛ در WORKLOG فاز ۵۲ ثبت شده).

@@ -186,26 +186,20 @@ class DualModelService:
         elif role.model_id.startswith("gold_trend_"):
             # فاز ۹۸: مدل ترند — برچسب رنگ کندل بعدی (GREEN/RED)، بدون
             # مسیرِ first-passage؛ همهٔ ردیف‌های با آیندهٔ کامل برچسب دارند.
+            # stride-1 عادی (مثل range) — sample_ends خاص نمی‌خواهد:
+            # برچسب هر ردیف فقط یک کندل جلو است، purge ویژه لازم نیست.
             trend = build_trend_labels(candles)
             distribution = trend.distribution()
             degenerate = trend.is_degenerate()
             target_names = ["signal_class"]
             target_by_index = dict(zip(trend.source_index, trend.labels, strict=True))
-            original_to_matrix = {
-                original: position for position, original in enumerate(matrix.source_index)
-            }
-            sample_ends = [
-                original_to_matrix[index]
-                for index in trend.source_index
-                if index in original_to_matrix
-                and original_to_matrix[index] >= role.window_size - 1
-            ]
-            if not sample_ends:
-                raise ValidationError("No complete trend windows have a GREEN/RED label.")
             series = [
                 list(row) + [float(target_by_index.get(original, 0))]
                 for row, original in zip(matrix.rows, matrix.source_index, strict=True)
+                if original in target_by_index
             ]
+            if not series:
+                raise ValidationError("No complete trend windows have a GREEN/RED label.")
             column_names = list(matrix.column_names) + target_names
         else:
             signal = build_signal_labels(

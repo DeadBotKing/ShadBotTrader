@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T11:31:23.792483+00:00
+- Snapshot generated at: 2026-09-03T12:17:05.043601+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 440af28292635eac8c5b75888d19032faf465f66
-- Dirty: yes (2 files)
+- Commit: 1350c6e5fd32ad18e168f97dba5c2c03fd5e4f7e
+- Dirty: yes (22 files)
 - Recent commits:
+  - 1350c6e Phase 98 fix: trend training honors the selected Dataset
   - 440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)
   - d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data
   - aeb3188 Phase 98 part 1: TREND model — next-candle color (GREEN/RED) classification
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
   - 58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)
   - 132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error
-  - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120731
+- Total Python lines: 120725
 - Modules: 463
 - Classes: 800
 - Functions: 4531

@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "1a8ba8ec1e340ca0563536a4da31db81496afa3f3069400ae1c1fa98945ecede",
-      "size_bytes": 182667
+      "sha256": "3c0379722447893f7f3a2ae1080f47ac5a9c2fcafa823245121da133ba527c56",
+      "size_bytes": 183482
     },
     {
       "category": "legacy",
@@ -2295,8 +2295,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "e3e97a4bb1308640da90df92512de66225840b7f020fb9a66b25892442f5f35a",
-      "size_bytes": 24607
+      "sha256": "35ee567f69ab79331a65e579be4fa2bbddea1e432fac7aef6d0d5d9ad8737f32",
+      "size_bytes": 24460
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T11:31:23.792483+00:00",
+  "generated_at": "2026-09-03T12:17:05.043601+00:00",
   "git": {
     "branch": "main",
-    "commit": "440af28292635eac8c5b75888d19032faf465f66",
+    "commit": "1350c6e5fd32ad18e168f97dba5c2c03fd5e4f7e",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 22,
     "is_repo": true,
     "recent_commits": [
+      "1350c6e Phase 98 fix: trend training honors the selected Dataset",
       "440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)",
       "d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data",
       "aeb3188 Phase 98 part 1: TREND model \u2014 next-candle color (GREEN/RED) classification",
@@ -5003,8 +5004,7 @@
       "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
       "6ddd6ee Phase 96v: /data range-model list spans every timeframe",
       "58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)",
-      "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error",
-      "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change"
+      "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error"
     ]
   },
   "modules": [
@@ -11488,11 +11488,11 @@
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51334,
+    "source_lines": 51328,
     "test_file_count": 144,
     "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120731
+    "total_lines": 120725
   },
   "test_file_count": 144
 }
