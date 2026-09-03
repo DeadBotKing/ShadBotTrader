@@ -71,6 +71,7 @@ class DualModelPredictionSource(PredictionSource):
         daily_window_size: int = 150,
         slope_mode: str = "both",
         max_entry_distance_atr: float = 0.0,
+        min_sl_distance: float = 0.0,
     ) -> None:
         if signal_window_size < 2 or range_window_size < 2:
             raise ValidationError("Both model windows must be >= 2")
@@ -137,6 +138,8 @@ class DualModelPredictionSource(PredictionSource):
         # (خرید: نزدیک Low پیش‌بینی D1؛ فروش: نزدیک High پیش‌بینی D1).
         # آستانه بر حسب ATR14 روزانه (0 = خاموش).
         self._max_entry_distance_atr = float(max_entry_distance_atr)
+        self._min_sl_distance_hint = float(min_sl_distance)
+        self._final_sl_refused = 0
         self._proximity_blocked = 0
         self._all_daily_candles = sorted(daily_candles, key=lambda c: c.open_time.value)
         self._daily_candle_index = {
@@ -260,6 +263,8 @@ class DualModelPredictionSource(PredictionSource):
             "license3_refused": self._license3_refused,
             "rr_refused": self._rr_refused,
             "no_sl_found": self._no_sl_found,
+            "final_sl_refused": self._final_sl_refused,
+            "min_sl_distance": self._min_sl_distance_hint,
         }
 
     # ------------------------------------------------------------- port --
@@ -617,6 +622,17 @@ class DualModelPredictionSource(PredictionSource):
             sl = max(highs) + float(spread_abs)
             self._sl_fallback_today += 1
 
+        # فاز ۹۷-د: حداقل فاصلهٔ SL روی SL «نهایی» — گیت استراتژی روی
+        # SL پیش‌بینی چک می‌کند و fallback می‌توانست چاقو بسازد (ران
+        # 941-ترید: 474 ترید SL<6، WR 1.5%). کف مطلق = 2×اسپرد هم هست.
+        sl_dist = abs(entry - sl)
+        min_sl = float(self._min_sl_distance_hint or 0.0)
+        if self._spread_pct_val:
+            min_sl = max(min_sl, 2.0 * float(entry) * float(self._spread_pct_val))
+        if sl_dist < min_sl:
+            self._final_sl_refused += 1
+            return None
+
         # مجوز ۳ — سمت TP
         if is_buy and tp <= entry:
             self._license3_refused += 1
@@ -709,6 +725,7 @@ class DualModelPredictionSource(PredictionSource):
         self._license3_refused = 0
         self._rr_refused = 0
         self._no_sl_found = 0
+        self._final_sl_refused = 0
         self._daily_feed.clear()
         self._daily_cursor = 0
 

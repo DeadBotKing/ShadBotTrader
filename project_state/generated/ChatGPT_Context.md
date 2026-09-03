@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-02T16:25:28.260421+00:00
+- Snapshot generated at: 2026-09-03T08:51:51.612399+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 1ffd3677e1d724737e458661ff55feffdcf57f5d
-- Dirty: yes (4 files)
+- Commit: 73a06a5940ac917418867ab0939e2d97a3ddbb79
+- Dirty: yes (5 files)
 - Recent commits:
+  - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
   - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
   - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
   - 58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
   - 1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)
   - 0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes
-  - 2be2db0 Phase 95e: actually draw the /data forecast path on the chart
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120328
+- Total Python lines: 120400
 - Modules: 463
-- Classes: 798
-- Functions: 4519
+- Classes: 799
+- Functions: 4522
 - External dependencies: 14

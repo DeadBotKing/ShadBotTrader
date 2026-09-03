@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "bc38e90d75be72b6171c9477592029c38406b43feeb06e4aab798fe9ec220ae0",
-      "size_bytes": 173760
+      "sha256": "63792f1e076c8d8f982f2664fdd8c48661e29062d7485a9b2364a2cc2cfd2d22",
+      "size_bytes": 178035
     },
     {
       "category": "legacy",
@@ -2289,8 +2289,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_backtest_service.py",
-      "sha256": "2b800bf1dc0a8a25d6ccb477454dd234a09b49e65f60ba8ebfa4e38167139d29",
-      "size_bytes": 25153
+      "sha256": "32898acdd79a98d0b0400668e08292c1564129af144feae693bfde720144f437",
+      "size_bytes": 25204
     },
     {
       "category": "source",
@@ -3807,8 +3807,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/simulation/dual_model_prediction_source.py",
-      "sha256": "1c235241d8730e84467ce87aff8a9670c640960d1be81378beb3c506461c81b9",
-      "size_bytes": 36896
+      "sha256": "d6a1d774ab17034a1ed948ffef8a936f0acb806d510fd23dd35143efd895b835",
+      "size_bytes": 37801
     },
     {
       "category": "source",
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "fc34d262d4c4abbbf218eaee46822e62c7cc99102f2264c4898401f86f520e1c",
-      "size_bytes": 160715
+      "sha256": "46a53d23936ba0f5ac00394fb784a857c86e499bcd1d93fe3ec10c6436abe299",
+      "size_bytes": 160797
     },
     {
       "category": "source",
@@ -4953,8 +4953,8 @@
     {
       "category": "test",
       "path": "tests/unit/simulation/test_triple_strategy.py",
-      "sha256": "2524b44d544fc9886f235862c3b1d7485bb20f62ebb2b084d9cc418ead62d314",
-      "size_bytes": 18585
+      "sha256": "f0f906983d2d9f3b9d81e0a7e45c658ed4cd031e08bb5b32f5707ac276ff152e",
+      "size_bytes": 20738
     },
     {
       "category": "test",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-02T16:25:28.260421+00:00",
+  "generated_at": "2026-09-03T08:51:51.612399+00:00",
   "git": {
     "branch": "main",
-    "commit": "1ffd3677e1d724737e458661ff55feffdcf57f5d",
+    "commit": "73a06a5940ac917418867ab0939e2d97a3ddbb79",
     "dirty": true,
-    "dirty_files": 4,
+    "dirty_files": 5,
     "is_repo": true,
     "recent_commits": [
+      "73a06a5 Phase 97b: license 4 \u2014 entry must sit near the daily level",
       "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
       "6ddd6ee Phase 96v: /data range-model list spans every timeframe",
       "58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)",
@@ -5003,8 +5004,7 @@
       "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)",
       "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning",
       "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)",
-      "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes",
-      "2be2db0 Phase 95e: actually draw the /data forecast path on the chart"
+      "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes"
     ]
   },
   "modules": [
@@ -11357,11 +11357,11 @@
       "path": "tests/unit/simulation/test_trend_filter.py"
     },
     {
-      "classes": 7,
+      "classes": 8,
       "external_imports": [
         "pytest"
       ],
-      "functions": 29,
+      "functions": 32,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -11468,20 +11468,20 @@
   "python_version": "3.13.14",
   "source_file_count": 319,
   "statistics": {
-    "class_count": 798,
+    "class_count": 799,
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4519,
+    "function_count": 4522,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51014,
+    "source_lines": 51033,
     "test_file_count": 144,
-    "test_lines": 24215,
+    "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120328
+    "total_lines": 120400
   },
   "test_file_count": 144
 }

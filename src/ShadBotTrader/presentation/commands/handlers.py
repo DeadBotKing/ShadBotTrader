@@ -2468,7 +2468,8 @@ class CommandHandlers:
                     lines.append(
                         f"sl fallback: D0 x{_pst.get('sl_fallback_d0', 0)} · "
                         f"today-5M x{_pst.get('sl_fallback_today', 0)} · "
-                        f"no-SL refused {_pst.get('no_sl_found', 0)}"
+                        f"no-SL refused {_pst.get('no_sl_found', 0)} · "
+                        f"final-SL refused {_pst.get('final_sl_refused', 0)}"
                     )
                 if _pst.get("license3_refused") or _pst.get("rr_refused"):
                     lines.append(

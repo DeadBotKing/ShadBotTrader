@@ -129,6 +129,7 @@ def _make_source(
     reward_risk_multiplier=None,
     spread_pct=None,
     max_entry_distance_atr=0.0,
+    min_sl_distance=0.0,
 ):
     five_m = [_candle(i, FIVE_M, c, 0.5) for i, c in enumerate(five_m_closes)]
     four_h = [_candle(i, FOUR_H, c, 2.0) for i, c in enumerate(four_h_closes)]
@@ -187,6 +188,7 @@ def _make_source(
         slope_mode=slope_mode,
         spread_pct=spread_pct,
         max_entry_distance_atr=max_entry_distance_atr,
+        min_sl_distance=min_sl_distance,
     )
     for candle in five_m:
         source.observe(MarketEvent.from_candle(SYMBOL, candle))
@@ -458,3 +460,54 @@ class TestLicense4Proximity:
                 signal_side="buy",
                 max_entry_distance_atr=-1.0,
             )
+
+
+class TestFinalSlFloor:
+    """فاز ۹۷-د: حداقل فاصلهٔ SL روی SL «نهایی» (بعد از fallback)."""
+
+    def test_d0_fallback_too_close_is_refused(self, spread_pct=0.0006):
+        # fallback D0: Low(D0)=2166 با ورود 2170 → dist=4 < 6 → رد
+        source, five_m, _, _ = _make_source(
+            UP_5M,
+            UP_4H,
+            UP_DAILY[:-1] + [2170.0],  # D0: close 2170, low 2166
+            signal_side="buy",
+            range_high=2180.0,
+            range_low=2176.0,  # SL پیش‌بینی بالای ورود → fallback
+            min_sl_distance=6.0,
+        )
+        bracket = _predict_and_bracket(source, five_m, "buy", entry=2170.5)
+        assert bracket is None
+        assert source.stats()["final_sl_refused"] == 1
+
+    def test_d0_fallback_far_enough_passes(self):
+        # Low(D0) = 2166 − ورود 2171 → dist = 5؟ با min=6 رد؛ ورود 2172.5 → dist 6.5 ✓
+        source, five_m, _, _ = _make_source(
+            UP_5M,
+            UP_4H,
+            UP_DAILY[:-1] + [2170.0],
+            signal_side="buy",
+            range_high=2180.0,
+            range_low=2176.0,
+            min_sl_distance=6.0,
+        )
+        bracket = _predict_and_bracket(source, five_m, "buy", entry=2172.5)
+        assert bracket is not None
+        assert float(bracket.stop_loss.amount) == pytest.approx(2166.0)
+        assert source.stats()["final_sl_refused"] == 0
+
+    def test_spread_floor_alone_blocks_knife(self):
+        # min_sl_distance=0 ولی اسپرد 0.06% → کف = 2×2170×0.0006 ≈ $2.60
+        # fallback D0 با dist $2 (D0 close=2172 → low=2168) → رد
+        source, five_m, _, _ = _make_source(
+            UP_5M,
+            UP_4H,
+            UP_DAILY[:-1] + [2172.0],
+            signal_side="buy",
+            range_high=2180.0,
+            range_low=2176.0,
+            spread_pct=0.0006,
+        )
+        bracket = _predict_and_bracket(source, five_m, "buy", entry=2170.0, spread_pct=0.0006)
+        assert bracket is None
+        assert source.stats()["final_sl_refused"] == 1

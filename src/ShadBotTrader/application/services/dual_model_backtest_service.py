@@ -482,6 +482,7 @@ class DualModelBacktestService:
             daily_window_size=self._daily_window_size,
             slope_mode=self._slope_mode,
             max_entry_distance_atr=self._max_entry_distance_atr,
+            min_sl_distance=self._min_sl_distance,
         )
 
         _active_config = self._configuration
