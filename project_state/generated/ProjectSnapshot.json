@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ec48a00e90c3f60f1e62d8be5eb9adde53ed544bca2fa9ec12b57a0f662c0ccc",
-      "size_bytes": 178643
+      "sha256": "99419e02abc7c2170ae1bfddbf8bc15a7285ceb2c4ae1e6ce856b1e1104492d2",
+      "size_bytes": 180728
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
+      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
       "size_bytes": 26005
     },
     {
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "46a53d23936ba0f5ac00394fb784a857c86e499bcd1d93fe3ec10c6436abe299",
-      "size_bytes": 160797
+      "sha256": "bebeec9ac50ed82b554d21ccccbec2996e5f7a0037dfebb6d8649733b676da7f",
+      "size_bytes": 161481
     },
     {
       "category": "source",
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "e2ce7a727fa332bad44b7920dcfc204bc1eb1050309dc8b82cf1ac5aa6d05be6",
-      "size_bytes": 40843
+      "sha256": "cecbd88f5d988af6330f305ca5ad84c8d7d92dd49f79e3b421cb40407f4fa609",
+      "size_bytes": 42269
     },
     {
       "category": "source",
@@ -3999,8 +3999,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "6aeba1d07a369f45de41a8a225c49e8918dfa3ff045bb2cb86b505e70e466794",
-      "size_bytes": 18227
+      "sha256": "118708e726bcf2b0246533b7ed325bed42d07ba8e7ca8b7327ace9b08acec873",
+      "size_bytes": 23485
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T10:36:30.296756+00:00",
+  "generated_at": "2026-09-03T10:54:43.389237+00:00",
   "git": {
     "branch": "main",
-    "commit": "dc2b2a808710a50f5d6e55096cc2e9862044c8ca",
+    "commit": "aeb3188b289da74d860cb71d33a88307163f499d",
     "dirty": true,
-    "dirty_files": 5,
+    "dirty_files": 3,
     "is_repo": true,
     "recent_commits": [
+      "aeb3188 Phase 98 part 1: TREND model \u2014 next-candle color (GREEN/RED) classification",
       "dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)",
       "73a06a5 Phase 97b: license 4 \u2014 entry must sit near the daily level",
       "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
@@ -5003,8 +5004,7 @@
       "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error",
       "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change",
       "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)",
-      "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning",
-      "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)"
+      "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning"
     ]
   },
   "modules": [
@@ -8947,9 +8947,20 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 26,
+      "functions": 28,
       "internal_imports": [
+        "ShadBotTrader.domain.ai.model_identity",
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.domain.market.symbol",
+        "ShadBotTrader.domain.market.timeframe",
         "ShadBotTrader.infrastructure.account",
+        "ShadBotTrader.infrastructure.ai.dual_predictor",
+        "ShadBotTrader.infrastructure.ai.feature_matrix",
+        "ShadBotTrader.infrastructure.ai.filesystem_artifact_store",
+        "ShadBotTrader.infrastructure.ai.model_catalogue",
+        "ShadBotTrader.infrastructure.data.parquet_candle_store",
+        "ShadBotTrader.infrastructure.feature.calculator_registry",
+        "ShadBotTrader.infrastructure.feature.standard_catalog",
         "ShadBotTrader.presentation.commands.bus",
         "ShadBotTrader.presentation.commands.commands",
         "ShadBotTrader.presentation.commands.handlers",
@@ -11472,16 +11483,16 @@
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4529,
+    "function_count": 4531,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51175,
+    "source_lines": 51336,
     "test_file_count": 144,
     "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120563
+    "total_lines": 120724
   },
   "test_file_count": 144
 }

@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T10:36:30.296756+00:00
+- Snapshot generated at: 2026-09-03T10:54:43.389237+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: dc2b2a808710a50f5d6e55096cc2e9862044c8ca
-- Dirty: yes (5 files)
+- Commit: aeb3188b289da74d860cb71d33a88307163f499d
+- Dirty: yes (3 files)
 - Recent commits:
+  - aeb3188 Phase 98 part 1: TREND model — next-candle color (GREEN/RED) classification
   - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
   - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
   - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
   - b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)
   - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
-  - 1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120563
+- Total Python lines: 120724
 - Modules: 463
 - Classes: 800
-- Functions: 4529
+- Functions: 4531
 - External dependencies: 14

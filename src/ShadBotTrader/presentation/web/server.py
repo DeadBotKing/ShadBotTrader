@@ -64,6 +64,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(self._data_payload(query))
             elif route.path == "/api/range-forecast":
                 self._send_json(self._range_forecast_payload(query))
+            elif route.path == "/api/trend-forecast":
+                self._send_json(self._trend_forecast_payload(query))
             elif route.path == "/api/state":
                 self._send_json(self._state(session))
             elif route.path == "/api/status":
@@ -234,6 +236,123 @@ class DashboardHandler(BaseHTTPRequestHandler):
             selected={"symbol": symbol, "timeframe": timeframe},
             range_models=models,
         )
+
+    def _trend_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
+        """فاز ۹۸ — رنگ پیش‌بینی‌شدهٔ کندل بعدی برای /data.
+
+        مدل ترند (gold_trend_4h) روی پنجرهٔ 4H تا کندل انتخابی اجرا
+        می‌شود و P(GREEN)/P(RED) برمی‌گرداند: روند پیش‌بینی صعودی/نزولی.
+        """
+        from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
+        from ShadBotTrader.domain.common.errors import ValidationError
+        from ShadBotTrader.domain.market.symbol import Symbol
+        from ShadBotTrader.domain.market.timeframe import Timeframe
+        from ShadBotTrader.infrastructure.ai.dual_predictor import SignalPredictor
+        from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
+        from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
+            FilesystemArtifactStore,
+        )
+        from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
+        from ShadBotTrader.infrastructure.data.parquet_candle_store import (
+            ParquetCandleStore,
+        )
+
+        def _q(name: str, default: str = "") -> str:
+            return query.get(name, [default])[0]
+
+        symbol = _q("symbol", "XAUUSD")
+        timeframe = _q("timeframe", "4H")
+        model_id = _q("model", "gold_trend_4h")
+        try:
+            bar_index = int(_q("bar", "0"))
+        except ValueError:
+            self._send_json({"error": "bar must be an integer"})
+            return
+
+        try:
+            root = Path(self.storage_root)
+            catalogue = ModelCatalogue(root)
+            version = catalogue.latest_version(model_id)
+            record = catalogue.read(model_id, version) if version else None
+            if record is None:
+                raise ValidationError(
+                    f"No saved model called {model_id!r} — train it with "
+                    "--model trend_4h first."
+                )
+            window_size = int(record.window_size or 150)
+
+            store = ParquetCandleStore(root)
+            candles = sorted(
+                store.query(Symbol(symbol), Timeframe(timeframe)),
+                key=lambda c: c.open_time.value,
+            )
+            if bar_index < window_size - 1 or bar_index >= len(candles):
+                raise ValidationError(
+                    f"Bar index {bar_index} needs at least {window_size} previous "
+                    f"candles (stored: {len(candles)})."
+                )
+
+            WARMUP_PAD = 400
+            window_candles = candles[
+                max(0, bar_index - window_size + 1 - WARMUP_PAD) : bar_index + 1
+            ]
+            from ShadBotTrader.infrastructure.feature.calculator_registry import (
+                CalculatorRegistry,
+            )
+            from ShadBotTrader.infrastructure.feature.standard_catalog import (
+                standard_feature_set_v1,
+            )
+
+            feature_set = standard_feature_set_v1()
+            resolver = CalculatorRegistry()
+            matrix = build_feature_matrix(
+                candles=window_candles,
+                symbol=Symbol(symbol),
+                timeframe=Timeframe(timeframe),
+                feature_set=feature_set,
+                resolver=resolver,
+                include_features=True,
+                causal_only=True,
+                model_role="signal",
+            )
+            if len(matrix) < window_size:
+                raise ValidationError(
+                    f"Feature matrix has {len(matrix)} rows even after warmup pad; "
+                    f"model needs {window_size}."
+                )
+
+            artifact = FilesystemArtifactStore(root).load(
+                ModelId(record.model_id), ModelVersion(record.version)
+            )
+            if artifact is None:
+                raise ValidationError(
+                    f"weights for {record.model_id} v{record.version} missing"
+                )
+
+            predictor = SignalPredictor(
+                horizon=1, timeframe=record.timeframe or timeframe
+            )
+            window_rows = [list(row) for row in matrix.rows[-window_size:]]
+            signal = predictor.forecast(artifact, window_rows)
+            # قرارداد باینری: sell=RED / buy=GREEN (برچسب 1 = سبز)
+            red_p = signal.sell_probability
+            green_p = signal.buy_probability
+            color = "GREEN" if green_p >= red_p else "RED"
+
+            self._send_json(
+                {
+                    "model_id": record.model_id,
+                    "model_version": record.version,
+                    "timeframe": record.timeframe or timeframe,
+                    "bar_index": bar_index,
+                    "color": color,
+                    "green_probability": green_p,
+                    "red_probability": red_p,
+                    "trend": "صعودی" if color == "GREEN" else "نزولی",
+                }
+            )
+        except Exception as error:
+            self._send_json({"error": f"{type(error).__name__}: {error}"})
 
     def _range_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
         """فاز ۸۵ — مسیر پیش‌بینی رنج برای یک کندل انتخابی روی /data."""

@@ -3513,3 +3513,15 @@ ruff ✅ black ✅  pytest full suite green
     --learning-rate 0.0008 --es-patience 15 --rlr-patience 5 \
     --storage-root datasets
 ```
+
+## فاز ۹۸ (قسمت ۱-ب): trend در GUI آموزش + نمایش رنگ در /data
+
+- **Train a model / Retrain / LR-sweep:** گزینهٔ `trend_4h` اضافه شد؛
+  dataset پیشنهادی خودکار 4H؛ threshold=0 برای trend؛ Retrain مدل‌های
+  gold_trend_* به درستی به role=trend_4h نقشه می‌خورد.
+- **/data:** کلیک روی هر کندل → بالای جدول forecast، رنگ کندل بعدی از
+  `gold_trend_4h` (▲ سبز / ▼ قرمز + درصد اطمینان + «روند پیش‌بینی
+  صعودی/نزولی»). endpoint جدید `/api/trend-forecast` (علوی: پنجرهٔ
+  فقط تا کندل انتخابی + warmup pad). اگر مدل ترند ذخیره نشده باشد
+  پیام راهنما می‌دهد.
+- JS با node --check تأیید؛ ruff/black پاک؛ کل تست‌سوت سبز.

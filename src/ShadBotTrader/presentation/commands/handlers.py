@@ -236,7 +236,7 @@ def parse_timeframes(raw: str) -> List[str]:
 
 # ---------------------------------------------------------------- registry --
 #: Roles the operator can train, in the words they think in.
-MODEL_ROLE_CHOICES: tuple[str, ...] = ("all", "range", "signal")
+MODEL_ROLE_CHOICES: tuple[str, ...] = ("all", "range", "signal", "trend_4h")
 
 
 def stored_dataset_choices(storage_root: "str | Path" = "datasets") -> List[str]:
@@ -1203,7 +1203,8 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Model type",
                     "signal",
                     kind="select",
-                    options=("signal", "range"),
+                    options=("signal", "range", "trend_4h"),
+                    hint="trend_4h = رنگ کندل 4H بعدی (سبز/قرمز) — نیاز به دیتاست 4H",
                 ),
                 CommandField(
                     "dataset",
@@ -1913,9 +1914,13 @@ class CommandHandlers:
             )
 
         record = catalogue.read(saved, catalogue.latest_version(saved))
-        role = (record.role if record else "").strip() or (
-            "signal" if "signal" in saved else "range"
-        )
+        if record is not None and record.model_id.startswith("gold_trend_"):
+            # فاز ۹۸: مدل ترند — نقش بازسازی‌شدهٔ مخصوص خودش
+            role = "trend_4h"
+        else:
+            role = (record.role if record else "").strip() or (
+                "signal" if "signal" in saved else "range"
+            )
         dataset = command.text("dataset", "").strip().upper()
         if not dataset:
             dataset = (record.timeframe if record else "") or "1H"
@@ -1927,7 +1932,7 @@ class CommandHandlers:
         threshold = (
             percent_to_fraction(command.text("threshold_pct", ""), inherited)
             if role == "signal"
-            else 0.0
+            else 0.0  # trend هم صفر — برچسب رنگ به آستانه نیاز ندارد
         )
 
         note = []
@@ -1983,7 +1988,11 @@ class CommandHandlers:
                 command.text("symbol", "XAUUSD"),
                 "--model",
                 role,
-                "--range-timeframes" if role == "range" else "--signal-timeframe",
+                (
+                    "--range-timeframes"
+                    if role == "range"
+                    else ("--signal-timeframe" if role != "trend_4h" else "--signal-timeframe")
+                ),
                 dataset,
                 "--epochs",
                 str(max(command.integer("epochs", 2), 1)),
@@ -3579,13 +3588,15 @@ class AccountCommandHandlers(CommandHandlers):
             )
 
         role = command.text("model", "signal").strip().lower()
-        if role not in {"signal", "range"}:
-            return CommandResult.rejected(command.kind, "Model type must be signal or range")
+        if role not in {"signal", "range", "trend_4h"}:
+            return CommandResult.rejected(
+                command.kind, "Model type must be signal, range or trend_4h"
+            )
 
         dataset = command.text("dataset", "").strip().upper()
         available = stored_dataset_choices(self._storage_root)
         if not dataset:
-            preferred = "5M" if role == "signal" else "1H"
+            preferred = {"signal": "5M", "range": "1H", "trend_4h": "4H"}.get(role, "1H")
             dataset = preferred if preferred in available else (available[0] if available else "")
         if dataset not in available:
             return CommandResult.rejected(
@@ -3616,7 +3627,7 @@ class AccountCommandHandlers(CommandHandlers):
             "--range-timeframes",
             dataset if role == "range" else "1H",
             "--signal-timeframe",
-            dataset if role == "signal" else "5M",
+            dataset if role in ("signal", "trend_4h") else "5M",
             "--threshold",
             str(threshold),
             "--window",

@@ -536,6 +536,36 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
+  // فاز ۹۸: رنگ کندل بعدی از مدل ترند (اگر ذخیره شده باشد)
+  fetchTrendColor(barIndex, symbol, '4H');
+}
+
+async function fetchTrendColor(barIndex, symbol, timeframe) {
+  const trendBox = document.getElementById('trend-color');
+  if (!trendBox) return;
+  trendBox.innerHTML = '<span style="color:#8b949e">trend: …</span>';
+  const params = new URLSearchParams({
+    symbol, timeframe, model: 'gold_trend_4h', bar: String(barIndex),
+  });
+  try {
+    const res = await fetch(`/api/trend-forecast?${params}`);
+    const data = await res.json();
+    if (data.error) {
+      trendBox.innerHTML =
+        '<span style="color:#8b949e">trend: مدل ترند ذخیره نشده (--model trend_4h)</span>';
+      return;
+    }
+    const green = data.color === 'GREEN';
+    const colour = green ? '#3fb950' : '#f85149';
+    const pct = ((green ? data.green_probability : data.red_probability) * 100).toFixed(1);
+    trendBox.innerHTML =
+      `<span style="color:${colour};font-weight:600">` +
+      `${color === 'GREEN' ? '▲' : '▼'} ${data.color} (${pct}%)</span>` +
+      ` <span style="color:#8b949e">— روند پیش‌بینی ${data.trend}` +
+      ` · ${data.model_id} v${data.model_version}</span>`;
+  } catch (err) {
+    trendBox.innerHTML = `<span style="color:#8b949e">trend: ${err.message}</span>`;
+  }
 }
 
 function renderForecast(f, localIdx, symbolTf) {
@@ -1028,6 +1058,7 @@ def render_data_page(
     <span id="rf-status" style="color:#8b949e;font-size:12px"></span>
   </div>
   <div id="rf-panel" style="display:none">
+    <div id="trend-color" style="padding:6px 0;font-size:13px"></div>
     <div class="stats" id="rf-stats"></div>
     <table class="scroll"><thead><tr>
       <th>#</th><th>High ($)</th><th>Low ($)</th><th>High offset</th><th>Low offset</th>

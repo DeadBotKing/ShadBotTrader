@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-02T08:38:32.509288+00:00
+- Snapshot generated at: 2026-09-03T10:36:30.296756+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 319
-- Test modules: 143
+- Test modules: 144
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 58d94134282b47ccbc6882efadd4e753bfeba594
-- Dirty: yes (4 files)
+- Commit: dc2b2a808710a50f5d6e55096cc2e9862044c8ca
+- Dirty: yes (5 files)
 - Recent commits:
+  - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
+  - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
+  - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
+  - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
   - 58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)
   - 132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error
   - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
   - b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)
   - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
   - 1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)
-  - 0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes
-  - 2be2db0 Phase 95e: actually draw the /data forecast path on the chart
-  - e96d1b3 Phase 95d: per-step label profile + per-step validation MAE
-  - e3dab53 Phase 95c: honest final-step QUALITY verdict + LR freeze prevention
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 820
+- Total files: 821
 - Source files: 319
-- Test files: 143
+- Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 119312
-- Modules: 462
-- Classes: 791
-- Functions: 4486
+- Total Python lines: 120563
+- Modules: 463
+- Classes: 800
+- Functions: 4529
 - External dependencies: 14
