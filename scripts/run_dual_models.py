@@ -58,7 +58,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument(
         "--model",
-        choices=("all", "both", "range", "signal", "range_1h", "range_1d", "trend_4h"),
+        choices=("all", "both", "range", "signal", "range_1h", "range_1d", "trend"),
         default="all",
         help=(
             "which model to train. 'range_1h' / 'range_1d' pick one "
@@ -615,9 +615,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 for _k in range(_pairs):
                     _step = 0.0
                     for _c in (_tcols[2 * _k], _tcols[2 * _k + 1]):
-                        _step += sum(abs(r[_c] - _medians[_c]) for r in _val_rows) / len(
-                            _val_rows
-                        )
+                        _step += sum(abs(r[_c] - _medians[_c]) for r in _val_rows) / len(_val_rows)
                     _step_cells.append(_step / 2)
                 print(
                     "  climate/step   : "
@@ -1379,7 +1377,9 @@ def main(argv: list[str] | None = None) -> int:
     wants_range = args.model in ("all", "both", "range", "range_1h", "range_1d")
     wants_signal = args.model in ("all", "both", "signal")
     # فاز ۹۸: مدل ترند — رنگ کندل 4H بعدی (GREEN/RED)
-    wants_trend = args.model in ("trend_4h",)
+    # فاز ۹۸: مدل ترند — رنگ کندل بعدی روی هر تایم‌فریمی
+    # (پیش‌فرض 1D؛ تایم‌فریم با --signal-timeframe انتخاب می‌شود)
+    wants_trend = args.model in ("trend",)
 
     planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
     if wants_signal:
@@ -1432,16 +1432,17 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if wants_trend:
-        # فاز ۹۸: برچسب رنگ کندل 4H بعدی — softmax دوکلاسه
+        # فاز ۹۸: برچسب رنگ کندل بعدی روی تایم‌فریم انتخابی — softmax دوکلاسه
+        trend_tf = (args.signal_timeframe or "1D").strip().upper()
         run_role(
             trend_model_role(
-                timeframe="4H",
+                timeframe=trend_tf,
                 horizon=1,
                 window_size=args.window,
                 n_layers_per_block=args.n_layers or None,
                 n_blocks=args.n_blocks or None,
             ),
-            "4H",
+            trend_tf,
         )
 
     rule("DONE")

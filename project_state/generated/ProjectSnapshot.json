@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "99419e02abc7c2170ae1bfddbf8bc15a7285ceb2c4ae1e6ce856b1e1104492d2",
-      "size_bytes": 180728
+      "sha256": "29d3c3c242dbbe12c4bc9777ade36d0054f5925e636d05809a23fbc12944cbee",
+      "size_bytes": 181609
     },
     {
       "category": "legacy",
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "9276ecf184b1c2c943c37225ac9f40985cf10a8161ff4271de0e634b3dd09554",
-      "size_bytes": 62708
+      "sha256": "878f4cc6fb88482b56437de2c190d8db2b95b4d801a2d17936d66108eea79b8a",
+      "size_bytes": 62960
     },
     {
       "category": "script",
@@ -3213,8 +3213,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/model_roles.py",
-      "sha256": "55d90c0dd6a01aa4fb5b7c424c7c838ccc9f6020aa8b5c4b7b03e6e12a28ad7d",
-      "size_bytes": 12290
+      "sha256": "4f96ca9140bdeb3b399fea178f93c0322eb51056813ecd200c1f53fea2920421",
+      "size_bytes": 12389
     },
     {
       "category": "source",
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "bebeec9ac50ed82b554d21ccccbec2996e5f7a0037dfebb6d8649733b676da7f",
-      "size_bytes": 161481
+      "sha256": "2038b8eebaaf66ff0846a38f84b37f924866c7bdc30413ef6550116b61c8270b",
+      "size_bytes": 161315
     },
     {
       "category": "source",
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "cecbd88f5d988af6330f305ca5ad84c8d7d92dd49f79e3b421cb40407f4fa609",
-      "size_bytes": 42269
+      "sha256": "f8a70e0a47761625519e520c754acf107748fc790cdfe47c39327d08bbbd1a56",
+      "size_bytes": 42522
     },
     {
       "category": "source",
@@ -3999,8 +3999,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "118708e726bcf2b0246533b7ed325bed42d07ba8e7ca8b7327ace9b08acec873",
-      "size_bytes": 23485
+      "sha256": "31e5379bfd461ca73505a2c22e844b77b859496e13a1f0186e9f95277bc2ac2f",
+      "size_bytes": 23464
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T10:54:43.389237+00:00",
+  "generated_at": "2026-09-03T11:15:38.419878+00:00",
   "git": {
     "branch": "main",
-    "commit": "aeb3188b289da74d860cb71d33a88307163f499d",
+    "commit": "d7e72a222234158bde6a1a2c7cbb6b0a9069ab31",
     "dirty": true,
-    "dirty_files": 3,
+    "dirty_files": 5,
     "is_repo": true,
     "recent_commits": [
+      "d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data",
       "aeb3188 Phase 98 part 1: TREND model \u2014 next-candle color (GREEN/RED) classification",
       "dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)",
       "73a06a5 Phase 97b: license 4 \u2014 entry must sit near the daily level",
@@ -5003,8 +5004,7 @@
       "58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)",
       "132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error",
       "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change",
-      "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)",
-      "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning"
+      "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)"
     ]
   },
   "modules": [
@@ -11488,11 +11488,11 @@
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51336,
+    "source_lines": 51332,
     "test_file_count": 144,
     "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120724
+    "total_lines": 120721
   },
   "test_file_count": 144
 }

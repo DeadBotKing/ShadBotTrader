@@ -536,23 +536,27 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
-  // فاز ۹۸: رنگ کندل بعدی از مدل ترند (اگر ذخیره شده باشد)
-  fetchTrendColor(barIndex, symbol, '4H');
+  // فاز ۹۸: رنگ کندل بعدی از مدل ترند هم‌تایم‌فریم (اگر ذخیره شده باشد)
+  fetchTrendColor(barIndex, symbol, timeframe);
 }
 
 async function fetchTrendColor(barIndex, symbol, timeframe) {
   const trendBox = document.getElementById('trend-color');
   if (!trendBox) return;
   trendBox.innerHTML = '<span style="color:#8b949e">trend: …</span>';
+  // مدل ترند هم‌تایم‌فریم: gold_trend_1d روی سری 1D، gold_trend_4h روی 4H …
+  const tf = (timeframe || '').toLowerCase();
   const params = new URLSearchParams({
-    symbol, timeframe, model: 'gold_trend_4h', bar: String(barIndex),
+    symbol, timeframe, model: `gold_trend_${tf}`, bar: String(barIndex),
   });
   try {
     const res = await fetch(`/api/trend-forecast?${params}`);
     const data = await res.json();
     if (data.error) {
       trendBox.innerHTML =
-        '<span style="color:#8b949e">trend: مدل ترند ذخیره نشده (--model trend_4h)</span>';
+        '<span style="color:#8b949e">trend: مدل ' +
+        `gold_trend_${tf} ذخیره نشده — Train a model → trend روی همین TF` +
+        '</span>';
       return;
     }
     const green = data.color === 'GREEN';

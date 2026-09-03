@@ -3525,3 +3525,20 @@ ruff ✅ black ✅  pytest full suite green
   فقط تا کندل انتخابی + warmup pad). اگر مدل ترند ذخیره نشده باشد
   پیام راهنما می‌دهد.
 - JS با node --check تأیید؛ ruff/black پاک؛ کل تست‌سوت سبز.
+
+### فاز ۹۸ (تصحیح اپراتور): trend برای هر تایم‌فریمی — نه فقط 4H
+
+«قرار نیست فقط 4H باشه؛ اصلیش روزانه‌ست، شاید 4H هم بسازم» — درست.
+`trend_4h` نامگذاری اشتباه بود:
+
+- CLI: `--model trend` + تایم‌فریم از `--signal-timeframe`
+  (پیش‌فرض 1D). مثال: `--model trend --signal-timeframe 1D`
+  → `gold_trend_1d`؛ با 4H → `gold_trend_4h`.
+- GUI (Train/Retrain/LR-sweep): گزینهٔ `trend`؛ دیتاست دلخواه
+  (پیشنهاد 1D)؛ Retrain مدل‌های gold_trend_* → role=trend.
+- /data: کلیک روی کندل، مدل ترند **هم‌تایم‌فریمِ سری فعال** را صدا
+  می‌زند (`gold_trend_${tf}`) — سری 1D → gold_trend_1d، سری 4H →
+  gold_trend_4h؛ اگر آن مدل ذخیره نشده پیام راهنما می‌دهد.
+- `trend_model_role` پیش‌فرض timeframe="1D".
+
+همهٔ تست‌سوت سبز؛ node --check روی اسکریپت چارت OK.

@@ -168,7 +168,7 @@ def trend_model_id(timeframe: str) -> str:
 
 
 def trend_model_role(
-    timeframe: str = "4H",
+    timeframe: str = "1D",
     horizon: int = 1,
     window_size: int = 150,
     n_layers_per_block: int | None = None,
@@ -177,7 +177,8 @@ def trend_model_role(
     """The trend model — binary GREEN/RED of the next candle (فاز ۹۸).
 
     فاز ۹۸ (درخواست اپراتور): «کندل بعدی قرمزه یا سبز؟» به‌عنوان
-    فیلتر جهت ورود. طبقه‌بندی دودسته‌ای روی کندل 4H بعدی:
+    فیلتر جهت ورود. طبقه‌بندی دودسته‌ای روی کندل بعدیِ **هر تایم‌فریمی**
+    (پیش‌فرض 1D؛ مثل range برای هر TF یک مدل):
       GREEN = close[t+1] >= close[t]
       RED   = close[t+1] <  close[t]
     احتمال کالیبرهٔ خروجی، گیت جهت ورود (مجوز ۵) می‌شود — براکت TP/SL

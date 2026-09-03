@@ -240,7 +240,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _trend_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
         """فاز ۹۸ — رنگ پیش‌بینی‌شدهٔ کندل بعدی برای /data.
 
-        مدل ترند (gold_trend_4h) روی پنجرهٔ 4H تا کندل انتخابی اجرا
+        مدل ترند (مثل gold_trend_1d/gold_trend_4h) روی پنجرهٔ تا کندل
+        انتخابی اجرا
         می‌شود و P(GREEN)/P(RED) برمی‌گرداند: روند پیش‌بینی صعودی/نزولی.
         """
         from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
@@ -262,7 +263,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         symbol = _q("symbol", "XAUUSD")
         timeframe = _q("timeframe", "4H")
-        model_id = _q("model", "gold_trend_4h")
+        model_id = _q("model", "gold_trend_1d")
         try:
             bar_index = int(_q("bar", "0"))
         except ValueError:
@@ -277,7 +278,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if record is None:
                 raise ValidationError(
                     f"No saved model called {model_id!r} — train it with "
-                    "--model trend_4h first."
+                    "--model trend --signal-timeframe <TF> first."
                 )
             window_size = int(record.window_size or 150)
 
@@ -325,13 +326,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 ModelId(record.model_id), ModelVersion(record.version)
             )
             if artifact is None:
-                raise ValidationError(
-                    f"weights for {record.model_id} v{record.version} missing"
-                )
+                raise ValidationError(f"weights for {record.model_id} v{record.version} missing")
 
-            predictor = SignalPredictor(
-                horizon=1, timeframe=record.timeframe or timeframe
-            )
+            predictor = SignalPredictor(horizon=1, timeframe=record.timeframe or timeframe)
             window_rows = [list(row) for row in matrix.rows[-window_size:]]
             signal = predictor.forecast(artifact, window_rows)
             # قرارداد باینری: sell=RED / buy=GREEN (برچسب 1 = سبز)

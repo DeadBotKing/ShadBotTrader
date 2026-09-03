@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-02T15:31:44.444481+00:00
+- Snapshot generated at: 2026-09-03T10:54:43.389237+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 6ddd6eeddb79057ae19f998ff157eec4a8d3fe5d
-- Dirty: yes (5 files)
+- Commit: aeb3188b289da74d860cb71d33a88307163f499d
+- Dirty: yes (3 files)
 - Recent commits:
+  - aeb3188 Phase 98 part 1: TREND model — next-candle color (GREEN/RED) classification
+  - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
+  - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
+  - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
   - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
   - 58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)
   - 132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error
   - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
   - b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)
   - d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning
-  - 1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)
-  - 0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes
-  - 2be2db0 Phase 95e: actually draw the /data forecast path on the chart
-  - e96d1b3 Phase 95d: per-step label profile + per-step validation MAE
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120144
+- Total Python lines: 120724
 - Modules: 463
-- Classes: 797
-- Functions: 4513
+- Classes: 800
+- Functions: 4531
 - External dependencies: 14
