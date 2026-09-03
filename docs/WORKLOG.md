@@ -3564,3 +3564,18 @@ sample_label_ends → trainer جفتِ ناقص را رد می‌کرد. برچ�
 2 فولد) → val_accuracy 55.6% روی دادهٔ تصادفی → SignalPredictor
 P(GREEN)=0.505. + کل tests/unit سبز (1034) — دو تست
 test_threshold_recorded محیط‌اند (در HEAD هم fail؛ در WORKLOG فاز ۵۲ ثبت شده).
+
+### فاز ۹۸ (تکمیلی): مدل ترند در /data
+
+آپراتور: «مدل ترند توی /data نمیاد که انتخابش کنم» — درست بود:
+`all_range_models` فقط role=range را برمی‌گرداند و gold_trend_1d
+(role=signal) حذف می‌شد.
+
+- inspector: gold_trend_* با `kind='trend'` در لیست می‌آید (signalهای
+  خام همچنان حذف)؛ + تست به‌روزشده.
+- دراپ‌داون /data: برچسب `[trend: color]` برای مدل‌های ترند.
+- کلیک روی کندل وقتی مدل ترند انتخاب است → فقط رنگ کندل بعدی
+  (▲/▼ + درصد) نمایش داده می‌شود و مسیر High/Low رسم نمی‌شود
+  (مدل ترند براکت ندارد).
+- تأیید: node --check، +تست به‌روزشده، کل تست‌سوت سبز
+  (دو تست test_threshold_recorded محیطی — روی HEAD هم fail).

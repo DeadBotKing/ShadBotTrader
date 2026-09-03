@@ -91,18 +91,26 @@ class RangeForecastInspector:
         return sorted(seen.values(), key=lambda item: item["model_id"])
 
     def all_range_models(self) -> List[Dict[str, Any]]:
-        """فاز ۹۶-و: هر مدل رنج ذخیره‌شده، از هر تایم‌فریمی.
+        """فاز ۹۶-و/۹۸: هر مدل رنج **و ترند** ذخیره‌شده، از هر تایم‌فریمی.
 
         یک رکورد per model_id (آخرین نسخه). /data لیست مدل را از این
-        می‌سازد تا مدل‌های جدید (مثل 4H) بدون تغییر کد ظاهر شوند.
+        می‌سازد تا مدل‌های جدید (مثل 4H یا gold_trend_1d) بدون تغییر کد
+        ظاهر شوند. برای مدل‌های ترند kind='trend' گذاشته می‌شود تا
+        کلاینت بداند خروجی رنگ است نه High/Low.
         """
         from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
 
         catalogue = ModelCatalogue(self._root)
         out: List[Dict[str, Any]] = []
         for record in catalogue.list_all():
-            if record is None or record.role != "range":
+            if record is None:
                 continue
+            # فاز ۹۸: gold_trend_* (role=signal) با kind='trend' می‌آید؛
+            # سایر مدل‌های signal خام حذف می‌شوند.
+            is_trend = record.model_id.startswith("gold_trend_")
+            if not is_trend and record.role != "range":
+                continue
+            kind = "trend" if is_trend else "range"
             out.append(
                 {
                     "model_id": record.model_id,
@@ -110,6 +118,7 @@ class RangeForecastInspector:
                     "horizon": int(record.horizon or 1),
                     "trained_at": (record.trained_at or "")[:10],
                     "timeframe": (record.timeframe or "").upper(),
+                    "kind": kind,
                 }
             )
         seen: Dict[str, Dict[str, Any]] = {}

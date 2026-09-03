@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T11:57:32.022523+00:00
+- Snapshot generated at: 2026-09-03T12:17:05.043601+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 1350c6e5fd32ad18e168f97dba5c2c03fd5e4f7e
-- Dirty: yes (2 files)
+- Dirty: yes (22 files)
 - Recent commits:
   - 1350c6e Phase 98 fix: trend training honors the selected Dataset
   - 440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120742
+- Total Python lines: 120725
 - Modules: 463
 - Classes: 800
 - Functions: 4531

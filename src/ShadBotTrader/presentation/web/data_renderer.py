@@ -505,9 +505,10 @@ if (rfModel) {
   RANGE_MODELS.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.model_id;
-    // فاز ۹۶-و: تایم‌فریم مدل در لیست معلوم باشد (4H, 1D, 1H, ...)
+    // فاز ۹۶-و/۹۸: تایم‌فریم + kind — trend یعنی رنگ کندل بعدی
     const tf = m.timeframe || '?';
-    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${tf} · ${m.trained_at}`;
+    const tag = m.kind === 'trend' ? ' [trend: color]' : '';
+    opt.textContent = `${m.model_id} v${m.version} · h${m.horizon} · ${tf} · ${m.trained_at}${tag}`;
     rfModel.appendChild(opt);
   });
 }
@@ -520,6 +521,13 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   const modelId = rfModel ? rfModel.value : '';
   if (!modelId) return;
   updateRfStatus('predicting…');
+  // فاز ۹۸: مدل ترند → فقط رنگ کندل بعدی (جدول High/Low ندارد)
+  if (modelId.startsWith('gold_trend_')) {
+    await fetchTrendColor(barIndex, symbol, timeframe);
+    if (rfPanel) rfPanel.style.display = 'none';
+    forecastPath = null; draw();
+    return;
+  }
   const params = new URLSearchParams({
     symbol, timeframe, model: modelId, bar: String(barIndex),
   });

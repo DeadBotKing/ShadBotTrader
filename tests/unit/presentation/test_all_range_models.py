@@ -42,7 +42,9 @@ class TestAllRangeModels:
         assert by_id["gold_range_4h"]["timeframe"] == "4H"
         assert by_id["gold_range_1h"]["version"] == 2  # آخرین نسخه
 
-    def test_signal_models_are_excluded(self, tmp_path):
+    def test_signal_models_excluded_but_trend_included(self, tmp_path):
+        """فاز ۹۸: signal خام حذف؛ اما gold_trend_* (role=signal) با
+        kind='trend' می‌آید — رنگ کندل بعدی."""
         catalogue = ModelCatalogue(tmp_path)
         catalogue.write(
             ModelRecord(
@@ -53,8 +55,13 @@ class TestAllRangeModels:
                 horizon=5,
             )
         )
+        catalogue.write(_record("gold_trend_1d", 1, "1D", 1))
+
         models = RangeForecastInspector(tmp_path).all_range_models()
-        assert [m["model_id"] for m in models] == []
+        ids = [m["model_id"] for m in models]
+        assert "gold_signal_5m" not in ids
+        assert "gold_trend_1d" in ids
+        assert models[0]["kind"] == "trend"
 
     def test_empty_catalogue_returns_empty_list(self, tmp_path):
         assert RangeForecastInspector(tmp_path).all_range_models() == []
