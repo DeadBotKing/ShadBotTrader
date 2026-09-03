@@ -26,7 +26,7 @@ import json
 from html import escape as html_escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
 from ShadBotTrader.presentation.commands.bus import CommandBus
@@ -46,6 +46,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
     allow_commands: bool = True
     bus: Optional[CommandBus] = None
     server_version = "ShadBotTrader/1.1"
+
+    # فاز ۹۸: کش مدل/فیچر برای /data — deserialize مدل TF و ساخت 530+
+    # کندل فیچر هر کلیک چند ثانیه تا دقیقه طول می‌کشد و مرورگر فقط
+    # «predicting…» می‌بیند. کلیدها checksum-based هستند؛ تغییر مدل/داده
+    # کش را باطل می‌کند.
+    _model_cache: Dict[str, Any] = {}
+    _feature_cache: Dict[str, Any] = {}
 
     # -- routing --------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802 - required by BaseHTTPRequestHandler
@@ -240,15 +247,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def _trend_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
         """فاز ۹۸ — رنگ پیش‌بینی‌شدهٔ کندل بعدی برای /data.
 
-        مدل ترند (مثل gold_trend_1d/gold_trend_4h) روی پنجرهٔ تا کندل
-        انتخابی اجرا
-        می‌شود و P(GREEN)/P(RED) برمی‌گرداند: روند پیش‌بینی صعودی/نزولی.
+        مدل ترند (gold_trend_1d/4h/…) روی پنجرهٔ تا کندل انتخابی اجرا
+        می‌شود و P(GREEN)/P(RED) برمی‌گرداند. مدل و فیچرِ هر کندل کش
+        می‌شوند — deserialize مدل TF و ساخت 530+ کندل فیچر در هر کلیک
+        چند ثانیه طول می‌کشید و مرورگر فقط «predicting…» می‌دید.
         """
         from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
         from ShadBotTrader.domain.common.errors import ValidationError
         from ShadBotTrader.domain.market.symbol import Symbol
         from ShadBotTrader.domain.market.timeframe import Timeframe
-        from ShadBotTrader.infrastructure.ai.dual_predictor import SignalPredictor
+        from ShadBotTrader.infrastructure.ai.dual_predictor import _load as _load_model
         from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
         from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
             FilesystemArtifactStore,
@@ -293,47 +301,66 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     f"candles (stored: {len(candles)})."
                 )
 
-            WARMUP_PAD = 400
-            window_candles = candles[
-                max(0, bar_index - window_size + 1 - WARMUP_PAD) : bar_index + 1
-            ]
-            from ShadBotTrader.infrastructure.feature.calculator_registry import (
-                CalculatorRegistry,
-            )
-            from ShadBotTrader.infrastructure.feature.standard_catalog import (
-                standard_feature_set_v1,
-            )
-
-            feature_set = standard_feature_set_v1()
-            resolver = CalculatorRegistry()
-            matrix = build_feature_matrix(
-                candles=window_candles,
-                symbol=Symbol(symbol),
-                timeframe=Timeframe(timeframe),
-                feature_set=feature_set,
-                resolver=resolver,
-                include_features=True,
-                causal_only=True,
-                model_role="signal",
-            )
-            if len(matrix) < window_size:
-                raise ValidationError(
-                    f"Feature matrix has {len(matrix)} rows even after warmup pad; "
-                    f"model needs {window_size}."
-                )
-
+            # ── مدل (کش بر اساس checksum) ──
             artifact = FilesystemArtifactStore(root).load(
                 ModelId(record.model_id), ModelVersion(record.version)
             )
             if artifact is None:
                 raise ValidationError(f"weights for {record.model_id} v{record.version} missing")
+            model_key = f"{record.model_id}:{record.version}:{artifact.checksum[:16]}"
+            model = DashboardHandler._model_cache.get(model_key)
+            if model is None:
+                model = _load_model(artifact)
+                DashboardHandler._model_cache[model_key] = model
 
-            predictor = SignalPredictor(horizon=1, timeframe=record.timeframe or timeframe)
-            window_rows = [list(row) for row in matrix.rows[-window_size:]]
-            signal = predictor.forecast(artifact, window_rows)
-            # قرارداد باینری: sell=RED / buy=GREEN (برچسب 1 = سبز)
-            red_p = signal.sell_probability
-            green_p = signal.buy_probability
+            # ── فیچر (کش بر اساس bar) ──
+            feature_key = f"{symbol}:{timeframe}:{bar_index}:{window_size}"
+            cached = DashboardHandler._feature_cache.get(feature_key)
+            if cached is None:
+                WARMUP_PAD = 400
+                window_candles = candles[
+                    max(0, bar_index - window_size + 1 - WARMUP_PAD) : bar_index + 1
+                ]
+                from ShadBotTrader.infrastructure.feature.calculator_registry import (
+                    CalculatorRegistry,
+                )
+                from ShadBotTrader.infrastructure.feature.standard_catalog import (
+                    standard_feature_set_v1,
+                )
+
+                matrix = build_feature_matrix(
+                    candles=window_candles,
+                    symbol=Symbol(symbol),
+                    timeframe=Timeframe(timeframe),
+                    feature_set=standard_feature_set_v1(),
+                    resolver=CalculatorRegistry(),
+                    include_features=True,
+                    causal_only=True,
+                    model_role="signal",
+                )
+                if len(matrix) < window_size:
+                    raise ValidationError(
+                        f"Feature matrix has {len(matrix)} rows even after warmup pad; "
+                        f"model needs {window_size}."
+                    )
+                cached = [list(row) for row in matrix.rows[-window_size:]]
+                if len(DashboardHandler._feature_cache) > 512:
+                    DashboardHandler._feature_cache.clear()
+                DashboardHandler._feature_cache[feature_key] = cached
+            window_rows = cached
+
+            # ── پیش‌بینی ──
+            import numpy as np
+
+            from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+
+            x = np.array([minmax_scale_window(window_rows)], dtype=np.float32)
+            raw = model.predict(x, verbose=0)[0]
+            if len(raw) != 2:
+                raise ValidationError(f"The trend model must emit 2 probabilities; got {len(raw)}")
+            total = float(raw[0]) + float(raw[1])
+            red_p = float(raw[0]) / total if total > 0 else 0.5
+            green_p = 1.0 - red_p
             color = "GREEN" if green_p >= red_p else "RED"
 
             self._send_json(

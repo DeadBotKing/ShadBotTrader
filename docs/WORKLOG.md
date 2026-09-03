@@ -3579,3 +3579,22 @@ test_threshold_recorded محیط‌اند (در HEAD هم fail؛ در WORKLOG ف
   (مدل ترند براکت ندارد).
 - تأیید: node --check، +تست به‌روزشده، کل تست‌سوت سبز
   (دو تست test_threshold_recorded محیطی — روی HEAD هم fail).
+
+### فاز ۹۸ (رفع هنگ /data): کش مدل و فیچر برای endpoint ترند
+
+**گزارش اپراتور:** کلیک روی کندل → فقط «predicting…» بی‌پایان + هشدار
+tf.function retracing در PowerShell.
+
+**ریشه:** `_trend_forecast_payload` در **هر کلیک**: (1) مدل TF را
+دوباره deserialize می‌کرد (چند ثانیه) و (2) هر مدلِ جدید با ورودی
+هم‌شکل → tf.function retrace کامل؛ (3) ساخت فیچرِ 530+ کندل با
+229 فیچر هم چند ثانیه. روی ویندوز جمعاً ده‌ها ثانیه تا دقیقه —
+مرورگر فقط waiting می‌دید.
+
+**رفع:** کش سطح کلاس روی DashboardHandler:
+- `_model_cache[key = id:version:checksum]` — deserialize یک بار؛
+- `_feature_cache[key = symbol:tf:bar:window]` — فیچر هر کندل یک بار
+  (سقف 512 و clear).
+
+**اندازه‌گیری واقعی (سندباکس، مدل واقعی keras + دیتای parquet):**
+cold 4.2s → warm same-bar 0.07s → bar جدید 1.2s. رفع هنگ ✓
