@@ -71,8 +71,8 @@ class PredictionTarget:
             raise ValidationError("horizon must be >= 1 for range and >= 0 for signal")
         if not self.timeframe.strip():
             raise ValidationError("timeframe must not be empty")
-        if self.kind is TargetKind.TRADE_SIGNAL and self.threshold <= 0:
-            raise ValidationError("binary signal threshold must be positive")
+        if self.kind is TargetKind.TRADE_SIGNAL and self.threshold < 0:
+            raise ValidationError("binary signal threshold must not be negative")
         if self.threshold < 0:
             raise ValidationError("threshold must not be negative")
 

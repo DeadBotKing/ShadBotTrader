@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "63792f1e076c8d8f982f2664fdd8c48661e29062d7485a9b2364a2cc2cfd2d22",
-      "size_bytes": 178035
+      "sha256": "ec48a00e90c3f60f1e62d8be5eb9adde53ed544bca2fa9ec12b57a0f662c0ccc",
+      "size_bytes": 178643
     },
     {
       "category": "legacy",
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "99097969e0df6f865f97a0c304f8ef70152279d5f2864fee597537673f727850",
-      "size_bytes": 61909
+      "sha256": "9276ecf184b1c2c943c37225ac9f40985cf10a8161ff4271de0e634b3dd09554",
+      "size_bytes": 62708
     },
     {
       "category": "script",
@@ -2295,8 +2295,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "7bcfa0f6a0cecbc4ed05196b079eceb93fb0818902d454a60853fa5db28deec4",
-      "size_bytes": 22881
+      "sha256": "e3e97a4bb1308640da90df92512de66225840b7f020fb9a66b25892442f5f35a",
+      "size_bytes": 24607
     },
     {
       "category": "source",
@@ -2571,8 +2571,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/domain/ai/prediction_target.py",
-      "sha256": "cf70a51b065206e9c64e4c71b142b47bde2dcca4b260c956d0107243d1f0c630",
-      "size_bytes": 10004
+      "sha256": "0de6c3b4af942dd99f50e8480d1aba03daf39975326dd5a80f1af9f7a1a8687c",
+      "size_bytes": 10007
     },
     {
       "category": "source",
@@ -3213,8 +3213,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/model_roles.py",
-      "sha256": "1eac380fbfd84946cb380807d44171470e647e65809c64568d56b4dd1347b284",
-      "size_bytes": 10059
+      "sha256": "55d90c0dd6a01aa4fb5b7c424c7c838ccc9f6020aa8b5c4b7b03e6e12a28ad7d",
+      "size_bytes": 12290
     },
     {
       "category": "source",
@@ -3243,8 +3243,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/target_builder.py",
-      "sha256": "e34818e00b13ef8ddcbd8b4e0e7191c9bb24650a71d759a69738afbf45754397",
-      "size_bytes": 21857
+      "sha256": "f11d3ece3d412220ca6451df5d1d567125c70a274494b5d43027c9471123aba1",
+      "size_bytes": 24046
     },
     {
       "category": "source",
@@ -4987,14 +4987,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-03T08:51:51.612399+00:00",
+  "generated_at": "2026-09-03T10:36:30.296756+00:00",
   "git": {
     "branch": "main",
-    "commit": "73a06a5940ac917418867ab0939e2d97a3ddbb79",
+    "commit": "dc2b2a808710a50f5d6e55096cc2e9862044c8ca",
     "dirty": true,
     "dirty_files": 5,
     "is_repo": true,
     "recent_commits": [
+      "dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)",
       "73a06a5 Phase 97b: license 4 \u2014 entry must sit near the daily level",
       "1ffd367 Phase 97: triple-timeframe strategy (5M signal \u00b7 4H bracket \u00b7 1D trend)",
       "6ddd6ee Phase 96v: /data range-model list spans every timeframe",
@@ -5003,8 +5004,7 @@
       "efe8a58 docs: 96c pilot analysis \u2014 trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change",
       "b4c8db0 Phase 96b: EMA50 daily trend filter (evidence-backed)",
       "d338503 Phase 96: select model VERSION in backtest + loud pre-Phase95 warning",
-      "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)",
-      "0b7d156 Phase 95f: sanity prediction uses the saved model + h1 message fixes"
+      "1c07444 Phase 95g: bracket-level verdict (worst-case vs worst-case)"
     ]
   },
   "modules": [
@@ -7098,7 +7098,7 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 13,
+      "functions": 15,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors"
@@ -7156,9 +7156,9 @@
       "path": "src/ShadBotTrader/infrastructure/ai/stored_feature_source.py"
     },
     {
-      "classes": 4,
+      "classes": 5,
       "external_imports": [],
-      "functions": 29,
+      "functions": 34,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -11468,20 +11468,20 @@
   "python_version": "3.13.14",
   "source_file_count": 319,
   "statistics": {
-    "class_count": 799,
+    "class_count": 800,
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4522,
+    "function_count": 4529,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 463,
     "source_file_count": 319,
-    "source_lines": 51033,
+    "source_lines": 51175,
     "test_file_count": 144,
     "test_lines": 24268,
     "total_file_count": 821,
-    "total_lines": 120400
+    "total_lines": 120563
   },
   "test_file_count": 144
 }

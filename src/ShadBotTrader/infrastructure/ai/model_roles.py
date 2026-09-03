@@ -158,6 +158,60 @@ def range_model_id(timeframe: str) -> str:
     return f"gold_range_{timeframe.strip().lower()}"
 
 
+def trend_model_id(timeframe: str) -> str:
+    """The model id for the trend (candle-color) model of one timeframe.
+
+    Like range: per-timeframe ids keep trained artifacts from colliding
+    (``gold_trend_4h`` vs ``gold_trend_1d``).
+    """
+    return f"gold_trend_{timeframe.strip().lower()}"
+
+
+def trend_model_role(
+    timeframe: str = "4H",
+    horizon: int = 1,
+    window_size: int = 150,
+    n_layers_per_block: int | None = None,
+    n_blocks: int | None = None,
+) -> ModelRole:
+    """The trend model — binary GREEN/RED of the next candle (فاز ۹۸).
+
+    فاز ۹۸ (درخواست اپراتور): «کندل بعدی قرمزه یا سبز؟» به‌عنوان
+    فیلتر جهت ورود. طبقه‌بندی دودسته‌ای روی کندل 4H بعدی:
+      GREEN = close[t+1] >= close[t]
+      RED   = close[t+1] <  close[t]
+    احتمال کالیبرهٔ خروجی، گیت جهت ورود (مجوز ۵) می‌شود — براکت TP/SL
+    همچنان از مدل رنج می‌آید.
+
+    REUSE هوشمند: نقش «signal» دوباره‌استفاده می‌شود (TargetKind
+    TRADE_SIGNAL، softmax، cross-entropy، Predictor مشترک) — فقط
+    model_id/timeframe/window فرق دارد. برچسب‌ها از close-to-close
+    ساخته می‌شوند (نه first-passage) — به trainer از طریق
+    ``label_style="color"`` اعلام می‌شود.
+    """
+    return ModelRole(
+        name="signal",  # نقش طبقه‌بندی دودسته‌ای (REUSE) — id متمایز است
+        target=PredictionTarget(
+            kind=TargetKind.TRADE_SIGNAL,
+            horizon=horizon,
+            timeframe=timeframe,
+            threshold=0.0,  # first-passage نیست — برچسب رنگ است
+        ),
+        model_id=trend_model_id(timeframe),
+        description=(
+            f"Predicts the color (GREEN/RED) of the next {timeframe} candle "
+            f"as probabilities, from {window_size} past candles."
+        ),
+        window_size=window_size,
+        n_filters=32,
+        n_layers_per_block=n_layers_per_block or 3,
+        n_blocks=n_blocks or 2,
+        depth_multiplier=8,
+        dropout=0.15,
+        l2=2.5e-4,
+    )
+
+
 def receptive_field(n_layers_per_block: int, n_blocks: int, kernel_size: int = 5) -> int:
     """Total causal receptive field of the dilated stack (فاز ۶۱).
 

@@ -40,6 +40,7 @@ from ShadBotTrader.infrastructure.ai.target_builder import (
     build_range_labels,
     build_range_labels_seq2seq,
     build_signal_labels,
+    build_trend_labels,
 )
 
 
@@ -182,6 +183,30 @@ class DualModelService:
                 target_source_index=source_index,
                 target_names=target_names,
             )
+        elif role.model_id.startswith("gold_trend_"):
+            # فاز ۹۸: مدل ترند — برچسب رنگ کندل بعدی (GREEN/RED)، بدون
+            # مسیرِ first-passage؛ همهٔ ردیف‌های با آیندهٔ کامل برچسب دارند.
+            trend = build_trend_labels(candles)
+            distribution = trend.distribution()
+            degenerate = trend.is_degenerate()
+            target_names = ["signal_class"]
+            target_by_index = dict(zip(trend.source_index, trend.labels, strict=True))
+            original_to_matrix = {
+                original: position for position, original in enumerate(matrix.source_index)
+            }
+            sample_ends = [
+                original_to_matrix[index]
+                for index in trend.source_index
+                if index in original_to_matrix
+                and original_to_matrix[index] >= role.window_size - 1
+            ]
+            if not sample_ends:
+                raise ValidationError("No complete trend windows have a GREEN/RED label.")
+            series = [
+                list(row) + [float(target_by_index.get(original, 0))]
+                for row, original in zip(matrix.rows, matrix.source_index, strict=True)
+            ]
+            column_names = list(matrix.column_names) + target_names
         else:
             signal = build_signal_labels(
                 candles,
@@ -272,7 +297,11 @@ class DualModelService:
             family=ModelFamily.WAVENET,
             feature_set_name="standard_v1" if self._include_features else "ohlcv_only",
             feature_set_version=1,
-            target_name=("future_high_low" if is_regression else "signal_class"),
+            target_name=(
+                "future_high_low"
+                if is_regression
+                else ("candle_color" if role.model_id.startswith("gold_trend_") else "signal_class")
+            ),
             hyperparameters={
                 "window_size": role.window_size,
                 "horizon": role.horizon,
@@ -280,6 +309,10 @@ class DualModelService:
                 "learning_rate": float(learning_rate),
                 "loss": role.loss,
                 "threshold": role.target.threshold,
+                # فاز ۹۸: سبک برچسب — "color" برای gold_trend_* (بدون مسیر)
+                "label_style": (
+                    "color" if role.model_id.startswith("gold_trend_") else "first_passage"
+                ),
                 # Architecture — stored so the artifact can be rebuilt identically
                 "n_filters": getattr(role, "n_filters", 32),
                 "kernel_size": getattr(role, "kernel_size", 5),

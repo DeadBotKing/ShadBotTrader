@@ -375,6 +375,61 @@ class RangeLabelsSeq2Seq:
         return names
 
 
+@dataclass(frozen=True)
+class TrendLabels:
+    """برچسب رنگ کندل بعدی (فاز ۹۸): GREEN=1 / RED=0 — close-to-close.
+
+    برخلاف سیگنال first-passage: بدون مسیر، بدون max_lookahead — فقط
+    علامت رانش یک کندل. horizon ثابت است (کندل بعدی).
+    """
+
+    labels: List[int]          # 1 = سبز (close بعدی ≥ close فعلی)، 0 = قرمز
+    source_index: List[int]    # کندل t که برچسبش به آینده نگاه می‌کند
+    next_close: List[float]    # close[t+1] — برای دیباگ/سنجش رانش
+
+    def __len__(self) -> int:
+        return len(self.labels)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.labels
+
+    def distribution(self) -> Dict[str, int]:
+        greens = sum(self.labels)
+        return {"green": greens, "red": len(self.labels) - greens}
+
+    def is_degenerate(self, minimum_share: float = 0.05) -> bool:
+        if not self.labels:
+            return True
+        counts = self.distribution()
+        total = len(self.labels)
+        return any(count / total < minimum_share for count in counts.values())
+
+
+def build_trend_labels(
+    candles: Sequence[Candle],
+) -> TrendLabels:
+    """برچسب رنگ کندل بعدی: GREEN وقتی close[t+1] ≥ close[t] (فاز ۹۸).
+
+    آخرین کندل برچسب ندارد (آینده‌اش موجود نیست) — مثل range، ردیف‌های
+    بدون آیندهٔ کامل حذف می‌شوند.
+    """
+    if not candles:
+        raise ValidationError("candles must not be empty")
+    labels: List[int] = []
+    indices: List[int] = []
+    next_closes: List[float] = []
+    for index in range(len(candles) - 1):
+        current_close = float(candles[index].close.amount)
+        next_close = float(candles[index + 1].close.amount)
+        if current_close <= 0:
+            raise ValidationError(f"Candle {index} has a non-positive close")
+        labels.append(1 if next_close >= current_close else 0)
+        indices.append(index)
+        next_closes.append(next_close)
+    return TrendLabels(labels=labels, source_index=indices, next_close=next_closes)
+
+
 def build_signal_labels_from_candles(
     candles: Sequence[Candle],
     threshold: float = 0.0008,

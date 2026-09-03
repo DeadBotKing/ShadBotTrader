@@ -58,7 +58,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument(
         "--model",
-        choices=("all", "both", "range", "signal", "range_1h", "range_1d"),
+        choices=("all", "both", "range", "signal", "range_1h", "range_1d", "trend_4h"),
         default="all",
         help=(
             "which model to train. 'range_1h' / 'range_1d' pick one "
@@ -500,7 +500,12 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
             "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
         )
-    if role.name == "signal":
+    if role.model_id.startswith("gold_trend_"):
+        print(
+            "  label rule: GREEN if next candle close >= this close, else RED; "
+            "every fully-labelled candle trains (no first-passage path)"
+        )
+    elif role.name == "signal":
         # State the binary labelling rule outright.
         print(
             f"  label rule: first future close reaching +/-{role.target.threshold:.4%} "
@@ -1349,6 +1354,7 @@ def main(argv: list[str] | None = None) -> int:
     from ShadBotTrader.infrastructure.ai.model_roles import (
         range_model_role,
         signal_model_role,
+        trend_model_role,
     )
 
     print("=== ShadBotTrader — Phase 29 dual predictive models ===")
@@ -1372,6 +1378,8 @@ def main(argv: list[str] | None = None) -> int:
 
     wants_range = args.model in ("all", "both", "range", "range_1h", "range_1d")
     wants_signal = args.model in ("all", "both", "signal")
+    # فاز ۹۸: مدل ترند — رنگ کندل 4H بعدی (GREEN/RED)
+    wants_trend = args.model in ("trend_4h",)
 
     planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
     if wants_signal:
@@ -1421,6 +1429,19 @@ def main(argv: list[str] | None = None) -> int:
                 n_blocks=args.n_blocks or None,
             ),
             args.signal_timeframe,
+        )
+
+    if wants_trend:
+        # فاز ۹۸: برچسب رنگ کندل 4H بعدی — softmax دوکلاسه
+        run_role(
+            trend_model_role(
+                timeframe="4H",
+                horizon=1,
+                window_size=args.window,
+                n_layers_per_block=args.n_layers or None,
+                n_blocks=args.n_blocks or None,
+            ),
+            "4H",
         )
 
     rule("DONE")

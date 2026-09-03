@@ -3472,3 +3472,44 @@ TP med $21-23 — هنوز منفی، چون EV = 0.26×21 − 0.74×10 ≈ −2
 چک می‌کرد و fallback چاقو می‌ساخت» است — همان ریشهٔ 474 ترید WR 1.5%
 در ران 941-تایی. از `min_sl_distance` همان فیلد GUI دوباره‌استفاده
 شد (کد جدید برای اپراتور: هیچ). +3 تست؛ کل تست‌سوت سبز.
+
+---
+
+## 2026-09-03 — فاز ۹۸ (قسمت ۱): مدل TREND — رنگ کندل بعدی (GREEN/RED)
+
+**ایدهٔ اپراتور:** «بفهمیم کندل بعدی قرمزه (فروش‌پسند) یا سبز
+(خریدپسند).» تصمیم بعد از تحلیل: مدل **طبقه‌بندی** جدید با نقش
+`signal` (reuse: softmax + cross-entropy + Predictor مشترک) ولی
+model_id متمایز — رگرسیون O/C رد شد (loss random-walk را به پیش‌بینی
+«بدنه ≈ صفر» می‌رساند؛ علامتش نویز).
+
+### پیاده‌شده (قسمت ۱ — آموزش)
+
+- `trend_model_id/timeframe` در model_roles: `gold_trend_4h`،
+  window=150، softmax دودسته‌ای، dropout 0.15.
+- `build_trend_labels` در target_builder: GREEN=1 وقتی
+  `close[t+1] ≥ close[t]`؛ بدون first-passage؛ آخرین کندل بی‌برچسب.
+- `PredictionTarget`: threshold=0 حالا مجاز (برچسب رنگ به آستانه
+  نیاز ندارد) — اعتبارسنجی از `<= 0` به `< 0`.
+- `DualModelService.prepare`: شاخهٔ `gold_trend_*` — همهٔ ردیف‌های
+  کامل، sample_ends استاندارد؛ definition: `label_style="color"`,
+  `target_name="candle_color"`.
+- `run_dual_models.py`: `--model trend_4h` + پیام label rule مخصوص.
+
+### باقی‌مانده (قسمت ۲ — مصرف)
+
+- SignalPredictor برای gold_trend کار می‌کند (2-softmax) ✓ ولی باید
+  در backtest سیم کشیده شود: `TrendPredictor` با احتمال GREEN/RED +
+  «مجوز ۵» در triple: خرید فقط وقتی P(GREEN) > آستانه؛ فروش فقط وقتی
+  P(RED) > آستانه. (فیلد GUI: trend confidence %)
+
+### وضعیت
+
+```
+ruff ✅ black ✅  pytest full suite green
+دستور آموزش (روی سیستم اپراتور):
+  python scripts/run_dual_models.py --with-features --symbol XAUUSD \
+    --model trend_4h --epochs 60 --folds 2 --window 150 \
+    --learning-rate 0.0008 --es-patience 15 --rlr-patience 5 \
+    --storage-root datasets
+```
