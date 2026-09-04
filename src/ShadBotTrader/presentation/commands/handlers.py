@@ -1928,12 +1928,19 @@ class CommandHandlers:
         # Signal training uses a first-passage price threshold.  The
         # empty field inherits the saved model's threshold; a range model
         # does not use this value.
-        inherited = float(getattr(record, "threshold", 0.0) or 0.0008) if role == "signal" else 0.0
-        threshold = (
-            percent_to_fraction(command.text("threshold_pct", ""), inherited)
-            if role == "signal"
-            else 0.0  # trend هم صفر — برچسب رنگ به آستانه نیاز ندارد
+        inherited = (
+            float(getattr(record, "threshold", 0.0) or 0.0008)
+            if role in ("signal", "trend_signal")
+            else 0.0
         )
+        if role == "signal":
+            threshold = percent_to_fraction(command.text("threshold_pct", ""), inherited)
+        elif role == "trend_signal":
+            # فاز ۹۹: X برحسب ATR14 — خالی = threshold ذخیره‌شدهٔ مدل
+            _raw = command.text("threshold_pct", "").strip()
+            threshold = percent_to_fraction(_raw, inherited) if _raw else inherited
+        else:
+            threshold = 0.0  # trend رنگ — برچسب به آستانه نیاز ندارد
 
         note = []
         if record is not None and dataset != record.timeframe:
@@ -3545,20 +3552,29 @@ class AccountCommandHandlers(CommandHandlers):
                 "--range-timeframes",
                 dataset,
                 "--signal-timeframe",
-                dataset if role in ("signal", "trend") else "5M",
+                dataset if role in ("signal", "trend", "trend_signal") else "5M",
                 "--epochs",
                 str(max(command.integer("epochs", 1), 1)),
                 "--folds",
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
+                *(
+                    ["--label-horizon", str(max(command.integer("label_horizon", 288), 1))]
+                    if role == "trend_signal"
+                    else []
+                ),
                 "--train-ratio",
                 str(command.number("train_ratio", 100.0)),
                 "--threshold",
                 str(
                     percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
                     if role == "signal"
-                    else 0.0
+                    else (
+                        max(0.05, command.number("atr_mult", 0.5))
+                        if role == "trend_signal"
+                        else 0.0
+                    )
                 ),
                 "--learning-rate",
                 str(learning_rate),
@@ -3586,13 +3602,20 @@ class AccountCommandHandlers(CommandHandlers):
             )
 
         role = command.text("model", "signal").strip().lower()
-        if role not in {"signal", "range", "trend"}:
-            return CommandResult.rejected(command.kind, "Model type must be signal, range or trend")
+        if role not in {"signal", "range", "trend", "trend_signal"}:
+            return CommandResult.rejected(
+                command.kind, "Model type must be signal, range, trend or trend_signal"
+            )
 
         dataset = command.text("dataset", "").strip().upper()
         available = stored_dataset_choices(self._storage_root)
         if not dataset:
-            preferred = {"signal": "5M", "range": "1H", "trend": "1D"}.get(role, "1H")
+            preferred = {
+                "signal": "5M",
+                "range": "1H",
+                "trend": "1D",
+                "trend_signal": "5M",  # فاز ۹۹: پنجرهٔ 288 کندل 5M
+            }.get(role, "1H")
             dataset = preferred if preferred in available else (available[0] if available else "")
         if dataset not in available:
             return CommandResult.rejected(
@@ -3600,11 +3623,13 @@ class AccountCommandHandlers(CommandHandlers):
                 f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
             )
 
-        threshold = (
-            percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
-            if role == "signal"
-            else 0.0
-        )
+        if role == "signal":
+            threshold = percent_to_fraction(command.text("threshold_pct", "0.08"), 0.0008)
+        elif role == "trend_signal":
+            # فاز ۹۹: X برحسب ATR14 (نه درصد)
+            threshold = max(0.05, command.number("atr_mult", 0.5))
+        else:
+            threshold = 0.0  # trend رنگ
         # فاز ۶۲: پیچ‌های معماری — 0 = پیش‌فرض نقش (فاز ۶۱)
         _opt_layers = max(command.integer("n_layers", 0), 0)
         _opt_blocks = max(command.integer("n_blocks", 0), 0)

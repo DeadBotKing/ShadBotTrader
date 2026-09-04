@@ -89,6 +89,8 @@ class ModelRole:
     l2: float = 2.5e-4
     dropout: float = 0.10
     seq2seq: bool = False  # Phase 55: seq2seq output for range model
+    #: فاز ۹۹: افق برچسب trend_signal (تعداد کندل جلوتر برای مانع‌ها)
+    label_horizon: int = 288
 
     def __post_init__(self) -> None:
         if self.window_size < 2:
@@ -210,6 +212,46 @@ def trend_model_role(
         depth_multiplier=8,
         dropout=0.15,
         l2=2.5e-4,
+    )
+
+
+def trend_signal_model_role(
+    timeframe: str = "5M",
+    threshold: float = 0.5,
+    window_size: int = 288,
+    label_horizon: int = 288,
+    n_layers_per_block: int | None = None,
+    n_blocks: int | None = None,
+) -> ModelRole:
+    """مدل «سیگنال ترند» (فاز ۹۹) — سه‌کلاسه BUY/HOLD/SELL.
+
+    پنجره = 288 کندل (یک روز 5M) rolling؛ برچسب = اولین عبور
+    ±threshold×ATR14 در label_horizon کندل بعدی، وگرنه HOLD.
+    خروجی softmax سه‌کلاسه (num_classes=3).
+    """
+    return ModelRole(
+        name="signal",  # reuse: softmax/cross-entropy/accuracy
+        target=PredictionTarget(
+            kind=TargetKind.TRADE_SIGNAL,
+            horizon=1,
+            timeframe=timeframe,
+            threshold=threshold,  # X برحسب ATR14 — نه درصد
+            num_classes=3,
+        ),
+        model_id=f"gold_trend_signal_{timeframe.strip().lower()}",
+        description=(
+            f"Trend signal: over the next {label_horizon} {timeframe} candles, "
+            f"the first {threshold}xATR14 move from close decides "
+            f"BUY/SELL; no barrier hit means HOLD."
+        ),
+        window_size=window_size,
+        n_filters=32,
+        n_layers_per_block=n_layers_per_block or 3,
+        n_blocks=n_blocks or 2,
+        depth_multiplier=8,
+        dropout=0.15,
+        l2=2.5e-4,
+        label_horizon=label_horizon,
     )
 
 

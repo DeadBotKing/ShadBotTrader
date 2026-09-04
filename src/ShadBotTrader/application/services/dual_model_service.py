@@ -41,6 +41,7 @@ from ShadBotTrader.infrastructure.ai.target_builder import (
     build_range_labels_seq2seq,
     build_signal_labels,
     build_trend_labels,
+    build_trend_signal_labels,
 )
 
 
@@ -183,7 +184,50 @@ class DualModelService:
                 target_source_index=source_index,
                 target_names=target_names,
             )
-        elif role.model_id.startswith("gold_trend_"):
+        elif role.model_id.startswith("gold_trend_signal_"):
+            # فاز ۹۹: سه‌کلاسه BUY/HOLD/SELL — اولین عبور ±X×ATR در
+            # label_horizon کندل بعدی. sample_ends + label_ends برای
+            # purge درست (برچسب تا چند کندل جلوتر می‌رود).
+            trend_sig = build_trend_signal_labels(
+                candles,
+                horizon=int(getattr(role, "label_horizon", 288) or 288),
+                atr_mult=role.target.threshold,
+            )
+            distribution = trend_sig.distribution()
+            degenerate = trend_sig.is_degenerate()
+            target_names = ["signal_class"]
+            target_by_index = dict(zip(trend_sig.source_index, trend_sig.labels, strict=True))
+            end_by_index = dict(
+                zip(trend_sig.source_index, trend_sig.label_end_index, strict=True)
+            )
+            original_to_matrix = {
+                original: position for position, original in enumerate(matrix.source_index)
+            }
+            selected = [
+                index
+                for index in trend_sig.source_index
+                if index in original_to_matrix and original_to_matrix[index] >= role.window_size - 1
+            ]
+            sample_ends = [original_to_matrix[index] for index in selected]
+            sample_label_ends = [
+                original_to_matrix[end_by_index[index]]
+                for index in selected
+                if end_by_index[index] in original_to_matrix
+            ]
+            if len(sample_label_ends) != len(sample_ends):
+                raise ValidationError(
+                    "Some trend-signal label endpoints are outside the feature matrix"
+                )
+            if not sample_ends:
+                raise ValidationError("No complete trend-signal windows have a label.")
+            series = [
+                list(row) + [float(target_by_index.get(original, 0))]
+                for row, original in zip(matrix.rows, matrix.source_index, strict=True)
+            ]
+            column_names = list(matrix.column_names) + target_names
+        elif role.model_id.startswith("gold_trend_") and not role.model_id.startswith(
+            "gold_trend_signal_"
+        ):
             # فاز ۹۸: مدل ترند — برچسب رنگ کندل بعدی (GREEN/RED)، بدون
             # مسیرِ first-passage؛ همهٔ ردیف‌های با آیندهٔ کامل برچسب دارند.
             # stride-1 عادی (مثل range) — sample_ends خاص نمی‌خواهد:
@@ -294,7 +338,15 @@ class DualModelService:
             target_name=(
                 "future_high_low"
                 if is_regression
-                else ("candle_color" if role.model_id.startswith("gold_trend_") else "signal_class")
+                else (
+                    "candle_color"
+                    if role.model_id.startswith("gold_trend_")
+                    else (
+                        "trend_signal_class"
+                        if role.model_id.startswith("gold_trend_signal_")
+                        else "signal_class"
+                    )
+                )
             ),
             hyperparameters={
                 "window_size": role.window_size,
@@ -305,8 +357,16 @@ class DualModelService:
                 "threshold": role.target.threshold,
                 # فاز ۹۸: سبک برچسب — "color" برای gold_trend_* (بدون مسیر)
                 "label_style": (
-                    "color" if role.model_id.startswith("gold_trend_") else "first_passage"
+                    "color"
+                    if role.model_id.startswith("gold_trend_")
+                    else (
+                        "first_passage_atr"
+                        if role.model_id.startswith("gold_trend_signal_")
+                        else "first_passage"
+                    )
                 ),
+                # فاز ۹۹: افق برچسب trend_signal (کندل‌های 5M)
+                "label_horizon": int(getattr(role.target, "label_horizon", 0)),
                 # Architecture — stored so the artifact can be rebuilt identically
                 "n_filters": getattr(role, "n_filters", 32),
                 "kernel_size": getattr(role, "kernel_size", 5),

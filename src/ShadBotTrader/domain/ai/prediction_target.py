@@ -65,6 +65,9 @@ class PredictionTarget:
     horizon: int
     timeframe: str
     threshold: float = 0.0008
+    #: فاز ۹۹: تعداد کلاس خروجی — 2 = BUY/SELL (سیگنال کلاسیک)؛
+    #: 3 = BUY/HOLD/SELL (مدل trend_signal: HOLD وقتی هیچ مانعی فعال نشد).
+    num_classes: int = 2
 
     def __post_init__(self) -> None:
         if self.horizon < 0 or (self.kind is TargetKind.PRICE_RANGE and self.horizon < 1):
@@ -75,11 +78,13 @@ class PredictionTarget:
             raise ValidationError("binary signal threshold must not be negative")
         if self.threshold < 0:
             raise ValidationError("threshold must not be negative")
+        if self.num_classes not in (2, 3):
+            raise ValidationError("num_classes must be 2 (BUY/SELL) or 3 (BUY/HOLD/SELL)")
 
     @property
     def output_units(self) -> int:
         """Width of the model output layer."""
-        return 2
+        return self.num_classes
 
     @property
     def is_regression(self) -> bool:
@@ -91,6 +96,7 @@ class PredictionTarget:
             "horizon": self.horizon,
             "timeframe": self.timeframe,
             "threshold": self.threshold,
+            "num_classes": self.num_classes,
             "output_units": self.output_units,
         }
 

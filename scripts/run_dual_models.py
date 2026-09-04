@@ -58,7 +58,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--symbol", default="XAUUSD")
     parser.add_argument(
         "--model",
-        choices=("all", "both", "range", "signal", "range_1h", "range_1d", "trend"),
+        choices=(
+            "all",
+            "both",
+            "range",
+            "signal",
+            "range_1h",
+            "range_1d",
+            "trend",
+            "trend_signal",
+        ),
         default="all",
         help=(
             "which model to train. 'range_1h' / 'range_1d' pick one "
@@ -84,6 +93,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument("--window", type=int, default=24, help="input window size")
+    parser.add_argument(
+        "--atr-mult",
+        type=float,
+        default=0.5,
+        help="trend_signal: barrier distance in ATR14 multiples (default 0.5)",
+    )
+    parser.add_argument(
+        "--label-horizon",
+        type=int,
+        default=288,
+        help="trend_signal: label horizon in candles (default 288 = one day of 5M)",
+    )
     parser.add_argument(
         "--train-ratio",
         type=float,
@@ -274,8 +295,18 @@ def signal_label_split_balance(
         return None
     last = folds[-1]
 
+    model_id = str(getattr(getattr(dataset, "role", None), "model_id", ""))
+    is_trend_signal = model_id.startswith("gold_trend_signal_")
+
     def balance(slice_):
         counts = Counter(slice_)
+        if is_trend_signal:
+            # فاز ۹۹: 0=SELL / 1=HOLD / 2=BUY
+            return {
+                "sell": int(counts.get(0, 0)),
+                "hold": int(counts.get(1, 0)),
+                "buy": int(counts.get(2, 0)),
+            }
         return {"sell": int(counts.get(0, 0)), "buy": int(counts.get(1, 0))}
 
     return (
@@ -500,7 +531,13 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
             "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
         )
-    if role.model_id.startswith("gold_trend_"):
+    if role.model_id.startswith("gold_trend_signal_"):
+        print(
+            f"  label rule: first {role.target.threshold}xATR14 move within the next "
+            f"{getattr(role, 'label_horizon', 288)} candles is BUY/SELL; "
+            "no barrier hit means HOLD (3-class)"
+        )
+    elif role.model_id.startswith("gold_trend_"):
         print(
             "  label rule: GREEN if next candle close >= this close, else RED; "
             "every fully-labelled candle trains (no first-passage path)"
@@ -839,6 +876,27 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
                 "    [!] The model put its high BELOW its low. With this little "
                 "training that is expected; it is reported, not hidden."
             )
+    elif role.model_id.startswith("gold_trend_signal_"):
+        # فاز ۹۹: پیش‌بینی سه‌کلاسه BUY/HOLD/SELL
+        import numpy as np
+
+        from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+        from ShadBotTrader.infrastructure.ai.dual_predictor import _load as _load_model
+
+        model = _load_model(sanity_artifact)
+        x = np.array([minmax_scale_window(window)], dtype=np.float32)
+        raw = model.predict(x, verbose=0)[0]
+        names = ["SELL", "HOLD", "BUY"]
+        total = float(sum(raw))
+        probs = [float(v) / total if total > 0 else 0.0 for v in raw]
+        best = max(range(3), key=lambda i: probs[i])
+        horizon_txt = getattr(role, "label_horizon", 288)
+        print(f"\n  PREDICTION for the next {horizon_txt} {timeframe} candles:")
+        for name, prob in zip(names, probs, strict=True):
+            marker = "  <-" if name == names[best] else ""
+            print(f"    {name:<4}: {prob:6.1%}{marker}")
+        print(f"    -> {names[best]} ({probs[best]:.1%})")
+
     else:
         from ShadBotTrader.infrastructure.ai.dual_predictor import SignalPredictor
 
@@ -1353,6 +1411,7 @@ def main(argv: list[str] | None = None) -> int:
         range_model_role,
         signal_model_role,
         trend_model_role,
+        trend_signal_model_role,
     )
 
     print("=== ShadBotTrader — Phase 29 dual predictive models ===")
@@ -1380,12 +1439,14 @@ def main(argv: list[str] | None = None) -> int:
     # فاز ۹۸: مدل ترند — رنگ کندل بعدی روی هر تایم‌فریمی
     # (پیش‌فرض 1D؛ تایم‌فریم با --signal-timeframe انتخاب می‌شود)
     wants_trend = args.model in ("trend",)
+    # فاز ۹۹: مدل سیگنال ترند — سه‌کلاسه BUY/HOLD/SELL روی window=288
+    wants_trend_signal = args.model in ("trend_signal",)
 
     planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
     if wants_trend:
-        trend_tf_planned = (
-            range_timeframes[0].strip().upper() if range_timeframes else ""
-        ) or (args.signal_timeframe or "1D").strip().upper()
+        trend_tf_planned = (range_timeframes[0].strip().upper() if range_timeframes else "") or (
+            args.signal_timeframe or "1D"
+        ).strip().upper()
         planned.append(f"trend({trend_tf_planned})")
     if wants_signal:
         planned.append(f"signal({args.signal_timeframe})")
@@ -1439,9 +1500,9 @@ def main(argv: list[str] | None = None) -> int:
     if wants_trend:
         # فاز ۹۸: برچسب رنگ کندل بعدی روی تایم‌فریم انتخابی — softmax دوکلاسه
         # اولویت: --range-timeframes (همان «Dataset» در GUI) بعد --signal-timeframe
-        trend_tf = (
-            range_timeframes[0].strip().upper() if range_timeframes else ""
-        ) or (args.signal_timeframe or "1D").strip().upper()
+        trend_tf = (range_timeframes[0].strip().upper() if range_timeframes else "") or (
+            args.signal_timeframe or "1D"
+        ).strip().upper()
         run_role(
             trend_model_role(
                 timeframe=trend_tf,
@@ -1451,6 +1512,22 @@ def main(argv: list[str] | None = None) -> int:
                 n_blocks=args.n_blocks or None,
             ),
             trend_tf,
+        )
+
+    if wants_trend_signal:
+        # فاز ۹۹: سه‌کلاسه BUY/HOLD/SELL — پنجرهٔ rolling 288 و افق 288
+        # (مثل رول‌فوروارد: هر کندل یک نمونه). تایم‌فریم: --signal-timeframe.
+        ts_tf = (args.signal_timeframe or "5M").strip().upper()
+        run_role(
+            trend_signal_model_role(
+                timeframe=ts_tf,
+                threshold=args.atr_mult,
+                window_size=args.window,
+                label_horizon=args.label_horizon,
+                n_layers_per_block=args.n_layers or None,
+                n_blocks=args.n_blocks or None,
+            ),
+            ts_tf,
         )
 
     rule("DONE")

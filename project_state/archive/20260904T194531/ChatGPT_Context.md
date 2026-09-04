@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T11:31:23.792483+00:00
+- Snapshot generated at: 2026-09-03T13:46:16.117046+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 440af28292635eac8c5b75888d19032faf465f66
-- Dirty: yes (2 files)
+- Commit: 57233d42268162fcc7ed183efe2ec84de1d5082f
+- Dirty: yes (1 files)
 - Recent commits:
+  - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
+  - ff3cdc8 Phase 98: trend model appears in /data dropdown
+  - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
+  - 1350c6e Phase 98 fix: trend training honors the selected Dataset
   - 440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)
   - d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data
   - aeb3188 Phase 98 part 1: TREND model — next-candle color (GREEN/RED) classification
   - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
   - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
   - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
-  - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
-  - 58d9413 Phase 96h: MT5 session-first connection (OTP/certificate accounts)
-  - 132aef6 Phase 96d: MT5 symbol_select before every data call + actionable error
-  - efe8a58 docs: 96c pilot analysis — trend filter and session hours independently flip the system positive (anti-catastrophic simulation on operator CSV); overfit warning recorded; no code change
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 144
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120731
+- Total Python lines: 120777
 - Modules: 463
 - Classes: 800
 - Functions: 4531

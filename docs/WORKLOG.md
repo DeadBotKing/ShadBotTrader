@@ -3612,3 +3612,44 @@ cold 4.2s → warm same-bar 0.07s → bar جدید 1.2s. رفع هنگ ✓
 **رفع:** پنل قبل از await نمایش داده می‌شود؛ «predicting…» بعد از
 دریافت پاسخ پاک می‌شود؛ مسیر High/Low هم پاک می‌شود (مدل ترند
 براکت ندارد). node --check ✓، کل تست‌سوت سبز (دو تست محیطی همان).
+
+---
+
+## 2026-09-03 — فاز ۹۹: مدل سیگنال ترند — سه‌کلاسه BUY/HOLD/SELL (roll-forward)
+
+**طرح اپراتور (پس از A/B):** پنجرهٔ rolling 288 کندل 5M → پیش‌بینی
+سه‌کلاسه برای 288 کندل بعدی: BUY اگر حرکت صعودی، SELL اگر نزولی،
+HOLD اگر هیچ. تعریف «صعودی/نزولی» (پیشنهاد من، تأیید اپراتور):
+**اولین عبور ±X×ATR14 از close** در افق — X پیش‌فرض 0.5 (GUI).
+نام مدل داینامیک با تایم‌فریم: `gold_trend_signal_<tf>`.
+
+### پیاده‌سازی
+
+- `build_trend_signal_labels(candles, horizon=288, atr_mult=0.5)`:
+  برچسب 0=SELL / 1=HOLD / 2=BUY؛ برخورد دو مانع در یک کندل → نمونهٔ
+  مبهم حذف؛ sample_label_ends برای purge درست (برچسب تا 288 کندل
+  جلوتر می‌رود).
+- `trend_signal_model_role` → `gold_trend_signal_<tf>`، window=288،
+  `PredictionTarget.num_classes=3` (output_units=3)، نقش signal
+  (softmax سه‌کلاسه + sparse CE + accuracy).
+- `DualModelService.prepare`: شاخهٔ trend_signal **قبل از** شاخهٔ
+  gold_trend_ (prefix مشترک بود!) با sample_ends + label_ends.
+- CLI: `--model trend_signal` + ‏`--atr-mult` (0.5) + ‏`--label-horizon`
+  (288)؛ سربرگ label rule مخصوص؛ sanity prediction سه‌کلاسه؛
+  signal_label_split_balance سه‌کلاسه ({sell,hold,buy}).
+- GUI: Train/Retrain/LR-sweep گزینهٔ `trend_signal` + فیلدهای
+  «Trend-signal barrier (×ATR14)» و «Trend-signal horizon»؛
+  دیتاست پیشنهادی 5M؛ threshold برای trend_signal = X (نه درصد).
+- `PredictionTarget.num_classes` (2/3) با اعتبارسنجی.
+
+### تأیید سرتاسری
+
+- ۹ سناریوی دستی برچسب (BUY/SELL/HOLD/مبهم/علیت) ✓
+- CLI کامل روی 800 کندل 5M مصنوعی: آموزش → ذخیره → حکم QUALITY →
+  پیش‌بینی سه‌کلاسه (SELL/HOLD/BUY با argmax) ✓
+- +۹ تست واحد؛ کل تست‌سوت سبز (دو تست محیطی همیشگی مستثنا)
+
+### گام بعدی (قسمت ۲ — بکتست)
+
+مجوز ۶ در triple: خرید فقط P(BUY)>آستانه و >P(HOLD)؛ فروش مشابه
+(فیلد GUI). آماده‌سازی بعد از تأیید اپراتور.

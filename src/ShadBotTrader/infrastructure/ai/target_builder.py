@@ -430,6 +430,115 @@ def build_trend_labels(
     return TrendLabels(labels=labels, source_index=indices, next_close=next_closes)
 
 
+@dataclass(frozen=True)
+class TrendSignalLabels:
+    """برچسب‌های سه‌کلاسهٔ trend_signal (فاز ۹۹).
+
+    برای هر کندل تصمیم t (انتهای پنجرهٔ ۲۸۸تایی): در ۲۸۸ کندل بعدی
+    اولین برخورد قیمت با مانع ±X×ATR14:
+      BUY  = 2  (اولین high ≥ close[t] + X·ATR)
+      SELL = 0  (اولین low  ≤ close[t] − X·ATR)
+      HOLD = 1  (هیچ مانعی در افق فعال نشد)
+    برخورد هم‌زمان هر دو مانع در یک کندل → نمونه حذف (مبهم).
+    """
+
+    labels: List[int]          # 0=SELL / 1=HOLD / 2=BUY
+    source_index: List[int]    # ایندکس کندل تصمیم t
+    label_end_index: List[int]  # ایندکس کندلی که برچسب در آن تعیین شد (برای purge)
+    barrier_dist: List[float]  # فاصلهٔ مانع از close[t] (به ATR؛ = X)
+
+    def __len__(self) -> int:
+        return len(self.labels)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.labels
+
+    def distribution(self) -> Dict[str, int]:
+        names = {0: "sell", 1: "hold", 2: "buy"}
+        counts: Dict[str, int] = {"sell": 0, "hold": 0, "buy": 0}
+        for value in self.labels:
+            counts[names[value]] += 1
+        return counts
+
+    def is_degenerate(self, minimum_share: float = 0.03) -> bool:
+        if not self.labels:
+            return True
+        total = len(self.labels)
+        return any(count / total < minimum_share for count in self.distribution().values())
+
+
+def build_trend_signal_labels(
+    candles: Sequence[Candle],
+    horizon: int = 288,
+    atr_mult: float = 0.5,
+    atr_period: int = 14,
+) -> TrendSignalLabels:
+    """برچسب سه‌کلاسهٔ روند فردا (فاز ۹۹) — اولین عبور ±X×ATR.
+
+    برای هر t: مانع‌ها از close[t] و به اندازهٔ X×ATR14[t] (علوی، روی
+    همان سری) فاصله دارند. اسکن کندل‌های t+1..t+horizon:
+      اولین high ≥ بالا → BUY؛ اولین low ≤ پایین → SELL؛
+      برخورد دو مانع در همان کندل → حذف؛ هیچ‌کدام → HOLD.
+    """
+    if horizon < 1:
+        raise ValidationError("label horizon must be >= 1")
+    if atr_mult <= 0:
+        raise ValidationError("atr_mult must be positive")
+    if not candles:
+        raise ValidationError("candles must not be empty")
+
+    highs = [float(c.high.amount) for c in candles]
+    lows = [float(c.low.amount) for c in candles]
+    closes = [float(c.close.amount) for c in candles]
+    atr = wilder_atr_series(highs, lows, closes, period=atr_period)
+
+    labels: List[int] = []
+    indices: List[int] = []
+    ends: List[int] = []
+    dists: List[float] = []
+    n = len(candles)
+    for t in range(n - 1):
+        stop = min(n, t + 1 + horizon)
+        if stop <= t + 1:
+            continue  # آینده‌ای وجود ندارد
+        scale = atr[t]
+        if scale is None or scale <= 0:
+            continue  # سری تخت — نمونهٔ بی‌معنا
+        upper = closes[t] + atr_mult * scale
+        lower = closes[t] - atr_mult * scale
+        label: Optional[int] = None
+        end = stop - 1
+        for k in range(t + 1, stop):
+            hit_up = highs[k] >= upper
+            hit_dn = lows[k] <= lower
+            if hit_up and hit_dn:
+                label = None  # کندل مبهم — هر دو مانع
+                end = k
+                break
+            if hit_up:
+                label = 2
+                end = k
+                break
+            if hit_dn:
+                label = 0
+                end = k
+                break
+        if label is None and end == stop - 1 and all(
+            highs[k] < upper and lows[k] > lower for k in range(t + 1, stop)
+        ):
+            label = 1  # HOLD — هیچ مانعی فعال نشد
+        if label is None:
+            continue  # مبهم
+        labels.append(label)
+        indices.append(t)
+        ends.append(end)
+        dists.append(atr_mult)
+    return TrendSignalLabels(
+        labels=labels, source_index=indices, label_end_index=ends, barrier_dist=dists
+    )
+
+
 def build_signal_labels_from_candles(
     candles: Sequence[Candle],
     threshold: float = 0.0008,
