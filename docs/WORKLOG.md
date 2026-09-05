@@ -3671,3 +3671,14 @@ BETTER (پیش از این 50 epochs هم همین بود). نکات:
 احتمال را بالاتر از 53% نگذاشت و بهتر است با confidence 55-57% تست شود.
 مدل trend_signal (سه‌کلاسه) شانس بیشتری برای لبهٔ واقعی دارد چون
 HOLD راه فرار از روزهای بی‌رون می‌دهد.
+
+### فاز ۹۹ (تکمیلی): trend_signal در GUI آموزش
+
+- MODEL_ROLE_CHOICES + دراپ‌داون Train/Retrain/LR-sweep: گزینهٔ
+  `trend_signal` اضافه شد؛ دیتاست پیشنهادی خودکار 5M؛ threshold برای
+  trend_signal = X برحسب ATR14 (فیلد atr_mult، پیش‌فرض 0.5)؛
+  label_horizon (288) هم به هر سه فرم اضافه شد.
+- Retrain: مدل‌های gold_trend_signal_* به role=trend_signal نقشه
+  می‌خورند و threshold ذخیره‌شده را ارث می‌برند.
+- تأیید: descriptorهای TRAIN/RETRAIN/LR-sweep فیلدها و گزینه‌ها را
+  دارند؛ lint پاک؛ tests/unit سبز.

@@ -236,7 +236,13 @@ def parse_timeframes(raw: str) -> List[str]:
 
 # ---------------------------------------------------------------- registry --
 #: Roles the operator can train, in the words they think in.
-MODEL_ROLE_CHOICES: tuple[str, ...] = ("all", "range", "signal", "trend")
+MODEL_ROLE_CHOICES: tuple[str, ...] = (
+    "all",
+    "range",
+    "signal",
+    "trend",
+    "trend_signal",
+)
 
 
 def stored_dataset_choices(storage_root: "str | Path" = "datasets") -> List[str]:
@@ -440,6 +446,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "",
                     kind="number",
                     hint="blank keeps the saved model threshold; binary labels have no HOLD class",
+                ),
+                CommandField(
+                    "atr_mult",
+                    "Trend-signal barrier (×ATR14)",
+                    "0.5",
+                    kind="number",
+                    hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14 (پیش‌فرض 0.5)",
+                ),
+                CommandField(
+                    "label_horizon",
+                    "Trend-signal horizon (candles)",
+                    "288",
+                    kind="number",
+                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
                 ),
                 CommandField(
                     "resume",
@@ -1086,7 +1106,10 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "range",
                     kind="select",
                     options=tuple(MODEL_ROLE_CHOICES),
-                    hint="range = future high/low · signal = binary buy/sell",
+                    hint=(
+                        "range = future high/low · signal = binary buy/sell · "
+                        "trend = candle color · trend_signal = BUY/HOLD/SELL"
+                    ),
                 ),
                 CommandField(
                     "dataset",
@@ -1112,6 +1135,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "0.08",
                     kind="number",
                     hint="first future +/- threshold hit creates BUY/SELL; no HOLD class",
+                ),
+                CommandField(
+                    "atr_mult",
+                    "Trend-signal barrier (×ATR14)",
+                    "0.5",
+                    kind="number",
+                    hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14 (پیش‌فرض 0.5)",
+                ),
+                CommandField(
+                    "label_horizon",
+                    "Trend-signal horizon (candles)",
+                    "288",
+                    kind="number",
+                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
                 ),
                 CommandField(
                     "epochs",
@@ -1203,8 +1240,12 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Model type",
                     "signal",
                     kind="select",
-                    options=("signal", "range", "trend"),
-                    hint="trend = رنگ کندل بعدی (سبز/قرمز) — دیتاست: هر TF (پیشنهاد: 1D یا 4H)",
+                    options=("signal", "range", "trend", "trend_signal"),
+                    hint=(
+                        "trend = رنگ کندل بعدی (سبز/قرمز) — پیشنهاد: 1D | "
+                        "trend_signal = BUY/HOLD/SELL روی پنجرهٔ rolling "
+                        "(دیتاست 5M، Window=288، Barrier=0.5×ATR14)"
+                    ),
                 ),
                 CommandField(
                     "dataset",
@@ -1220,6 +1261,20 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="comma-separated values; lower val_loss/val_mae wins",
                 ),
                 CommandField("threshold_pct", "Signal movement threshold %", "0.08", kind="number"),
+                CommandField(
+                    "atr_mult",
+                    "Trend-signal barrier (×ATR14)",
+                    "0.5",
+                    kind="number",
+                    hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14",
+                ),
+                CommandField(
+                    "label_horizon",
+                    "Trend-signal horizon (candles)",
+                    "288",
+                    kind="number",
+                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
+                ),
                 CommandField("window", "Window rows", "100", kind="number"),
                 CommandField(
                     "n_layers",
