@@ -521,12 +521,12 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   const modelId = rfModel ? rfModel.value : '';
   if (!modelId) return;
   updateRfStatus('predicting…');
-  // فاز ۹۸: مدل ترند → فقط رنگ کندل بعدی (جدول High/Low ندارد)
+  // فاز ۹۸-ب: مدل ترند → جدا fetch می‌شود (fetchTrendColor مستقیم)
   if (modelId.startsWith('gold_trend_')) {
-    if (rfPanel) rfPanel.style.display = '';   // ‼️ پنل باید دیده شود
+    if (rfPanel) rfPanel.style.display = '';
     await fetchTrendColor(barIndex, symbol, timeframe, modelId);
     forecastPath = null; draw();
-    updateRfStatus('');                        // «predicting…» برداشته شود
+    updateRfStatus('');
     return;
   }
   const params = new URLSearchParams({
