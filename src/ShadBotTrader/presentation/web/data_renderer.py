@@ -561,11 +561,12 @@ async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {
     const res = await fetch(`/api/trend-forecast?${params}`);
     const data = await res.json();
     if (data.error) {
+      // فاز ۹۸-ب: پیام واقعی سرور را نشان بده — نه پیام هاردکد
+      const savedTrend = RANGE_MODELS.filter(m => m.kind === 'trend')
+        .map(m => m.model_id).join(', ') || 'هیچ';
       trendBox.innerHTML =
-        '<span style="color:#8b949e">trend: مدل ' +
-        `${trendModelId} ذخیره نشده — مدل‌های ترند موجود: ` +
-        RANGE_MODELS.filter(m => m.kind === 'trend').map(m => m.model_id).join(', ') +
-        '</span>';
+        `<span style="color:#f85149">trend: ${data.error}</span>` +
+        ` <span style="color:#8b949e">(saved trend models: ${savedTrend})</span>`;
       return;
     }
     const green = data.color === 'GREEN';
