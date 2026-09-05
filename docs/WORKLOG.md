@@ -3732,3 +3732,12 @@ ruff ✅ black ✅  tests/unit سبز
 نمایش داده نمی‌شود.
 
 node --check ✓ · کل تست‌سوت سبز ✓
+
+### فاز ۹۸-ب (رفع): «trend: color is not defined» در /data
+
+**ریشه:** در `fetchTrendColor` متغیر `color` standalone استفاده شده بود
+(`${color === 'GREEN' ? '▲' : '▼'}`) ولی این متغیر تعریف نشده بود —
+فقط `green` (boolean) و `data.color` موجود بودند.
+
+**رفع:** `${color === 'GREEN' ? '▲' : '▼'}` → `${green ? '▲' : '▼'}`
+node --check ✓ · کل تست‌سوت سبز ✓

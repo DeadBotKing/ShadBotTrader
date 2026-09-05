@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T10:59:59.122490+00:00
+- Snapshot generated at: 2026-09-05T11:22:19.683070+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 5575ce426186c5e82b793d2dd3204991418a49c5
+- Commit: 2faeecba8acc8fdcca529b5fd8ae179c05c27e5d
 - Dirty: yes (1 files)
 - Recent commits:
+  - 2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models
   - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
   - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
   - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)
   - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
   - ff3cdc8 Phase 98: trend model appears in /data dropdown
-  - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
 
 ## Quality Gate
 

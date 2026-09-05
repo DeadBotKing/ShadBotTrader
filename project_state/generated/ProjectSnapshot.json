@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "d8cf0e73ed5b2650925395b2e1aa7614517e2003847e800894cb360e9d4a7cbd",
-      "size_bytes": 193424
+      "sha256": "58074082550979ab058eac371d6f5200d5597605a53c33bb08a45fad7bdc9732",
+      "size_bytes": 194164
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
+      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
     },
     {
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "0d35c7767d31f95839e8dc589c0ce48a73c629895e07c5ff2787756d784adeb4",
-      "size_bytes": 43209
+      "sha256": "fa4eaff1b2bfcad43c42ec339c4ad25a184f1c57663e8e816a7372455c8bb024",
+      "size_bytes": 43197
     },
     {
       "category": "source",
@@ -4993,14 +4993,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-05T10:59:59.122490+00:00",
+  "generated_at": "2026-09-05T11:22:19.683070+00:00",
   "git": {
     "branch": "main",
-    "commit": "5575ce426186c5e82b793d2dd3204991418a49c5",
+    "commit": "2faeecba8acc8fdcca529b5fd8ae179c05c27e5d",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models",
       "5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests",
       "cb2f30f Phase 98b fix: trend_score in the Train model dropdown",
       "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix",
@@ -5009,8 +5010,7 @@
       "9754480 Phase 99: trend-signal model \u2014 3-class BUY/HOLD/SELL on rolling 288x5M",
       "c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)",
       "57233d4 Phase 98 fix: /data trend forecast no longer hangs \u2014 model + feature caches",
-      "ff3cdc8 Phase 98: trend model appears in /data dropdown",
-      "0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)"
+      "ff3cdc8 Phase 98: trend model appears in /data dropdown"
     ]
   },
   "modules": [

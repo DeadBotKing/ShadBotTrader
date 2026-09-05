@@ -575,7 +575,7 @@ async function fetchTrendColor(barIndex, symbol, timeframe) {
     const pct = ((green ? data.green_probability : data.red_probability) * 100).toFixed(1);
     trendBox.innerHTML =
       `<span style="color:${colour};font-weight:600">` +
-      `${color === 'GREEN' ? '▲' : '▼'} ${data.color} (${pct}%)</span>` +
+      `${green ? '▲' : '▼'} ${data.color} (${pct}%)</span>` +
       ` <span style="color:#8b949e">— روند پیش‌بینی ${data.trend}` +
       ` · ${data.model_id} v${data.model_version}</span>`;
   } catch (err) {
