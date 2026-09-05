@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T10:34:17.626301+00:00
+- Snapshot generated at: 2026-09-05T14:52:44.320734+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: cb2f30f445b4a3ff62b42066087e3a034a6cbd77
+- Commit: d0f92be0f4f88ba4767ebbb22a21b3c047f911e7
 - Dirty: yes (1 files)
 - Recent commits:
+  - d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'
+  - df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride
+  - 1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride
+  - 2a4b74e Phase 98b fix: /data only shows same-timeframe models
+  - dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter
+  - 23c6dfa Phase 98b fix: 'trend: color is not defined' — undefined JS variable
+  - 2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models
+  - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
   - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
   - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
-  - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
-  - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
-  - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
-  - c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)
-  - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
-  - ff3cdc8 Phase 98: trend model appears in /data dropdown
-  - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
-  - 1350c6e Phase 98 fix: trend training honors the selected Dataset
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 121433
+- Total Python lines: 121453
 - Modules: 464
 - Classes: 803
-- Functions: 4550
+- Functions: 4551
 - External dependencies: 14

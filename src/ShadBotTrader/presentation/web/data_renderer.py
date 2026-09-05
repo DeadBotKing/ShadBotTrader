@@ -545,11 +545,47 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
       if (rfPanel) rfPanel.style.display = 'none';
       return;
     }
+    // فاز ۹۹: مدل‌های score و signal خروجی متفاوت دارند
+    if (data.target_units === 'score' || data.target_units === 'trend_signal') {
+      renderTrendModel(data);
+      updateRfStatus('');
+      return;
+    }
     renderForecast(data, localIdx);
     updateRfStatus('');
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
+}
+
+function renderTrendModel(data) {
+  if (!rfPanel) return;
+  rfPanel.style.display = '';
+  const anchorTime = data.anchor_time ? data.anchor_time.replace('T', ' ').slice(0, 16) : '';
+  document.getElementById('rf-stats').innerHTML =
+    `<div class="stat"><div class="k">Model</div>` +
+    `<div class="v">${data.model_id} v${data.model_version}</div></div>` +
+    `<div class="stat"><div class="k">Type</div>` +
+    `<div class="v">${data.target_units}</div></div>`;
+  const rows = document.getElementById('rf-rows');
+  rows.innerHTML = '';
+  const pts = data.points || [];
+  pts.forEach(p => {
+    const tr = document.createElement('tr');
+    if (p.score !== undefined) {
+      const dir = p.direction || '';
+      const colour = p.score > 0.1 ? '#3fb950' : (p.score < -0.1 ? '#f85149' : '#8b949e');
+      tr.innerHTML = `<td style="color:${colour};font-weight:600">${p.score.toFixed(4)}</td>` +
+        `<td colspan="4" style="color:${colour}">${dir}</td>`;
+    } else if (p.signal !== undefined) {
+      tr.innerHTML = `<td style="font-weight:600">${p.signal}</td>` +
+        `<td colspan="4">SELL ${((p.sell_p||0)*100).toFixed(1)}% · ` +
+        `HOLD ${((p.hold_p||0)*100).toFixed(1)}% · ` +
+        `BUY ${((p.buy_p||0)*100).toFixed(1)}%</td>`;
+    }
+    rows.appendChild(tr);
+  });
+  forecastPath = null; draw();
 }
 
 async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {

@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "a706f99390cc916455a8ef65e24d4970902c2157f987fe208addbad4b7201f07",
-      "size_bytes": 198011
+      "sha256": "61c19f513be5355be93712962eb27eadaf2703d5a0fc65a16460f2ef4ff9a326",
+      "size_bytes": 199260
     },
     {
       "category": "legacy",
@@ -3957,8 +3957,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/gateway/range_forecast_inspector.py",
-      "sha256": "64cfad4289fa02abdbe7db12399c3f4a222f5f1f6ae2521cff95a1fc997618d5",
-      "size_bytes": 13777
+      "sha256": "0174f958e9933126bf6f8181e1371af9e953e4ed74729bc2d8f35b9c2eca13e0",
+      "size_bytes": 16263
     },
     {
       "category": "source",
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "79c131d12c70613885cba52a03cb6b8b1d34c3a20b8ada7e7a8ce61b53ca56f7",
-      "size_bytes": 43278
+      "sha256": "2f2bfccb1f6d1f58d484a717a53c544606f348e8e324eca06beb4011bd6ae639",
+      "size_bytes": 45127
     },
     {
       "category": "source",
@@ -4993,14 +4993,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-05T14:52:44.320734+00:00",
+  "generated_at": "2026-09-05T15:24:30.798360+00:00",
   "git": {
     "branch": "main",
-    "commit": "d0f92be0f4f88ba4767ebbb22a21b3c047f911e7",
+    "commit": "5fb02fca195358eadf8b9096851893a38f4146c0",
     "dirty": true,
-    "dirty_files": 1,
+    "dirty_files": 2,
     "is_repo": true,
     "recent_commits": [
+      "5fb02fc Phase 99 fix: gold_trend_score/signal go through range path, not color",
+      "cf800a4 Phase 98b fix: /data model_role matches the trained role",
       "d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'",
       "df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride",
       "1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride",
@@ -5008,9 +5010,7 @@
       "dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter",
       "23c6dfa Phase 98b fix: 'trend: color is not defined' \u2014 undefined JS variable",
       "2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models",
-      "5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests",
-      "cb2f30f Phase 98b fix: trend_score in the Train model dropdown",
-      "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix"
+      "5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests"
     ]
   },
   "modules": [
@@ -11515,11 +11515,11 @@
     "legacy_file_count": 176,
     "module_count": 464,
     "source_file_count": 319,
-    "source_lines": 51832,
+    "source_lines": 51929,
     "test_file_count": 145,
     "test_lines": 24392,
     "total_file_count": 822,
-    "total_lines": 121453
+    "total_lines": 121550
   },
   "test_file_count": 145
 }

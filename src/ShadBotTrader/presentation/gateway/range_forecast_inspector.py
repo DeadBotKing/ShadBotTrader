@@ -254,7 +254,63 @@ class RangeForecastInspector:
         out.target_units = target_units
         out.atr_reference = atr_reference_value
 
-        # ‼️ برای گرفتن کل مسیر (نه فقط worst-case) از خروجی خام استفاده می‌کنیم
+        # ── فاز ۹۹: مدل‌های trend_score و trend_signal خروجی متفاوت دارند ──
+        if record.model_id.startswith("gold_trend_score_") or record.model_id.startswith(
+            "gold_trend_signal_"
+        ):
+            import numpy as np
+
+            from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+            from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
+                _deserialize_model,
+            )
+
+            model = _deserialize_model(artifact.payload)
+            x = np.array([minmax_scale_window(window_rows)], dtype=np.float32)
+            raw = model.predict(x, verbose=0)[0]
+
+            if record.model_id.startswith("gold_trend_score_"):
+                # رگرسیون score — یک عدد پیوسته
+                score = float(raw[0]) if raw.ndim == 1 else float(raw[0, 0])
+                direction = "صعودی" if score > 0.1 else ("نزولی" if score < -0.1 else "بی‌رون")
+                out.model_id = record.model_id
+                out.model_version = record.version
+                out.target_units = "score"
+                out.points = [
+                    {
+                        "k": 1,
+                        "score": round(score, 4),
+                        "direction": direction,
+                        "high": (
+                            float(anchor.close.amount) + score * atr_reference_value
+                            if atr_reference_value
+                            else float(anchor.close.amount)
+                        ),
+                        "low": float(anchor.close.amount),
+                    }
+                ]
+                return out  # RangeForecastPath
+
+            # gold_trend_signal_* — سه‌کلاسه softmax
+            names = ["SELL", "HOLD", "BUY"]
+            total = float(sum(raw))
+            probs = [float(v) / total if total > 0 else 0.0 for v in raw]
+            best = max(range(3), key=lambda i: probs[i])
+            out.model_id = record.model_id
+            out.model_version = record.version
+            out.target_units = "trend_signal"
+            out.points = [
+                {
+                    "k": 1,
+                    "signal": names[best],
+                    "sell_p": round(probs[0], 4),
+                    "hold_p": round(probs[1], 4),
+                    "buy_p": round(probs[2], 4),
+                }
+            ]
+            return out
+
+        # ── مدل رنج — مسیر High/Low معمولی ──
         model = predictor._load(artifact) if hasattr(predictor, "_load") else None
         if model is None:
             from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (

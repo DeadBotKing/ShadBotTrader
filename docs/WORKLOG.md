@@ -3813,3 +3813,19 @@ fetchForecast هر مدل با prefix gold_trend_ را به fetchTrendColor (ف�
 score و signal مسیر range معمولی (JSON High/Low یا سه‌کلاسه).
 همچنین range_forecast_inspector model_role پویا شد: trend_signal →
 "signal"، بقیه → "range".
+
+### فاز ۹۹ (رفع): /data برای trend_score و trend_signal خروجی مخصوص
+
+**مشکل:** forecast_at مسیر High/Low رنج را برای همه مدل‌ها اجرا می‌کرد
+→ برای trend_score (خروجی 1عددی) و trend_signal (خروجی 3عددی) خطای
+shape mismatch می‌داد.
+
+**رفع:** forecast_at شاخه‌های مخصوص دارد:
+- gold_trend_score_* → خروجی score پیوسته + direction
+- gold_trend_signal_* → خروجی سه‌احتمالی SELL/HOLD/BUY
+- بقیه (رنج) → مسیر High/Low معمولی
+
+/data JS: `renderTrendModel(data)` برای نمایش خروجی‌های جدید
+(توی جدول، به‌جای High/Low، score یا احتمالات را نشان می‌دهد).
+
++ `_deserialize_model` import fix در شاخهٔ trend_score.
