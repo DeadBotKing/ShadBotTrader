@@ -67,6 +67,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "range_1d",
             "trend",
             "trend_signal",
+            "trend_score",
         ),
         default="all",
         help=(
@@ -531,7 +532,13 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             f"  [!] RF {_rf} > window {role.window_size} — outer layers see "
             "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
         )
-    if role.model_id.startswith("gold_trend_signal_"):
+    if role.model_id.startswith("gold_trend_score_"):
+        print(
+            f"  label rule: score = (close − open) / (high − low) of a synthetic "
+            f"daily candle built from the next {getattr(role, 'label_horizon', 288)} "
+            f"{timeframe} candles — regression output in (−1, +1)"
+        )
+    elif role.model_id.startswith("gold_trend_signal_"):
         print(
             f"  label rule: first {role.target.threshold}xATR14 move within the next "
             f"{getattr(role, 'label_horizon', 288)} candles is BUY/SELL; "
@@ -1411,6 +1418,7 @@ def main(argv: list[str] | None = None) -> int:
         range_model_role,
         signal_model_role,
         trend_model_role,
+        trend_score_model_role,
         trend_signal_model_role,
     )
 
@@ -1441,6 +1449,7 @@ def main(argv: list[str] | None = None) -> int:
     wants_trend = args.model in ("trend",)
     # فاز ۹۹: مدل سیگنال ترند — سه‌کلاسه BUY/HOLD/SELL روی window=288
     wants_trend_signal = args.model in ("trend_signal",)
+    wants_trend_score = args.model in ("trend_score",)
 
     planned = [f"range({tf})" for tf in range_timeframes] if wants_range else []
     if wants_trend:
@@ -1512,6 +1521,20 @@ def main(argv: list[str] | None = None) -> int:
                 n_blocks=args.n_blocks or None,
             ),
             trend_tf,
+        )
+
+    if wants_trend_score:
+        # فاز ۹۸-ب: score روند — رگرسیون پیوسته (−1..+1)
+        ts_tf = (args.signal_timeframe or "5M").strip().upper()
+        run_role(
+            trend_score_model_role(
+                timeframe=ts_tf,
+                window_size=args.window,
+                label_horizon=args.label_horizon,
+                n_layers_per_block=args.n_layers or None,
+                n_blocks=args.n_blocks or None,
+            ),
+            ts_tf,
         )
 
     if wants_trend_signal:

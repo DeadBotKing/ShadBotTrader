@@ -41,6 +41,7 @@ from ShadBotTrader.infrastructure.ai.target_builder import (
     build_range_labels_seq2seq,
     build_signal_labels,
     build_trend_labels,
+    build_trend_score_labels,
     build_trend_signal_labels,
 )
 
@@ -159,7 +160,24 @@ class DualModelService:
         sample_ends: Optional[List[int]] = None
         sample_label_ends: Optional[List[int]] = None
 
-        if role.target.kind is TargetKind.PRICE_RANGE:
+        if role.model_id.startswith("gold_trend_score_"):
+            # فاز ۹۸-ب: score روند — رگرسیون پیوسته (−1..+1)
+            # مثل range با sample_ends=None (stride-1) و target=score
+            range_units = "pct"  # score خودش dimensionless است
+            ts = build_trend_score_labels(candles, horizon=getattr(role, "label_horizon", 288))
+            distribution = {"mean_score": sum(ts.scores) / max(len(ts.scores), 1)}
+            degenerate = False
+            target_names = ["trend_score"]
+            score_by_index = dict(zip(ts.source_index, ts.scores, strict=True))
+            targets = [[score_by_index.get(orig, 0.0)] for orig in matrix.source_index]
+            target_source_index = matrix.source_index
+            series, column_names, _ = attach_targets(
+                matrix=matrix,
+                targets=targets,
+                target_source_index=target_source_index,
+                target_names=target_names,
+            )
+        elif role.target.kind is TargetKind.PRICE_RANGE:
             _use_seq2seq = getattr(role, "seq2seq", False)
             if _use_seq2seq:
                 # فاز ۵۵: seq2seq labels — برای هر کندل t، offsets تا horizon k
@@ -197,9 +215,7 @@ class DualModelService:
             degenerate = trend_sig.is_degenerate()
             target_names = ["signal_class"]
             target_by_index = dict(zip(trend_sig.source_index, trend_sig.labels, strict=True))
-            end_by_index = dict(
-                zip(trend_sig.source_index, trend_sig.label_end_index, strict=True)
-            )
+            end_by_index = dict(zip(trend_sig.source_index, trend_sig.label_end_index, strict=True))
             original_to_matrix = {
                 original: position for position, original in enumerate(matrix.source_index)
             }
@@ -225,6 +241,22 @@ class DualModelService:
                 for row, original in zip(matrix.rows, matrix.source_index, strict=True)
             ]
             column_names = list(matrix.column_names) + target_names
+        elif role.model_id.startswith("gold_trend_score_"):
+            # فاز ۹۸-ب: score روند — رگرسیون پیوسته (−1..+1)
+            # مثل range با sample_ends=None (stride-1) و target=score
+            ts = build_trend_score_labels(candles, horizon=getattr(role, "label_horizon", 288))
+            distribution = {"mean_score": sum(ts.scores) / max(len(ts.scores), 1)}
+            degenerate = False
+            target_names = ["trend_score"]
+            score_by_index = dict(zip(ts.source_index, ts.scores, strict=True))
+            targets = [[score_by_index.get(orig, 0.0)] for orig in matrix.source_index]
+            target_source_index = matrix.source_index
+            series, column_names, _ = attach_targets(
+                matrix=matrix,
+                targets=targets,
+                target_source_index=target_source_index,
+                target_names=target_names,
+            )
         elif role.model_id.startswith("gold_trend_") and not role.model_id.startswith(
             "gold_trend_signal_"
         ):

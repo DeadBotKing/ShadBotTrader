@@ -1240,7 +1240,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "Model type",
                     "signal",
                     kind="select",
-                    options=("signal", "range", "trend", "trend_signal"),
+                    options=("signal", "range", "trend", "trend_signal", "trend_score"),
                     hint=(
                         "trend = رنگ کندل بعدی (سبز/قرمز) — پیشنهاد: 1D | "
                         "trend_signal = BUY/HOLD/SELL روی پنجرهٔ rolling "
@@ -1969,8 +1969,14 @@ class CommandHandlers:
             )
 
         record = catalogue.read(saved, catalogue.latest_version(saved))
-        if record is not None and record.model_id.startswith("gold_trend_"):
-            # فاز ۹۸: مدل ترند — نقش بازسازی‌شدهٔ مخصوص خودش
+        if record is not None and record.model_id.startswith("gold_trend_score_"):
+            # فاز ۹۸-ب: مدل score روند
+            role = "trend_score"
+        elif record is not None and record.model_id.startswith("gold_trend_signal_"):
+            # فاز ۹۹: مدل سیگنال ترند
+            role = "trend_signal"
+        elif record is not None and record.model_id.startswith("gold_trend_"):
+            # فاز ۹۸: مدل ترند (رنگ) — نقش بازسازی‌شدهٔ مخصوص خودش
             role = "trend"
         else:
             role = (record.role if record else "").strip() or (
@@ -3607,7 +3613,7 @@ class AccountCommandHandlers(CommandHandlers):
                 "--range-timeframes",
                 dataset,
                 "--signal-timeframe",
-                dataset if role in ("signal", "trend", "trend_signal") else "5M",
+                dataset if role in ("signal", "trend", "trend_signal", "trend_score") else "5M",
                 "--epochs",
                 str(max(command.integer("epochs", 1), 1)),
                 "--folds",
@@ -3616,7 +3622,7 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("window", 500), 2)),
                 *(
                     ["--label-horizon", str(max(command.integer("label_horizon", 288), 1))]
-                    if role == "trend_signal"
+                    if role in ("trend_signal", "trend_score")
                     else []
                 ),
                 "--train-ratio",
@@ -3657,7 +3663,7 @@ class AccountCommandHandlers(CommandHandlers):
             )
 
         role = command.text("model", "signal").strip().lower()
-        if role not in {"signal", "range", "trend", "trend_signal"}:
+        if role not in {"signal", "range", "trend", "trend_signal", "trend_score"}:
             return CommandResult.rejected(
                 command.kind, "Model type must be signal, range, trend or trend_signal"
             )
@@ -3684,7 +3690,7 @@ class AccountCommandHandlers(CommandHandlers):
             # فاز ۹۹: X برحسب ATR14 (نه درصد)
             threshold = max(0.05, command.number("atr_mult", 0.5))
         else:
-            threshold = 0.0  # trend رنگ
+            threshold = 0.0  # trend رنگ / trend_score رگرسیون
         # فاز ۶۲: پیچ‌های معماری — 0 = پیش‌فرض نقش (فاز ۶۱)
         _opt_layers = max(command.integer("n_layers", 0), 0)
         _opt_blocks = max(command.integer("n_blocks", 0), 0)

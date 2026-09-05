@@ -255,6 +255,44 @@ def trend_signal_model_role(
     )
 
 
+def trend_score_model_role(
+    timeframe: str = "5M",
+    window_size: int = 150,
+    label_horizon: int = 288,
+    n_layers_per_block: int | None = None,
+    n_blocks: int | None = None,
+) -> ModelRole:
+    """مدل trend_score (فاز ۹۸-ب): رگرسیون score روند روزانه.
+
+    خروجی: عدد پیوسته در (−1, +1) —
+      مثبت = روند صعودی، منفی = نزولی، نزدیک صفر = بی‌رون.
+    loss = Huber (مثل range)، رگرسیون خالص.
+    """
+    return ModelRole(
+        name="range",  # reuse: رگرسیون + Huber + MAE metric
+        target=PredictionTarget(
+            kind=TargetKind.PRICE_RANGE,
+            horizon=1,
+            timeframe=timeframe,
+        ),
+        model_id=f"gold_trend_score_{timeframe.strip().lower()}",
+        description=(
+            f"Trend score: predicts the directional strength "
+            f"(−1..+1) of a synthetic daily candle built from the next "
+            f"{label_horizon} {timeframe} candles."
+        ),
+        window_size=window_size,
+        n_filters=48,
+        n_layers_per_block=n_layers_per_block or 4,
+        n_blocks=n_blocks or 2,
+        depth_multiplier=6,
+        dropout=0.10,
+        l2=2.0e-4,
+        seq2seq=False,
+        label_horizon=label_horizon,
+    )
+
+
 def receptive_field(n_layers_per_block: int, n_blocks: int, kernel_size: int = 5) -> int:
     """Total causal receptive field of the dilated stack (فاز ۶۱).
 

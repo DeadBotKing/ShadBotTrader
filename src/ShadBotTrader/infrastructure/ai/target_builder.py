@@ -383,9 +383,9 @@ class TrendLabels:
     علامت رانش یک کندل. horizon ثابت است (کندل بعدی).
     """
 
-    labels: List[int]          # 1 = سبز (close بعدی ≥ close فعلی)، 0 = قرمز
-    source_index: List[int]    # کندل t که برچسبش به آینده نگاه می‌کند
-    next_close: List[float]    # close[t+1] — برای دیباگ/سنجش رانش
+    labels: List[int]  # 1 = سبز (close بعدی ≥ close فعلی)، 0 = قرمز
+    source_index: List[int]  # کندل t که برچسبش به آینده نگاه می‌کند
+    next_close: List[float]  # close[t+1] — برای دیباگ/سنجش رانش
 
     def __len__(self) -> int:
         return len(self.labels)
@@ -442,8 +442,8 @@ class TrendSignalLabels:
     برخورد هم‌زمان هر دو مانع در یک کندل → نمونه حذف (مبهم).
     """
 
-    labels: List[int]          # 0=SELL / 1=HOLD / 2=BUY
-    source_index: List[int]    # ایندکس کندل تصمیم t
+    labels: List[int]  # 0=SELL / 1=HOLD / 2=BUY
+    source_index: List[int]  # ایندکس کندل تصمیم t
     label_end_index: List[int]  # ایندکس کندلی که برچسب در آن تعیین شد (برای purge)
     barrier_dist: List[float]  # فاصلهٔ مانع از close[t] (به ATR؛ = X)
 
@@ -491,7 +491,26 @@ def build_trend_signal_labels(
     highs = [float(c.high.amount) for c in candles]
     lows = [float(c.low.amount) for c in candles]
     closes = [float(c.close.amount) for c in candles]
-    atr = wilder_atr_series(highs, lows, closes, period=atr_period)
+
+    # فاز ۹۹-ب: ATR باید از تایم‌فریم روزانه باشد نه 5M — چون «حرکت
+    # معنادار یک روز» را اندازه می‌گیریم. ATR(5M) ≈ $2 است که مانع
+    # ±$1 می‌دهد و HOLD هیچ‌وقت تولید نمی‌شود. ATR(1D) ≈ $30-40.
+    # راه: روی هر کندل، ATR روزانه = ATR محاسبه‌شده روی کندل‌های
+    # روزانه‌ای که از 288×5M ساخته می‌شوند. اما در سطح برچسب‌ساز
+    # ما کندل‌های 5M داریم؛ پس ATR(1D) = wilder ATR روی بازه‌های
+    # 288تایی 5M به‌عنوان یک کندل روزانه.
+    # ساده‌تر و دقیق‌تر: از فاصلهٔ close(t) تا close(t-288) به‌عنوان
+    # پراکندگی روزانه استفاده کن — که با ATR14 روزانه هم‌مقیاس است.
+    daily_ranges: List[float] = []
+    daily_index = 288  # اولین نقطه‌ای که 288 کندل گذشته دارد
+    for i in range(len(candles)):
+        if i >= daily_index:
+            # بازهٔ 288 کندل عقب‌تر: max(high)−min(low)
+            h288 = max(highs[i - 288 : i + 1])
+            l288 = min(lows[i - 288 : i + 1])
+            daily_ranges.append(h288 - l288)
+        else:
+            daily_ranges.append(0.0)  # warm-up — نمونه‌ها حذف می‌شوند
 
     labels: List[int] = []
     indices: List[int] = []
@@ -502,9 +521,9 @@ def build_trend_signal_labels(
         stop = min(n, t + 1 + horizon)
         if stop <= t + 1:
             continue  # آینده‌ای وجود ندارد
-        scale = atr[t]
-        if scale is None or scale <= 0:
-            continue  # سری تخت — نمونهٔ بی‌معنا
+        scale = daily_ranges[t]
+        if scale <= 0:
+            continue  # warm-up یا سری تخت — نمونهٔ بی‌معنا
         upper = closes[t] + atr_mult * scale
         lower = closes[t] - atr_mult * scale
         label: Optional[int] = None
@@ -524,8 +543,10 @@ def build_trend_signal_labels(
                 label = 0
                 end = k
                 break
-        if label is None and end == stop - 1 and all(
-            highs[k] < upper and lows[k] > lower for k in range(t + 1, stop)
+        if (
+            label is None
+            and end == stop - 1
+            and all(highs[k] < upper and lows[k] > lower for k in range(t + 1, stop))
         ):
             label = 1  # HOLD — هیچ مانعی فعال نشد
         if label is None:
@@ -533,10 +554,63 @@ def build_trend_signal_labels(
         labels.append(label)
         indices.append(t)
         ends.append(end)
-        dists.append(atr_mult)
+        dists.append(scale * atr_mult / 288 if scale else 0)  # per-5M-candle dist
     return TrendSignalLabels(
         labels=labels, source_index=indices, label_end_index=ends, barrier_dist=dists
     )
+
+
+@dataclass(frozen=True)
+class TrendScoreLabels:
+    """برچسب‌های score روند روزانه (فاز ۹۹).
+
+    هر نمونه: یک کندل تجمعی از 288 کندل 5M آینده؛
+    score = (close − open) / (high − low) ∈ (−1, +1).
+    مثبت = روند صعودی، منفی = نزولی، نزدیک صفر = بی‌رون.
+    """
+
+    scores: List[float]
+    source_index: List[int]
+
+    def __len__(self) -> int:
+        return len(self.scores)
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.scores
+
+
+def build_trend_score_labels(
+    candles: Sequence[Candle],
+    horizon: int = 288,
+) -> TrendScoreLabels:
+    """برچسب score روند: کندل تجمعی از 288 کندل آینده (فاز ۹۹).
+
+    برای هر t که حداقل horizon کندل جلوتر دارد:
+      open  = open[t+1]
+      close = close[t+horizon]
+      high  = max(high[t+1..t+horizon])
+      low   = min(low[t+1..t+horizon])
+      score = (close − open) / (high − low)
+    """
+    if horizon < 1:
+        raise ValidationError("horizon must be >= 1")
+    if not candles:
+        raise ValidationError("candles must not be empty")
+    scores: List[float] = []
+    indices: List[int] = []
+    n = len(candles)
+    for t in range(n - horizon):
+        o = float(candles[t + 1].open.amount)
+        c = float(candles[t + horizon].close.amount)
+        h = max(float(candles[k].high.amount) for k in range(t + 1, t + horizon + 1))
+        low_val = min(float(candles[k].low.amount) for k in range(t + 1, t + horizon + 1))
+        rng = h - low_val
+        if rng <= 0:
+            continue
+        scores.append((c - o) / rng)
+        indices.append(t)
+    return TrendScoreLabels(scores=scores, source_index=indices)
 
 
 def build_signal_labels_from_candles(

@@ -3682,3 +3682,35 @@ HOLD راه فرار از روزهای بی‌رون می‌دهد.
   می‌خورند و threshold ذخیره‌شده را ارث می‌برند.
 - تأیید: descriptorهای TRAIN/RETRAIN/LR-sweep فیلدها و گزینه‌ها را
   دارند؛ lint پاک؛ tests/unit سبز.
+
+---
+
+## 2026-09-05 — فاز ۹۸-ب: مدل trend_score + رفع باگ HOLD + GUI
+
+**درخواست اپراتور:** سه کار: (۱) ATR مانع trend_signal از تایم‌فریم
+روزانه، (۲) مدل Trend-Score در GUI، (۳) تارگت score روند.
+
+### رفع ۱: ATR مانع trend_signal → بازهٔ 288 کندلی
+
+مانع قبلی از ATR14(5M)≈$2 بود → HOLD=0%. حالا مانع =
+0.5×بازهٔ 288 کندل عقب‌تر (max(high)−min(low)) که ~$30-40 است.
+تأیید: label balance روی 2200 کندل → sell 17.7% · hold 26.4% · buy 55.9% ✓
+
+### رفع ۲: trend_score مدل جدید (رگرسیون score روند)
+
+- `build_trend_score_labels`: score = (close−open)/(high−low) روی
+  کندل تجمعی از horizon کندل آینده → پیوسته در (−1,+1)
+- `trend_score_model_role`: name="range" (reuse رگرسیون+Huber+MAE)،
+  kind=PRICE_RANGE، model_id=`gold_trend_score_<tf>`
+- prepare: شاخهٔ trend_score **قبل از** PRICE_RANGE generic
+  (در غیر این صورت range branches it را می‌ربود)
+- CLI: `--model trend_score` + سربرگ label rule مخصوص
+- GUI: همهٔ فرم‌ها (Train/Retrain/LR-sweep) گزینهٔ `trend_score`
+  + فیلدهای label_horizon پاس داده می‌شوند
+
+### تأیید سرتاسری
+
+CLI کامل روی 800 کندل: train → val_mae 0.239 → **BEATS baseline 61%** ✓
+```
+ruff ✅ black ✅  tests/unit سبز
+```
