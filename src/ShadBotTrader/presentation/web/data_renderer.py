@@ -551,10 +551,9 @@ async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {
   const trendBox = document.getElementById('trend-color');
   if (!trendBox) return;
   trendBox.innerHTML = '<span style="color:#8b949e">trend: …</span>';
-  // مدل ترند هم‌تایم‌فریم: gold_trend_1d روی سری 1D، gold_trend_4h روی 4H …
-  const tf = (timeframe || '').toLowerCase();
-  // فاز ۹۸-ب: مدل ترند هم‌تایم‌فریم — اگر مدل دیگری انتخاب شده از همان استفاده کن
-  const trendModelId = `gold_trend_${tf}`;
+  // فاز ۹۸-ب: اگر کاربر مدل ترند انتخاب کرده از همان استفاده کن؛
+  // وگرنه مدل هم‌تایم‌فریم با سری فعال (gold_trend_${tf})
+  const trendModelId = modelOverride || `gold_trend_${(timeframe || '').toLowerCase()}`;
   const params = new URLSearchParams({
     symbol, timeframe, model: trendModelId, bar: String(barIndex),
   });
@@ -564,9 +563,8 @@ async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {
     if (data.error) {
       trendBox.innerHTML =
         '<span style="color:#8b949e">trend: مدل ' +
-        `gold_trend_${tf} ذخیره نشده — مدل‌های ترند موجود: ` +
+        `${trendModelId} ذخیره نشده — مدل‌های ترند موجود: ` +
         RANGE_MODELS.filter(m => m.kind === 'trend').map(m => m.model_id).join(', ') +
-        ' — یک مدل ترند هم‌تایم‌فریم با سری فعلی بساز' +
         '</span>';
       return;
     }

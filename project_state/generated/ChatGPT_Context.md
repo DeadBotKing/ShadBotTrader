@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T12:35:51.653275+00:00
+- Snapshot generated at: 2026-09-05T12:54:36.669095+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: dd32522b9308a420347661d6e545ecd61c9a1b14
-- Dirty: yes (3 files)
+- Commit: 2a4b74efb77f456ae7c74c4bbf40a4b473acb06d
+- Dirty: yes (1 files)
 - Recent commits:
+  - 2a4b74e Phase 98b fix: /data only shows same-timeframe models
   - dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter
   - 23c6dfa Phase 98b fix: 'trend: color is not defined' — undefined JS variable
   - 2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
   - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
   - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
-  - c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 121450
+- Total Python lines: 121448
 - Modules: 464
 - Classes: 803
 - Functions: 4551
