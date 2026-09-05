@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T05:47:10.867370+00:00
+- Snapshot generated at: 2026-09-05T10:34:17.626301+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,11 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 0892f655cf0aaf9b17f18def81f282d754375813
-- Dirty: no
+- Commit: cb2f30f445b4a3ff62b42066087e3a034a6cbd77
+- Dirty: yes (1 files)
 - Recent commits:
+  - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
+  - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
   - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
   - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
   - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
@@ -38,8 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - ff3cdc8 Phase 98: trend model appears in /data dropdown
   - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
   - 1350c6e Phase 98 fix: trend training honors the selected Dataset
-  - 440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)
-  - d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 121254
+- Total Python lines: 121433
 - Modules: 464
-- Classes: 802
-- Functions: 4546
+- Classes: 803
+- Functions: 4550
 - External dependencies: 14

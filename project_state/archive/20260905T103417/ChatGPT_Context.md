@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-03T13:22:20.872917+00:00
+- Snapshot generated at: 2026-09-05T05:47:10.867370+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 319
-- Test modules: 144
+- Test modules: 145
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ff3cdc84b0d4438edb92f84eb36a28df8980b2ec
-- Dirty: yes (1 files)
+- Commit: 0892f655cf0aaf9b17f18def81f282d754375813
+- Dirty: no
 - Recent commits:
+  - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
+  - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
+  - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
+  - c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)
+  - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
   - ff3cdc8 Phase 98: trend model appears in /data dropdown
   - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
   - 1350c6e Phase 98 fix: trend training honors the selected Dataset
   - 440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)
   - d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data
-  - aeb3188 Phase 98 part 1: TREND model — next-candle color (GREEN/RED) classification
-  - dc2b2a8 Phase 97d: final-SL floor inside _triple_bracket (post-fallback)
-  - 73a06a5 Phase 97b: license 4 — entry must sit near the daily level
-  - 1ffd367 Phase 97: triple-timeframe strategy (5M signal · 4H bracket · 1D trend)
-  - 6ddd6ee Phase 96v: /data range-model list spans every timeframe
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 821
+- Total files: 822
 - Source files: 319
-- Test files: 144
+- Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 120776
-- Modules: 463
-- Classes: 800
-- Functions: 4531
+- Total Python lines: 121254
+- Modules: 464
+- Classes: 802
+- Functions: 4546
 - External dependencies: 14

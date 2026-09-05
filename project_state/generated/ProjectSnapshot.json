@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "cdaab184e3360fc30db1e9eacac5a5701bff6982adbf601dc92c2026bceb89d5",
-      "size_bytes": 191682
+      "sha256": "d8cf0e73ed5b2650925395b2e1aa7614517e2003847e800894cb360e9d4a7cbd",
+      "size_bytes": 193424
     },
     {
       "category": "legacy",
@@ -2127,8 +2127,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "1d1e9bc64d740e43bcf6415780d11878d34c0d4b31799e5c03dac6892a4ea41d",
-      "size_bytes": 66489
+      "sha256": "3c8aff9245916a19cc5379e5ce83dc773ba0de1c0222cff1b84137a27b1b0afb",
+      "size_bytes": 67432
     },
     {
       "category": "script",
@@ -2295,8 +2295,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "bc05dbdcb117f998bcb1f5c73db99ff72d6857bfb8490c89331d9d60c35d6ad1",
-      "size_bytes": 27326
+      "sha256": "704b8ec36fbfc3886773daa0fa38b1c017a751d14407e182b522bdecbc105662",
+      "size_bytes": 29259
     },
     {
       "category": "source",
@@ -3213,8 +3213,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/model_roles.py",
-      "sha256": "e3d955ae7610684904eae7d02466210c742040afb2a6a2d2d16c56acaa5c0417",
-      "size_bytes": 13970
+      "sha256": "f4c06197a9c5c64fa843b0616515a7517b731de1899f531ab4ede91aec2f8c17",
+      "size_bytes": 15281
     },
     {
       "category": "source",
@@ -3243,8 +3243,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/target_builder.py",
-      "sha256": "a72e3e3c636e3610528d97a70088622f72bcc31016e45153859ba59cb09d1d39",
-      "size_bytes": 28255
+      "sha256": "21343c0b6b52fd192fa87e5d9fb6b00a6534a2b0e0eda03169853702d0ee752a",
+      "size_bytes": 31444
     },
     {
       "category": "source",
@@ -3933,8 +3933,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "a84fbf1a91db2dc62e455bcaec1a526f8d53de81d746b8b5ef79351dfc7061a0",
-      "size_bytes": 164819
+      "sha256": "16d328b6b3c43e1e2e926fefae9ceac543e701676f9315050c458a7ba527f879",
+      "size_bytes": 165376
     },
     {
       "category": "source",
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "56e64ab84c1465b2f7dda7749e0ad28467a2e127e5467a068b3fd15d3bf45788",
-      "size_bytes": 43014
+      "sha256": "019d11dd9de991938da15dd38e50f52d4da12ac7b875c9a9d75ce2c099fee1ff",
+      "size_bytes": 43384
     },
     {
       "category": "source",
@@ -4993,14 +4993,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-05T05:47:10.867370+00:00",
+  "generated_at": "2026-09-05T10:34:17.626301+00:00",
   "git": {
     "branch": "main",
-    "commit": "0892f655cf0aaf9b17f18def81f282d754375813",
-    "dirty": false,
-    "dirty_files": 0,
+    "commit": "cb2f30f445b4a3ff62b42066087e3a034a6cbd77",
+    "dirty": true,
+    "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "cb2f30f Phase 98b fix: trend_score in the Train model dropdown",
+      "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix",
       "0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms",
       "7dcbefa docs: gold_trend_1d 400x3 run analysis \u2014 57.0% vs 53.2% baseline, edge thin",
       "9754480 Phase 99: trend-signal model \u2014 3-class BUY/HOLD/SELL on rolling 288x5M",
@@ -5008,9 +5010,7 @@
       "57233d4 Phase 98 fix: /data trend forecast no longer hangs \u2014 model + feature caches",
       "ff3cdc8 Phase 98: trend model appears in /data dropdown",
       "0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)",
-      "1350c6e Phase 98 fix: trend training honors the selected Dataset",
-      "440af28 Phase 98 fix: trend model works for EVERY timeframe (not just 4H)",
-      "d7e72a2 Phase 98 part 1b: trend_4h in training GUIs + candle-color display on /data"
+      "1350c6e Phase 98 fix: trend training honors the selected Dataset"
     ]
   },
   "modules": [
@@ -7104,7 +7104,7 @@
     {
       "classes": 1,
       "external_imports": [],
-      "functions": 16,
+      "functions": 17,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors"
@@ -7162,9 +7162,9 @@
       "path": "src/ShadBotTrader/infrastructure/ai/stored_feature_source.py"
     },
     {
-      "classes": 6,
+      "classes": 7,
       "external_imports": [],
-      "functions": 39,
+      "functions": 42,
       "internal_imports": [
         "ShadBotTrader.domain.ai.prediction_target",
         "ShadBotTrader.domain.common.errors",
@@ -11506,20 +11506,20 @@
   "python_version": "3.13.14",
   "source_file_count": 319,
   "statistics": {
-    "class_count": 802,
+    "class_count": 803,
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4546,
+    "function_count": 4550,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 464,
     "source_file_count": 319,
-    "source_lines": 51670,
+    "source_lines": 51826,
     "test_file_count": 145,
     "test_lines": 24378,
     "total_file_count": 822,
-    "total_lines": 121254
+    "total_lines": 121433
   },
   "test_file_count": 145
 }

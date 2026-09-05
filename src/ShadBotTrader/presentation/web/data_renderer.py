@@ -524,7 +524,7 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   // فاز ۹۸: مدل ترند → فقط رنگ کندل بعدی (جدول High/Low ندارد)
   if (modelId.startsWith('gold_trend_')) {
     if (rfPanel) rfPanel.style.display = '';   // ‼️ پنل باید دیده شود
-    await fetchTrendColor(barIndex, symbol, timeframe);
+    await fetchTrendColor(barIndex, symbol, timeframe, modelId);
     forecastPath = null; draw();
     updateRfStatus('');                        // «predicting…» برداشته شود
     return;
@@ -555,8 +555,10 @@ async function fetchTrendColor(barIndex, symbol, timeframe) {
   trendBox.innerHTML = '<span style="color:#8b949e">trend: …</span>';
   // مدل ترند هم‌تایم‌فریم: gold_trend_1d روی سری 1D، gold_trend_4h روی 4H …
   const tf = (timeframe || '').toLowerCase();
+  // فاز ۹۸-ب: مدل ترند هم‌تایم‌فریم — اگر مدل دیگری انتخاب شده از همان استفاده کن
+  const trendModelId = `gold_trend_${tf}`;
   const params = new URLSearchParams({
-    symbol, timeframe, model: `gold_trend_${tf}`, bar: String(barIndex),
+    symbol, timeframe, model: trendModelId, bar: String(barIndex),
   });
   try {
     const res = await fetch(`/api/trend-forecast?${params}`);
@@ -564,7 +566,9 @@ async function fetchTrendColor(barIndex, symbol, timeframe) {
     if (data.error) {
       trendBox.innerHTML =
         '<span style="color:#8b949e">trend: مدل ' +
-        `gold_trend_${tf} ذخیره نشده — Train a model → trend روی همین TF` +
+        `gold_trend_${tf} ذخیره نشده — مدل‌های ترند موجود: ` +
+        RANGE_MODELS.filter(m => m.kind === 'trend').map(m => m.model_id).join(', ') +
+        ' — یک مدل ترند هم‌تایم‌فریم با سری فعلی بساز' +
         '</span>';
       return;
     }
