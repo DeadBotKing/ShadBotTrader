@@ -3741,3 +3741,10 @@ node --check ✓ · کل تست‌سوت سبز ✓
 
 **رفع:** `${color === 'GREEN' ? '▲' : '▼'}` → `${green ? '▲' : '▼'}`
 node --check ✓ · کل تست‌سوت سبز ✓
+
+### فاز ۹۸-ب (رفع دوم): fetchTrendColor پارامتر modelOverride نداشت
+
+فراخوانی `fetchTrendColor(barIndex, symbol, timeframe, modelId)` پارامتر
+چهارم را می‌فرستاد ولی تعریف تابع فقط ۳ پارامتر داشت → modelOverride
+همیشه undefined → همیشه `gold_trend_${tf}` fallback می‌شد → «مدل ذخیره
+نشده». رفع: پارامتر modelOverride به امضای تابع اضافه شد.

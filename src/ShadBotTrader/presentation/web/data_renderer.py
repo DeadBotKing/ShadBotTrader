@@ -547,7 +547,7 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   }
 }
 
-async function fetchTrendColor(barIndex, symbol, timeframe) {
+async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {
   const trendBox = document.getElementById('trend-color');
   if (!trendBox) return;
   trendBox.innerHTML = '<span style="color:#8b949e">trend: …</span>';
