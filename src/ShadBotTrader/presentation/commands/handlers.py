@@ -242,6 +242,7 @@ MODEL_ROLE_CHOICES: tuple[str, ...] = (
     "signal",
     "trend",
     "trend_signal",
+    "trend_score",
 )
 
 
@@ -1244,7 +1245,8 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint=(
                         "trend = رنگ کندل بعدی (سبز/قرمز) — پیشنهاد: 1D | "
                         "trend_signal = BUY/HOLD/SELL روی پنجرهٔ rolling "
-                        "(دیتاست 5M، Window=288، Barrier=0.5×ATR14)"
+                        "(دیتاست 5M، Window=288، Barrier=0.5×ATR14) | "
+                        "trend_score = score روند (−1..+1) روی دیتاست 5M"
                     ),
                 ),
                 CommandField(

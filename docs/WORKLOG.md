@@ -3714,3 +3714,8 @@ CLI کامل روی 800 کندل: train → val_mae 0.239 → **BEATS baseline 6
 ```
 ruff ✅ black ✅  tests/unit سبز
 ```
+
+### فاز ۹۸-ب (تصحیح اپراتور): trend_score در دراپ‌داون Train
+
+اپراتور درست گفت — `trend_score` در dropdown نبود. اضافه شد:
+`('all', 'range', 'signal', 'trend', 'trend_signal', 'trend_score')`
