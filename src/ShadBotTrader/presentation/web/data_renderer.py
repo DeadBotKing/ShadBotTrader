@@ -545,8 +545,6 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   } catch (err) {
     updateRfStatus(`[X] ${err.message}`);
   }
-  // فاز ۹۸: رنگ کندل بعدی از مدل ترند هم‌تایم‌فریم (اگر ذخیره شده باشد)
-  fetchTrendColor(barIndex, symbol, timeframe);
 }
 
 async function fetchTrendColor(barIndex, symbol, timeframe) {

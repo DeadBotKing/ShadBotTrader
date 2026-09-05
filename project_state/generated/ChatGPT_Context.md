@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T10:34:17.626301+00:00
+- Snapshot generated at: 2026-09-05T10:59:59.122490+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: cb2f30f445b4a3ff62b42066087e3a034a6cbd77
+- Commit: 5575ce426186c5e82b793d2dd3204991418a49c5
 - Dirty: yes (1 files)
 - Recent commits:
+  - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
   - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
   - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
   - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 57233d4 Phase 98 fix: /data trend forecast no longer hangs — model + feature caches
   - ff3cdc8 Phase 98: trend model appears in /data dropdown
   - 0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)
-  - 1350c6e Phase 98 fix: trend training honors the selected Dataset
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 121433
+- Total Python lines: 121445
 - Modules: 464
 - Classes: 803
-- Functions: 4550
+- Functions: 4551
 - External dependencies: 14

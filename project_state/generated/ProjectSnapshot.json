@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "019d11dd9de991938da15dd38e50f52d4da12ac7b875c9a9d75ce2c099fee1ff",
-      "size_bytes": 43384
+      "sha256": "0d35c7767d31f95839e8dc589c0ce48a73c629895e07c5ff2787756d784adeb4",
+      "size_bytes": 43209
     },
     {
       "category": "source",
@@ -4491,8 +4491,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_trend_signal_labels.py",
-      "sha256": "91d10b4d401569ff5921d86049a2d55672265ae3d7f27b30477bf72936be8ae0",
-      "size_bytes": 4794
+      "sha256": "c62e52b01985c4bb618fff9655f2d77967d315078a06016f3dae8a3e791cc30f",
+      "size_bytes": 5481
     },
     {
       "category": "test",
@@ -4993,14 +4993,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-05T10:34:17.626301+00:00",
+  "generated_at": "2026-09-05T10:59:59.122490+00:00",
   "git": {
     "branch": "main",
-    "commit": "cb2f30f445b4a3ff62b42066087e3a034a6cbd77",
+    "commit": "5575ce426186c5e82b793d2dd3204991418a49c5",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests",
       "cb2f30f Phase 98b fix: trend_score in the Train model dropdown",
       "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix",
       "0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms",
@@ -5009,8 +5010,7 @@
       "c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)",
       "57233d4 Phase 98 fix: /data trend forecast no longer hangs \u2014 model + feature caches",
       "ff3cdc8 Phase 98: trend model appears in /data dropdown",
-      "0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)",
-      "1350c6e Phase 98 fix: trend training honors the selected Dataset"
+      "0eeadd3 Phase 98 fix: trend dataset is plain stride-1 (no sample_ends pair)"
     ]
   },
   "modules": [
@@ -10253,7 +10253,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 9,
+      "functions": 10,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.market.candle",
@@ -11510,16 +11510,16 @@
     "config_file_count": 3,
     "documentation_file_count": 140,
     "external_dependency_count": 14,
-    "function_count": 4550,
+    "function_count": 4551,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 464,
     "source_file_count": 319,
-    "source_lines": 51826,
+    "source_lines": 51824,
     "test_file_count": 145,
-    "test_lines": 24378,
+    "test_lines": 24392,
     "total_file_count": 822,
-    "total_lines": 121433
+    "total_lines": 121445
   },
   "test_file_count": 145
 }
