@@ -1071,6 +1071,9 @@ def render_data_page(
               border:1px solid #2a3348;border-radius:4px;padding:3px 8px"></select>
     </label>
     <span id="rf-status" style="color:#8b949e;font-size:12px"></span>
+    <span style="color:#8b949e;font-size:11px;margin-right:8px">
+      (فقط مدل‌های هم‌تایم‌فریم با سری انتخابی نمایش داده می‌شوند)
+    </span>
   </div>
   <div id="rf-panel" style="display:none">
     <div id="trend-color" style="padding:6px 0;font-size:13px"></div>

@@ -90,26 +90,27 @@ class RangeForecastInspector:
             seen[item["model_id"]] = item
         return sorted(seen.values(), key=lambda item: item["model_id"])
 
-    def all_range_models(self) -> List[Dict[str, Any]]:
-        """فاز ۹۶-و/۹۸: هر مدل رنج **و ترند** ذخیره‌شده، از هر تایم‌فریمی.
+    def all_range_models(self, timeframe: str = "") -> List[Dict[str, Any]]:
+        """فاز ۹۶-و/۹۸/۹۸-ب: مدل‌های رنج و ترند، فیلترشده بر اساس تایم‌فریم.
 
-        یک رکورد per model_id (آخرین نسخه). /data لیست مدل را از این
-        می‌سازد تا مدل‌های جدید (مثل 4H یا gold_trend_1d) بدون تغییر کد
-        ظاهر شوند. برای مدل‌های ترند kind='trend' گذاشته می‌شود تا
-        کلاینت بداند خروجی رنگ است نه High/Low.
+        ``timeframe`` خالی = همه؛ مقدار (مثل ``5M``) = فقط مدل‌های
+        هم‌تایم‌فریم — مدل روی سری ناهم‌تایم‌فریم بی‌معناست و خروجی
+        ثابت/بی‌ربط می‌دهد (اجرای واقعی: trend_score_5m روی 1D).
         """
         from ShadBotTrader.infrastructure.ai.model_catalogue import ModelCatalogue
 
+        tf_upper = timeframe.strip().upper() if timeframe else ""
         catalogue = ModelCatalogue(self._root)
         out: List[Dict[str, Any]] = []
         for record in catalogue.list_all():
             if record is None:
                 continue
-            # فاز ۹۸: gold_trend_* (role=signal) با kind='trend' می‌آید؛
-            # سایر مدل‌های signal خام حذف می‌شوند.
             is_trend = record.model_id.startswith("gold_trend_")
             if not is_trend and record.role != "range":
                 continue
+            record_tf = (record.timeframe or "").upper()
+            if tf_upper and record_tf != tf_upper:
+                continue  # فقط مدل‌های هم‌تایم‌فریم با سری فعال
             kind = "trend" if is_trend else "range"
             out.append(
                 {
@@ -117,7 +118,7 @@ class RangeForecastInspector:
                     "version": record.version,
                     "horizon": int(record.horizon or 1),
                     "trained_at": (record.trained_at or "")[:10],
-                    "timeframe": (record.timeframe or "").upper(),
+                    "timeframe": record_tf,
                     "kind": kind,
                 }
             )

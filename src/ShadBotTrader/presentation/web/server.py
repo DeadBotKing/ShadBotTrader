@@ -231,7 +231,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             # فاز ۹۶-و: همهٔ مدل‌های رنج ذخیره‌شده از هر تایم‌فریمی —
             # لیست هاردکدِ 1D/1H مدل‌های جدید (مثل 4H) را مخفی می‌کرد.
             inspector_rf = RangeForecastInspector(self.storage_root)
-            models = inspector_rf.all_range_models()
+            # فاز ۹۸-ب: فقط مدل‌های هم‌تایم‌فریم با سری انتخابی
+            models = inspector_rf.all_range_models(timeframe=timeframe)
         except Exception:
             models = []
 
