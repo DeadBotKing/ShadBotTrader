@@ -3791,3 +3791,14 @@ fetchTrendColor وقتی data.error داشت، **همیشه** متن «ذخیر�
 نمایش می‌داد — حتی اگر خطای سرور چیز دیگری بود (مثل فیچر ناموجود یا
 کندل ناکافی). این باعث می‌شد دیباگ غیرممکن شود چون پیام واقعی مخفی
 می‌شد. حالا پیام واقعی سرور + لیست مدل‌های ذخیره‌شده نمایش داده می‌شود.
+
+### فاز ۹۸-ب (رفع نهایی-۳): model_role mismatch — 179 vs 184 فیچر
+
+**خطای اپراتور:** `expected shape=(None, 288, 184), found shape=(1, 288, 179)`
+
+**ریشه:** /data endpoint همیشه `model_role="signal"` (179 فیچر) می‌فرستاد،
+ولی gold_trend_score_5m با name="range" آموزش دیده → 184 فیچر
+(شامل range-scope فیچرها). ۵ فیچر کمتر = shape mismatch.
+
+**رفع:** model_role بر اساس model_id انتخاب می‌شود:
+`"range" if model_id.startswith("gold_trend_score_") else "signal"`

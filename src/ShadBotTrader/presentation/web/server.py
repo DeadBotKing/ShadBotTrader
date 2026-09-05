@@ -329,6 +329,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     standard_feature_set_v1,
                 )
 
+                # فاز ۹۸-ب: model_role باید با role آموزش مدل هم‌خوان باشد
+                # gold_trend_* با name="range" → model_role="range" (184)
+                # gold_signal_* با name="signal" → model_role="signal" (179)
+                model_role = "range" if model_id.startswith("gold_trend_score_") else "signal"
                 matrix = build_feature_matrix(
                     candles=window_candles,
                     symbol=Symbol(symbol),
@@ -337,7 +341,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     resolver=CalculatorRegistry(),
                     include_features=True,
                     causal_only=True,
-                    model_role="signal",
+                    model_role=model_role,
                 )
                 if len(matrix) < window_size:
                     raise ValidationError(

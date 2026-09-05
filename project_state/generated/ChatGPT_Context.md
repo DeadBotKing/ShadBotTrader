@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T12:54:36.669095+00:00
+- Snapshot generated at: 2026-09-05T14:52:44.320734+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,12 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 2a4b74efb77f456ae7c74c4bbf40a4b473acb06d
+- Commit: d0f92be0f4f88ba4767ebbb22a21b3c047f911e7
 - Dirty: yes (1 files)
 - Recent commits:
+  - d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'
+  - df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride
+  - 1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride
   - 2a4b74e Phase 98b fix: /data only shows same-timeframe models
   - dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter
   - 23c6dfa Phase 98b fix: 'trend: color is not defined' — undefined JS variable
@@ -37,9 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
   - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
   - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
-  - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
-  - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
-  - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
 
 ## Quality Gate
 
@@ -66,7 +66,7 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 140
 - Legacy files: 176
-- Total Python lines: 121448
+- Total Python lines: 121453
 - Modules: 464
 - Classes: 803
 - Functions: 4551

@@ -957,8 +957,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "d45831da1689ca2d608d5a40487b9668893c3be9e1095715097a35ab9ce94bb4",
-      "size_bytes": 196035
+      "sha256": "a706f99390cc916455a8ef65e24d4970902c2157f987fe208addbad4b7201f07",
+      "size_bytes": 198011
     },
     {
       "category": "legacy",
@@ -2061,7 +2061,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
+      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
       "size_bytes": 26005
     },
     {
@@ -3981,8 +3981,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/data_renderer.py",
-      "sha256": "97caf512d51d6c0cc09dd06c981377a0fc6d53b5080de22c83529e018abb6602",
-      "size_bytes": 43260
+      "sha256": "79c131d12c70613885cba52a03cb6b8b1d34c3a20b8ada7e7a8ce61b53ca56f7",
+      "size_bytes": 43278
     },
     {
       "category": "source",
@@ -3999,8 +3999,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/server.py",
-      "sha256": "9cdecf9fa17c32e422811e55e05f725582ae1e0d2dfc42f66758da0a608bde98",
-      "size_bytes": 25316
+      "sha256": "e603eef068b5f2596f4e1f9bab4c88262ac37847b2a8980d7e4a1f2a58d86da6",
+      "size_bytes": 25679
     },
     {
       "category": "source",
@@ -4993,24 +4993,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-05T12:54:36.669095+00:00",
+  "generated_at": "2026-09-05T14:52:44.320734+00:00",
   "git": {
     "branch": "main",
-    "commit": "2a4b74efb77f456ae7c74c4bbf40a4b473acb06d",
+    "commit": "d0f92be0f4f88ba4767ebbb22a21b3c047f911e7",
     "dirty": true,
     "dirty_files": 1,
     "is_repo": true,
     "recent_commits": [
+      "d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'",
+      "df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride",
+      "1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride",
       "2a4b74e Phase 98b fix: /data only shows same-timeframe models",
       "dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter",
       "23c6dfa Phase 98b fix: 'trend: color is not defined' \u2014 undefined JS variable",
       "2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models",
       "5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests",
       "cb2f30f Phase 98b fix: trend_score in the Train model dropdown",
-      "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix",
-      "0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms",
-      "7dcbefa docs: gold_trend_1d 400x3 run analysis \u2014 57.0% vs 53.2% baseline, edge thin",
-      "9754480 Phase 99: trend-signal model \u2014 3-class BUY/HOLD/SELL on rolling 288x5M"
+      "91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix"
     ]
   },
   "modules": [
@@ -11515,11 +11515,11 @@
     "legacy_file_count": 176,
     "module_count": 464,
     "source_file_count": 319,
-    "source_lines": 51827,
+    "source_lines": 51832,
     "test_file_count": 145,
     "test_lines": 24392,
     "total_file_count": 822,
-    "total_lines": 121448
+    "total_lines": 121453
   },
   "test_file_count": 145
 }
