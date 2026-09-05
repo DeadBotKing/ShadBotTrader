@@ -3829,3 +3829,5 @@ shape mismatch می‌داد.
 (توی جدول، به‌جای High/Low، score یا احتمالات را نشان می‌دهد).
 
 + `_deserialize_model` import fix در شاخهٔ trend_score.
+
+### فاز ۹۹ (UI): header جدول forecast پویا برای score/signal

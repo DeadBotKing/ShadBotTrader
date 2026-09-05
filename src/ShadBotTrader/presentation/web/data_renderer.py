@@ -561,12 +561,15 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
 function renderTrendModel(data) {
   if (!rfPanel) return;
   rfPanel.style.display = '';
-  const anchorTime = data.anchor_time ? data.anchor_time.replace('T', ' ').slice(0, 16) : '';
+  const header = document.getElementById('rf-header');
+  if (data.target_units === 'score') {
+    header.innerHTML = '<th>Score</th><th>Direction</th>';
+  } else {
+    header.innerHTML = '<th>Signal</th><th>Probabilities</th>';
+  }
   document.getElementById('rf-stats').innerHTML =
     `<div class="stat"><div class="k">Model</div>` +
-    `<div class="v">${data.model_id} v${data.model_version}</div></div>` +
-    `<div class="stat"><div class="k">Type</div>` +
-    `<div class="v">${data.target_units}</div></div>`;
+    `<div class="v">${data.model_id} v${data.model_version}</div></div>`;
   const rows = document.getElementById('rf-rows');
   rows.innerHTML = '';
   const pts = data.points || [];
@@ -1118,9 +1121,10 @@ def render_data_page(
   <div id="rf-panel" style="display:none">
     <div id="trend-color" style="padding:6px 0;font-size:13px"></div>
     <div class="stats" id="rf-stats"></div>
-    <table class="scroll"><thead><tr>
-      <th>#</th><th>High ($)</th><th>Low ($)</th><th>High offset</th><th>Low offset</th>
-    </tr></thead><tbody id="rf-rows"></tbody></table>
+    <table class="scroll" id="rf-table">
+      <thead><tr id="rf-header"></tr></thead>
+      <tbody id="rf-rows"></tbody>
+    </table>
   </div>
 </section>
 <div class="grid2">
