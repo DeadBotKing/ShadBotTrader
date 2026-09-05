@@ -3802,3 +3802,14 @@ fetchTrendColor وقتی data.error داشت، **همیشه** متن «ذخیر�
 
 **رفع:** model_role بر اساس model_id انتخاب می‌شود:
 `"range" if model_id.startswith("gold_trend_score_") else "signal"`
+
+### فاز ۹۹ (رفع): gold_trend_score/signal مسیر range را طی کنند نه trend color
+
+fetchForecast هر مدل با prefix gold_trend_ را به fetchTrendColor (فقط
+رنگ) می‌فرستاد — برای gold_trend_score_5m و gold_trend_signal_5m
+اشتباه بود چون این‌ها score رگرسیونی و سه‌کلاسه‌اند نه رنگ.
+
+رفع: فقط gold_trend_1d/4h (رنگ‌محور) به fetchTrendColor می‌روند؛
+score و signal مسیر range معمولی (JSON High/Low یا سه‌کلاسه).
+همچنین range_forecast_inspector model_role پویا شد: trend_signal →
+"signal"، بقیه → "range".

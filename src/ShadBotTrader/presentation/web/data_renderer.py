@@ -522,7 +522,12 @@ async function fetchForecast(barIndex, symbol, timeframe, localIdx) {
   if (!modelId) return;
   updateRfStatus('predicting…');
   // فاز ۹۸-ب: مدل ترند → جدا fetch می‌شود (fetchTrendColor مستقیم)
-  if (modelId.startsWith('gold_trend_')) {
+  // فاز ۹۹: فقط gold_trend_1d/4h (رنگ) → fetchTrendColor
+  // gold_trend_score_* و gold_trend_signal_* مسیر range معمولی
+  const isColorModel = modelId.startsWith('gold_trend_')
+    && !modelId.startsWith('gold_trend_score_')
+    && !modelId.startsWith('gold_trend_signal_');
+  if (isColorModel) {
     if (rfPanel) rfPanel.style.display = '';
     await fetchTrendColor(barIndex, symbol, timeframe, modelId);
     forecastPath = null; draw();
