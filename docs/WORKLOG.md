@@ -1,5 +1,52 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-06 — فاز ۱۰۰: trend_score روی کندل واقعی 1D + آموزش v1 روی 10 سال دیتای واقعی
+
+**درخواست اپراتور:** «مدل رو بساز اول — ما باید اول ی تخمین درست‌حسابی از روند
+آینده بدست بیاریم» → اجرای پروپوزال مصوب `TREND_SCORE_1D_PROPOSAL.md`.
+
+**سیم‌کشی (بدون redesign — reuse کامل پایپ‌لاین رنج):**
+- `run_dual_models.py`: `--label-horizon` پیش‌فرض 0=خودکار — trend_score روی 1D
+  → **1** (score از کندل واقعی فردا)، بقیه → 288. متن قانون برچسب تطبیقی.
+- **رفع باگ sanity prediction:** trend_score (name="range") وارد مسیر
+  RangePredictor (۲ کانال) می‌شد و روی خروجی تک‌کاناله کرش می‌کرد — شاخهٔ
+  اختصاصی score اضافه شد.
+- `model_roles.py`: توضیح تطبیقی horizon=1 → «NEXT REAL {tf} candle».
+- `target_builder.py`: مستندسازی حالت کندل واقعی (horizon=1).
+- `handlers.py`: فیلد GUI horizon خالی/0 = خودکار + hintهای سه فرم.
+- `wavenet_trainer.py`: `SHADBOT_STREAM_THRESHOLD_BYTES` — override آستانهٔ
+  stream برای ماشین کم‌رم (پیش‌فرض 512MB دست‌نخورده). در سندباکس 1GB بدون
+  این، متریالایز X=250MB → OOM/137.
+- `print_quality`: پیام QUALITY مخصوص score (واحد −1..+1، نه USD per bound)
+  + hint مخصوص score در حالت بدون لبه.
+- جدید: `scripts/fetch_1d_gold_yahoo.py`، `scripts/evaluate_trend_score_1d.py`.
+
+**دیتا:** Yahoo GC=F (فیوچرز COMEX — نزدیک‌ترین سری آزاد به spot) —
+2,513 کندل روزانه 2016-09-06..2026-09-04 → `XAUUSD/1D/v1.parquet`.
+شفاف: فیوچرز است نه spot بروکر؛ اپراتور با MT5 بازآموزی می‌کند.
+
+**آموزش + حکم صادقانه:**
+- `gold_trend_score_1d v1` (150×1D، 182 فیچر، seq2seq tanh، ۲ فولد):
+  val_mae فریز ~0.59 vs baseline 0.5705؛ ارزیابی کامل: skill −0.2%،
+  پیش‌بینی ثابت → **بدون لبه** — دقیقاً انتظار مستند پروپوزال. حالا با عدد.
+- `gold_trend_1d v1` (رنگ کندل — لبهٔ اثبات‌شدهٔ اپراتور): kept epoch 12 →
+  val_acc **55.7%** vs baseline 54.3% (+1.4pp)؛ اوج گذرا 57.7-59.4%؛
+  overfit بعد از ~epoch 12. سازگار با +3.8% خود اپراتور.
+- پیش‌بینی زنده برای 2026-09-07: score +0.0008 (بی‌رون) | رنگ: sell 50.8% (غیرقابل‌اقدام).
+- مسیر `/data` (inspector.forecast_at) با هر دو آرتیفکت تأیید شد.
+
+**تست/کیفیت:** ruff/black/mypy (همان ۹ خطای pre-existing TF) · کل suite
+سبز جز ۲ خطای env-dependent مستندشدهٔ `test_threshold_recorded` (روی HEAD هم هست).
+
+```
+تست‌ها: 1452+ passed · 2 failed (env-dependent مستند) · skipped
+```
+
+**گام بعد:** بازآموزی روی MT5 توسط اپراتور · فیچر رژیم‌محور برای score
+(DOW/vol-regime — پروپوزال جدا) · مجوز ۵/۶ در بکتست تریپل · بازآموزی
+trend_signal_5m با مانع روزانه.
+
+
 ## 2026-08-26 — گزارش جداگانهٔ تعادل لیبل train/validation در شروع آموزش
 
 **درخواست کاربر:** اولِ لاگِ آموزش برای دیتای آموزش و دیتای اعتبارسنجی جدا بنویس

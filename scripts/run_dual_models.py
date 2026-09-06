@@ -103,8 +103,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--label-horizon",
         type=int,
-        default=288,
-        help="trend_signal: label horizon in candles (default 288 = one day of 5M)",
+        default=0,
+        help="trend_signal/trend_score label horizon in candles; 0 = auto "
+        "(trend_score on 1D: 1 = the real next daily candle; else 288)",
     )
     parser.add_argument(
         "--train-ratio",
@@ -533,11 +534,19 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             "only padding. Consider --n-layers/--n-blocks (e.g. 4x2 -> RF=121)."
         )
     if role.model_id.startswith("gold_trend_score_"):
-        print(
-            f"  label rule: score = (close − open) / (high − low) of a synthetic "
-            f"daily candle built from the next {getattr(role, 'label_horizon', 288)} "
-            f"{timeframe} candles — regression output in (−1, +1)"
-        )
+        _lh = getattr(role, "label_horizon", 288)
+        if _lh == 1:
+            print(
+                f"  label rule: score = (close − open) / (high − low) of the NEXT REAL "
+                f"{timeframe} candle (فاز ۱۰۰ — real daily-candle target, "
+                "docs/Report/TREND_SCORE_1D_PROPOSAL.md) — regression output in (−1, +1)"
+            )
+        else:
+            print(
+                f"  label rule: score = (close − open) / (high − low) of a synthetic "
+                f"daily candle built from the next {_lh} "
+                f"{timeframe} candles — regression output in (−1, +1)"
+            )
     elif role.model_id.startswith("gold_trend_signal_"):
         print(
             f"  label rule: first {role.target.threshold}xATR14 move within the next "
@@ -860,7 +869,31 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     window = [row[: dataset.feature_count] for row in dataset.series[-role.window_size :]]
     last_close = float(candles[-1].close.amount)
 
-    if role.name == "range":
+    if role.model_id.startswith("gold_trend_score_"):
+        # فاز ۱۰۰: sanity prediction خودِ score — قبل از این، trend_score
+        # (name="range") وارد مسیر RangePredictor می‌شد که ۲ کانال high/low
+        # انتظار دارد و روی خروجی تک‌کاناله کرش می‌کرد.
+        import numpy as np
+
+        from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+        from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
+            _deserialize_model,
+        )
+
+        model = _deserialize_model(sanity_artifact.payload)
+        x = np.array([minmax_scale_window(window)], dtype=np.float32)
+        raw = model.predict(x, verbose=0)[0]
+        if raw.ndim == 2:
+            score = float(raw[-1, 0])
+        elif raw.ndim == 1:
+            score = float(raw[-1])
+        else:
+            score = float(raw)
+        direction = "صعودی" if score > 0.1 else ("نزولی" if score < -0.1 else "بی‌رون")
+        print(f"\n  PREDICTION — trend score of the next {timeframe} candle:")
+        print(f"    score    : {score:+.4f}  (−1..+1)")
+        print(f"    direction: {direction}")
+    elif role.name == "range":
         from ShadBotTrader.infrastructure.ai.dual_predictor import RangePredictor
         from ShadBotTrader.infrastructure.ai.target_builder import atr_from_candles
 
@@ -1299,7 +1332,16 @@ def print_quality(
         mae = final.get("val_mae", final.get("mae"))
         if mae is not None:
             # فاز ۹۵: واحد پیام با واحد تارگت یکی باشد
-            if target_units == "atr":
+            _is_score = getattr(role, "model_id", "").startswith("gold_trend_score_")
+            if _is_score:
+                # فاز ۱۰۰: score — واحد آن dimensionless (−1..+1) است؛
+                # «USD per bound» رنج اینجا بی‌معناست.
+                print(
+                    f"\n    val_mae {mae:.4f} — average miss of the predicted "
+                    f"trend score (target scale −1..+1; constant-median base "
+                    f"≈ |median| of the validation scores)."
+                )
+            elif target_units == "atr":
                 print(
                     f"\n    val_mae {mae:.4f} ATR14 — average miss of the "
                     f"predicted high/low, in ATR multiples."
@@ -1392,12 +1434,21 @@ def print_quality(
                         f"MAE {last_step_mae:.4f} is NO BETTER than a constant "
                         f"prediction — it has not learned anything usable yet."
                     )
-                    print(
-                        "    hint: single-candle wick size (in ATR units) is nearly "
-                        "unpredictable — the median IS near-optimal there. Skill "
-                        "shows up at longer horizons where drift accumulates "
-                        "(retrain with --horizon 2..5 and compare the verdicts)."
-                    )
+                    if _is_score:
+                        print(
+                            "    hint (فاز ۱۰۰): one-day drift score is nearly "
+                            "unpredictable from price-only windows — the mean IS "
+                            "near-optimal there (TREND_SCORE_1D_PROPOSAL.md). Edge, "
+                            "if any, needs regime features (DOW, vol regime) or the "
+                            "session/trend filters the backtests already proved."
+                        )
+                    else:
+                        print(
+                            "    hint: single-candle wick size (in ATR units) is nearly "
+                            "unpredictable — the median IS near-optimal there. Skill "
+                            "shows up at longer horizons where drift accumulates "
+                            "(retrain with --horizon 2..5 and compare the verdicts)."
+                        )
 
             bound_labels = (
                 ("val_high_mae", "high MAE"),
@@ -1549,12 +1600,20 @@ def main(argv: list[str] | None = None) -> int:
 
     if wants_trend_score:
         # فاز ۹۸-ب: score روند — رگرسیون پیوسته (−1..+1)
+        # فاز ۱۰۰: پیش‌فرض افق — 1D → 1 (کندل واقعی فردا)، بقیه → 288
         ts_tf = (args.signal_timeframe or "5M").strip().upper()
+        _ts_horizon = args.label_horizon or (1 if ts_tf == "1D" else 288)
+        _ts_what = (
+            f"REAL next {ts_tf} candle"
+            if _ts_horizon == 1
+            else f"synthetic candle from the next {_ts_horizon} {ts_tf} candles"
+        )
+        print(f"  trend_score target: {_ts_what}")
         run_role(
             trend_score_model_role(
                 timeframe=ts_tf,
                 window_size=args.window,
-                label_horizon=args.label_horizon,
+                label_horizon=_ts_horizon,
                 n_layers_per_block=args.n_layers or None,
                 n_blocks=args.n_blocks or None,
             ),
@@ -1570,7 +1629,8 @@ def main(argv: list[str] | None = None) -> int:
                 timeframe=ts_tf,
                 threshold=args.atr_mult,
                 window_size=args.window,
-                label_horizon=args.label_horizon,
+                # فاز ۱۰۰: 0 = پیش‌فرض نقش (288) — نه 0!
+                label_horizon=args.label_horizon or 288,
                 n_layers_per_block=args.n_layers or None,
                 n_blocks=args.n_blocks or None,
             ),

@@ -457,10 +457,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "label_horizon",
-                    "Trend-signal horizon (candles)",
-                    "288",
+                    "Trend-signal/score horizon (candles)",
+                    "",
                     kind="number",
-                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
+                    hint=(
+                        "خالی = خودکار | trend_signal: 288 کندل 5M = یک روز | "
+                        "trend_score روی 1D: خودکار = 1 یعنی score از کندل واقعی فردا"
+                    ),
                 ),
                 CommandField(
                     "resume",
@@ -1146,10 +1149,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "label_horizon",
-                    "Trend-signal horizon (candles)",
-                    "288",
+                    "Trend-signal/score horizon (candles)",
+                    "",
                     kind="number",
-                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
+                    hint=(
+                        "خالی = خودکار | trend_signal: 288 کندل 5M = یک روز | "
+                        "trend_score روی 1D: خودکار = 1 یعنی score از کندل واقعی فردا"
+                    ),
                 ),
                 CommandField(
                     "epochs",
@@ -1246,7 +1252,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                         "trend = رنگ کندل بعدی (سبز/قرمز) — پیشنهاد: 1D | "
                         "trend_signal = BUY/HOLD/SELL روی پنجرهٔ rolling "
                         "(دیتاست 5M، Window=288، Barrier=0.5×ATR14) | "
-                        "trend_score = score روند (−1..+1) روی دیتاست 5M"
+                        "trend_score = score روند (−1..+1) — روی 1D: کندل واقعی فردا"
                     ),
                 ),
                 CommandField(
@@ -1272,10 +1278,13 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField(
                     "label_horizon",
-                    "Trend-signal horizon (candles)",
-                    "288",
+                    "Trend-signal/score horizon (candles)",
+                    "",
                     kind="number",
-                    hint="فقط trend_signal: افق برچسب — 288 کندل 5M = یک روز کامل",
+                    hint=(
+                        "خالی = خودکار | trend_signal: 288 کندل 5M = یک روز | "
+                        "trend_score روی 1D: خودکار = 1 یعنی score از کندل واقعی فردا"
+                    ),
                 ),
                 CommandField("window", "Window rows", "100", kind="number"),
                 CommandField(
@@ -3596,6 +3605,15 @@ class AccountCommandHandlers(CommandHandlers):
         _rng_h = max(command.integer("range_horizon", 1), 1)
         if role in ("range", "all") and _rng_h != 1:
             _arch_args += ["--horizon", str(_rng_h)]
+        # فاز ۱۰۰: label_horizon خالی/0 = خودکار — اسکریپت برای
+        # trend_score روی 1D افق 1 (کندل واقعی فردا) و برای بقیه
+        # 288 برمی‌دارد. عدد غیرصفر کاربر عیناً پاس می‌شود.
+        _lh = command.integer("label_horizon", 0)
+        _lh_args = (
+            ["--label-horizon", str(max(_lh, 1))]
+            if role in ("trend_signal", "trend_score") and _lh
+            else []
+        )
         return self._run_script(
             command,
             [
@@ -3622,11 +3640,7 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 500), 2)),
-                *(
-                    ["--label-horizon", str(max(command.integer("label_horizon", 288), 1))]
-                    if role in ("trend_signal", "trend_score")
-                    else []
-                ),
+                *_lh_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 100.0)),
                 "--threshold",

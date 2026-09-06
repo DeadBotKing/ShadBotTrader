@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T12:54:36.669095+00:00
+- Snapshot generated at: 2026-09-06T06:33:29.228314+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 2a4b74efb77f456ae7c74c4bbf40a4b473acb06d
-- Dirty: yes (1 files)
+- Commit: a74d288b32db809e61589cd3f9c5e9b047a651fc
+- Dirty: yes (2 files)
 - Recent commits:
+  - a74d288 docs: comprehensive CURRENT_STATE + session summary phases 95-99
+  - da252ed Phase 98b fix: trend_score output Dense(1, tanh) instead of Dense(2, linear)
+  - e41c764 Phase 99 UI: dynamic forecast table header for score/signal models
+  - c6cdc0e Phase 99: /data forecast_at handles trend_score and trend_signal outputs
+  - 5fb02fc Phase 99 fix: gold_trend_score/signal go through range path, not color
+  - cf800a4 Phase 98b fix: /data model_role matches the trained role
+  - d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'
+  - df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride
+  - 1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride
   - 2a4b74e Phase 98b fix: /data only shows same-timeframe models
-  - dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter
-  - 23c6dfa Phase 98b fix: 'trend: color is not defined' — undefined JS variable
-  - 2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models
-  - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
-  - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
-  - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
-  - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
-  - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
-  - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
 
 ## Quality Gate
 
@@ -61,12 +61,12 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 822
+- Total files: 823
 - Source files: 319
 - Test files: 145
-- Documentation files: 140
+- Documentation files: 141
 - Legacy files: 176
-- Total Python lines: 121448
+- Total Python lines: 121631
 - Modules: 464
 - Classes: 803
 - Functions: 4551

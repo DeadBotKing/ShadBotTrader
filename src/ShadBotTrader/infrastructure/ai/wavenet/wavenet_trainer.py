@@ -9,6 +9,7 @@ into a training window (Phase 13, sections 32, 46-47).
 
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
@@ -670,7 +671,13 @@ class WavenetTrainer(ModelTrainer):
     #: Above this many windows a fold is streamed rather than materialised.
     #: 20,000 windows of 500x123 float32 is already 4.9 GB; below it the
     #: arrays are small enough that the simpler path stays faster.
-    STREAM_THRESHOLD_BYTES = 512 * 1024 * 1024
+    #:
+    #: فاز ۱۰۰: قابل override با ``SHADBOT_STREAM_THRESHOLD_BYTES`` —
+    #: سندباکس/کانتینر با RAM کوچک (1GB) مجبور است همیشه stream کند،
+    #: هرچند ماتریس زیر آستانه باشد (مثلاً 1 = همیشه streamed).
+    STREAM_THRESHOLD_BYTES = int(
+        os.environ.get("SHADBOT_STREAM_THRESHOLD_BYTES", 512 * 1024 * 1024)
+    )
 
     def _range_validation_metrics(
         self,

@@ -614,6 +614,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/PHASE100_REPORT.md",
+      "sha256": "5684676e97b95c2a8482fcdc0de14cec7b861a294eb0c2fd073b83758685c12a",
+      "size_bytes": 6730
+    },
+    {
+      "category": "documentation",
       "path": "docs/Report/PHASE19_REPORT.md",
       "sha256": "79e9adc7592221f0c6d673a91ba0b588378d6ba756af822cb161f284d5b971e5",
       "size_bytes": 10200
@@ -890,6 +896,12 @@
     },
     {
       "category": "documentation",
+      "path": "docs/Report/TREND_SCORE_1D_PROPOSAL.md",
+      "sha256": "a088ce6fa260215a011b365a23aeff17c12ce1adbfcd4c7069fbb0d2573b8a9f",
+      "size_bytes": 1471
+    },
+    {
+      "category": "documentation",
       "path": "docs/SESSION_2026-08-26.md",
       "sha256": "a34c4fa82a4948a55af3714f276d41e1c12c17ed50bdd918ba1b3226066f16f3",
       "size_bytes": 9854
@@ -963,8 +975,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "4f89c6ab21129ffea67992b673a9ac029dc964fdeeb98b62522bd7bcc604a236",
-      "size_bytes": 200648
+      "sha256": "8ab44f7b3e6546509499e5911680018f324c3804bd5f7b9ba57b07fd2e525f3a",
+      "size_bytes": 204419
     },
     {
       "category": "legacy",
@@ -2067,14 +2079,26 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
-      "size_bytes": 26005
+      "sha256": "3d00f5be128ff1c3722de572a0e23e2f3472be1d4d843bcdee7d02b8d9df918f",
+      "size_bytes": 26007
+    },
+    {
+      "category": "script",
+      "path": "scripts/evaluate_trend_score_1d.py",
+      "sha256": "cf8c17610ca37da853ed88968517caa638ef9f7b852475ebae61882e3ad9cdef",
+      "size_bytes": 8258
     },
     {
       "category": "script",
       "path": "scripts/experiments_1h_horizons.md",
       "sha256": "97d578a99974691f27ee225ef0c4fc3324754ec6317e97991e048cdb71c246cf",
       "size_bytes": 3175
+    },
+    {
+      "category": "script",
+      "path": "scripts/fetch_1d_gold_yahoo.py",
+      "sha256": "86518ea4309a17bc038e79f42ec0c1c94a2d0bf148267abf8a93eb81e6fe771f",
+      "size_bytes": 6041
     },
     {
       "category": "script",
@@ -2133,8 +2157,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "3c8aff9245916a19cc5379e5ce83dc773ba0de1c0222cff1b84137a27b1b0afb",
-      "size_bytes": 67432
+      "sha256": "c7cfbbb55db3a297f96cc3d003a469e035a99533e821e6f74892363b14932365",
+      "size_bytes": 71810
     },
     {
       "category": "script",
@@ -2301,8 +2325,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/application/services/dual_model_service.py",
-      "sha256": "704b8ec36fbfc3886773daa0fa38b1c017a751d14407e182b522bdecbc105662",
-      "size_bytes": 29259
+      "sha256": "a8cee8c52353a4eca6458b1772474063184cd826da82aa9044adbd0e6b4dd221",
+      "size_bytes": 29437
     },
     {
       "category": "source",
@@ -3219,8 +3243,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/model_roles.py",
-      "sha256": "d76e7ca02d55636e2dde620fdfc787ec1137728484c06a0e6ab2382e728050d4",
-      "size_bytes": 15380
+      "sha256": "e75bf0e0764b62276cf280758b12fbd5bb0c5417f363f61840201729ee42a066",
+      "size_bytes": 16112
     },
     {
       "category": "source",
@@ -3249,8 +3273,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/target_builder.py",
-      "sha256": "21343c0b6b52fd192fa87e5d9fb6b00a6534a2b0e0eda03169853702d0ee752a",
-      "size_bytes": 31444
+      "sha256": "4bffbf5ac5e5d958e3ab1606eafa8f8968c003a2c8745c6e62ea38845199ed4f",
+      "size_bytes": 31947
     },
     {
       "category": "source",
@@ -3273,14 +3297,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet.py",
-      "sha256": "bdd538853e0b818f86cd420a2678ef5d4d84c8e8e47412e4b3059b8093393e3d",
-      "size_bytes": 12745
+      "sha256": "15e9780dbab56f4ee9d85a9fb84a73d520b3abb610a386923343d870ff9e9976",
+      "size_bytes": 13098
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "03ca7f1754fc88f1e1e1e89a980256e4309fd3fc8507f0f565dee1494c050312",
-      "size_bytes": 51655
+      "sha256": "10008fff1027f94287cd1d6af2b782b3488da5082768f96c088127ca767b9ac8",
+      "size_bytes": 52257
     },
     {
       "category": "source",
@@ -3939,8 +3963,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "16d328b6b3c43e1e2e926fefae9ceac543e701676f9315050c458a7ba527f879",
-      "size_bytes": 165376
+      "sha256": "66dbb7a96608d840eea8cf2c9a4f38962096529b963eae0311ab713671679b73",
+      "size_bytes": 166173
     },
     {
       "category": "source",
@@ -3963,8 +3987,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/gateway/range_forecast_inspector.py",
-      "sha256": "0174f958e9933126bf6f8181e1371af9e953e4ed74729bc2d8f35b9c2eca13e0",
-      "size_bytes": 16263
+      "sha256": "5d8257fc8136475433eed2773808763cd4b92f2d8ded6c1914f6337c3626e65e",
+      "size_bytes": 16372
     },
     {
       "category": "source",
@@ -4999,24 +5023,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-06T06:33:29.228314+00:00",
+  "generated_at": "2026-09-06T17:33:48.229069+00:00",
   "git": {
     "branch": "main",
-    "commit": "a74d288b32db809e61589cd3f9c5e9b047a651fc",
+    "commit": "a0624740938188f24862cd302cedb82f854ae044",
     "dirty": true,
-    "dirty_files": 2,
+    "dirty_files": 21,
     "is_repo": true,
     "recent_commits": [
+      "a062474 docs: trend_score_1d proposal \u2014 real daily candle score target analysis",
+      "a7f1ff9 docs: score constant across candles \u2014 model converged to mean, not a code bug",
+      "57f9467 Phase 98b: full target statistics printed before trend_score training",
+      "b97546c Phase 98b fix: /data inspector model_role \u2192 range for trend_score (184 features, 1-output tanh \u2014 verified end-to-end in sandbox)",
+      "2b634ea Phase 98b: trend_score uses full range seq2seq architecture with 1 output",
+      "997516e Phase 98b: trend_score architecture verified \u2014 Dense(1, tanh) \u2713",
+      "a013858 Phase 98b: /data trend endpoint handles all 3 model types (score, signal, color)",
       "a74d288 docs: comprehensive CURRENT_STATE + session summary phases 95-99",
       "da252ed Phase 98b fix: trend_score output Dense(1, tanh) instead of Dense(2, linear)",
-      "e41c764 Phase 99 UI: dynamic forecast table header for score/signal models",
-      "c6cdc0e Phase 99: /data forecast_at handles trend_score and trend_signal outputs",
-      "5fb02fc Phase 99 fix: gold_trend_score/signal go through range path, not color",
-      "cf800a4 Phase 98b fix: /data model_role matches the trained role",
-      "d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'",
-      "df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride",
-      "1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride",
-      "2a4b74e Phase 98b fix: /data only shows same-timeframe models"
+      "e41c764 Phase 99 UI: dynamic forecast table header for score/signal models"
     ]
   },
   "modules": [
@@ -11514,18 +11538,18 @@
   "statistics": {
     "class_count": 803,
     "config_file_count": 3,
-    "documentation_file_count": 141,
+    "documentation_file_count": 143,
     "external_dependency_count": 14,
     "function_count": 4551,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
     "module_count": 464,
     "source_file_count": 319,
-    "source_lines": 52010,
+    "source_lines": 52067,
     "test_file_count": 145,
     "test_lines": 24392,
-    "total_file_count": 823,
-    "total_lines": 121631
+    "total_file_count": 827,
+    "total_lines": 122104
   },
   "test_file_count": 145
 }

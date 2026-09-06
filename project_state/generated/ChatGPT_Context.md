@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-06T06:33:29.228314+00:00
+- Snapshot generated at: 2026-09-06T17:33:48.229069+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: a74d288b32db809e61589cd3f9c5e9b047a651fc
-- Dirty: yes (2 files)
+- Commit: a0624740938188f24862cd302cedb82f854ae044
+- Dirty: yes (21 files)
 - Recent commits:
+  - a062474 docs: trend_score_1d proposal — real daily candle score target analysis
+  - a7f1ff9 docs: score constant across candles — model converged to mean, not a code bug
+  - 57f9467 Phase 98b: full target statistics printed before trend_score training
+  - b97546c Phase 98b fix: /data inspector model_role → range for trend_score (184 features, 1-output tanh — verified end-to-end in sandbox)
+  - 2b634ea Phase 98b: trend_score uses full range seq2seq architecture with 1 output
+  - 997516e Phase 98b: trend_score architecture verified — Dense(1, tanh) ✓
+  - a013858 Phase 98b: /data trend endpoint handles all 3 model types (score, signal, color)
   - a74d288 docs: comprehensive CURRENT_STATE + session summary phases 95-99
   - da252ed Phase 98b fix: trend_score output Dense(1, tanh) instead of Dense(2, linear)
   - e41c764 Phase 99 UI: dynamic forecast table header for score/signal models
-  - c6cdc0e Phase 99: /data forecast_at handles trend_score and trend_signal outputs
-  - 5fb02fc Phase 99 fix: gold_trend_score/signal go through range path, not color
-  - cf800a4 Phase 98b fix: /data model_role matches the trained role
-  - d0f92be Phase 98b fix: show REAL server error instead of hardcoded 'not saved'
-  - df38839 Phase 98b FINAL fix: fetchTrendColor never used modelOverride
-  - 1648634 Phase 98b ROOT CAUSE fix: fetchTrendColor ignored modelOverride
-  - 2a4b74e Phase 98b fix: /data only shows same-timeframe models
 
 ## Quality Gate
 
@@ -61,12 +61,12 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 823
+- Total files: 827
 - Source files: 319
 - Test files: 145
-- Documentation files: 141
+- Documentation files: 143
 - Legacy files: 176
-- Total Python lines: 121631
+- Total Python lines: 122104
 - Modules: 464
 - Classes: 803
 - Functions: 4551

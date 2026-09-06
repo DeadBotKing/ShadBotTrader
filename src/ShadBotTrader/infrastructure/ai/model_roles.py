@@ -267,7 +267,21 @@ def trend_score_model_role(
     خروجی: عدد پیوسته در (−1, +1) —
       مثبت = روند صعودی، منفی = نزولی، نزدیک صفر = بی‌رون.
     loss = Huber (مثل range)، رگرسیون خالص.
+
+    فاز ۱۰۰ (پروپوزال TREND_SCORE_1D_PROPOSAL): حالت **کندل واقعی** —
+    ``timeframe="1D"`` با ``label_horizon=1`` یعنی تارگت score از فقط
+    کندل روزانهٔ فردا ساخته می‌شود:
+      score = (close[D1] − open[D1]) / (high[D1] − low[D1])
+    نه از کندل مصنوعی تجمعی 288×5M. مزیت: تارگت از کندل واقعی بروکر
+    (با gapها و wickهای واقعی) و پنجرهٔ ورودی 150 کندل 1D مثل range.
+    پیش‌فرض‌ها (--label-horizon خالی): 1D → 1 (کندل واقعی)، بقیه → 288.
     """
+    _real_candle = label_horizon == 1
+    _what = (
+        f"the NEXT REAL {timeframe} candle"
+        if _real_candle
+        else f"a synthetic daily candle built from the next {label_horizon} {timeframe} candles"
+    )
     return ModelRole(
         name="range",  # reuse: رگرسیون + Huber + MAE metric
         target=PredictionTarget(
@@ -277,11 +291,7 @@ def trend_score_model_role(
             num_classes=1,  # فاز ۹۸-ب: score رگرسیونی — یک خروجی نه دو
         ),
         model_id=f"gold_trend_score_{timeframe.strip().lower()}",
-        description=(
-            f"Trend score: predicts the directional strength "
-            f"(−1..+1) of a synthetic daily candle built from the next "
-            f"{label_horizon} {timeframe} candles."
-        ),
+        description=(f"Trend score: predicts the directional strength " f"(−1..+1) of {_what}."),
         window_size=window_size,
         n_filters=48,
         n_layers_per_block=n_layers_per_block or 4,

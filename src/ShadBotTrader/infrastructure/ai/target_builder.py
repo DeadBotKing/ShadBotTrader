@@ -584,7 +584,7 @@ def build_trend_score_labels(
     candles: Sequence[Candle],
     horizon: int = 288,
 ) -> TrendScoreLabels:
-    """برچسب score روند: کندل تجمعی از 288 کندل آینده (فاز ۹۹).
+    """برچسب score روند: کندل تجمعی از ``horizon`` کندل آینده (فاز ۹۹).
 
     برای هر t که حداقل horizon کندل جلوتر دارد:
       open  = open[t+1]
@@ -592,6 +592,12 @@ def build_trend_score_labels(
       high  = max(high[t+1..t+horizon])
       low   = min(low[t+1..t+horizon])
       score = (close − open) / (high − low)
+
+    فاز ۱۰۰ (TREND_SCORE_1D_PROPOSAL): ``horizon=1`` روی کندل‌های 1D
+    یعنی score از **کندل روزانهٔ واقعی فردا** — همان فرمول بالا با
+    open/close/high/low خودِ کندل t+1 (هیچ تجمعی در کار نیست). این
+    حالتِ پیش‌نهادیِ مستندشده در docs/Report/TREND_SCORE_1D_PROPOSAL.md
+    است و جای تارگت مصنوعی 288×5M را برای مدل روزانه می‌گیرد.
     """
     if horizon < 1:
         raise ValidationError("horizon must be >= 1")

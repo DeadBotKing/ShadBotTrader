@@ -51,24 +51,34 @@ SL نهایی: ≥ min_sl_distance (GUI) و ≥ 2×spread
 - symbol_select: قبل از هر fetch — خطای قابل‌فهم برای نمونه غلط/حساس به حروف
 - mapping: XAUUSD → XAUUSD_i (Alpari)
 
-## مدل‌های score (فاز ۹۸-ب)
+## مدل‌های score (فاز ۹۸-ب + فاز ۱۰۰)
 
 ```
-gold_trend_score_5m: رگرسیون خالص
-تارگت: score = (close−open)/(high−low) ∈ (−1,+1)
-خروجی: Dense(1, tanh)
-loss: Huber
+gold_trend_score_5m: رگرسیون خالص — تارگت مصنوعی 288×5M (قدیمی)
+gold_trend_score_1d: فاز ۱۰۰ — تارگت از کندل واقعی 1D فردا:
+  score = (close[D1]−open[D1])/(high[D1]−low[D1]) ∈ (−1,+1)
+خروجی: Dense(1, tanh) | loss: Huber | window=150×1D
+پیش‌فرض خودکار: --label-horizon خالی → 1D:1 (واقعی)، بقیه: 288
 معنی: +0.9 = صعود قوی، −0.9 = نزول قوی، ~0 = بی‌رون
-```
+
+v1 سندباکس (2026-09-06): آموزش روی 2,513 کندل واقعی Yahoo GC=F (10 سال):
+بدون لبه (skill −0.2% vs ثابت) — رانش یک‌روزه از فیچر قیمتی خالص
+غیرقابل‌پیش‌بینی است؛ دقیقاً انتظار مستند TREND_SCORE_1D_PROPOSAL.
+لبه فقط از فیچر رژیم‌محور (DOW/vol-regime) یا فیلترهای session می‌آید.
+gold_trend_1d v1 سندباکس (همان دیتا): val_acc 55.7% vs 54.3% (+1.4pp) —
+سازگار با لبهٔ اثبات‌شدهٔ اپراتور (+3.8%)؛ kept در epoch 12.
 
 ## دستورات کلیدی
 
 ```bash
-# آموزش trend_score
+# آموزش trend_score — حالت کندل واقعی 1D (فاز ۱۰۰؛ label-horizon خودکار=1)
 python scripts/run_dual_models.py --with-features --symbol XAUUSD \
-  --model trend_score --range-timeframes 5M --signal-timeframe 5M \
-  --epochs 50 --folds 3 --window 288 --label-horizon 288 \
+  --model trend_score --signal-timeframe 1D \
+  --epochs 50 --folds 3 --window 150 \
   --learning-rate 0.0008 --storage-root datasets
+
+# ماشین کم‌رم (سندباکس/کانتینر 1GB): استریم اجباری
+SHADBOT_STREAM_THRESHOLD_BYTES=1000000  # اختیاری
 
 # آموزش trend_signal (سه‌کلاسه)
 python scripts/run_dual_models.py --with-features --symbol XAUUSD \
@@ -96,7 +106,10 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 
 ## گام بعدی
 
-1. آموزش gold_trend_signal_5m با مانع روزانه فیکس‌شده
-2. آموزش gold_trend_score_5m (در جریان)
+1. آموزش gold_trend_signal_5m با مانع روزانه فیکس‌شده (دستگاه اپراتور)
+2. بازآموزی gold_trend_score_1d و gold_trend_1d روی دیتای MT5 اپراتور
+   (سیم‌کشی فاز ۱۰۰ آماده است — فقط Fetch 1D + همان دستور)
+3. فیچر رژیم‌محور برای score (DOW/vol-regime) — پروپوزال جدا لازم دارد
+4. مجوز ۵ (رنگ کندل) و مجوز ۶ (probهای trend_signal) در بکتست تریپل
 3. بکتست triple با مدل‌های جدید
 4. مجوز ۶: رنگ ترند از gold_trend_<tf> در بکتست

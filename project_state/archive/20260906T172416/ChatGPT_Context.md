@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-05T12:35:51.653275+00:00
+- Snapshot generated at: 2026-09-06T17:20:10.865233+00:00
 
 ## Current Architecture
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: dd32522b9308a420347661d6e545ecd61c9a1b14
-- Dirty: yes (3 files)
+- Commit: a0624740938188f24862cd302cedb82f854ae044
+- Dirty: yes (8 files)
 - Recent commits:
-  - dd32522 Phase 98b fix: fetchTrendColor missing modelOverride parameter
-  - 23c6dfa Phase 98b fix: 'trend: color is not defined' — undefined JS variable
-  - 2faeecb Phase 98b fix: remove automatic trend-color fetch for non-trend models
-  - 5575ce4 Phase 98b fix: /data trend color lookup + ATR barrier tests
-  - cb2f30f Phase 98b fix: trend_score in the Train model dropdown
-  - 91e0af5 Phase 98b: trend_score model (regression on daily-candle strength score) + HOLD fix
-  - 0892f65 Phase 99 UI: trend_signal in Train/Retrain/LR-sweep forms
-  - 7dcbefa docs: gold_trend_1d 400x3 run analysis — 57.0% vs 53.2% baseline, edge thin
-  - 9754480 Phase 99: trend-signal model — 3-class BUY/HOLD/SELL on rolling 288x5M
-  - c5fbf12 Phase 98 fix: trend panel was never shown (render-side, not server-side)
+  - a062474 docs: trend_score_1d proposal — real daily candle score target analysis
+  - a7f1ff9 docs: score constant across candles — model converged to mean, not a code bug
+  - 57f9467 Phase 98b: full target statistics printed before trend_score training
+  - b97546c Phase 98b fix: /data inspector model_role → range for trend_score (184 features, 1-output tanh — verified end-to-end in sandbox)
+  - 2b634ea Phase 98b: trend_score uses full range seq2seq architecture with 1 output
+  - 997516e Phase 98b: trend_score architecture verified — Dense(1, tanh) ✓
+  - a013858 Phase 98b: /data trend endpoint handles all 3 model types (score, signal, color)
+  - a74d288 docs: comprehensive CURRENT_STATE + session summary phases 95-99
+  - da252ed Phase 98b fix: trend_score output Dense(1, tanh) instead of Dense(2, linear)
+  - e41c764 Phase 99 UI: dynamic forecast table header for score/signal models
 
 ## Quality Gate
 
@@ -61,12 +61,12 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 822
+- Total files: 827
 - Source files: 319
 - Test files: 145
-- Documentation files: 140
+- Documentation files: 143
 - Legacy files: 176
-- Total Python lines: 121450
+- Total Python lines: 122103
 - Modules: 464
 - Classes: 803
 - Functions: 4551
