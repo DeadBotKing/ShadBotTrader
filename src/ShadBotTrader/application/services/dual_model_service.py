@@ -515,6 +515,8 @@ class DualModelService:
             batch_size=batch_size,
             output_units=role.output_units,
             output_activation=role.output_activation,
+            # فاز ۹۸-ب: برای trend_score (seq2seq با ۱ خروجی score)
+            output_channels=(1 if role.model_id.startswith("gold_trend_score_") else None),
             # فاز ۶۰: loss/metric همیشه از role می‌آید. قبلاً برای مدل
             # سیگنال ``None`` پاس می‌شد؛ گیتِ callbacks در trainer
             # (``if self._loss in (…)``) هرگز match نمی‌شد و

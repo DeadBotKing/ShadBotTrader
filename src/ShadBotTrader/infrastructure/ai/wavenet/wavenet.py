@@ -49,6 +49,7 @@ def _gated_activation_unit_class() -> Any:
 
     try:
         import keras as _keras
+
         _register = _keras.saving.register_keras_serializable
     except (ImportError, AttributeError):
         _register = tf.keras.utils.register_keras_serializable
@@ -96,6 +97,7 @@ def _last_timestep_layer_class() -> Any:
 
     try:
         import keras as _keras
+
         _register = _keras.saving.register_keras_serializable
     except (ImportError, AttributeError):
         _register = tf.keras.utils.register_keras_serializable
@@ -137,11 +139,11 @@ def custom_objects() -> Dict[str, Any]:
     )
 
     return {
-        "GatedActivationUnit":               gau,
+        "GatedActivationUnit": gau,
         "ShadBotTrader>GatedActivationUnit": gau,
-        "_GatedActivationUnit":              gau,   # backwards compat
-        "LastTimestep":                      lt,
-        "ShadBotTrader>LastTimestep":        lt,
+        "_GatedActivationUnit": gau,  # backwards compat
+        "LastTimestep": lt,
+        "ShadBotTrader>LastTimestep": lt,
         **range_custom_objects(),
     }
 
@@ -149,6 +151,7 @@ def custom_objects() -> Dict[str, Any]:
 # --------------------------------------------------------------------------
 # Causal convolutions
 # --------------------------------------------------------------------------
+
 
 def causal_conv1d(
     inputs: Any,
@@ -227,6 +230,7 @@ def wavenet_residual_block(
 # Main build
 # --------------------------------------------------------------------------
 
+
 def build_wavenet(
     window_size: int,
     n_features: int,
@@ -242,6 +246,7 @@ def build_wavenet(
     is_regression: bool = False,
     seq2seq: bool = False,
     horizon: int = 5,
+    output_channels: int | None = None,
 ) -> Any:
     """Build WaveNet with sequence-aware head (no Flatten).
 
@@ -311,7 +316,8 @@ def build_wavenet(
         #
         # SeparableConv1D causal: هر timestep t فقط از t' <= t اطلاع داره
         # gradient مستقیم به همه لایه‌های WaveNet میرسه (150× signal)
-        n_out = horizon * 2   # برای هر step: high + low
+        # فاز ۹۸-ب: trend_score → 1 خروجی score؛ range → horizon*2 High/Low
+        n_out = output_channels if output_channels is not None else horizon * 2
         z = causal_separable_conv1d(
             z,
             filters=max(n_filters // 2, n_out),
@@ -321,20 +327,23 @@ def build_wavenet(
             activation="relu",
             name="seq2seq_pre",
         )
+        # فاز ۹۸-ب: trend_score (output_channels=1) → tanh (bounded −1..+1)
+        # range (output_channels=None) → linear (offsets ATR خارج از بازه)
+        seq2seq_activation = "tanh" if output_channels == 1 else "linear"
         output = causal_separable_conv1d(
             z,
             filters=n_out,
             kernel_size=1,
             l2=l2,
             depth_multiplier=1,
-            activation="linear",
+            activation=seq2seq_activation,
             name="seq2seq_out",
         )
 
     elif is_regression:
         # ── Regression head (فاز ۹۸-ب): Conv1D + tanh برای bounded score ──
         last = _last_timestep_layer_class()(name="last_timestep")(z)
-        avg  = tf.keras.layers.GlobalAveragePooling1D(name="global_avg_pool")(z)
+        avg = tf.keras.layers.GlobalAveragePooling1D(name="global_avg_pool")(z)
         z = tf.keras.layers.Concatenate(name="last_avg_concat")([last, avg])
         z = tf.keras.layers.Dense(
             units=32,

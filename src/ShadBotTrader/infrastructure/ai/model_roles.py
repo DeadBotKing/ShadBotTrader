@@ -289,7 +289,7 @@ def trend_score_model_role(
         depth_multiplier=6,
         dropout=0.10,
         l2=2.0e-4,
-        seq2seq=False,
+        seq2seq=True,
         label_horizon=label_horizon,
     )
 

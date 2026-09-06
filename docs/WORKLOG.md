@@ -3862,3 +3862,19 @@ total params: 417,169 (4×3 blocks, 288×184, n_filters=48)
 معماری: range pipeline کامل (WaveNet blocks + Huber + MAE) با فقط
 یک خروجی score به‌جای دو خروجی High/Low — دقیقاً همان چیزی که
 اپراتور خواسته بود.
+
+### فاز ۹۸-ب (معماری): trend_score از معماری کامل range (seq2seq) استفاده می‌کند
+
+**درخواست اپراتور:** معماری trend_score باید مثل range باشد — با WaveNet
+blocks کامل + seq2seq head، فقط با 1 خروجی به‌جای 2.
+
+**قبلی (غلط):** seq2seq=False → Dense head (فقط آخرین timestep + GlobalAvg)
+**جدید (درست):** seq2seq=True → همهٔ WaveNet blocks + seq2seq_pre + seq2seq_out
+
+**تغییرات:**
+- build_wavenet: output_channels param (None = horizon×2 مثل قبل، 1 = score)
+- trend_score: seq2seq=True + output_channels=1 → خروجی (None, 288, 1) با tanh
+- range: خروجی (None, 150, 2) با linear — بدون تغییر
+- trainer + service: output_channels پاس داده می‌شود
+
+تأیید: build_wavenet OK برای هر دو مدل ✓

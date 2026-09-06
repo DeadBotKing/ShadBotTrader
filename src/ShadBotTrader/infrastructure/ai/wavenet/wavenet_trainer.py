@@ -243,6 +243,7 @@ class WavenetTrainer(ModelTrainer):
         resume_weights: bytes | None = None,
         seq2seq: bool = False,
         horizon: int = 5,
+        output_channels: int | None = None,
         early_stopping_patience: int = 0,
         reduce_lr_patience: int = 0,
     ) -> None:
@@ -303,6 +304,7 @@ class WavenetTrainer(ModelTrainer):
         self._resume_weights = resume_weights
         self._seq2seq = bool(seq2seq)
         self._horizon_s2s = max(1, int(horizon))
+        self._output_channels = output_channels
         #: Called as ``(model, epoch, logs)`` after each epoch so the
         #: caller can checkpoint. None disables checkpointing.
         self.on_epoch_model: Any = None
@@ -479,6 +481,7 @@ class WavenetTrainer(ModelTrainer):
                 dropout=getattr(self, "_dropout", 0.10),
                 seq2seq=self._seq2seq,
                 horizon=self._horizon_s2s,
+                output_channels=self._output_channels,
             )
 
             # Phase 50: resume — warm-start from a saved checkpoint.
@@ -972,6 +975,7 @@ def _build_compiled(
     dropout: float = 0.10,
     seq2seq: bool = False,
     horizon: int = 5,
+    output_channels: int | None = None,
 ):
     """Build and compile the network for the requested task.
 
@@ -1023,6 +1027,7 @@ def _build_compiled(
         is_regression=_is_regression,
         seq2seq=seq2seq,
         horizon=horizon,
+        output_channels=output_channels,
     )
 
     if loss in ("mse", "mean_squared_error"):
