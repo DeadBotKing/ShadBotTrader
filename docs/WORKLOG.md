@@ -3841,3 +3841,14 @@ shape mismatch می‌داد.
 - num_classes=1 برای trend_score (validated: 1/2/3)
 - activation: linear → tanh (خروجی bounded −1..+1)
 - Dense باقی ماند (بعد از GlobalAvgPool داده flat است — Conv1D معادل است)
+
+### فاز ۹۸-ب (رفع): /data برای همهٔ ۳ نوع مدل ترند خروجی مخصوص
+
+endpoint `/api/trend-forecast` و `fetchTrendColor` بازنویسی شدند تا
+سه نوع مدل ترند را تشخیص داده و خروجی مخصوص هر کدام را برگردانند:
+
+| مدل | target_units | خروجی |
+|-----|-------------|-------|
+| gold_trend_score_* | score | Score + direction + strength |
+| gold_trend_signal_* | trend_signal | SELL/HOLD/BUY احتمالات |
+| gold_trend_<tf> | color | GREEN/RED + درصد |

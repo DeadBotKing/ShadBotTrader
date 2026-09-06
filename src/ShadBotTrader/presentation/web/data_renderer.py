@@ -613,6 +613,30 @@ async function fetchTrendColor(barIndex, symbol, timeframe, modelOverride) {
         ` <span style="color:#8b949e">(saved trend models: ${savedTrend})</span>`;
       return;
     }
+    // فاز ۹۹: سه نوع خروجی — score / trend_signal / trend color
+    if (data.target_units === 'score') {
+      const sc = data.score;
+      const sc_colour = sc > 0.1 ? '#3fb950' : (sc < -0.1 ? '#f85149' : '#8b949e');
+      trendBox.innerHTML =
+        `<span style="color:${sc_colour};font-weight:600">` +
+        `${sc > 0 ? '▲' : sc < 0 ? '▼' : '—'} Score: ${sc.toFixed(4)}</span>` +
+        ` <span style="color:#8b949e">— ${data.direction} (${data.strength})` +
+        ` · ${data.model_id} v${data.model_version}</span>`;
+      return;
+    }
+    if (data.target_units === 'trend_signal') {
+      const sig = data.signal;
+      const sig_colour = sig === 'BUY' ? '#3fb950' : (sig === 'SELL' ? '#f85149' : '#8b949e');
+      trendBox.innerHTML =
+        `<span style="color:${sig_colour};font-weight:600">` +
+        `${sig === 'BUY' ? '▲' : sig === 'SELL' ? '▼' : '—'} ${sig}` +
+        ` (S:${(data.sell_probability*100).toFixed(0)}% ` +
+        `H:${(data.hold_probability*100).toFixed(0)}% ` +
+        `B:${(data.buy_probability*100).toFixed(0)}%)</span>` +
+        ` <span style="color:#8b949e">· ${data.model_id} v${data.model_version}</span>`;
+      return;
+    }
+    // trend color (پیش‌فرض)
     const green = data.color === 'GREEN';
     const colour = green ? '#3fb950' : '#f85149';
     const pct = ((green ? data.green_probability : data.red_probability) * 100).toFixed(1);

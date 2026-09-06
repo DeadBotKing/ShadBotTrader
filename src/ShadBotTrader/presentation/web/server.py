@@ -246,12 +246,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
         )
 
     def _trend_forecast_payload(self, query: dict[str, list[str]]) -> dict[str, Any]:
-        """فاز ۹۸ — رنگ پیش‌بینی‌شدهٔ کندل بعدی برای /data.
+        """فاز ۹۸/۹۹ — رنگ و score برای /data.
 
-        مدل ترند (gold_trend_1d/4h/…) روی پنجرهٔ تا کندل انتخابی اجرا
-        می‌شود و P(GREEN)/P(RED) برمی‌گرداند. مدل و فیچرِ هر کندل کش
-        می‌شوند — deserialize مدل TF و ساخت 530+ کندل فیچر در هر کلیک
-        چند ثانیه طول می‌کشید و مرورگر فقط «predicting…» می‌دید.
+        سه نوع مدل ترند دارد:
+        - gold_trend_<tf> (رنگ): 2-softmax → GREEN/RED + درصد
+        - gold_trend_score_<tf>: 1-output regression → score (−1..+1)
+        - gold_trend_signal_<tf>: 3-class softmax → SELL/HOLD/BUY
+        مدل و فیچر کش می‌شوند برای سرعت.
         """
         from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
         from ShadBotTrader.domain.common.errors import ValidationError
@@ -285,10 +286,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             version = catalogue.latest_version(model_id)
             record = catalogue.read(model_id, version) if version else None
             if record is None:
-                raise ValidationError(
-                    f"No saved model called {model_id!r} — train it with "
-                    "--model trend --signal-timeframe <TF> first."
-                )
+                raise ValidationError(f"No saved model called {model_id!r} — train it first.")
             window_size = int(record.window_size or 150)
 
             store = ParquetCandleStore(root)
@@ -326,18 +324,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     CalculatorRegistry,
                 )
                 from ShadBotTrader.infrastructure.feature.standard_catalog import (
-                    standard_feature_set_v1,
+                    standard_feature_set_v1 as _std_features,
                 )
 
-                # فاز ۹۸-ب: model_role باید با role آموزش مدل هم‌خوان باشد
-                # gold_trend_* با name="range" → model_role="range" (184)
-                # gold_signal_* با name="signal" → model_role="signal" (179)
+                # فاز ۹۸-ب: model_role بر اساس مدل
                 model_role = "range" if model_id.startswith("gold_trend_score_") else "signal"
                 matrix = build_feature_matrix(
                     candles=window_candles,
                     symbol=Symbol(symbol),
                     timeframe=Timeframe(timeframe),
-                    feature_set=standard_feature_set_v1(),
+                    feature_set=_std_features(),
                     resolver=CalculatorRegistry(),
                     include_features=True,
                     causal_only=True,
@@ -354,15 +350,65 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 DashboardHandler._feature_cache[feature_key] = cached
             window_rows = cached
 
-            # ── پیش‌بینی ──
+            # ── پیش‌بینی — بر اساس نوع مدل ──
             import numpy as np
 
             from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
 
             x = np.array([minmax_scale_window(window_rows)], dtype=np.float32)
             raw = model.predict(x, verbose=0)[0]
+
+            # ── gold_trend_score_* — رگرسیون score (−1..+1) ──
+            if model_id.startswith("gold_trend_score_"):
+                score = float(raw[0]) if raw.ndim == 1 else float(raw[0, 0])
+                direction = "صعودی" if score > 0.1 else ("نزولی" if score < -0.1 else "بی‌رون")
+                strength = "قوی" if abs(score) > 0.5 else ("متوسط" if abs(score) > 0.2 else "ضعیف")
+                self._send_json(
+                    {
+                        "model_id": record.model_id,
+                        "model_version": record.version,
+                        "timeframe": record.timeframe or timeframe,
+                        "bar_index": bar_index,
+                        "target_units": "score",
+                        "score": round(score, 4),
+                        "direction": direction,
+                        "strength": strength,
+                        "trend": direction,
+                    }
+                )
+                return
+
+            # ── gold_trend_signal_* — سه‌کلاسه SELL/HOLD/BUY ──
+            if model_id.startswith("gold_trend_signal_"):
+                if len(raw) != 3:
+                    raise ValidationError(
+                        f"The trend signal model must emit 3 probabilities; got {len(raw)}"
+                    )
+                names = ["SELL", "HOLD", "BUY"]
+                total = float(sum(raw))
+                probs = [float(v) / total if total > 0 else 0.0 for v in raw]
+                best = max(range(3), key=lambda i: probs[i])
+                self._send_json(
+                    {
+                        "model_id": record.model_id,
+                        "model_version": record.version,
+                        "timeframe": record.timeframe or timeframe,
+                        "bar_index": bar_index,
+                        "target_units": "trend_signal",
+                        "signal": names[best],
+                        "sell_probability": round(probs[0], 4),
+                        "hold_probability": round(probs[1], 4),
+                        "buy_probability": round(probs[2], 4),
+                        "trend": names[best],
+                    }
+                )
+                return
+
+            # ── gold_trend_<tf> — رنگ کندل بعدی (2-softmax) ──
             if len(raw) != 2:
-                raise ValidationError(f"The trend model must emit 2 probabilities; got {len(raw)}")
+                raise ValidationError(
+                    f"The trend color model must emit 2 probabilities; got {len(raw)}"
+                )
             total = float(raw[0]) + float(raw[1])
             red_p = float(raw[0]) / total if total > 0 else 0.5
             green_p = 1.0 - red_p
@@ -374,6 +420,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "model_version": record.version,
                     "timeframe": record.timeframe or timeframe,
                     "bar_index": bar_index,
+                    "target_units": "color",
                     "color": color,
                     "green_probability": green_p,
                     "red_probability": red_p,
