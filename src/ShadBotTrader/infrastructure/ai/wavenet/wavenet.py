@@ -332,7 +332,7 @@ def build_wavenet(
         )
 
     elif is_regression:
-        # ── Range Scalar head (قدیمی) ─────────────────────────────────────
+        # ── Regression head (فاز ۹۸-ب): Conv1D + tanh برای bounded score ──
         last = _last_timestep_layer_class()(name="last_timestep")(z)
         avg  = tf.keras.layers.GlobalAveragePooling1D(name="global_avg_pool")(z)
         z = tf.keras.layers.Concatenate(name="last_avg_concat")([last, avg])
@@ -343,9 +343,12 @@ def build_wavenet(
             name="mlp_hidden",
         )(z)
         z = tf.keras.layers.Dropout(dropout, name="mlp_dropout")(z)
+        # Dense(kernel=1) معادل Conv1D(kernel=1) روی وکتور است —
+        # ولی tanh برای score ∈ (−1,+1) بهتر از linear است:
+        #   خروجی همیشه bounded، گرادیان در صفر قوی، Huber هم‌خوان
         output = tf.keras.layers.Dense(
             units=output_units,
-            activation=output_activation,
+            activation="tanh",
             kernel_regularizer=tf.keras.regularizers.L2(l2),
             name="output",
         )(z)

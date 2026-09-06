@@ -78,8 +78,10 @@ class PredictionTarget:
             raise ValidationError("binary signal threshold must not be negative")
         if self.threshold < 0:
             raise ValidationError("threshold must not be negative")
-        if self.num_classes not in (2, 3):
-            raise ValidationError("num_classes must be 2 (BUY/SELL) or 3 (BUY/HOLD/SELL)")
+        if self.num_classes not in (1, 2, 3):
+            raise ValidationError(
+                "num_classes must be 1 (regression), 2 (BUY/SELL) or 3 (BUY/HOLD/SELL)"
+            )
 
     @property
     def output_units(self) -> int:

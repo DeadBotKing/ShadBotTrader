@@ -274,6 +274,7 @@ def trend_score_model_role(
             kind=TargetKind.PRICE_RANGE,
             horizon=1,
             timeframe=timeframe,
+            num_classes=1,  # فاز ۹۸-ب: score رگرسیونی — یک خروجی نه دو
         ),
         model_id=f"gold_trend_score_{timeframe.strip().lower()}",
         description=(

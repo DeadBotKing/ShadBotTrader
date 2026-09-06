@@ -3831,3 +3831,13 @@ shape mismatch می‌داد.
 + `_deserialize_model` import fix در شاخهٔ trend_score.
 
 ### فاز ۹۹ (UI): header جدول forecast پویا برای score/signal
+
+### فاز ۹۸-ب (رفع): خروجی trend_score — Dense(2)→Dense(1) + tanh
+
+**ریشه:** trend_score از range_model_role ارث برد → num_classes=2
+→ Dense(2, linear). ولی score فقط ۱عدد است نه ۲عدد.
+
+**رفع:**
+- num_classes=1 برای trend_score (validated: 1/2/3)
+- activation: linear → tanh (خروجی bounded −1..+1)
+- Dense باقی ماند (بعد از GlobalAvgPool داده flat است — Conv1D معادل است)
