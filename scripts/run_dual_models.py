@@ -593,6 +593,30 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     val_fold_baseline: float | None = None  # فاز ۶۰: baseline فولد آخرِ ولید
     if dataset.label_distribution:
         print(f"  label balance  : {dataset.label_distribution}")
+
+    # فاز ۹۸-ب: آمار تارگت score — توزیع کامل نه فقط میانگین
+    if role.model_id.startswith("gold_trend_score_") and dataset.target_columns:
+
+        _tcol = dataset.target_columns[0]
+        _all_scores = [row[_tcol] for row in dataset.series if len(row) > _tcol]
+        if _all_scores:
+            _sorted = sorted(_all_scores)
+            _n = len(_sorted)
+            _p25 = _sorted[int(_n * 0.25)]
+            _p50 = _sorted[int(_n * 0.50)]
+            _p75 = _sorted[int(_n * 0.75)]
+            _buy = sum(1 for s in _all_scores if s > 0.1)
+            _sell = sum(1 for s in _all_scores if s < -0.1)
+            _hold = _n - _buy - _sell
+            print(
+                f"  target stats   : min {_sorted[0]:+.4f} · p25 {_p25:+.4f} · "
+                f"median {_p50:+.4f} · p75 {_p75:+.4f} · max {_sorted[-1]:+.4f}"
+            )
+            print(
+                f"  target spread  : BUY(>+0.1) {_buy:,} ({_buy/_n:.0%}) · "
+                f"SELL(<−0.1) {_sell:,} ({_sell/_n:.0%}) · "
+                f"HOLD {_hold:,} ({_hold/_n:.0%})"
+            )
         if dataset.degenerate:
             print(
                 "  [!] One class barely appears. A model trained here will "
