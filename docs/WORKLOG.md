@@ -3878,3 +3878,8 @@ blocks کامل + seq2seq head، فقط با 1 خروجی به‌جای 2.
 - trainer + service: output_channels پاس داده می‌شود
 
 تأیید: build_wavenet OK برای هر دو مدل ✓
+
+### فاز ۹۸-ب (رفع): /data inspector model_role → "range" برای trend_score
+
+تست سرتاسری: forecast_at با مدل 184-فیچری و 1-خروجی tanh → ✅
+inspector model_role از signal به range تغییر کرد (trend_score = 184 فیچر).

@@ -216,7 +216,11 @@ class RangeForecastInspector:
             resolver=resolver,
             include_features=True,
             causal_only=True,
-            model_role=("signal" if record.model_id.startswith("gold_trend_signal_") else "range"),
+            model_role=(
+                "signal"
+                if record.model_id.startswith("gold_trend_signal_")
+                else "range"  # trend_score و range هر دو 184 فیچر
+            ),
         )
         if len(matrix) < window_size:
             raise ValidationError(
