@@ -3852,3 +3852,13 @@ endpoint `/api/trend-forecast` و `fetchTrendColor` بازنویسی شدند ت
 | gold_trend_score_* | score | Score + direction + strength |
 | gold_trend_signal_* | trend_signal | SELL/HOLD/BUY احتمالات |
 | gold_trend_<tf> | color | GREEN/RED + درصد |
+
+### فاز ۹۸-ب (تأیید): معماری trend_score — Dense(1, tanh) تأیید شد
+
+تأیید برنامه‌نویسی: build_wavenet با output_units=1, activation='tanh',
+is_regression=True → output shape=(None, 1), activation=tanh ✓
+total params: 417,169 (4×3 blocks, 288×184, n_filters=48)
+
+معماری: range pipeline کامل (WaveNet blocks + Huber + MAE) با فقط
+یک خروجی score به‌جای دو خروجی High/Low — دقیقاً همان چیزی که
+اپراتور خواسته بود.
