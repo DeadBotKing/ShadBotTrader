@@ -1,5 +1,190 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — فاز ۱۰۶: بررسی Alpaca، ari99/algorithmic_trading و Onepagecode برای نقشهٔ تکامل مدل‌های event
+
+**درخواست اپراتور:** سه منبع جدید دقیق بررسی شوند؛ اگر کدی لازم است وارد workspace شود؛
+و اطلاعات لازم در Docs اضافه شود.
+
+**انجام‌شده:**
+- مقالهٔ Alpaca `tensorflow-market-forecasting` کامل بررسی شد: MLP دودسته‌ای با
+  RSI/Stoch، target جهت روز بعد، train/eval chronological، overfit واضح، توصیه به
+  normalized features، windows، neutral class و استفادهٔ ML فقط به‌عنوان indicator کمکی.
+- repo `ari99/algorithmic_trading` در `/home/user/algorithmic_trading` clone شد،
+  commit `c8479f3`؛ کدهای data download، feature engineering، labels، RNN/LSTM،
+  class weights، threshold grid، VectorBT backtest، random/Monte Carlo/White checks
+  و Alpaca paper trading بررسی شدند.
+- مقالهٔ Onepagecode/Substack بررسی شد؛ بخش public شامل Alpha Vantage fetch،
+  MinMaxScaler train-only، MLP regression، MSE/relative error و CLI pipeline بود؛
+  source download پشت paywall بود و قابل clone نبود.
+- گزارش کامل نوشته شد:
+  `docs/Report/PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md`.
+
+**نتیجهٔ فنی:** هیچ‌کدام برای کپی مستقیم کد production مناسب نیستند؛ اما چند ایده
+باید وارد roadmap شود: event/action targets، class weights + F1/PR-AUC، POS/NEG
+binary models، feature selection train-only، threshold grid/backtest heatmap، random
+baseline، Monte Carlo/White Reality significance، و دو-branch returns+features model.
+
+## 2026-09-07 — فاز ۱۰۵: clone و بررسی کد پروژهٔ Leci37 برای استخراج الگوهای قابل استفاده
+
+**درخواست اپراتور:** پروژهٔ `TensorFlow-stocks-prediction-Machine-learning-RealTime`
+به workspace آورده شود، کد آن دقیق بررسی شود، و مشخص شود کدام feature/model/method
+ها برای ShadBotTrader قابل استفاده‌اند و روند کامل تغییرات چیست.
+
+**انجام‌شده:**
+- repo در workspace clone شد:
+  `/home/user/TensorFlow-stocks-prediction-Machine-learning-RealTime`، commit `7520351`.
+- فایل‌های کلیدی بررسی شدند: `Utils_buy_sell_points.py`, `Feature_selection_create_json.py`,
+  `Data_multidimension.py`, `Model_TF_definitions.py`, `Model_train_*`,
+  `Model_predictions_*`, `Utils_scoring.py`, `5_predict_POOL_enque_Thread.py`,
+  `features_W3_old/v3.py`, `README.md`.
+- گزارش کامل نوشته شد:
+  `docs/Report/PHASE105_LECI37_CODE_REVIEW_AND_ADOPTION_PLAN.md`.
+
+**جمع‌بندی فنی:**
+- ارزش اصلی پروژهٔ Leci37 برای ما کپی کد نیست؛ ایده‌های عملیاتی است:
+  event-based GT، POS/NEG binary models، feature selection، class weighting،
+  threshold calibration، model ensemble و profit-aware evaluation.
+- کد direct-use نیست چون dependencyها قدیمی/سنگین‌اند، بخش‌هایی private/missing هستند،
+  و خود README دربارهٔ indicators آینده‌نگر هشدار می‌دهد.
+- مسیر پیشنهادی برای ShadBotTrader: تمرکز از `trend_score` regression به سمت
+  `trend_signal`/event-classification + class weights/F1 + feature selection +
+  consensus/profit-aware backtest.
+
+## 2026-09-07 — فاز ۱۰۴: input scaling مخصوص trend_score به بازهٔ [-1,+1]
+
+**درخواست اپراتور:** برای مدل score، نرمال‌سازی input به جای `[-2,+2]` در بازهٔ
+`[-1,+1]` باشد؛ مدل range همان `[-2,+2]` را نگه دارد؛ و مطمئن شو همهٔ featureها
+به‌خصوص قیمت‌های اصلی از این بازه بیرون نمی‌زنند.
+
+**تغییرات:**
+- `data_windowing.py`: ثابت‌های `DEFAULT_SCALE_RANGE=(-2,+2)` و
+  `TREND_SCORE_SCALE_RANGE=(-1,+1)` اضافه شد؛ `minmax_scale_window` و سازنده‌های
+  sample حالا `scale_range` می‌گیرند.
+- `model_roles.py`: فیلد `input_scale_range` به `ModelRole` اضافه شد؛ همهٔ مدل‌ها
+  پیش‌فرض `[-2,+2]` دارند ولی `trend_score_model_role()` صریحاً `[-1,+1]` دارد.
+- `WavenetTrainer` و `WindowGenerator`: هم مسیر in-memory و هم streamed training
+  scale range نقش مدل را مصرف می‌کنند؛ پس train واقعی score با `[-1,+1]` انجام
+  می‌شود، نه فقط log.
+- Inference/evaluation: مسیرهای `run_dual_models` sanity prediction، `/data`
+  (`RangeForecastInspector` و `server.py`)، `ModelEvaluationService` و
+  `evaluate_trend_score_1d.py` از scale range ذخیره‌شدهٔ model record استفاده
+  می‌کنند. مدل‌های قدیمی که این فیلد را ندارند برای سازگاری `[-2,+2]` می‌مانند؛
+  مدل‌های جدید score `[-1,+1]` را در record ذخیره می‌کنند.
+- `ModelRecord`: فیلد `input_scale_range` اضافه شد و در `v*_training.json` ذخیره
+  می‌شود. اگر checkpoint قدیمی با scale متفاوت برای resume انتخاب شود، resume
+  رد می‌شود و آموزش از صفر شروع می‌شود تا وزن‌های `[-2,+2]` با input جدید
+  `[-1,+1]` قاطی نشوند.
+- `run_dual_models.py`: در سربرگ آموزش چاپ می‌کند:
+  `input scale: minmax [-1, +1] per feature/window` و در شروع training برای score
+  audit اول/آخر window را انجام می‌دهد که همهٔ featureهای scaled داخل بازه باشند
+  و target column داخل input نباشد.
+
+**تأیید عددی روی دیتای موجود سندباکس:**
+```text
+gold_trend_score_1d scale (-1.0, 1.0) shape (150, 182) min -1.0 max 1.0 target_col_excluded True
+gold_range_1d       scale (-2.0, 2.0) shape (150, 182) min -2.0 max 2.0 target_col_excluded True
+```
+یعنی قیمت‌های اصلی و تمام featureهای پنجرهٔ score بعد از scaling داخل `[-1,+1]`
+هستند و ستون target از input حذف شده است.
+
+**تست/کیفیت:**
+- targeted ruff/black روی فایل‌های تغییرکرده: سبز.
+- targeted tests: `test_data_windowing`, `test_window_generator`, `test_dual_models`,
+  `test_range_atr_wiring`, `test_evaluate_and_inspect`, `test_model_selection` سبز.
+- full pytest محیط فعلی سبز شد.
+- گیت کامل همچنان همان خطاهای pre-existing خارج از این فاز را دارد:
+  `ruff check .` = 219 خطای قدیمی، `black --check .` = 22 فایل قدیمی، `mypy src` =
+  28 خطای قدیمی. خطای mypy جدیدی باقی نماند.
+
+## 2026-09-07 — فاز ۱۰۳: ممیزی نرمال‌سازی/تارگت trend_score و حذف لیبل جعلی tail
+
+**درخواست اپراتور:** چون loss آموزش trend_score مثل مدل قوی رفتار نمی‌کرد،
+محاسبات score و نرمال‌سازی بررسی شود.
+
+**نتیجهٔ ممیزی با کد واقعی:**
+- محاسبهٔ score درست است: برای row با original index=t، تارگت برابر score کندل
+  واقعی `t+1` است:
+  `score = (close[t+1] - open[t+1]) / (high[t+1] - low[t+1])`.
+- مقادیر target finite و در بازهٔ `[-1,+1]` هستند.
+- input windowها فقط featureها را دارند؛ ستون target از ورودی حذف می‌شود.
+- feature normalization درست انجام می‌شود: هر ستون هر window جداگانه به بازهٔ
+  `[-2,+2]` min-max می‌شود؛ target scale نمی‌شود چون خودش dimensionless است.
+- یک باگ کوچک ولی واقعی پیدا شد: در مسیر `trend_score`، آخرین ردیف‌هایی که آینده
+  ندارند با `0.0` پر می‌شدند، نه اینکه مثل range با `attach_targets` حذف شوند.
+  این یعنی جدیدترین پنجرهٔ آموزشی می‌توانست یک score خنثی جعلی داشته باشد.
+
+**تغییر:**
+- `DualModelService.prepare()` برای `gold_trend_score_*` حالا targets را با
+  `ts.source_index` به `attach_targets` می‌دهد؛ tail بدون لیبل حذف می‌شود، نه
+  صفرسازی.
+- شاخهٔ duplicate تاریخی trend_score هم همان اصلاح را گرفت تا رفتار آینده یکسان
+  بماند.
+- تست regression اضافه شد: `test_trend_score_drops_the_final_unlabelled_candle`.
+
+**تأیید عددی روی دیتای موجود سندباکس:**
+- بعد از fix: `candles=2513`, `rows=2295`, آخرین target = `-0.3608903` که score
+  کندل واقعی آخر است؛ دیگر fake `0.0` برای tail وجود ندارد.
+- `finite=True`, target range=`[-1,+1]`.
+- full pytest محیط فعلی سبز شد؛ ruff/black روی فایل‌های touched سبز است. گیت کامل
+  ruff/black/mypy همچنان همان خطاهای pre-existing خارج از این تغییر را دارد.
+
+**محدودیت تفسیر:** این باگ فقط یک/چند ردیف tail را آلوده می‌کرد و توضیح اصلی
+ضعف trend_score نیست. علت اصلی همچنان نویزی بودن direction/score یک‌روزهٔ طلاست،
+اما از این به بعد تارگت از نظر integrity تمیزتر است.
+
+## 2026-09-07 — فاز ۱۰۲: گزینهٔ MAE برای trend_score + انتخاب epoch بر اساس val_mae
+
+**درخواست اپراتور:** چون در آموزش `gold_trend_score_1d` مقدار `val_mae` مهم‌ترین
+عدد بود و کم‌شدن/نشدنش معیار واقعی محسوب می‌شد، آموزش و بهینه‌سازی روی MAE
+امکان‌پذیر شود؛ بدون دست‌زدن به مدل‌های range که با loss ترکیبی فعلی بهتر جواب
+داده‌اند.
+
+**تغییرات (بدون redesign):**
+- `scripts/run_dual_models.py`:
+  - فلگ جدید `--trend-score-loss {composite,mae}` اضافه شد.
+  - حالت پیش‌فرض `composite` همان loss فعلی است: `3*Huber + 6*MAE + 1*MSE`.
+  - حالت `mae` فقط برای `gold_trend_score_*` فعال می‌شود؛ سایر مدل‌ها این فلگ را
+    نادیده می‌گیرند.
+  - monitor خودکار برای `trend_score` از این به بعد `val_mae` است؛ یعنی
+    checkpoint، EarlyStopping و ReduceLR همان عددی را کمینه می‌کنند که برای score
+    معیار قضاوت است.
+  - لاگ شروع آموزش حالا `objective` و `monitor` را صریح چاپ می‌کند.
+- `WavenetTrainer`: `monitor_metric` به callbacks اضافه شد؛ برای MAE خالص در
+  seq2seq، همان تمرکز 40٪ کل sequence + 60٪ آخرین timestep حفظ شد تا خروجی مصرفی
+  forecast بهینه شود.
+- `DualModelService`: `loss_name` و `monitor_metric` به قرارداد train/build_trainer
+  اضافه شد و در hyperparameters مدل ذخیره می‌شود.
+- GUI:
+  - فیلد `Trend-score loss` به Train / Retrain / Find best learning rate اضافه شد.
+  - فقط وقتی model=`trend_score` باشد `--trend-score-loss` به اسکریپت پاس داده
+    می‌شود؛ range/signal/trend دست‌نخورده می‌مانند.
+  - مسیر optimise برای `trend_score` هم dataset را درست به `--signal-timeframe`
+    پاس می‌دهد و LR sweep را با `val_mae` انتخاب می‌کند.
+
+**نحوهٔ استفاده:**
+```bash
+python scripts/run_dual_models.py --with-features --symbol XAUUSD \
+  --model trend_score --signal-timeframe 1D \
+  --epochs 50 --folds 3 --window 150 \
+  --learning-rate 0.0008 --trend-score-loss mae \
+  --storage-root datasets
+```
+در GUI: `Train a model` → `model=trend_score` → `dataset=1D` →
+`Trend-score loss=mae`.
+
+**تأیید:**
+- اجرای dry-run بدون TensorFlow تا مرحله آماده‌سازی نشان داد لاگ درست است:
+  `objective: mae` و `monitor: val_mae (minimize)`.
+- targeted tests سبز:
+  `tests/unit/presentation/test_architecture_knobs_gui.py`,
+  `tests/integration/test_training_visibility.py`,
+  `tests/unit/ai/test_training_progress.py`, `tests/unit/ai/test_wavenet.py`.
+- کل pytest محیط فعلی سبز شد (تست‌های TensorFlow طبق مارکرهای موجود skip شدند).
+- ruff/black روی فایل‌های تغییرکرده سبز است.
+- گیت کامل همچنان خطاهای pre-existing خارج از این فاز دارد: `ruff check .` = 239
+  خطا (notebook/فایل‌های قدیمی)، `black --check .` = 24 فایل قدیمی، `mypy src` =
+  همان 28 خطای قدیمی. این فاز خطای جدیدی روی فایل‌های touched اضافه نکرد.
+
 ## 2026-09-07 — فاز ۱۰۱: رفع لاگ زندهٔ آموزش در GUI ویندوز
 
 **درخواست اپراتور:** آموزش از داخل GUI مثل قبل شروع شود و لاگ زنده واقعاً چاپ شود؛

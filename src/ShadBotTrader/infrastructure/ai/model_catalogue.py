@@ -39,6 +39,18 @@ from typing import Any, Dict, List, Optional
 RECORD_FILE = "training.json"
 
 
+def _input_scale_range_from_payload(payload: Dict[str, Any]) -> List[float]:
+    raw = payload.get("input_scale_range")
+    if isinstance(raw, (list, tuple)) and len(raw) == 2:
+        try:
+            low, high = float(raw[0]), float(raw[1])
+            if low < high:
+                return [low, high]
+        except (TypeError, ValueError):
+            pass
+    return [-2.0, 2.0]
+
+
 @dataclass
 class ModelRecord:
     """One trained model, described by what produced it."""
@@ -74,6 +86,9 @@ class ModelRecord:
     #: The predictor needs this to convert outputs back into prices.
     #: Signal models always carry the default "pct" (unused).
     target_units: str = "pct"
+    #: Per-window min-max scale used for model inputs. Older models default
+    #: to the historical range [-2,+2]; Phase 104 score models record [-1,+1].
+    input_scale_range: List[float] = field(default_factory=lambda: [-2.0, 2.0])
 
     @property
     def threshold_percent(self) -> str:
@@ -117,6 +132,7 @@ class ModelRecord:
             "metrics": dict(self.metrics),
             "note": self.note,
             "target_units": self.target_units,
+            "input_scale_range": list(self.input_scale_range),
         }
 
     @classmethod
@@ -143,6 +159,7 @@ class ModelRecord:
             },
             note=str(payload.get("note", "")),
             target_units=str(payload.get("target_units", "") or "pct"),
+            input_scale_range=_input_scale_range_from_payload(payload),
         )
 
     def summary_lines(self) -> List[str]:
@@ -155,6 +172,7 @@ class ModelRecord:
             f"quality   : {self.headline_metric}",
             *([f"learning : {self.learning_rate:.2e}"] if self.learning_rate > 0 else []),
             *([f"loss fn  : {self.loss_function}"] if self.loss_function else []),
+            f"input sc. : [{self.input_scale_range[0]:+.1f}, {self.input_scale_range[1]:+.1f}]",
             *(
                 [
                     f"labels    : binary SELL/BUY, first-passage threshold "

@@ -72,10 +72,12 @@ gold_trend_1d v1 سندباکس (همان دیتا): val_acc 55.7% vs 54.3% (+1.
 
 ```bash
 # آموزش trend_score — حالت کندل واقعی 1D (فاز ۱۰۰؛ label-horizon خودکار=1)
+# فاز ۱۰۲: monitor خودکار score = val_mae؛ برای تست MAE خالص فلگ آخر را بگذار
 python scripts/run_dual_models.py --with-features --symbol XAUUSD \
   --model trend_score --signal-timeframe 1D \
   --epochs 50 --folds 3 --window 150 \
-  --learning-rate 0.0008 --storage-root datasets
+  --learning-rate 0.0008 --trend-score-loss mae \
+  --storage-root datasets
 
 # ماشین کم‌رم (سندباکس/کانتینر 1GB): استریم اجباری
 SHADBOT_STREAM_THRESHOLD_BYTES=1000000  # اختیاری
@@ -96,6 +98,52 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 # GUI: strategy=triple | range_timeframe=4H | trend_filter=ema50
 #      min_sl_dist=6 | atr_mult=0.5 | max_entry_distance_atr=0.25
 ```
+
+## External TensorFlow/algo-trading references (فاز ۱۰۶)
+
+- بررسی کامل سه منبع جدید در گزارش `docs/Report/PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md` ثبت شد.
+- repo `ari99/algorithmic_trading` در workspace clone شد: `/home/user/algorithmic_trading`، commit `c8479f3`.
+- نتیجهٔ roadmap: تمرکز بعدی باید روی `trend_signal` و event/action classification باشد: class weights، F1/PR-AUC، threshold calibration، feature selection، POS/NEG models و significance checks.
+- کپی مستقیم کد توصیه نمی‌شود: Alpaca/Onepagecode آموزشی و TF1 هستند؛ ari99 وابسته به `vectorbtpro` و بدون license واضح است.
+
+## External reference review: Leci37 (فاز ۱۰۵)
+
+- repo مرجع clone شد: `/home/user/TensorFlow-stocks-prediction-Machine-learning-RealTime`
+  روی commit `7520351`.
+- گزارش کامل: `docs/Report/PHASE105_LECI37_CODE_REVIEW_AND_ADOPTION_PLAN.md`.
+- نتیجهٔ تصمیم فنی: از پروژهٔ Leci37 کد را مستقیم وارد production نمی‌کنیم؛ ایده‌های
+  event-based GT، POS/NEG binary models، feature selection، class weights/F1،
+  threshold calibration، ensemble و profit-aware evaluation قابل استفاده‌اند.
+- اولویت بعدی پیشنهادی: تقویت `trend_signal` به جای تکیه روی `trend_score` regression.
+
+## trend_score input scaling (فاز ۱۰۴)
+
+- مدل‌های range/signal/trend همان min-max قدیمی `[-2,+2]` را حفظ می‌کنند.
+- `gold_trend_score_*` از این فاز input featureها را per-window به `[-1,+1]`
+  scale می‌کند تا بازهٔ ورودی با target bounded score هماهنگ‌تر باشد.
+- `input_scale_range` در `ModelRole` و `ModelRecord` ذخیره می‌شود؛ inference،
+  `/data` و evaluation همان scale ذخیره‌شده را مصرف می‌کنند.
+- resume از checkpoint قدیمی با scale متفاوت برای score رد می‌شود؛ بعد از این
+  تغییر trend_score را از صفر train کن، نه resume از مدل `[-2,+2]`.
+
+## trend_score target-integrity audit (فاز ۱۰۳)
+
+- محاسبهٔ score و نرمال‌سازی بررسی شد: target از کندل واقعی بعدی ساخته می‌شود،
+  featureها per-window به `[-2,+2]` scale می‌شوند، target داخل input نیست و خودش
+  در `[-1,+1]` باقی می‌ماند.
+- باگ tail fix شد: ردیف‌های بدون کندل آینده دیگر با `0.0` پر نمی‌شوند؛ با
+  `attach_targets` حذف می‌شوند. این پاک‌سازی integrity است، نه ادعای edge جدید.
+
+## trend_score MAE option (فاز ۱۰۲)
+
+- `trend_score` حالا دو objective دارد: `composite` یعنی loss قبلی
+  `3*Huber+6*MAE+1*MSE`، و `mae` یعنی MAE خالص.
+- برای `trend_score`، monitor خودکار `val_mae` است؛ checkpoint/best epoch،
+  EarlyStopping و ReduceLR روی همان MAE تصمیم می‌گیرند.
+- GUI فیلد `Trend-score loss` دارد؛ فقط روی model=`trend_score` اثر دارد و
+  range/signal/trend را تغییر نمی‌دهد.
+- معیار نهایی همچنان باید با baseline ثابت، sign accuracy، corr و stdev خروجی
+  سنجیده شود؛ MAE کمتر به‌تنهایی edge معاملاتی را ثابت نمی‌کند.
 
 ## GUI / لاگ زنده
 

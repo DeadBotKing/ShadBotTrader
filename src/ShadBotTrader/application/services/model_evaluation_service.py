@@ -211,7 +211,7 @@ class ModelEvaluationService:
             elif "range" in mid_lower:
                 role = "range"
             else:
-                role = "signal"   # safe default
+                role = "signal"  # safe default
         result.role = role
 
         # ── load candles ──────────────────────────────────────────────────
@@ -271,33 +271,65 @@ class ModelEvaluationService:
         from ShadBotTrader.domain.market.symbol import Symbol
         from ShadBotTrader.domain.market.timeframe import Timeframe
         from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
-        from ShadBotTrader.infrastructure.feature.calculators.adaptive_filters import AdaptiveFiltersCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.adaptive_filters import (
+            AdaptiveFiltersCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.atr import AtrCalculator
         from ShadBotTrader.infrastructure.feature.calculators.balance import BalanceCalculator
         from ShadBotTrader.infrastructure.feature.calculators.bollinger import BollingerCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.bollinger_bands import BollingerBandsCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.candle_pattern import CandlePatternCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.ehlers_advanced import EhlersAdvancedCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.ehlers_cycle import EhlersCycleCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.bollinger_bands import (
+            BollingerBandsCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.candle_pattern import (
+            CandlePatternCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.ehlers_advanced import (
+            EhlersAdvancedCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.ehlers_cycle import (
+            EhlersCycleCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.ema import EmaCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.fractal_stats import FractalStatsCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.fractal_stats import (
+            FractalStatsCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.ichimoku import IchimokuCalculator
         from ShadBotTrader.infrastructure.feature.calculators.macd import MacdCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.market_regime import MarketRegimeCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.mean_reversion import MeanReversionCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.momentum_advanced import MomentumAdvancedCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.prado_features import PradoFeaturesCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.price_filter import PriceFilterCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.market_regime import (
+            MarketRegimeCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.mean_reversion import (
+            MeanReversionCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.momentum_advanced import (
+            MomentumAdvancedCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.prado_features import (
+            PradoFeaturesCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.price_filter import (
+            PriceFilterCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.returns import ReturnsCalculator
         from ShadBotTrader.infrastructure.feature.calculators.rsi import RsiCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.session_time import SessionTimeCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.session_time import (
+            SessionTimeCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.sma import SmaCalculator
         from ShadBotTrader.infrastructure.feature.calculators.stochastic import StochasticCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.structure_features import StructureFeaturesCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.structure_features import (
+            StructureFeaturesCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.calculators.target import TargetCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.trend_strength import TrendStrengthCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.volatility_breakout import VolatilityBreakoutCalculator
-        from ShadBotTrader.infrastructure.feature.calculators.volume_analysis import VolumeAnalysisCalculator
+        from ShadBotTrader.infrastructure.feature.calculators.trend_strength import (
+            TrendStrengthCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.volatility_breakout import (
+            VolatilityBreakoutCalculator,
+        )
+        from ShadBotTrader.infrastructure.feature.calculators.volume_analysis import (
+            VolumeAnalysisCalculator,
+        )
         from ShadBotTrader.infrastructure.feature.standard_catalog import standard_feature_set_v1
 
         # registry بدون pywt (noise_filter که non-causal هست)
@@ -305,20 +337,26 @@ class ModelEvaluationService:
             def __init__(self):
                 self._m = {
                     "adaptive_filters": AdaptiveFiltersCalculator(),
-                    "atr": AtrCalculator(), "balance": BalanceCalculator(),
-                    "bollinger": BollingerCalculator(), "bband": BollingerBandsCalculator(),
+                    "atr": AtrCalculator(),
+                    "balance": BalanceCalculator(),
+                    "bollinger": BollingerCalculator(),
+                    "bband": BollingerBandsCalculator(),
                     "candle_pattern": CandlePatternCalculator(),
                     "ehlers_advanced": EhlersAdvancedCalculator(),
                     "ehlers_cycle": EhlersCycleCalculator(),
-                    "ema": EmaCalculator(), "fractal_stats": FractalStatsCalculator(),
-                    "ichimoku": IchimokuCalculator(), "macd": MacdCalculator(),
+                    "ema": EmaCalculator(),
+                    "fractal_stats": FractalStatsCalculator(),
+                    "ichimoku": IchimokuCalculator(),
+                    "macd": MacdCalculator(),
                     "market_regime": MarketRegimeCalculator(),
                     "mean_reversion": MeanReversionCalculator(),
                     "momentum_advanced": MomentumAdvancedCalculator(),
                     "prado_features": PradoFeaturesCalculator(),
                     "price_filter": PriceFilterCalculator(),
-                    "returns": ReturnsCalculator(), "rsi": RsiCalculator(),
-                    "session_time": SessionTimeCalculator(), "sma": SmaCalculator(),
+                    "returns": ReturnsCalculator(),
+                    "rsi": RsiCalculator(),
+                    "session_time": SessionTimeCalculator(),
+                    "sma": SmaCalculator(),
                     "stochastic": StochasticCalculator(),
                     "structure_features": StructureFeaturesCalculator(),
                     "target": TargetCalculator(),
@@ -326,12 +364,14 @@ class ModelEvaluationService:
                     "volatility_breakout": VolatilityBreakoutCalculator(),
                     "volume_analysis": VolumeAnalysisCalculator(),
                 }
+
             def resolve(self, f):
                 return self._m.get(f)
 
         # اول سعی کن از CalculatorRegistry کامل استفاده کن
         try:
             from ShadBotTrader.infrastructure.feature.calculator_registry import CalculatorRegistry
+
             resolver = CalculatorRegistry()
         except ImportError:
             resolver = _SafeRegistry()
@@ -345,7 +385,7 @@ class ModelEvaluationService:
             resolver=resolver,
             include_features=True,
             causal_only=True,
-            model_role=role,   # ← فیلتر model_scope مثل training
+            model_role=role,  # ← فیلتر model_scope مثل training
         )
 
     def _score(
@@ -360,8 +400,13 @@ class ModelEvaluationService:
         import numpy as np
 
         from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
-        from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
-        from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import FilesystemArtifactStore
+        from ShadBotTrader.infrastructure.ai.data_windowing import (
+            input_scale_range_for_model,
+            minmax_scale_window,
+        )
+        from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
+            FilesystemArtifactStore,
+        )
         from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import _deserialize_model
 
         artifact = FilesystemArtifactStore(self._root).load(
@@ -400,7 +445,11 @@ class ModelEvaluationService:
 
         # ── بازه زمانی eval ───────────────────────────────────────────────
         rows = matrix.rows
-        horizon = recorded_horizon if recorded_horizon > 0 else (0 if result.role == "signal" else DEFAULT_HORIZON)
+        horizon = (
+            recorded_horizon
+            if recorded_horizon > 0
+            else (0 if result.role == "signal" else DEFAULT_HORIZON)
+        )
         result.horizon = horizon
 
         usable = len(rows) - result.window_size - max(horizon, 1) + 1
@@ -417,8 +466,14 @@ class ModelEvaluationService:
             result.note = f"sampled every {step} windows of {usable:,}"
 
         # ── inference ─────────────────────────────────────────────────────
+        input_scale_range = input_scale_range_for_model(
+            result.model_id, getattr(record, "input_scale_range", None)
+        )
         windows = np.array(
-            [minmax_scale_window(rows[s: s + result.window_size]) for s in starts],
+            [
+                minmax_scale_window(rows[s : s + result.window_size], input_scale_range)
+                for s in starts
+            ],
             dtype=np.float32,
         )
         predictions = model.predict(windows, verbose=0)
@@ -453,14 +508,12 @@ class ModelEvaluationService:
 
         # ── label از OHLC candle های واقعی ─────────────────────────────
         # source_index: هر ردیف matrix به کدام candle اصل بازمیگرده
-        source_index = matrix.source_index   # list[int]
+        source_index = matrix.source_index  # list[int]
 
         # label را روی کل سری candle بساز (همانطور که training میساخت)
         labels_obj = build_signal_labels_from_candles(candles, threshold=threshold)
         # دیکشنری: candle_index → label (0=sell, 1=buy)
-        label_by_candle = dict(
-            zip(labels_obj.source_index, labels_obj.labels, strict=True)
-        )
+        label_by_candle = dict(zip(labels_obj.source_index, labels_obj.labels, strict=True))
 
         # ── مقایسه prediction با label ──────────────────────────────────
         predicted_all = np.argmax(np.asarray(predictions), axis=1).tolist()
@@ -475,7 +528,7 @@ class ModelEvaluationService:
             # کندل اصلی متناظر
             candle_idx = source_index[matrix_row]
             if candle_idx not in label_by_candle:
-                continue   # این کندل label ندارد (threshold نرسیده)
+                continue  # این کندل label ندارد (threshold نرسیده)
             truth.append(label_by_candle[candle_idx])
             predicted.append(int(pred_val))
 
@@ -492,7 +545,7 @@ class ModelEvaluationService:
         counts = {label: truth.count(label) for label in (0, 1)}
         result.baseline = max(counts.values()) / total
         result.metrics["sell_share"] = counts[0] / total
-        result.metrics["buy_share"]  = counts[1] / total
+        result.metrics["buy_share"] = counts[1] / total
 
     def _score_range(
         self,
@@ -535,13 +588,13 @@ class ModelEvaluationService:
             future_highs = [
                 closes[i] * (1.0 + float(matrix.rows[i][high_index])) for i in future_idx
             ]
-            future_lows = [
-                closes[i] * (1.0 + float(matrix.rows[i][low_index])) for i in future_idx
-            ]
-            truth.append([
-                max(future_highs) / reference - 1.0 if future_highs else 0.0,
-                min(future_lows) / reference - 1.0 if future_lows else 0.0,
-            ])
+            future_lows = [closes[i] * (1.0 + float(matrix.rows[i][low_index])) for i in future_idx]
+            truth.append(
+                [
+                    max(future_highs) / reference - 1.0 if future_highs else 0.0,
+                    min(future_lows) / reference - 1.0 if future_lows else 0.0,
+                ]
+            )
 
         expected = np.asarray(truth, dtype=np.float64)
         actual = np.asarray(predictions, dtype=np.float64)[:, : expected.shape[1]]

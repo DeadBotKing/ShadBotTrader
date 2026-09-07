@@ -54,6 +54,17 @@ def write(tmp_path: Path, name: str, body: str) -> str:
     return str(path)
 
 
+def load_run_dual_models_script():
+    import importlib.util
+
+    script = Path(__file__).resolve().parents[2] / "scripts" / "run_dual_models.py"
+    spec = importlib.util.spec_from_file_location("run_dual_models", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 # ------------------------------------------------- 1) live streaming ----
 class TestOutputIsVisibleWhileTheScriptRuns:
     def test_the_log_fills_up_before_the_script_finishes(self, handlers, tmp_path):
@@ -144,6 +155,25 @@ class TestOutputIsVisibleWhileTheScriptRuns:
 
 # ------------------------------------------- 2) the reporter is wired ---
 class TestTheProgressReporterIsActuallyUsed:
+    def test_trend_score_auto_monitor_uses_val_mae(self):
+        import types
+
+        module = load_run_dual_models_script()
+        args = types.SimpleNamespace(monitor_metric="auto", trend_score_loss="composite")
+        role = types.SimpleNamespace(model_id="gold_trend_score_1d", loss="huber")
+
+        assert module.effective_monitor_metric(args, role) == "val_mae"
+        assert module.effective_loss_name(args, role) == "huber"
+
+    def test_trend_score_can_use_pure_mae_loss(self):
+        import types
+
+        module = load_run_dual_models_script()
+        args = types.SimpleNamespace(monitor_metric="auto", trend_score_loss="mae")
+        role = types.SimpleNamespace(model_id="gold_trend_score_1d", loss="huber")
+
+        assert module.effective_loss_name(args, role) == "mae"
+
     def test_the_script_passes_a_console_reporter(self):
         """It existed since Phase 13 and nothing ever passed it."""
         source = (Path(__file__).resolve().parents[2] / "scripts" / "run_dual_models.py").read_text(

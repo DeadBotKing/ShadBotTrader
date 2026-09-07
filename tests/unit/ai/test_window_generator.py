@@ -155,6 +155,21 @@ class TestWindowGenerator:
         assert min(flat) >= -2.0001
         assert max(flat) <= 2.0001
 
+    def test_scaling_range_can_be_tightened_for_score_models(self):
+        generator = WindowGenerator(
+            series(20),
+            target_columns=[3, 4],
+            window_size=5,
+            horizon=2,
+            scale=True,
+            scale_range=(-1.0, 1.0),
+        )
+        window, _ = generator.window_at(0)
+        flat = [value for row in window for value in row]
+
+        assert min(flat) >= -1.0001
+        assert max(flat) <= 1.0001
+
     def test_the_last_window_ignores_the_horizon(self):
         """At decision time the future does not exist yet."""
         generator = self.generator(rows=20, window=5, horizon=2)

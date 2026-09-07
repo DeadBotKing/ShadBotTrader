@@ -152,6 +152,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--learning-rate", type=float, default=1.5e-4)
     parser.add_argument(
+        "--trend-score-loss",
+        choices=("composite", "mae"),
+        default="composite",
+        help=(
+            "trend_score only: training objective. composite keeps the existing "
+            "3*Huber+6*MAE+1*MSE RangeLoss; mae uses pure MAE with the same "
+            "seq2seq last-timestep focus. Range/signal models ignore this flag."
+        ),
+    )
+    parser.add_argument(
+        "--monitor-metric",
+        choices=("auto", "val_loss", "val_mae"),
+        default="auto",
+        help=(
+            "callback/checkpoint metric to minimize. auto uses val_mae for "
+            "trend_score and val_loss for the other roles."
+        ),
+    )
+    parser.add_argument(
         "--es-patience",
         type=int,
         default=0,
@@ -388,6 +407,38 @@ def parse_learning_rates(raw: str) -> list[float]:
     return values
 
 
+def effective_loss_name(args: argparse.Namespace, role) -> str:
+    """Resolve the training objective without changing non-score models."""
+    requested = str(getattr(args, "trend_score_loss", "composite") or "composite")
+    if role.model_id.startswith("gold_trend_score_") and requested == "mae":
+        return "mae"
+    return str(role.loss)
+
+
+def effective_monitor_metric(args: argparse.Namespace, role) -> str:
+    """Resolve the callback/checkpoint metric to minimize."""
+    requested = str(getattr(args, "monitor_metric", "auto") or "auto")
+    if requested != "auto":
+        return requested
+    if role.model_id.startswith("gold_trend_score_"):
+        return "val_mae"
+    return "val_loss"
+
+
+def effective_lr_search_metric(args: argparse.Namespace, role) -> str:
+    """Resolve the metric used to choose a learning rate.
+
+    Keep the old behavior for range regression (val_mae), while allowing
+    trend_score to share the new callback/checkpoint monitor.
+    """
+    requested = str(getattr(args, "monitor_metric", "auto") or "auto")
+    if requested != "auto":
+        return requested
+    if role.name == "signal":
+        return "val_loss"
+    return "val_mae"
+
+
 def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
     """Select the lowest validation loss/MAE on a short walk-forward pilot."""
     from ShadBotTrader.domain.market.symbol import Symbol
@@ -396,10 +447,12 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
 
     candles = training_prefix(candles, args, role)
     candidates = parse_learning_rates(args.learning_rates)
-    metric_name = "val_loss" if role.name == "signal" else "val_mae"
+    metric_name = effective_lr_search_metric(args, role)
+    loss_name = effective_loss_name(args, role)
     results: list[tuple[float, float]] = []
     rule(f"LEARNING RATE SEARCH — {role.name.upper()} / {timeframe}")
     print(f"  candidates : {', '.join(f'{rate:.2e}' for rate in candidates)}")
+    print(f"  objective  : {loss_name} · monitor {metric_name}")
     print(f"  pilot      : {args.lr_search_epochs} epoch(s), {args.lr_search_folds} fold(s)")
 
     for rate in candidates:
@@ -415,6 +468,8 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
                 max_folds=max(args.lr_search_folds, 1),
                 progress=NullProgressReporter(),
                 learning_rate=rate,
+                loss_name=loss_name,
+                monitor_metric=metric_name,
             )
             metrics = (outcome.get("fold_metrics") or [{}])[-1]
             score = metrics.get(metric_name)
@@ -480,6 +535,15 @@ def _load_resume_weights(args, role) -> tuple:
         print("  [i] RESUME: cannot read training.json — starting from scratch")
         return None, 0
 
+    expected_scale = list(getattr(role, "input_scale_range", (-2.0, 2.0)))
+    recorded_scale = list(getattr(record, "input_scale_range", [-2.0, 2.0]) or [-2.0, 2.0])
+    if recorded_scale != expected_scale:
+        print(
+            "  [i] RESUME: saved checkpoint used input scale "
+            f"{recorded_scale}, current role expects {expected_scale} — starting from scratch"
+        )
+        return None, 0
+
     initial_epoch = int(record.epochs or 0)
     if initial_epoch <= 0:
         print("  [i] RESUME: training.json has epochs=0 — starting from scratch")
@@ -513,7 +577,13 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         "TREND_SCORE" if role.model_id.startswith("gold_trend_score_") else role.name.upper()
     )
     rule(f"{display_role} MODEL  ({timeframe} candles, {horizon_text})")
+    loss_name = effective_loss_name(args, role)
+    monitor_metric = effective_monitor_metric(args, role)
     print(f"  learning rate: {learning_rate:.2e}")
+    print(f"  objective: {loss_name}")
+    print(f"  monitor  : {monitor_metric} (minimize)")
+    _scale_low, _scale_high = getattr(role, "input_scale_range", (-2.0, 2.0))
+    print(f"  input scale: minmax [{_scale_low:+.0f}, {_scale_high:+.0f}] per feature/window")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
     # فاز ۶۱: معماری و پوشش RF را صریح چاپ کن — RF > window یعنی
@@ -667,6 +737,8 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     # MAE یک پیش‌بینی‌کنندهٔ ثابت (میانهٔ train) روی همان فولد ولید.
     # اگر val_mae مدل از این عدد کمتر نباشد، مدل چیزی یاد نگرفته.
     _units = getattr(dataset, "target_units", "pct") or "pct"
+    if role.model_id.startswith("gold_trend_score_"):
+        _units = "score"
     val_bracket_baseline: float | None = None  # فاز ۹۵-ز: worst-case vs worst-case
     if role.name == "range" and 0 < resolved < len(dataset.series):
         import statistics as _stats
@@ -681,7 +753,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
             for _c in _tcols:
                 _total += sum(abs(row[_c] - _medians[_c]) for row in _val_rows) / len(_val_rows)
             val_fold_baseline = _total / len(_tcols)
-            unit_tag = "ATR14" if _units == "atr" else "frac"
+            unit_tag = "ATR14" if _units == "atr" else ("score" if _units == "score" else "frac")
             print(
                 f"  constant base  : {val_fold_baseline:.4f} {unit_tag} "
                 f"(MAE of always predicting the train median on the last "
@@ -800,6 +872,31 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     ):
         print(f"  {line}")
     print(f"  if materialised: {naive_gb:.1f} GB  (streamed instead when large)")
+    if role.model_id.startswith("gold_trend_score_") and len(dataset.series) >= role.window_size:
+        from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+
+        scale_range = getattr(role, "input_scale_range", (-1.0, 1.0))
+        low, high = scale_range
+        probes = (dataset.series[: role.window_size], dataset.series[-role.window_size :])
+        observed: list[float] = []
+        for probe_rows in probes:
+            scaled = minmax_scale_window(
+                [row[: dataset.feature_count] for row in probe_rows], scale_range
+            )
+            observed.extend(value for row in scaled for value in row)
+        observed_min = min(observed)
+        observed_max = max(observed)
+        if observed_min < low - 1e-6 or observed_max > high + 1e-6:
+            print(
+                f"\n  [X] scale audit failed: trend_score input features escaped "
+                f"[{low:+.1f}, {high:+.1f}] — observed "
+                f"[{observed_min:+.4f}, {observed_max:+.4f}]"
+            )
+            return 1
+        print(
+            f"  scale audit   : trend_score feature windows stay inside "
+            f"[{low:+.0f}, {high:+.0f}] (target column excluded; first+last checked)"
+        )
     if windows < 1:
         print(
             f"\n  [X] Not enough data: {rows:,} rows cannot make a single "
@@ -836,7 +933,15 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     # Phase 46: checkpoint after every epoch. The operator lost 18
     # completed epochs to a 2-hour timeout because nothing was written
     # until train() returned.
-    checkpoint = make_epoch_checkpoint(args, role, timeframe, dataset, learning_rate)
+    checkpoint = make_epoch_checkpoint(
+        args,
+        role,
+        timeframe,
+        dataset,
+        learning_rate,
+        loss_name=loss_name,
+        monitor_metric=monitor_metric,
+    )
 
     outcome = service.train(
         candles,
@@ -854,6 +959,8 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         val_size=effective_val_size(args, training_window_count(dataset, role)),
         early_stopping_patience=max(getattr(args, "es_patience", 0), 0),
         reduce_lr_patience=max(getattr(args, "rlr_patience", 0), 0),
+        loss_name=loss_name,
+        monitor_metric=monitor_metric,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
@@ -867,7 +974,16 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         bracket_baseline=val_bracket_baseline,
     )
     # فاز ۹۵-و: sanity prediction باید همان مدلی باشد که ذخیره شد
-    saved_artifact = save_model(outcome, args, role, timeframe, dataset, checkpoint, learning_rate)
+    saved_artifact = save_model(
+        outcome,
+        args,
+        role,
+        timeframe,
+        dataset,
+        checkpoint,
+        learning_rate,
+        loss_name=loss_name,
+    )
 
     # ---- one live prediction so the output is concrete -----------------
     sanity_artifact = saved_artifact if saved_artifact is not None else outcome["artifact"]
@@ -886,7 +1002,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         )
 
         model = _deserialize_model(sanity_artifact.payload)
-        x = np.array([minmax_scale_window(window)], dtype=np.float32)
+        x = np.array(
+            [minmax_scale_window(window, getattr(role, "input_scale_range", (-2.0, 2.0)))],
+            dtype=np.float32,
+        )
         raw = model.predict(x, verbose=0)[0]
         if raw.ndim == 2:
             score = float(raw[-1, 0])
@@ -953,7 +1072,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         from ShadBotTrader.infrastructure.ai.dual_predictor import _load as _load_model
 
         model = _load_model(sanity_artifact)
-        x = np.array([minmax_scale_window(window)], dtype=np.float32)
+        x = np.array(
+            [minmax_scale_window(window, getattr(role, "input_scale_range", (-2.0, 2.0)))],
+            dtype=np.float32,
+        )
         raw = model.predict(x, verbose=0)[0]
         names = ["SELL", "HOLD", "BUY"]
         total = float(sum(raw))
@@ -981,7 +1103,15 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     return 0
 
 
-def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: float = 1.5e-4):
+def make_epoch_checkpoint(
+    args,
+    role,
+    timeframe: str,
+    dataset,
+    learning_rate: float = 1.5e-4,
+    loss_name: str | None = None,
+    monitor_metric: str = "val_loss",
+):
     """A callback that writes the model after every epoch.
 
     Hours of training used to live only in RAM until the very last line
@@ -1006,7 +1136,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
         "version": catalogue.next_version(role.model_id),
         "best_score": float("inf"),
         "best_epoch": 0,
-        "best_metric": "val_loss",
+        "best_metric": monitor_metric,
         "worse_streak": 0,
         "diagram_done": False,
     }
@@ -1063,8 +1193,11 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
         # the metric in the log matters — a range model that printed
         # "val_loss" would send the operator hunting for a number that
         # is not there.
-        metric_name = "val_loss"
-        score = logs.get("val_loss")
+        metric_name = monitor_metric
+        score = logs.get(metric_name)
+        if score is None:
+            metric_name = "val_loss"
+            score = logs.get("val_loss")
         if score is None:
             if "val_mae" in logs:
                 metric_name, score = "val_mae", logs["val_mae"]
@@ -1126,7 +1259,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
                 threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
                 # LR واقعی بعد از ReduceLROnPlateau رو ذخیره کن
                 learning_rate=float(logs.get("learning_rate", learning_rate)),
-                loss_function=role.loss,
+                loss_function=loss_name or role.loss,
                 horizon=int(role.horizon),
                 # فاز ۹۵: واحد تارگت — مدل رنج ATR پس پیش‌بینی در ضرایب ATR است
                 target_units=(
@@ -1134,6 +1267,7 @@ def make_epoch_checkpoint(args, role, timeframe: str, dataset, learning_rate: fl
                     if role.name == "range"
                     else "pct"
                 ),
+                input_scale_range=list(getattr(role, "input_scale_range", (-2.0, 2.0))),
                 metrics={k: float(v) for k, v in logs.items()},
                 note=(f"best epoch {epoch + 1}/{total_epochs} " f"({metric_name} {score:.6f})"),
             )
@@ -1155,6 +1289,7 @@ def save_model(
     dataset,
     checkpoint=None,
     learning_rate: float = 1.5e-4,
+    loss_name: str | None = None,
 ) -> Any:
     """Persist the trained artifact and record what produced it.
 
@@ -1194,10 +1329,12 @@ def save_model(
     # trap the operator asked about.
     state = getattr(checkpoint, "state", None)
     if state and state.get("best_epoch"):
-        final = float(metrics.get("val_loss", metrics.get("val_mae", float("inf"))))
+        label = state.get("best_metric", "val_loss")
+        final = float(
+            metrics.get(label, metrics.get("val_loss", metrics.get("val_mae", float("inf"))))
+        )
         best = float(state["best_score"])
         version = int(state["version"])
-        label = state.get("best_metric", "val_loss")
         if final > best:
             print(
                 f"\n  KEPT   {role.model_id} v{version} from epoch "
@@ -1254,12 +1391,13 @@ def save_model(
         folds=args.folds,
         threshold=(float(role.target.threshold) if role.name == "signal" else 0.0),
         learning_rate=float(learning_rate),
-        loss_function=role.loss,
+        loss_function=loss_name or role.loss,
         horizon=int(role.horizon),
         # فاز ۹۵: واحد تارگت — مدل رنج ATR پس پیش‌بینی در ضرایب ATR است
         target_units=(
             (getattr(dataset, "target_units", "pct") or "pct") if role.name == "range" else "pct"
         ),
+        input_scale_range=list(getattr(role, "input_scale_range", (-2.0, 2.0))),
         metrics={key: float(value) for key, value in metrics.items()},
     )
     path = catalogue.write(record)

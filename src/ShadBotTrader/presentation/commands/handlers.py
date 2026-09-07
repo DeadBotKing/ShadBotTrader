@@ -244,6 +244,22 @@ MODEL_ROLE_CHOICES: tuple[str, ...] = (
     "trend_signal",
     "trend_score",
 )
+TREND_SCORE_LOSS_CHOICES: tuple[str, ...] = ("composite", "mae")
+
+
+def trend_score_loss_args(command: Command, role: str) -> List[str]:
+    """CLI args for the optional trend_score MAE objective.
+
+    The knob is intentionally role-gated: range models keep their proven
+    composite RangeLoss unless the operator is explicitly training the
+    trend_score model.
+    """
+    if role != "trend_score":
+        return []
+    loss = command.text("trend_score_loss", "composite").strip().lower() or "composite"
+    if loss not in TREND_SCORE_LOSS_CHOICES:
+        loss = "composite"
+    return ["--trend-score-loss", loss]
 
 
 def stored_dataset_choices(storage_root: "str | Path" = "datasets") -> List[str]:
@@ -463,6 +479,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint=(
                         "خالی = خودکار | trend_signal: 288 کندل 5M = یک روز | "
                         "trend_score روی 1D: خودکار = 1 یعنی score از کندل واقعی فردا"
+                    ),
+                ),
+                CommandField(
+                    "trend_score_loss",
+                    "Trend-score loss",
+                    "composite",
+                    kind="select",
+                    options=TREND_SCORE_LOSS_CHOICES,
+                    hint=(
+                        "فقط trend_score: composite = 3*Huber+6*MAE+1*MSE | "
+                        "mae = آموزش با MAE خالص؛ checkpoint/ES روی val_mae"
                     ),
                 ),
                 CommandField(
@@ -1159,6 +1186,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     ),
                 ),
                 CommandField(
+                    "trend_score_loss",
+                    "Trend-score loss",
+                    "composite",
+                    kind="select",
+                    options=TREND_SCORE_LOSS_CHOICES,
+                    hint=(
+                        "فقط trend_score: composite = 3*Huber+6*MAE+1*MSE | "
+                        "mae = آموزش با MAE خالص؛ checkpoint/ES روی val_mae"
+                    ),
+                ),
+                CommandField(
                     "epochs",
                     "Epochs",
                     "50",
@@ -1285,6 +1323,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint=(
                         "خالی = خودکار | trend_signal: 288 کندل 5M = یک روز | "
                         "trend_score روی 1D: خودکار = 1 یعنی score از کندل واقعی فردا"
+                    ),
+                ),
+                CommandField(
+                    "trend_score_loss",
+                    "Trend-score loss",
+                    "composite",
+                    kind="select",
+                    options=TREND_SCORE_LOSS_CHOICES,
+                    hint=(
+                        "فقط trend_score: composite = loss فعلی | mae = pilot/final با MAE خالص؛ "
+                        "LR sweep بر اساس val_mae انتخاب می‌شود"
                     ),
                 ),
                 CommandField("window", "Window rows", "100", kind="number"),
@@ -2085,6 +2134,13 @@ class CommandHandlers:
             _rng_h = max(command.integer("range_horizon", 1), 1)
             if _rng_h != 1:
                 _arch_args += ["--horizon", str(_rng_h)]
+        _lh = command.integer("label_horizon", 0)
+        _lh_args = (
+            ["--label-horizon", str(max(_lh, 1))]
+            if role in ("trend_signal", "trend_score") and _lh
+            else []
+        )
+        _score_loss_args = trend_score_loss_args(command, role)
 
         return self._run_script(
             command,
@@ -2103,6 +2159,8 @@ class CommandHandlers:
                 str(max(command.integer("folds", 2), 1)),
                 "--window",
                 str(max(command.integer("window", 150), 2)),
+                *_lh_args,
+                *_score_loss_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 80.0)),
                 "--threshold",
@@ -3642,6 +3700,7 @@ class AccountCommandHandlers(CommandHandlers):
             if role in ("trend_signal", "trend_score") and _lh
             else []
         )
+        _score_loss_args = trend_score_loss_args(command, role)
         return self._run_script(
             command,
             [
@@ -3669,6 +3728,7 @@ class AccountCommandHandlers(CommandHandlers):
                 "--window",
                 str(max(command.integer("window", 500), 2)),
                 *_lh_args,
+                *_score_loss_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 100.0)),
                 "--threshold",
@@ -3720,6 +3780,7 @@ class AccountCommandHandlers(CommandHandlers):
                 "range": "1H",
                 "trend": "1D",
                 "trend_signal": "5M",  # فاز ۹۹: پنجرهٔ 288 کندل 5M
+                "trend_score": "1D",
             }.get(role, "1H")
             dataset = preferred if preferred in available else (available[0] if available else "")
         if dataset not in available:
@@ -3743,6 +3804,13 @@ class AccountCommandHandlers(CommandHandlers):
             _opt_arch += ["--n-layers", str(_opt_layers)]
         if _opt_blocks:
             _opt_arch += ["--n-blocks", str(_opt_blocks)]
+        _lh = command.integer("label_horizon", 0)
+        _lh_args = (
+            ["--label-horizon", str(max(_lh, 1))]
+            if role in ("trend_signal", "trend_score") and _lh
+            else []
+        )
+        _score_loss_args = trend_score_loss_args(command, role)
         arguments = [
             "scripts/run_dual_models.py",
             "--with-features",
@@ -3751,14 +3819,16 @@ class AccountCommandHandlers(CommandHandlers):
             "--model",
             role,
             "--range-timeframes",
-            dataset if role == "range" else "1H",
+            dataset if role in ("range", "trend") else "1H",
             "--signal-timeframe",
-            dataset if role in ("signal", "trend") else "5M",
+            dataset if role in ("signal", "trend", "trend_signal", "trend_score") else "5M",
             "--threshold",
             str(threshold),
             "--window",
             str(max(command.integer("window", 100), 2)),
             *_opt_arch,
+            *_lh_args,
+            *_score_loss_args,
             "--train-ratio",
             str(command.number("train_ratio", 100.0)),
             "--learning-rates",

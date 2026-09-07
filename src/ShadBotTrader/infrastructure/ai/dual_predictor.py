@@ -22,14 +22,16 @@ from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
 
 
-def _prepare(window: Sequence[Sequence[float]], model: Any) -> Any:
+def _prepare(
+    window: Sequence[Sequence[float]], model: Any, scale_range: tuple[float, float] = (-2.0, 2.0)
+) -> Any:
     """Scale a window and shape it into a single-item batch."""
     import numpy as np
 
     if len(window) == 0:
         raise ValidationError("Inference window is empty")
 
-    scaled = minmax_scale_window([list(row) for row in window])
+    scaled = minmax_scale_window([list(row) for row in window], scale_range)
     x = np.array([scaled], dtype=np.float32)
 
     expected = getattr(model, "input_shape", None)

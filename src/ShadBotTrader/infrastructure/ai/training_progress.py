@@ -374,7 +374,6 @@ elapsed 0:14 | eta 1:42
         fold_seconds = now - self._fold_start
 
         total = fold.total_folds
-        fraction = self._completed_folds / total if total else 1.0
         per_fold = elapsed / self._completed_folds if self._completed_folds else 0.0
         eta = per_fold * (total - self._completed_folds)
 
@@ -389,12 +388,18 @@ elapsed 0:14 | eta 1:42
         )
         self._write("  " + "-" * 70)
 
-    def on_early_stop(self, fold: "FoldInfo", epoch: int, best_val: float) -> None:
+    def on_early_stop(
+        self,
+        fold: "FoldInfo",
+        epoch: int,
+        best_val: float,
+        metric_name: str = "val_loss",
+    ) -> None:
         """Phase 57: EarlyStopping پیش از موعد متوقف شد — به کاربر اطلاع بده."""
         self._write(
             f"  [EarlyStopping] fold {fold.human_index}/{fold.total_folds}"
             f" | stopped at epoch {epoch}"
-            f" | best val_loss={_fmt(best_val, 6)}"
+            f" | best {metric_name}={_fmt(best_val, 6)}"
             f" | plateau detected — no improvement possible"
         )
 
@@ -406,7 +411,6 @@ elapsed 0:14 | eta 1:42
         self._write("=" * 74)
         if fold_losses:
             best = min(fold_losses)
-            worst = max(fold_losses)
             mean = sum(fold_losses) / len(fold_losses)
             final = fold_losses[-1]
             self._write(f"  folds        : {len(fold_losses)}")
@@ -460,7 +464,6 @@ def keras_progress_callback(
                     learning_rate = None
 
             # فاز ۵۲: همه metrics (از جمله mae/val_mae) را در extra ذخیره کن
-            known = {"loss", "val_loss", "accuracy", "val_accuracy"}
             extra = {
                 key: float(value) for key, value in logs.items() if _as_float(value) is not None
             }

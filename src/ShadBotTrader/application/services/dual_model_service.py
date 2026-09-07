@@ -168,13 +168,15 @@ class DualModelService:
             distribution = {"mean_score": sum(ts.scores) / max(len(ts.scores), 1)}
             degenerate = False
             target_names = ["trend_score"]
-            score_by_index = dict(zip(ts.source_index, ts.scores, strict=True))
-            targets = [[score_by_index.get(orig, 0.0)] for orig in matrix.source_index]
-            target_source_index = matrix.source_index
+            # Join on the original candle index, exactly like range labels.
+            # Missing tail labels (no future candle yet) must be DROPPED, not
+            # guessed as 0.0; otherwise the newest training window contains a
+            # fake neutral score that the market never produced.
+            targets = [[score] for score in ts.scores]
             series, column_names, _ = attach_targets(
                 matrix=matrix,
                 targets=targets,
-                target_source_index=target_source_index,
+                target_source_index=ts.source_index,
                 target_names=target_names,
             )
         elif role.target.kind is TargetKind.PRICE_RANGE:
@@ -248,13 +250,15 @@ class DualModelService:
             distribution = {"mean_score": sum(ts.scores) / max(len(ts.scores), 1)}
             degenerate = False
             target_names = ["trend_score"]
-            score_by_index = dict(zip(ts.source_index, ts.scores, strict=True))
-            targets = [[score_by_index.get(orig, 0.0)] for orig in matrix.source_index]
-            target_source_index = matrix.source_index
+            # Join on the original candle index, exactly like range labels.
+            # Missing tail labels (no future candle yet) must be DROPPED, not
+            # guessed as 0.0; otherwise the newest training window contains a
+            # fake neutral score that the market never produced.
+            targets = [[score] for score in ts.scores]
             series, column_names, _ = attach_targets(
                 matrix=matrix,
                 targets=targets,
-                target_source_index=target_source_index,
+                target_source_index=ts.source_index,
                 target_names=target_names,
             )
         elif role.model_id.startswith("gold_trend_") and not role.model_id.startswith(
@@ -354,11 +358,14 @@ class DualModelService:
         dataset: PreparedDataset,
         version: int = 1,
         learning_rate: float = 1.5e-4,
+        loss_name: str | None = None,
+        monitor_metric: str = "val_loss",
     ) -> ModelDefinition:
         """The immutable contract the trainer must fulfil."""
         if learning_rate <= 0:
             raise ValidationError("learning_rate must be positive")
         is_regression = role.target.kind is TargetKind.PRICE_RANGE
+        effective_loss = (loss_name or role.loss).strip() or role.loss
         return ModelDefinition(
             model_id=ModelId(role.model_id),
             version=ModelVersion(version),
@@ -385,7 +392,9 @@ class DualModelService:
                 "horizon": role.horizon,
                 "timeframe": role.timeframe,
                 "learning_rate": float(learning_rate),
-                "loss": role.loss,
+                "loss": effective_loss,
+                "monitor_metric": monitor_metric,
+                "input_scale_range": list(getattr(role, "input_scale_range", (-2.0, 2.0))),
                 "threshold": role.target.threshold,
                 # فاز ۹۸: سبک برچسب — "color" برای gold_trend_* (بدون مسیر)
                 "label_style": (
@@ -436,6 +445,8 @@ class DualModelService:
         resume_weights: "bytes | None" = None,
         early_stopping_patience: int = 0,
         reduce_lr_patience: int = 0,
+        loss_name: str | None = None,
+        monitor_metric: str = "val_loss",
     ) -> Any:
         """A roll-forward WaveNet trainer configured for this role.
 
@@ -526,7 +537,7 @@ class DualModelService:
             # epoch همهٔ فولدها ≤ 19 بود). کامپایل مدل تغییری نمی‌کند —
             # شاخهٔ classification در _build_compiled همین loss را
             # hard-code دارد؛ فقط گیتِ callbacks حالا match می‌شود.
-            loss=role.loss,
+            loss=(loss_name or role.loss),
             metric=role.metric,
             max_folds=max_folds,
             progress=progress,
@@ -547,6 +558,8 @@ class DualModelService:
             # فاز ۷۴: patienceهای قابل تنظیم (0 = auto)
             early_stopping_patience=early_stopping_patience,
             reduce_lr_patience=reduce_lr_patience,
+            monitor_metric=monitor_metric,
+            input_scale_range=getattr(role, "input_scale_range", (-2.0, 2.0)),
             # Phase 55: seq2seq head برای range model
             seq2seq=getattr(role, "seq2seq", False) if is_regression else False,
             horizon=role.horizon if is_regression else 5,
@@ -569,6 +582,8 @@ class DualModelService:
         val_size: int = 0,
         early_stopping_patience: int = 0,
         reduce_lr_patience: int = 0,
+        loss_name: str | None = None,
+        monitor_metric: str = "val_loss",
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -586,7 +601,13 @@ class DualModelService:
         always fits).
         """
         dataset = self.prepare(candles, symbol, timeframe, role)
-        definition = self.definition_for(role, dataset, learning_rate=learning_rate)
+        definition = self.definition_for(
+            role,
+            dataset,
+            learning_rate=learning_rate,
+            loss_name=loss_name,
+            monitor_metric=monitor_metric,
+        )
         trainer = self.build_trainer(
             dataset,
             epochs=epochs,
@@ -597,6 +618,8 @@ class DualModelService:
             val_size=val_size,
             early_stopping_patience=early_stopping_patience,
             reduce_lr_patience=reduce_lr_patience,
+            loss_name=loss_name,
+            monitor_metric=monitor_metric,
         )
         trainer.on_epoch_model = on_epoch_model
 

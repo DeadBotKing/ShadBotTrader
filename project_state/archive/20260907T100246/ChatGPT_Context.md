@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T10:02:46.832861+00:00
+- Snapshot generated at: 2026-09-07T09:59:21.065032+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: db515b463b64ed92b68f726bf36fb8587a598b6a
-- Dirty: yes (29 files)
+- Dirty: yes (28 files)
 - Recent commits:
   - db515b4 Phase 103: audit trend_score target normalization and drop fake tail label
   - 3f4174a Phase 102: trend_score MAE objective and val_mae monitor

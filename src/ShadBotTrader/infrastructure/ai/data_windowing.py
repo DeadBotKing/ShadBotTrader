@@ -13,6 +13,45 @@ from typing import List, Optional, Sequence
 
 from ShadBotTrader.domain.common.errors import ValidationError
 
+DEFAULT_SCALE_RANGE: tuple[float, float] = (-2.0, 2.0)
+TREND_SCORE_SCALE_RANGE: tuple[float, float] = (-1.0, 1.0)
+
+
+def normalize_scale_range(value: object = None) -> tuple[float, float]:
+    """Return a safe two-number min/max scaling range."""
+    if value is None:
+        return DEFAULT_SCALE_RANGE
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return DEFAULT_SCALE_RANGE
+    try:
+        low_f, high_f = float(value[0]), float(value[1])
+    except (TypeError, ValueError):
+        return DEFAULT_SCALE_RANGE
+    if low_f >= high_f:
+        return DEFAULT_SCALE_RANGE
+    return (low_f, high_f)
+
+
+def input_scale_range_for_model(model_id: str = "", recorded: object = None) -> tuple[float, float]:
+    """Scaling range used by one model family.
+
+    Range/signal/trend keep the historical ``[-2,+2]`` input scale.  The
+    trend-score model uses the tighter ``[-1,+1]`` input range because its
+    target is itself bounded to ``[-1,+1]``.
+    """
+    if recorded is not None:
+        return normalize_scale_range(recorded)
+    if str(model_id).startswith("gold_trend_score_"):
+        return TREND_SCORE_SCALE_RANGE
+    return DEFAULT_SCALE_RANGE
+
+
+def scale_window_for_model(
+    window: List[List[float]], model_id: str = "", recorded: object = None
+) -> List[List[float]]:
+    """Min-max scale a window with the model family's input range."""
+    return minmax_scale_window(window, input_scale_range_for_model(model_id, recorded))
+
 
 @dataclass(frozen=True)
 class WindowedSample:
@@ -75,7 +114,7 @@ def make_windows(
 
 
 def minmax_scale_window(
-    window: List[List[float]], scale_range: tuple[float, float] = (-2.0, 2.0)
+    window: List[List[float]], scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE
 ) -> List[List[float]]:
     """Min-max scale each feature column of a window into ``scale_range``.
 
@@ -84,7 +123,7 @@ def minmax_scale_window(
     """
     if not window:
         return []
-    low, high = scale_range
+    low, high = normalize_scale_range(scale_range)
     n_cols = len(window[0])
     scaled = [[0.0] * n_cols for _ in window]
     for col in range(n_cols):
@@ -109,6 +148,7 @@ def build_samples_at(
     scale: bool = True,
     horizon: int = 0,
     drop_target_column: bool = False,
+    scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
 ) -> List[WindowedSample]:
     """Build windows ending at explicit candle indices.
 
@@ -131,7 +171,7 @@ def build_samples_at(
             window = [row[:target_column] + row[target_column + 1 :] for row in window]
         samples.append(
             WindowedSample(
-                features=minmax_scale_window(window) if scale else window,
+                features=minmax_scale_window(window, scale_range) if scale else window,
                 target=series[end + horizon][target_column],
                 target_index=end,
             )
@@ -146,6 +186,7 @@ def build_samples(
     scale: bool = True,
     horizon: int = 0,
     drop_target_column: bool = False,
+    scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
 ) -> List[WindowedSample]:
     """Build windows and optionally min-max scale the feature columns."""
     samples = make_windows(
@@ -159,7 +200,7 @@ def build_samples(
         return samples
     return [
         WindowedSample(
-            features=minmax_scale_window(sample.features),
+            features=minmax_scale_window(sample.features, scale_range),
             target=sample.target,
             target_index=sample.target_index,
         )
@@ -218,6 +259,7 @@ def build_multi_target_samples(
     target_columns: Sequence[int],
     scale: bool = True,
     horizon: int = 0,
+    scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
 ) -> List[WindowedSample]:
     """Multi-target windows, optionally min-max scaled per window.
 
@@ -230,7 +272,7 @@ def build_multi_target_samples(
         return samples
     return [
         WindowedSample(
-            features=minmax_scale_window(sample.features),
+            features=minmax_scale_window(sample.features, scale_range),
             target=sample.target,
             target_index=sample.target_index,
             targets=sample.targets,

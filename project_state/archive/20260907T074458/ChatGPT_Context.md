@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T10:02:46.832861+00:00
+- Snapshot generated at: 2026-09-07T07:41:34.024296+00:00
 
 ## Current Architecture
 
@@ -27,10 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: db515b463b64ed92b68f726bf36fb8587a598b6a
-- Dirty: yes (29 files)
+- Commit: 3f4174aad87c85df0176f3175932e23fe23b2403
+- Dirty: yes (4 files)
 - Recent commits:
-  - db515b4 Phase 103: audit trend_score target normalization and drop fake tail label
   - 3f4174a Phase 102: trend_score MAE objective and val_mae monitor
   - e5ca863 Phase 101: fix Windows dashboard live training log streaming
   - d6ac7c7 docs: Phase 100 model card — dataset, real-candle target with worked examples, full WaveNet architecture (activations+RangeLoss), and the range-vs-score learnability proof (vol clusters corr 0.997 vs daily drift corr 0.002)
@@ -40,6 +39,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 57f9467 Phase 98b: full target statistics printed before trend_score training
   - b97546c Phase 98b fix: /data inspector model_role → range for trend_score (184 features, 1-output tanh — verified end-to-end in sandbox)
   - 2b634ea Phase 98b: trend_score uses full range seq2seq architecture with 1 output
+  - 997516e Phase 98b: trend_score architecture verified — Dense(1, tanh) ✓
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 145
 - Documentation files: 144
 - Legacy files: 176
-- Total Python lines: 122770
+- Total Python lines: 122492
 - Modules: 464
 - Classes: 803
-- Functions: 4577
+- Functions: 4567
 - External dependencies: 14

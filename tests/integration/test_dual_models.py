@@ -29,6 +29,7 @@ from ShadBotTrader.infrastructure.ai.model_roles import (
     default_roles,
     range_model_role,
     signal_model_role,
+    trend_score_model_role,
 )
 
 RUN_TF = os.environ.get("RUN_TF") == "1"
@@ -93,6 +94,10 @@ class TestModelRoles:
     def test_a_bounded_activation_is_never_used_for_regression(self):
         """A sigmoid head cannot express a negative low offset."""
         assert range_model_role().output_activation not in ("sigmoid", "softmax")
+
+    def test_trend_score_uses_tighter_input_scale_than_range(self):
+        assert range_model_role().input_scale_range == (-2.0, 2.0)
+        assert trend_score_model_role().input_scale_range == (-1.0, 1.0)
 
 
 # ------------------------------------------------------------ datasets ---
@@ -183,6 +188,30 @@ class TestLeakageProtection:
         dataset = service.prepare(candles, SYMBOL, HOURLY, role)
 
         assert dataset.row_count <= len(candles) - role.horizon
+
+    def test_trend_score_drops_the_final_unlabelled_candle(self, service):
+        """The score target needs the next candle; the last row is not neutral."""
+        candles = wave(100)
+        role = trend_score_model_role(timeframe="1H", window_size=16, label_horizon=1)
+        dataset = service.prepare(candles, SYMBOL, HOURLY, role)
+
+        last = candles[-1]
+        expected = (float(last.close.amount) - float(last.open.amount)) / (
+            float(last.high.amount) - float(last.low.amount)
+        )
+
+        assert dataset.row_count == len(candles) - 1
+        assert dataset.column_names[-1] == "trend_score"
+        assert dataset.series[-1][dataset.target_columns[0]] == pytest.approx(expected)
+
+    def test_trend_score_trainer_uses_minus_one_to_plus_one_inputs(self, service):
+        candles = wave(100)
+        role = trend_score_model_role(timeframe="1H", window_size=16, label_horizon=1)
+        dataset = service.prepare(candles, SYMBOL, HOURLY, role)
+
+        trainer = service.build_trainer(dataset)
+
+        assert trainer._input_scale_range == (-1.0, 1.0)
 
 
 # ------------------------------------------------------------ training ---

@@ -24,7 +24,10 @@ from dataclasses import dataclass
 from typing import Any, Iterator, List, Optional, Sequence, Tuple
 
 from ShadBotTrader.domain.common.errors import ValidationError
-from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+from ShadBotTrader.infrastructure.ai.data_windowing import (
+    DEFAULT_SCALE_RANGE,
+    minmax_scale_window,
+)
 
 #: The window height the user specified for both models.
 DEFAULT_WINDOW_SIZE = 500
@@ -127,6 +130,7 @@ class WindowGenerator:
         classification: bool = False,
         sample_ends: Optional[Sequence[int]] = None,
         seq2seq: bool = False,
+        scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
     ) -> None:
         if not series:
             raise ValidationError("series must not be empty")
@@ -151,6 +155,7 @@ class WindowGenerator:
         # وگرنه RangeLoss که [batch, window, 2] می‌خواهد با y=[batch,2]
         # کرش می‌کند (بکتست 1H: 4.3GB > آستانهٔ استریم).
         self._seq2seq = bool(seq2seq)
+        self._scale_range = scale_range
         self._classification = classification
         self._sample_ends = list(sample_ends) if sample_ends is not None else None
         if self._sample_ends is not None:
@@ -195,7 +200,7 @@ class WindowGenerator:
 
         window = [[float(row[column]) for column in self._keep] for row in self._series[start:stop]]
         if self._scale:
-            window = minmax_scale_window(window)
+            window = minmax_scale_window(window, self._scale_range)
 
         if self._seq2seq:
             # فاز ۷۹: label هر سطر پنجره = برچسبِ فردای همان سطر
@@ -203,9 +208,7 @@ class WindowGenerator:
             #  چون targets در series[end+horizon] برای سطر end تعریف شده‌اند
             #  و در prepare به هر سطر چسبیده‌اند).
             seq_rows = self._series[start:stop]
-            label = [
-                [float(row[column]) for column in self._targets] for row in seq_rows
-            ]
+            label = [[float(row[column]) for column in self._targets] for row in seq_rows]
             return window, label
 
         label_row = self._series[end + self._horizon]
@@ -275,13 +278,9 @@ class WindowGenerator:
         if self._classification:
             label_spec = tf.TensorSpec(shape=(None,), dtype=tf.int32)
         elif self._seq2seq:
-            label_spec = tf.TensorSpec(
-                shape=(None, rows, len(self._targets)), dtype=tf.float32
-            )
+            label_spec = tf.TensorSpec(shape=(None, rows, len(self._targets)), dtype=tf.float32)
         else:
-            label_spec = tf.TensorSpec(
-                shape=(None, len(self._targets)), dtype=tf.float32
-            )
+            label_spec = tf.TensorSpec(shape=(None, len(self._targets)), dtype=tf.float32)
 
         def generator():
             yield from self.iter_batches(batch_size=batch_size, start=start, stop=stop)
@@ -315,4 +314,4 @@ class WindowGenerator:
             )
         rows = self._series[-self._window_size :]
         window = [[float(row[column]) for column in self._keep] for row in rows]
-        return minmax_scale_window(window) if self._scale else window
+        return minmax_scale_window(window, self._scale_range) if self._scale else window

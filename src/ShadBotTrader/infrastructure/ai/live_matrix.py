@@ -146,12 +146,15 @@ class LiveMatrixBuilder:
             return None, str(error)
 
 
-def scale_for_model(rows: Sequence[Sequence[float]]) -> List[List[float]]:
+def scale_for_model(
+    rows: Sequence[Sequence[float]], model_id: str = "", recorded_scale: object = None
+) -> List[List[float]]:
     """Apply the same per-window scaling training used.
 
     Inference must scale exactly as training did; anything else feeds the
-    model a differently-shaped world than it learned from.
+    model a differently-shaped world than it learned from.  Trend-score
+    models use [-1,+1]; range/signal keep the legacy [-2,+2].
     """
-    from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+    from ShadBotTrader.infrastructure.ai.data_windowing import scale_window_for_model
 
-    return minmax_scale_window([list(row) for row in rows])
+    return scale_window_for_model([list(row) for row in rows], model_id, recorded_scale)

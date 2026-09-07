@@ -48,6 +48,11 @@ def test_train_descriptor_has_architecture_fields():
     assert {"n_layers", "n_blocks", "val_size"} <= fields
 
 
+def test_train_descriptor_has_trend_score_loss_field():
+    fields = {field.name for field in descriptor_for(CommandKind.TRAIN_DUAL_MODELS).fields}
+    assert "trend_score_loss" in fields
+
+
 def test_retrain_descriptor_has_architecture_fields():
     fields = {field.name for field in descriptor_for(CommandKind.TRAIN_MODEL).fields}
     assert {"n_layers", "n_blocks", "val_size"} <= fields
@@ -90,6 +95,33 @@ def test_train_dual_models_omits_flags_when_zero(gui, monkeypatch):
     assert "--n-layers" not in args
     assert "--n-blocks" not in args
     assert "--val-size" not in args
+
+
+def test_train_dual_models_passes_trend_score_mae_loss(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {"model": "trend_score", "dataset": "5M", "trend_score_loss": "mae"},
+        )
+    )
+
+    args = captured["args"]
+    assert args[args.index("--trend-score-loss") + 1] == "mae"
+
+
+def test_train_dual_models_ignores_trend_score_loss_for_other_roles(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {"model": "signal", "dataset": "5M", "trend_score_loss": "mae"},
+        )
+    )
+
+    assert "--trend-score-loss" not in captured["args"]
 
 
 def test_retrain_passes_knobs(gui, monkeypatch, tmp_path):
@@ -136,3 +168,18 @@ def test_optimise_passes_architecture(gui, monkeypatch):
     args = captured["args"]
     assert args[args.index("--n-layers") + 1] == "4"
     assert args[args.index("--n-blocks") + 1] == "2"
+
+
+def test_optimise_passes_trend_score_mae_loss(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.optimise_learning_rate(
+        Command(
+            CommandKind.OPTIMISE_LEARNING_RATE,
+            {"model": "trend_score", "dataset": "5M", "trend_score_loss": "mae"},
+        )
+    )
+
+    args = captured["args"]
+    assert args[args.index("--signal-timeframe") + 1] == "5M"
+    assert args[args.index("--trend-score-loss") + 1] == "mae"

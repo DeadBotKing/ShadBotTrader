@@ -173,3 +173,17 @@ class TestModelRecordUnits:
             }
         )
         assert legacy.target_units == "pct"
+        assert legacy.input_scale_range == [-2.0, 2.0]
+
+    def test_roundtrip_keeps_input_scale_range(self):
+        record = ModelRecord(
+            model_id="gold_trend_score_1d",
+            role="range",
+            symbol="XAUUSD",
+            timeframe="1D",
+            input_scale_range=[-1.0, 1.0],
+        )
+
+        restored = ModelRecord.from_dict(record.to_dict())
+
+        assert restored.input_scale_range == [-1.0, 1.0]

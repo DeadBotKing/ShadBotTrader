@@ -88,6 +88,9 @@ class ModelRole:
     depth_multiplier: int = 8
     l2: float = 2.5e-4
     dropout: float = 0.10
+    #: Per-window input min-max scale. Range/signal keep legacy [-2,+2];
+    #: trend_score uses [-1,+1] to match its bounded target scale.
+    input_scale_range: tuple[float, float] = (-2.0, 2.0)
     seq2seq: bool = False  # Phase 55: seq2seq output for range model
     #: فاز ۹۹: افق برچسب trend_signal (تعداد کندل جلوتر برای مانع‌ها)
     label_horizon: int = 288
@@ -139,6 +142,7 @@ class ModelRole:
             "depth_multiplier": self.depth_multiplier,
             "l2": self.l2,
             "dropout": self.dropout,
+            "input_scale_range": list(self.input_scale_range),
         }
 
 
@@ -266,6 +270,8 @@ def trend_score_model_role(
 
     خروجی: عدد پیوسته در (−1, +1) —
       مثبت = روند صعودی، منفی = نزولی، نزدیک صفر = بی‌رون.
+    ورودی‌ها برخلاف range با min-max در بازهٔ (−1,+1) scale می‌شوند
+    چون target خودش bounded است؛ range/signal همان (−2,+2) قدیمی را نگه می‌دارند.
     loss = Huber (مثل range)، رگرسیون خالص.
 
     فاز ۱۰۰ (پروپوزال TREND_SCORE_1D_PROPOSAL): حالت **کندل واقعی** —
@@ -299,6 +305,7 @@ def trend_score_model_role(
         depth_multiplier=6,
         dropout=0.10,
         l2=2.0e-4,
+        input_scale_range=(-1.0, 1.0),
         seq2seq=True,
         label_horizon=label_horizon,
     )

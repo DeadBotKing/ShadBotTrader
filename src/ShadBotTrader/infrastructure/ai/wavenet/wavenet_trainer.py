@@ -23,6 +23,7 @@ from ShadBotTrader.domain.ai.prediction import Confidence, Prediction
 from ShadBotTrader.domain.ai.training_run import TrainingRun
 from ShadBotTrader.domain.common.errors import ValidationError
 from ShadBotTrader.infrastructure.ai.data_windowing import (
+    DEFAULT_SCALE_RANGE,
     build_multi_target_samples,
     build_samples,
     build_samples_at,
@@ -247,6 +248,8 @@ class WavenetTrainer(ModelTrainer):
         output_channels: int | None = None,
         early_stopping_patience: int = 0,
         reduce_lr_patience: int = 0,
+        monitor_metric: str = "val_loss",
+        input_scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -266,6 +269,12 @@ class WavenetTrainer(ModelTrainer):
                 categorical cross-entropy for classification and MSE for
                 regression.
             metric: overrides the reported metric.
+            monitor_metric: callback/checkpoint metric to minimize. Keep
+                ``val_loss`` for range/signal, but trend_score may use
+                ``val_mae`` so the saved epoch follows the trading-relevant
+                error rather than the composite loss.
+            input_scale_range: per-window min-max input range. The default
+                is the historical ``[-2,+2]``; trend_score uses ``[-1,+1]``.
         """
         self._series = [list(row) for row in series]
         self._target_column = target_column
@@ -299,6 +308,8 @@ class WavenetTrainer(ModelTrainer):
         self._dropout = float(dropout)
         self._es_patience_override = max(int(early_stopping_patience), 0)
         self._rlr_patience_override = max(int(reduce_lr_patience), 0)
+        self._monitor_metric = (monitor_metric or "val_loss").strip() or "val_loss"
+        self._input_scale_range = input_scale_range
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self._initial_epoch = max(0, int(initial_epoch))
@@ -368,6 +379,7 @@ class WavenetTrainer(ModelTrainer):
                 sample_ends=self._sample_indices,
                 scale=True,
                 drop_target_column=True,
+                scale_range=self._input_scale_range,
             )
         elif self._target_columns is not None:
             samples = build_multi_target_samples(
@@ -375,6 +387,7 @@ class WavenetTrainer(ModelTrainer):
                 window_size=self._window_size,
                 target_columns=self._target_columns,
                 scale=True,
+                scale_range=self._input_scale_range,
             )
         else:
             samples = build_samples(
@@ -383,6 +396,7 @@ class WavenetTrainer(ModelTrainer):
                 target_column=self._target_column,
                 scale=True,
                 drop_target_column=True,
+                scale_range=self._input_scale_range,
             )
         self._samples = samples
         _notify(self._progress, "on_prepare_end", len(samples))
@@ -525,7 +539,7 @@ class WavenetTrainer(ModelTrainer):
                 _rlr_patience = self._rlr_patience_override or max(5, min(30, self._epochs // 10))
                 callbacks.append(
                     tf.keras.callbacks.ReduceLROnPlateau(
-                        monitor="val_loss",
+                        monitor=self._monitor_metric,
                         factor=0.85,  # LR × 0.85 (کمی تندتر از 0.9)
                         patience=_rlr_patience,
                         verbose=0,
@@ -546,7 +560,7 @@ class WavenetTrainer(ModelTrainer):
 
                 # EarlyStopping ساده — بدون subclass (serialize مشکل نداشته باشه)
                 _es = tf.keras.callbacks.EarlyStopping(
-                    monitor="val_loss",
+                    monitor=self._monitor_metric,
                     patience=_es_patience,
                     mode="min",
                     # فاز ۹۵-ج: همان دلیل RLR — نویز 1e-6 شمارندهٔ ES را
@@ -568,7 +582,10 @@ class WavenetTrainer(ModelTrainer):
                         best = float(getattr(_es, "best", 0.0) or 0.0)
                         fn = getattr(_rep, "on_early_stop", None)
                         if callable(fn):
-                            fn(_fld, _es.stopped_epoch, best)
+                            try:
+                                fn(_fld, _es.stopped_epoch, best, self._monitor_metric)
+                            except TypeError:
+                                fn(_fld, _es.stopped_epoch, best)
 
                 _es.on_train_end = _es_on_end  # type: ignore[method-assign]
                 callbacks.append(_es)
@@ -805,6 +822,7 @@ class WavenetTrainer(ModelTrainer):
                 scale=True,
                 classification=self._target_columns is None,
                 sample_ends=self._sample_indices,
+                scale_range=self._input_scale_range,
                 # فاز ۷۹: مسیر streamed مدل رنج seq2seq — برچسب‌های
                 # [window,2] تا RangeLoss با y سه‌بعدی سازگار باشد.
                 seq2seq=self._seq2seq,
@@ -1041,8 +1059,22 @@ def _build_compiled(
         compiled_loss: object = tf.keras.losses.MeanSquaredError()
         compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     elif loss in ("mae", "mean_absolute_error"):
-        compiled_loss = tf.keras.losses.MeanAbsoluteError()
-        compiled_metrics = [tf.keras.metrics.MeanSquaredError(name=metric or "mse")]
+        if seq2seq:
+            # فاز ۱۰۲: trend_score می‌تواند با MAE خالص train شود، ولی همچنان
+            # همان تمرکز seq2seq روی آخرین timestep را نگه می‌داریم تا loss
+            # دقیقاً همان خطایی را کم کند که در forecast مصرف می‌شود.
+            compiled_loss = _range_class("RangeLoss")(
+                seq2seq=True,
+                w_huber=0.0,
+                w_mae=1.0,
+                w_mse=0.0,
+                delta=0.005,
+                name="mae_loss",
+            )
+            compiled_metrics = [_range_class("Seq2SeqMAE")()]
+        else:
+            compiled_loss = tf.keras.losses.MeanAbsoluteError()
+            compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     elif loss in ("huber", "huber_loss"):
         # فاز ۵۴: Loss سه‌گانه (ایده از legacy/TimeSeriesPrediction2.py)
         #
@@ -1175,14 +1207,23 @@ class WavenetPredictor(ModelPredictor):
     ) -> Prediction:
         import numpy as np
 
-        from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+        from ShadBotTrader.infrastructure.ai.data_windowing import (
+            input_scale_range_for_model,
+            minmax_scale_window,
+        )
 
         model = _deserialize_model(artifact.payload)
         window = request.features
         if not window:
             raise ValueError("InferenceRequest has no features")
 
-        scaled = minmax_scale_window(window)
+        scaled = minmax_scale_window(
+            window,
+            input_scale_range_for_model(
+                str(definition.model_id.value),
+                definition.hyperparameters.get("input_scale_range"),
+            ),
+        )
         # The model consumes a full (window_size, n_features) window, so
         # the batch axis wraps the whole window - not just its first row.
         x = np.array([scaled], dtype=np.float32)

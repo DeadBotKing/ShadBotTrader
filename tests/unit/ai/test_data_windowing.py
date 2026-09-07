@@ -2,8 +2,10 @@
 
 from ShadBotTrader.infrastructure.ai.data_windowing import (
     build_samples,
+    input_scale_range_for_model,
     make_windows,
     minmax_scale_window,
+    scale_window_for_model,
 )
 
 
@@ -43,10 +45,31 @@ def test_minmax_scale_bounds():
     assert scaled[1][1] == 2.0
 
 
+def test_trend_score_scale_bounds_are_tighter():
+    window = [[0.0, 5.0], [10.0, 15.0]]
+    scaled = scale_window_for_model(window, "gold_trend_score_1d")
+
+    assert input_scale_range_for_model("gold_trend_score_1d") == (-1.0, 1.0)
+    assert scaled[0][0] == -1.0
+    assert scaled[1][0] == 1.0
+    assert scaled[0][1] == -1.0
+    assert scaled[1][1] == 1.0
+
+
 def test_build_samples_scales():
     series = [[0.0], [5.0], [10.0], [15.0], [20.0]]
     samples = build_samples(series, window_size=3, target_column=0, scale=True)
     assert samples[0].features[0][0] == -2.0  # min of window scaled
+
+
+def test_build_samples_accepts_tighter_scale_range():
+    series = [[0.0], [5.0], [10.0], [15.0], [20.0]]
+    samples = build_samples(
+        series, window_size=3, target_column=0, scale=True, scale_range=(-1.0, 1.0)
+    )
+
+    assert samples[0].features[0][0] == -1.0
+    assert samples[0].features[-1][0] == 1.0
 
 
 def test_make_windows_can_drop_target_column():

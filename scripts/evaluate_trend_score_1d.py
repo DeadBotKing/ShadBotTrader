@@ -30,7 +30,10 @@ def main() -> int:
     from ShadBotTrader.domain.ai.model_identity import ModelId, ModelVersion
     from ShadBotTrader.domain.market.symbol import Symbol
     from ShadBotTrader.domain.market.timeframe import Timeframe
-    from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+    from ShadBotTrader.infrastructure.ai.data_windowing import (
+        input_scale_range_for_model,
+        minmax_scale_window,
+    )
     from ShadBotTrader.infrastructure.ai.feature_matrix import build_feature_matrix
     from ShadBotTrader.infrastructure.ai.filesystem_artifact_store import (
         FilesystemArtifactStore,
@@ -68,7 +71,11 @@ def main() -> int:
         print("[X] artifact weights missing")
         return 1
     model = _deserialize_model(artifact.payload)
+    input_scale_range = input_scale_range_for_model(
+        record.model_id, getattr(record, "input_scale_range", None)
+    )
     print(f"model: {record.model_id} v{record.version} (trained {str(record.trained_at)[:10]})")
+    print(f"input scale: [{input_scale_range[0]:+.1f}, {input_scale_range[1]:+.1f}]")
 
     # ── پیش‌بینی روی کل تاریخچه (window=150، stride 1) ────────────────
     from ShadBotTrader.infrastructure.feature.calculator_registry import (
@@ -97,7 +104,7 @@ def main() -> int:
     batch = 64
     for start in range(0, n_windows, batch):
         chunk = [
-            minmax_scale_window([list(r) for r in rows[w : w + WINDOW]])
+            minmax_scale_window([list(r) for r in rows[w : w + WINDOW]], input_scale_range)
             for w in range(start, min(start + batch, n_windows))
         ]
         x = np.array(chunk, dtype=np.float32)

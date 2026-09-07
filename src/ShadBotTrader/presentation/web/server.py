@@ -353,9 +353,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
             # ── پیش‌بینی — بر اساس نوع مدل ──
             import numpy as np
 
-            from ShadBotTrader.infrastructure.ai.data_windowing import minmax_scale_window
+            from ShadBotTrader.infrastructure.ai.data_windowing import (
+                input_scale_range_for_model,
+                minmax_scale_window,
+            )
 
-            x = np.array([minmax_scale_window(window_rows)], dtype=np.float32)
+            input_scale_range = input_scale_range_for_model(
+                record.model_id, getattr(record, "input_scale_range", None)
+            )
+            x = np.array([minmax_scale_window(window_rows, input_scale_range)], dtype=np.float32)
             raw = model.predict(x, verbose=0)[0]
 
             # ── gold_trend_score_* — رگرسیون score (−1..+1) ──
