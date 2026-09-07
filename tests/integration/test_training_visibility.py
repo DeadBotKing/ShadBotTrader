@@ -174,6 +174,17 @@ class TestTheProgressReporterIsActuallyUsed:
 
         assert module.effective_loss_name(args, role) == "mae"
 
+    def test_trend_signal_auto_class_weights_are_role_gated(self):
+        import types
+
+        module = load_run_dual_models_script()
+        args = types.SimpleNamespace(class_weight="auto")
+        trend_signal = types.SimpleNamespace(model_id="gold_trend_signal_5m")
+        signal = types.SimpleNamespace(model_id="gold_signal_5m")
+
+        assert module.effective_class_weight_mode(args, trend_signal) == "auto"
+        assert module.effective_class_weight_mode(args, signal) == "off"
+
     def test_the_script_passes_a_console_reporter(self):
         """It existed since Phase 13 and nothing ever passed it."""
         source = (Path(__file__).resolve().parents[2] / "scripts" / "run_dual_models.py").read_text(

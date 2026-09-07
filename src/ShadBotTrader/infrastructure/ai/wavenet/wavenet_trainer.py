@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
@@ -203,6 +204,108 @@ def _deserialize_model(payload: bytes):
         return tf.keras.models.load_model(path, custom_objects=custom_objects())
 
 
+def class_weight_for_labels(labels: Sequence[int], num_classes: int) -> dict[int, float]:
+    """Balanced class weights for a classification fold.
+
+    Formula: total / (num_classes * count[class]). Missing classes are
+    omitted; there is no sample to weight for them, and Keras accepts a
+    partial mapping for the labels that are present.
+    """
+    counts = Counter(int(value) for value in labels)
+    total = sum(counts.values())
+    if total <= 0 or num_classes <= 0:
+        return {}
+    return {
+        cls: float(total / (num_classes * counts[cls]))
+        for cls in range(num_classes)
+        if counts.get(cls, 0) > 0
+    }
+
+
+def classification_metric_names(num_classes: int) -> list[str]:
+    if num_classes == 3:
+        return ["sell", "hold", "buy"]
+    if num_classes == 2:
+        return ["sell", "buy"]
+    return [f"class{index}" for index in range(num_classes)]
+
+
+def average_precision_score(y_true: Sequence[int], scores: Sequence[float], positive: int) -> float:
+    """Average precision for one positive class without sklearn."""
+    pairs = sorted(zip(scores, y_true, strict=True), key=lambda item: item[0], reverse=True)
+    positives = sum(1 for label in y_true if int(label) == positive)
+    if positives == 0:
+        return 0.0
+    hits = 0
+    precision_sum = 0.0
+    for rank, (_score, label) in enumerate(pairs, start=1):
+        if int(label) == positive:
+            hits += 1
+            precision_sum += hits / rank
+    return precision_sum / positives
+
+
+def classification_report_metrics(
+    y_true: Sequence[int], y_pred: Sequence[int], probabilities: Any, num_classes: int
+) -> dict[str, float]:
+    """Per-class precision/recall/F1 plus aggregate classification metrics."""
+    import numpy as np
+
+    matrix = [[0 for _ in range(num_classes)] for _ in range(num_classes)]
+    for actual, predicted in zip(y_true, y_pred, strict=True):
+        a, p = int(actual), int(predicted)
+        if 0 <= a < num_classes and 0 <= p < num_classes:
+            matrix[a][p] += 1
+
+    total = sum(sum(row) for row in matrix)
+    correct = sum(matrix[i][i] for i in range(num_classes))
+    names = classification_metric_names(num_classes)
+    metrics: dict[str, float] = {
+        "val_accuracy_from_confusion": correct / total if total else 0.0,
+    }
+    recalls: list[float] = []
+    f1s: list[float] = []
+    weighted_f1 = 0.0
+    buy_sell_f1: list[float] = []
+    for cls, name in enumerate(names):
+        tp = matrix[cls][cls]
+        fp = sum(matrix[row][cls] for row in range(num_classes) if row != cls)
+        fn = sum(matrix[cls][col] for col in range(num_classes) if col != cls)
+        support = sum(matrix[cls])
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+        metrics[f"val_{name}_precision"] = precision
+        metrics[f"val_{name}_recall"] = recall
+        metrics[f"val_{name}_f1"] = f1
+        metrics[f"val_{name}_support"] = float(support)
+        recalls.append(recall)
+        f1s.append(f1)
+        weighted_f1 += f1 * support
+        if name in ("sell", "buy"):
+            buy_sell_f1.append(f1)
+    metrics["val_balanced_accuracy"] = sum(recalls) / len(recalls) if recalls else 0.0
+    metrics["val_macro_f1"] = sum(f1s) / len(f1s) if f1s else 0.0
+    metrics["val_weighted_f1"] = weighted_f1 / total if total else 0.0
+    if buy_sell_f1:
+        metrics["val_buy_sell_f1"] = sum(buy_sell_f1) / len(buy_sell_f1)
+
+    probs = np.asarray(probabilities, dtype=np.float64)
+    if probs.ndim == 2 and probs.shape[1] == num_classes:
+        for cls, name in enumerate(names):
+            metrics[f"val_{name}_ap"] = average_precision_score(y_true, probs[:, cls].tolist(), cls)
+            metrics[f"val_{name}_prob_mean"] = float(np.mean(probs[:, cls]))
+            metrics[f"val_{name}_prob_stdev"] = float(np.std(probs[:, cls]))
+    return metrics
+
+
+def monitor_mode(metric: str) -> str:
+    lowered = metric.lower()
+    if any(token in lowered for token in ("accuracy", "f1", "auc", "precision", "recall")):
+        return "max"
+    return "min"
+
+
 class WavenetTrainer(ModelTrainer):
     """Trains a WaveNet model with roll-forward (walk-forward) training.
 
@@ -250,6 +353,7 @@ class WavenetTrainer(ModelTrainer):
         reduce_lr_patience: int = 0,
         monitor_metric: str = "val_loss",
         input_scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
+        class_weight_mode: str = "off",
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -275,6 +379,8 @@ class WavenetTrainer(ModelTrainer):
                 error rather than the composite loss.
             input_scale_range: per-window min-max input range. The default
                 is the historical ``[-2,+2]``; trend_score uses ``[-1,+1]``.
+            class_weight_mode: ``"auto"`` computes balanced class weights per
+                training fold for classification; ``"off"`` keeps historical behavior.
         """
         self._series = [list(row) for row in series]
         self._target_column = target_column
@@ -310,6 +416,7 @@ class WavenetTrainer(ModelTrainer):
         self._rlr_patience_override = max(int(reduce_lr_patience), 0)
         self._monitor_metric = (monitor_metric or "val_loss").strip() or "val_loss"
         self._input_scale_range = input_scale_range
+        self._class_weight_mode = (class_weight_mode or "off").strip().lower()
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self._initial_epoch = max(0, int(initial_epoch))
@@ -461,8 +568,22 @@ class WavenetTrainer(ModelTrainer):
             # time from the same 25 MB flat matrix.
             train_size = fold.train_end - fold.train_start
             val_size = fold.val_end - fold.val_start
-            train_x, train_y, train_steps = self._dataset_for(fold.train_start, fold.train_end)
-            val_x, val_y, val_steps = self._dataset_for(fold.val_start, fold.val_end)
+            train_labels = self._sample_labels(fold.train_start, fold.train_end, sample_end_indices)
+            val_labels = self._sample_labels(fold.val_start, fold.val_end, sample_end_indices)
+            class_weights: dict[int, float] = {}
+            class_counts: dict[int, int] = {}
+            if self._class_weight_mode == "auto" and self._target_columns is None:
+                class_counts = dict(Counter(train_labels))
+                class_weights = class_weight_for_labels(train_labels, self._output_units)
+            train_x, train_y, train_steps, train_sample_weight = self._dataset_for(
+                fold.train_start,
+                fold.train_end,
+                class_weights=class_weights or None,
+            )
+            val_x, val_y, val_steps, _val_sample_weight = self._dataset_for(
+                fold.val_start,
+                fold.val_end,
+            )
 
             fold_info = FoldInfo(
                 fold_index=display_index,
@@ -477,6 +598,14 @@ class WavenetTrainer(ModelTrainer):
                 validation_input_start=fold.validation_input_start,
             )
             self._progress.on_fold_begin(fold_info)
+            if class_weights:
+                _notify(
+                    self._progress,
+                    "on_class_weights",
+                    fold_info,
+                    class_weights,
+                    class_counts,
+                )
 
             model = _build_compiled(
                 window_size=self._window_size,
@@ -508,6 +637,16 @@ class WavenetTrainer(ModelTrainer):
                 _load_weights_into(model, self._resume_weights)
 
             callbacks = []
+            classification_metrics_callback = None
+            if self._target_columns is None and self._output_units >= 2:
+                classification_metrics_callback = _ClassificationMetricsCallback(
+                    val_x,
+                    val_y,
+                    val_steps,
+                    val_labels,
+                    self._output_units,
+                )
+                callbacks.append(classification_metrics_callback)
             if self._on_epoch_model is not None:
                 # Phase 46: hand the live model out after every epoch so
                 # a timeout cannot destroy hours of work. The operator
@@ -523,6 +662,7 @@ class WavenetTrainer(ModelTrainer):
             #   patience=5: 5 epoch صبر میکنه (کوتاه‌تر از legacy=30 چون fold کوتاهه)
             #   min_lr: حداقل LR
             # ReduceLROnPlateau و EarlyStopping برای هر دو regression و classification
+            _monitor_mode = monitor_mode(self._monitor_metric)
             if self._loss in (
                 "huber",
                 "huber_loss",
@@ -543,7 +683,7 @@ class WavenetTrainer(ModelTrainer):
                         factor=0.85,  # LR × 0.85 (کمی تندتر از 0.9)
                         patience=_rlr_patience,
                         verbose=0,
-                        mode="min",
+                        mode=_monitor_mode,
                         # فاز ۹۵-ج: min_delta=1e-6 نویزِ float (±3e-7) را
                         # «بدتر شدن» می‌شمرد → کاسکید decay تا LR مرده
                         # (ران اپراتور: 8e-4 → 1e-6، فولد آخر یخ زد).
@@ -562,7 +702,7 @@ class WavenetTrainer(ModelTrainer):
                 _es = tf.keras.callbacks.EarlyStopping(
                     monitor=self._monitor_metric,
                     patience=_es_patience,
-                    mode="min",
+                    mode=_monitor_mode,
                     # فاز ۹۵-ج: همان دلیل RLR — نویز 1e-6 شمارندهٔ ES را
                     # ریست می‌کرد و ES هرگز fire نمی‌شد (300 epoch کامل).
                     min_delta=1e-4,
@@ -634,6 +774,7 @@ class WavenetTrainer(ModelTrainer):
                 history = model.fit(
                     train_x,
                     train_y,
+                    sample_weight=train_sample_weight,
                     validation_data=(val_x, val_y),
                     epochs=self._epochs,
                     initial_epoch=fit_initial_epoch,
@@ -651,6 +792,12 @@ class WavenetTrainer(ModelTrainer):
             fold_metrics = {
                 name: float(values[-1]) for name, values in history.history.items() if values
             }
+            if classification_metrics_callback is not None:
+                fold_metrics.update(getattr(classification_metrics_callback, "last_metrics", {}))
+            if class_weights:
+                for cls, weight in sorted(class_weights.items()):
+                    fold_metrics[f"class_weight_{cls}"] = float(weight)
+                    fold_metrics[f"class_count_{cls}"] = float(class_counts.get(cls, 0))
             if self._target_columns is not None:
                 fold_metrics.update(
                     self._range_validation_metrics(
@@ -783,11 +930,16 @@ class WavenetTrainer(ModelTrainer):
             metrics["val_bracket_mae"] = metrics["val_step1_mae"]
         return metrics
 
-    def _dataset_for(self, start: int, stop: int) -> tuple:
+    def _dataset_for(
+        self,
+        start: int,
+        stop: int,
+        class_weights: dict[int, float] | None = None,
+    ) -> tuple:
         """Training inputs for one fold, streamed when they are large.
 
-        Returns ``(x, y, 0)`` for the in-memory path, or
-        ``(dataset, None, steps_per_epoch)`` when the fold is streamed.
+        Returns ``(x, y, 0, sample_weight)`` for the in-memory path, or
+        ``(dataset, None, steps_per_epoch, None)`` when the fold is streamed.
         The caller branches on ``y is None``.
         """
         count = max(stop - start, 0)
@@ -795,20 +947,57 @@ class WavenetTrainer(ModelTrainer):
 
         if not self._stream_all and estimated <= self.STREAM_THRESHOLD_BYTES:
             x, y = self._arrays(self._samples[start:stop])
-            return x, y, 0
+            sample_weight = None
+            if class_weights and self._target_columns is None:
+                import numpy as np
 
-        generator = self._generator()
+                sample_weight = np.array(
+                    [class_weights.get(int(label), 1.0) for label in y],
+                    dtype=np.float32,
+                )
+            return x, y, 0, sample_weight
+
+        generator = self._generator(class_weights=class_weights)
         batch = max(self._batch_size, 1)
         dataset = generator.to_tf_dataset(batch_size=batch, start=start, stop=stop, repeat=True)
         # With repeat() the dataset is infinite, so Keras must be told
         # where an epoch ends.
         steps = max(1, -(-count // batch))
-        return dataset, None, steps
+        return dataset, None, steps, None
 
-    def _generator(self):
+    def _sample_labels(self, start: int, stop: int, sample_end_indices: Sequence[int]) -> list[int]:
+        """Classification labels for sample positions in [start, stop)."""
+        if self._target_columns is not None:
+            return []
+        labels: list[int] = []
+        for position in range(max(0, start), max(0, stop)):
+            if position >= len(sample_end_indices):
+                break
+            row_index = sample_end_indices[position]
+            labels.append(int(round(self._series[row_index][self._target_column])))
+        return labels
+
+    def _generator(self, class_weights: dict[int, float] | None = None):
         """A lazy window generator over the flat series (Phase 41)."""
         from ShadBotTrader.infrastructure.ai.window_generator import WindowGenerator
 
+        if class_weights:
+            targets = (
+                self._target_columns if self._target_columns is not None else [self._target_column]
+            )
+            return WindowGenerator(
+                series=self._series,
+                target_columns=targets,
+                window_size=self._window_size,
+                horizon=0,
+                stride=1,
+                scale=True,
+                classification=self._target_columns is None,
+                sample_ends=self._sample_indices,
+                scale_range=self._input_scale_range,
+                class_weights=class_weights,
+                seq2seq=self._seq2seq,
+            )
         if self._window_cache is None:
             targets = (
                 self._target_columns if self._target_columns is not None else [self._target_column]
@@ -922,6 +1111,54 @@ class _LazySampleCount:
             "This fold is streamed; its windows were deliberately never "
             "materialised. Use the tf.data path instead of indexing."
         )
+
+
+def _ClassificationMetricsCallback(
+    validation_x: Any,
+    validation_y: Any,
+    validation_steps: int,
+    validation_labels: Sequence[int],
+    output_units: int,
+) -> Any:
+    """Keras callback that injects per-class validation metrics into logs."""
+    from ShadBotTrader.infrastructure.ai.wavenet.wavenet import _require_tensorflow
+
+    tf = _require_tensorflow()
+    labels = [int(value) for value in validation_labels]
+
+    class _Callback(tf.keras.callbacks.Callback):  # type: ignore[misc,name-defined]
+        def __init__(self) -> None:
+            super().__init__()
+            self.last_metrics: dict[str, float] = {}
+
+        def on_epoch_end(self, epoch: int, logs: Any = None) -> None:
+            if not labels:
+                return
+            import numpy as np
+
+            if validation_y is None:
+                predicted = self.model.predict(  # type: ignore[union-attr]
+                    validation_x,
+                    steps=validation_steps,
+                    verbose=0,
+                )
+            else:
+                predicted = self.model.predict(validation_x, verbose=0)  # type: ignore[union-attr]
+            probs = np.asarray(predicted)
+            if probs.ndim == 3:
+                probs = probs[:, -1, :]
+            count = min(len(labels), len(probs))
+            if count < 1 or probs.ndim != 2 or probs.shape[1] != output_units:
+                return
+            probs = probs[:count]
+            actual = labels[:count]
+            guessed = [int(value) for value in np.argmax(probs, axis=1)]
+            metrics = classification_report_metrics(actual, guessed, probs, output_units)
+            self.last_metrics = metrics
+            if logs is not None:
+                logs.update(metrics)
+
+    return _Callback()
 
 
 def _EpochCheckpoint(callback: Any, model: Any, total_epochs: int) -> Any:

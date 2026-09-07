@@ -113,9 +113,10 @@ class TestTheStreamedPathReportsItsBatches:
         trainer._n_features_cache = columns
         trainer._stream_all = True
 
-        dataset, labels, steps = trainer._dataset_for(0, 4000)
+        dataset, labels, steps, sample_weight = trainer._dataset_for(0, 4000)
 
         assert labels is None, "a streamed fold carries its labels inside the dataset"
+        assert sample_weight is None
         assert steps == -(-4000 // 32)
         with pytest.raises(TypeError, match="infinite"):
             len(dataset)
@@ -142,8 +143,9 @@ class TestTheStreamedPathReportsItsBatches:
             series, window_size=window, target_columns=[columns, columns + 1], scale=True
         )
 
-        x, y, steps = trainer._dataset_for(0, 50)
+        x, y, steps, sample_weight = trainer._dataset_for(0, 50)
 
         assert y is not None
+        assert sample_weight is None
         assert steps == 0  # 0 means "let Keras infer it from the arrays"
         assert len(x) == 50

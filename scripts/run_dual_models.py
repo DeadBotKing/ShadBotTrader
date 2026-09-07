@@ -163,11 +163,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--monitor-metric",
-        choices=("auto", "val_loss", "val_mae"),
+        choices=("auto", "val_loss", "val_mae", "val_macro_f1", "val_buy_sell_f1"),
         default="auto",
         help=(
             "callback/checkpoint metric to minimize. auto uses val_mae for "
             "trend_score and val_loss for the other roles."
+        ),
+    )
+    parser.add_argument(
+        "--class-weight",
+        choices=("auto", "off"),
+        default="auto",
+        help=(
+            "trend_signal only: auto computes balanced class weights per "
+            "roll-forward train fold; off keeps historical unweighted training."
         ),
     )
     parser.add_argument(
@@ -425,6 +434,22 @@ def effective_monitor_metric(args: argparse.Namespace, role) -> str:
     return "val_loss"
 
 
+def metric_monitor_mode(metric: str) -> str:
+    """Whether a checkpoint monitor should be minimized or maximized."""
+    lowered = metric.lower()
+    if any(token in lowered for token in ("accuracy", "f1", "auc", "precision", "recall")):
+        return "max"
+    return "min"
+
+
+def effective_class_weight_mode(args: argparse.Namespace, role) -> str:
+    """Resolve balanced class weights without changing non-trend-signal models."""
+    requested = str(getattr(args, "class_weight", "auto") or "auto")
+    if role.model_id.startswith("gold_trend_signal_") and requested != "off":
+        return "auto"
+    return "off"
+
+
 def effective_lr_search_metric(args: argparse.Namespace, role) -> str:
     """Resolve the metric used to choose a learning rate.
 
@@ -449,10 +474,13 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
     candidates = parse_learning_rates(args.learning_rates)
     metric_name = effective_lr_search_metric(args, role)
     loss_name = effective_loss_name(args, role)
+    class_weight_mode = effective_class_weight_mode(args, role)
     results: list[tuple[float, float]] = []
     rule(f"LEARNING RATE SEARCH — {role.name.upper()} / {timeframe}")
     print(f"  candidates : {', '.join(f'{rate:.2e}' for rate in candidates)}")
     print(f"  objective  : {loss_name} · monitor {metric_name}")
+    if class_weight_mode != "off":
+        print(f"  class wgt. : {class_weight_mode} (balanced per train fold)")
     print(f"  pilot      : {args.lr_search_epochs} epoch(s), {args.lr_search_folds} fold(s)")
 
     for rate in candidates:
@@ -470,6 +498,7 @@ def search_learning_rate(service, args, role, timeframe: str, candles) -> float:
                 learning_rate=rate,
                 loss_name=loss_name,
                 monitor_metric=metric_name,
+                class_weight_mode=class_weight_mode,
             )
             metrics = (outcome.get("fold_metrics") or [{}])[-1]
             score = metrics.get(metric_name)
@@ -579,9 +608,13 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     rule(f"{display_role} MODEL  ({timeframe} candles, {horizon_text})")
     loss_name = effective_loss_name(args, role)
     monitor_metric = effective_monitor_metric(args, role)
+    class_weight_mode = effective_class_weight_mode(args, role)
     print(f"  learning rate: {learning_rate:.2e}")
     print(f"  objective: {loss_name}")
-    print(f"  monitor  : {monitor_metric} (minimize)")
+    monitor_action = "maximize" if metric_monitor_mode(monitor_metric) == "max" else "minimize"
+    print(f"  monitor  : {monitor_metric} ({monitor_action})")
+    if class_weight_mode != "off":
+        print(f"  class wgt.: {class_weight_mode} (balanced per roll-forward train fold)")
     _scale_low, _scale_high = getattr(role, "input_scale_range", (-2.0, 2.0))
     print(f"  input scale: minmax [{_scale_low:+.0f}, {_scale_high:+.0f}] per feature/window")
     print(f"  model id : {role.model_id}")
@@ -961,6 +994,7 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
         reduce_lr_patience=max(getattr(args, "rlr_patience", 0), 0),
         loss_name=loss_name,
         monitor_metric=monitor_metric,
+        class_weight_mode=class_weight_mode,
     )
     losses = outcome["fold_losses"]
     print(f"  fold losses    : {[round(value, 6) for value in losses]}")
@@ -1132,11 +1166,13 @@ def make_epoch_checkpoint(
 
     root = Path(args.storage_root)
     catalogue = ModelCatalogue(root)
+    _monitor_mode = metric_monitor_mode(monitor_metric)
     state = {
         "version": catalogue.next_version(role.model_id),
-        "best_score": float("inf"),
+        "best_score": float("-inf") if _monitor_mode == "max" else float("inf"),
         "best_epoch": 0,
         "best_metric": monitor_metric,
+        "monitor_mode": _monitor_mode,
         "worse_streak": 0,
         "diagram_done": False,
     }
@@ -1205,7 +1241,8 @@ def make_epoch_checkpoint(
                 metric_name, score = "loss", logs.get("loss")
         score = float(score) if score is not None else float("inf")
 
-        improved = score < state["best_score"]
+        mode = str(state.get("monitor_mode", "min"))
+        improved = score > state["best_score"] if mode == "max" else score < state["best_score"]
         if not improved:
             state["worse_streak"] += 1
             print(
@@ -1335,7 +1372,9 @@ def save_model(
         )
         best = float(state["best_score"])
         version = int(state["version"])
-        if final > best:
+        mode = str(state.get("monitor_mode", metric_monitor_mode(str(label))))
+        final_is_worse = final < best if mode == "max" else final > best
+        if final_is_worse:
             print(
                 f"\n  KEPT   {role.model_id} v{version} from epoch "
                 f"{state['best_epoch']} ({label} {best:.6f})"
@@ -1466,6 +1505,25 @@ def print_quality(
                     f"{val_baseline:.1%} there)"
                 )
             print(f"    -> the model is {verdict} always predicting the commonest class.")
+            if getattr(role, "model_id", "").startswith("gold_trend_signal_"):
+                macro_f1 = final.get("val_macro_f1")
+                buy_sell_f1 = final.get("val_buy_sell_f1")
+                balanced = final.get("val_balanced_accuracy")
+                if macro_f1 is not None:
+                    print(f"    val_macro_f1          : {macro_f1:.4f}")
+                if buy_sell_f1 is not None:
+                    print(f"    val_buy_sell_f1       : {buy_sell_f1:.4f}")
+                if balanced is not None:
+                    print(f"    val_balanced_accuracy : {balanced:.1%}")
+                for name in ("sell", "hold", "buy"):
+                    f1 = final.get(f"val_{name}_f1")
+                    precision = final.get(f"val_{name}_precision")
+                    recall = final.get(f"val_{name}_recall")
+                    if f1 is not None and precision is not None and recall is not None:
+                        print(
+                            f"    {name:<4} P/R/F1          : "
+                            f"{precision:.1%} / {recall:.1%} / {f1:.4f}"
+                        )
             if accuracy <= val_baseline:
                 print(
                     "    With one epoch and a few folds this is expected; it is "

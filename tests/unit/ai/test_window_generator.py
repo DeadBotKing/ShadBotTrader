@@ -144,6 +144,21 @@ class TestWindowGenerator:
         assert y.dtype.name == "int32"
         assert y.ndim == 1
 
+    def test_classification_batches_can_carry_sample_weights(self):
+        generator = WindowGenerator(
+            series(20),
+            target_columns=[3],
+            window_size=5,
+            horizon=2,
+            scale=False,
+            classification=True,
+            class_weights={600: 2.0, 700: 3.0, 800: 4.0, 900: 5.0},
+        )
+        _, y, weights = next(generator.iter_batches(batch_size=4))
+
+        assert y.tolist() == [600, 700, 800, 900]
+        assert weights.tolist() == [2.0, 3.0, 4.0, 5.0]
+
     def test_scaling_is_applied_per_window_in_isolation(self):
         """A window must not learn anything from outside itself."""
         generator = WindowGenerator(

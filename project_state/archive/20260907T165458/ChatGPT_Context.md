@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T16:54:58.622259+00:00
+- Snapshot generated at: 2026-09-07T16:51:06.505047+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: c7da4fa41b259f637c8f5af032bf0e9187c670a7
-- Dirty: yes (27 files)
+- Dirty: yes (24 files)
 - Recent commits:
   - c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch
   - 7688a8f Phase 107: trend_signal label audit with GUI command

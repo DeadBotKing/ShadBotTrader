@@ -245,6 +245,17 @@ MODEL_ROLE_CHOICES: tuple[str, ...] = (
     "trend_score",
 )
 TREND_SCORE_LOSS_CHOICES: tuple[str, ...] = ("composite", "mae")
+CLASS_WEIGHT_CHOICES: tuple[str, ...] = ("auto", "off")
+
+
+def trend_signal_class_weight_args(command: Command, role: str) -> List[str]:
+    """CLI args for balanced trend_signal class weights."""
+    if role != "trend_signal":
+        return []
+    mode = command.text("class_weight", "auto").strip().lower() or "auto"
+    if mode not in CLASS_WEIGHT_CHOICES:
+        mode = "auto"
+    return ["--class-weight", mode]
 
 
 def trend_score_loss_args(command: Command, role: str) -> List[str]:
@@ -470,6 +481,14 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "0.5",
                     kind="number",
                     hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14 (پیش‌فرض 0.5)",
+                ),
+                CommandField(
+                    "class_weight",
+                    "Trend-signal class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                    hint="فقط trend_signal: auto = وزن متعادل جداگانه برای هر fold train",
                 ),
                 CommandField(
                     "label_horizon",
@@ -1235,6 +1254,14 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14 (پیش‌فرض 0.5)",
                 ),
                 CommandField(
+                    "class_weight",
+                    "Trend-signal class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                    hint="فقط trend_signal: auto = وزن متعادل جداگانه برای هر fold train",
+                ),
+                CommandField(
                     "label_horizon",
                     "Trend-signal/score horizon (candles)",
                     "",
@@ -1373,6 +1400,14 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     "0.5",
                     kind="number",
                     hint="فقط trend_signal: فاصلهٔ مانع BUY/SELL برحسب ATR14",
+                ),
+                CommandField(
+                    "class_weight",
+                    "Trend-signal class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                    hint="فقط trend_signal: auto = وزن متعادل جداگانه برای هر fold train",
                 ),
                 CommandField(
                     "label_horizon",
@@ -2201,6 +2236,7 @@ class CommandHandlers:
             else []
         )
         _score_loss_args = trend_score_loss_args(command, role)
+        _class_weight_args = trend_signal_class_weight_args(command, role)
 
         return self._run_script(
             command,
@@ -2221,6 +2257,7 @@ class CommandHandlers:
                 str(max(command.integer("window", 150), 2)),
                 *_lh_args,
                 *_score_loss_args,
+                *_class_weight_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 80.0)),
                 "--threshold",
@@ -3808,6 +3845,7 @@ class AccountCommandHandlers(CommandHandlers):
             else []
         )
         _score_loss_args = trend_score_loss_args(command, role)
+        _class_weight_args = trend_signal_class_weight_args(command, role)
         return self._run_script(
             command,
             [
@@ -3836,6 +3874,7 @@ class AccountCommandHandlers(CommandHandlers):
                 str(max(command.integer("window", 500), 2)),
                 *_lh_args,
                 *_score_loss_args,
+                *_class_weight_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 100.0)),
                 "--threshold",
@@ -3918,6 +3957,7 @@ class AccountCommandHandlers(CommandHandlers):
             else []
         )
         _score_loss_args = trend_score_loss_args(command, role)
+        _class_weight_args = trend_signal_class_weight_args(command, role)
         arguments = [
             "scripts/run_dual_models.py",
             "--with-features",
@@ -3936,6 +3976,7 @@ class AccountCommandHandlers(CommandHandlers):
             *_opt_arch,
             *_lh_args,
             *_score_loss_args,
+            *_class_weight_args,
             "--train-ratio",
             str(command.number("train_ratio", 100.0)),
             "--learning-rates",

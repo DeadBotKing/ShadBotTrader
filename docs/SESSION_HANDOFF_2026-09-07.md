@@ -282,7 +282,7 @@ f4592f2
 
 ```text
 Phase107.md — audit کامل trend_signal — ✅ اجرا شد در همین ادامهٔ جلسه
-Phase108.md — class weights + F1/PR-AUC برای trend_signal
+Phase108.md — class weights + F1/PR-AUC برای trend_signal — ✅ اجرا شد
 Phase109.md — threshold calibration و heatmap backtest
 Phase110.md — train-only feature selection
 Phase111.md — POS/NEG binary event models
@@ -302,20 +302,20 @@ Phase107 بعد از ساخت این handoff اجرا شد: script `scripts/eval
 ambiguous=28، partial horizon accepted=287، first-hit median=104 bars. یک follow-up
 fix هم انجام شد: اگر مدل ذخیره‌شده window متفاوت داشته باشد (مثلاً مدل قدیمی
 window=150 در برابر audit window=288)، scoring حالا graceful skip می‌شود و crash
-نمی‌کند.
+نمی‌کند. Phase108 هم اجرا شد: `--class-weight auto` برای trend_signal، metricهای
+per-class F1/precision/recall/AP و GUI field اضافه شد.
 
 ترتیب پیشنهادی از اینجا:
 
 ```text
-1. Run Phase107 audit on real XAUUSD 5M data from GUI
-2. Phase 108: class weights + F1/PR-AUC
-3. Phase 109: threshold calibration/heatmap
-4. Phase 110: feature selection train-only
-5. Phase 111: POS/NEG binary event models
-6. Phase 113: significance checks
-7. Phase 112: two-branch benchmark
-8. Phase 114: external/regime features
-9. Phase 115: live decision audit
+1. Run real trend_signal training with class_weight=auto and send QUALITY output
+2. Phase 109: threshold calibration/heatmap
+3. Phase 110: feature selection train-only
+4. Phase 111: POS/NEG binary event models
+5. Phase 113: significance checks
+6. Phase 112: two-branch benchmark
+7. Phase 114: external/regime features
+8. Phase 115: live decision audit
 ```
 
 دلیل:

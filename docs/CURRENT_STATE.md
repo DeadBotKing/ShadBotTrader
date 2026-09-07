@@ -111,8 +111,11 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - handoff کامل جلسه: `docs/SESSION_HANDOFF_2026-09-07.md`.
 - `Phase107` انجام شد: script و GUI جدید `Audit trend-signal labels` برای audit کامل
   `trend_signal_5m` اضافه شد.
-- قدم اجرایی بعدی پیشنهادی: اجرای همین audit روی دیتای واقعی اپراتور و سپس
-  `Phase108` یعنی class weights + F1/PR-AUC.
+- `Phase108` انجام شد: training مدل `trend_signal` حالا گزینهٔ GUI/CLI برای
+  `--class-weight auto` دارد، وزن کلاس‌ها per-fold train محاسبه می‌شود و metricهای
+  F1/precision/recall/PR-AUC per-class ذخیره و چاپ می‌شوند.
+- قدم اجرایی بعدی: اپراتور یک train واقعی `trend_signal` با class weights اجرا کند؛
+  بعد با خروجی QUALITY می‌رویم سراغ `Phase109` یعنی threshold calibration/heatmap.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 

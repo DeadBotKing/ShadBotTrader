@@ -360,6 +360,7 @@ class DualModelService:
         learning_rate: float = 1.5e-4,
         loss_name: str | None = None,
         monitor_metric: str = "val_loss",
+        class_weight_mode: str = "off",
     ) -> ModelDefinition:
         """The immutable contract the trainer must fulfil."""
         if learning_rate <= 0:
@@ -394,6 +395,7 @@ class DualModelService:
                 "learning_rate": float(learning_rate),
                 "loss": effective_loss,
                 "monitor_metric": monitor_metric,
+                "class_weight_mode": class_weight_mode,
                 "input_scale_range": list(getattr(role, "input_scale_range", (-2.0, 2.0))),
                 "threshold": role.target.threshold,
                 # فاز ۹۸: سبک برچسب — "color" برای gold_trend_* (بدون مسیر)
@@ -447,6 +449,7 @@ class DualModelService:
         reduce_lr_patience: int = 0,
         loss_name: str | None = None,
         monitor_metric: str = "val_loss",
+        class_weight_mode: str = "off",
     ) -> Any:
         """A roll-forward WaveNet trainer configured for this role.
 
@@ -560,6 +563,7 @@ class DualModelService:
             reduce_lr_patience=reduce_lr_patience,
             monitor_metric=monitor_metric,
             input_scale_range=getattr(role, "input_scale_range", (-2.0, 2.0)),
+            class_weight_mode=class_weight_mode,
             # Phase 55: seq2seq head برای range model
             seq2seq=getattr(role, "seq2seq", False) if is_regression else False,
             horizon=role.horizon if is_regression else 5,
@@ -584,6 +588,7 @@ class DualModelService:
         reduce_lr_patience: int = 0,
         loss_name: str | None = None,
         monitor_metric: str = "val_loss",
+        class_weight_mode: str = "off",
     ) -> Dict[str, Any]:
         """Prepare, train and return the artifact plus its provenance.
 
@@ -607,6 +612,7 @@ class DualModelService:
             learning_rate=learning_rate,
             loss_name=loss_name,
             monitor_metric=monitor_metric,
+            class_weight_mode=class_weight_mode,
         )
         trainer = self.build_trainer(
             dataset,
@@ -620,6 +626,7 @@ class DualModelService:
             reduce_lr_patience=reduce_lr_patience,
             loss_name=loss_name,
             monitor_metric=monitor_metric,
+            class_weight_mode=class_weight_mode,
         )
         trainer.on_epoch_model = on_epoch_model
 

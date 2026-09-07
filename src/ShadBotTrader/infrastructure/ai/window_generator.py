@@ -131,6 +131,7 @@ class WindowGenerator:
         sample_ends: Optional[Sequence[int]] = None,
         seq2seq: bool = False,
         scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
+        class_weights: Optional[dict[int, float]] = None,
     ) -> None:
         if not series:
             raise ValidationError("series must not be empty")
@@ -156,6 +157,11 @@ class WindowGenerator:
         # کرش می‌کند (بکتست 1H: 4.3GB > آستانهٔ استریم).
         self._seq2seq = bool(seq2seq)
         self._scale_range = scale_range
+        self._class_weights = (
+            {int(key): float(value) for key, value in class_weights.items()}
+            if class_weights
+            else None
+        )
         self._classification = classification
         self._sample_ends = list(sample_ends) if sample_ends is not None else None
         if self._sample_ends is not None:
@@ -251,11 +257,17 @@ class WindowGenerator:
         if windows:
             yield self._to_arrays(np, windows, labels)
 
-    def _to_arrays(self, np: Any, windows: List[Any], labels: List[Any]) -> Tuple[Any, Any]:
+    def _to_arrays(self, np: Any, windows: List[Any], labels: List[Any]) -> Tuple[Any, ...]:
         x = np.array(windows, dtype=np.float32)
         if self._classification:
             # A single integer class per sample.
             y = np.array([int(label[0]) for label in labels], dtype=np.int32)
+            if self._class_weights:
+                weights = np.array(
+                    [self._class_weights.get(int(label), 1.0) for label in y],
+                    dtype=np.float32,
+                )
+                return x, y, weights
         else:
             y = np.array(labels, dtype=np.float32)
         return x, y
@@ -285,12 +297,20 @@ class WindowGenerator:
         def generator():
             yield from self.iter_batches(batch_size=batch_size, start=start, stop=stop)
 
+        feature_spec = tf.TensorSpec(shape=(None, rows, columns), dtype=tf.float32)
+        output_signature: Any
+        if self._classification and self._class_weights:
+            output_signature = (
+                feature_spec,
+                label_spec,
+                tf.TensorSpec(shape=(None,), dtype=tf.float32),
+            )
+        else:
+            output_signature = (feature_spec, label_spec)
+
         dataset = tf.data.Dataset.from_generator(
             generator,
-            output_signature=(
-                tf.TensorSpec(shape=(None, rows, columns), dtype=tf.float32),
-                label_spec,
-            ),
+            output_signature=output_signature,
         )
         if repeat:
             # A from_generator dataset is exhausted after one pass, so a

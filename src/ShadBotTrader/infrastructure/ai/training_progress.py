@@ -108,6 +108,11 @@ class TrainingProgressReporter(Protocol):
     def on_fold_begin(self, fold: FoldInfo) -> None:
         """Called before each fold starts fitting."""
 
+    def on_class_weights(
+        self, fold: FoldInfo, class_weights: Dict[int, float], class_counts: Dict[int, int]
+    ) -> None:
+        """Called when balanced class weights are computed for a fold."""
+
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
         """Called after every epoch of the current fold."""
 
@@ -134,6 +139,11 @@ class NullProgressReporter:
         return None
 
     def on_fold_begin(self, fold: FoldInfo) -> None:
+        return None
+
+    def on_class_weights(
+        self, fold: FoldInfo, class_weights: Dict[int, float], class_counts: Dict[int, int]
+    ) -> None:
         return None
 
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
@@ -317,6 +327,17 @@ elapsed 0:14 | eta 1:42
                 f"{purge}"
             )
 
+    def on_class_weights(
+        self, fold: FoldInfo, class_weights: Dict[int, float], class_counts: Dict[int, int]
+    ) -> None:
+        if not class_weights:
+            return
+        cells = []
+        for cls in sorted(class_weights):
+            count = int(class_counts.get(cls, 0))
+            cells.append(f"class {cls}: n={count:,} w={class_weights[cls]:.3f}")
+        self._write("  class weights : " + " | ".join(cells))
+
     def on_epoch_end(self, fold: FoldInfo, metrics: EpochMetrics) -> None:
         if not self._show_epochs:
             return
@@ -360,6 +381,12 @@ elapsed 0:14 | eta 1:42
                 parts.append(f"acc={_fmt(metrics.accuracy, 4)}")
             if metrics.val_accuracy is not None:
                 parts.append(f"val_acc={_fmt(metrics.val_accuracy, 4)}")
+            macro_f1 = metrics.extra.get("val_macro_f1")
+            buy_sell_f1 = metrics.extra.get("val_buy_sell_f1")
+            if macro_f1 is not None:
+                parts.append(f"macro_f1={_fmt(macro_f1, 4)}")
+            if buy_sell_f1 is not None:
+                parts.append(f"buy_sell_f1={_fmt(buy_sell_f1, 4)}")
             self._write(" | ".join(parts))
 
         # The next epoch's ETA must be measured from here, not from the

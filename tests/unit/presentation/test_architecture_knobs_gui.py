@@ -53,6 +53,11 @@ def test_train_descriptor_has_trend_score_loss_field():
     assert "trend_score_loss" in fields
 
 
+def test_train_descriptor_has_trend_signal_class_weight_field():
+    fields = {field.name for field in descriptor_for(CommandKind.TRAIN_DUAL_MODELS).fields}
+    assert "class_weight" in fields
+
+
 def test_retrain_descriptor_has_architecture_fields():
     fields = {field.name for field in descriptor_for(CommandKind.TRAIN_MODEL).fields}
     assert {"n_layers", "n_blocks", "val_size"} <= fields
@@ -122,6 +127,33 @@ def test_train_dual_models_ignores_trend_score_loss_for_other_roles(gui, monkeyp
     )
 
     assert "--trend-score-loss" not in captured["args"]
+
+
+def test_train_dual_models_passes_trend_signal_class_weight(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {"model": "trend_signal", "dataset": "5M", "class_weight": "auto"},
+        )
+    )
+
+    args = captured["args"]
+    assert args[args.index("--class-weight") + 1] == "auto"
+
+
+def test_train_dual_models_ignores_class_weight_for_other_roles(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {"model": "signal", "dataset": "5M", "class_weight": "auto"},
+        )
+    )
+
+    assert "--class-weight" not in captured["args"]
 
 
 def test_retrain_passes_knobs(gui, monkeypatch, tmp_path):

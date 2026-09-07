@@ -1,5 +1,49 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — فاز ۱۰۸: class weights + F1/PR-AUC برای trend_signal
+
+**درخواست اپراتور:** بعد از audit واقعی Phase107، فاز بعدی طبق ترتیب پیشنهادی اجرا شود.
+هدف فاز ۱۰۸ این بود که `trend_signal` فقط با accuracy قضاوت نشود و imbalance/fold
+regime-shift با class weights و metricهای per-class دیده شود.
+
+**پیاده‌سازی:**
+- CLI جدید در `run_dual_models.py`: `--class-weight {auto,off}`.
+- فقط برای `gold_trend_signal_*` حالت `auto` فعال می‌شود؛ سایر مدل‌ها historical
+  unweighted باقی می‌مانند.
+- `WavenetTrainer` برای هر roll-forward train fold وزن کلاس‌ها را فقط از همان train
+  slice محاسبه می‌کند: `total / (num_classes * count_i)`.
+- مسیر in-memory با `sample_weight=` به `model.fit` وصل شد؛ مسیر streamed با
+  `tf.data.Dataset` سه‌تایی `(x,y,sample_weight)` کار می‌کند.
+- metric callback اضافه شد و validation epoch-end این‌ها را به logs تزریق می‌کند:
+  precision/recall/F1/AP برای SELL/HOLD/BUY، `val_macro_f1`, `val_weighted_f1`,
+  `val_buy_sell_f1`, `val_balanced_accuracy` و probability mean/stdev per class.
+- `run_dual_models.print_quality` این metricهای trend_signal را در QUALITY چاپ می‌کند.
+- GUI فیلد جدید گرفت: `Trend-signal class weights = auto/off` در Train/Retrain/Optimise.
+
+**تست/تأیید:**
+```text
+Targeted ruff/black روی فایل‌های تغییرکرده: OK
+Targeted tests:
+  test_classification_weights_metrics
+  test_window_generator
+  test_streamed_fold_progress
+  test_phase108_trend_signal_training_config
+  test_training_visibility
+  test_architecture_knobs_gui
+→ passed
+
+python -m pytest -q
+→ passed (full suite in this environment; TF tests skipped by existing markers)
+
+full mypy src
+→ همان 28 خطای pre-existing؛ خطای جدیدی باقی نماند
+```
+Smoke بدون TensorFlow روی TESTSYM نشان داد لاگ درست است:
+`class wgt.: auto (balanced per roll-forward train fold)`.
+
+**گام بعد:** اپراتور یک training واقعی `trend_signal` با `class_weight=auto` اجرا کند
+و خروجی QUALITY را بفرستد؛ سپس Phase109 برای threshold calibration/heatmap اجرا می‌شود.
+
 ## 2026-09-07 — فاز ۱۰۷: audit کامل trend_signal + GUI command
 
 **درخواست اپراتور:** اجرای فازهای پیشنهادی به ترتیب شروع شود، با تست دقیق، GUI،
