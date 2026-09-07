@@ -1,4 +1,4 @@
-# وضعیت فعلی پروژه — 2026-09-05
+# وضعیت فعلی پروژه — 2026-09-07
 
 ## سیستم
 
@@ -96,6 +96,16 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 # GUI: strategy=triple | range_timeframe=4H | trend_filter=ema50
 #      min_sl_dist=6 | atr_mult=0.5 | max_entry_distance_atr=0.25
 ```
+
+## GUI / لاگ زنده
+
+- فاز ۱۰۱: Train a model از داخل Dashboard روی Windows دوباره live-log قابل‌اعتماد دارد.
+- علت فیکس: `dispatch_async` قبل از redirect وضعیت busy را رزرو می‌کند؛ `_run_script`
+  child را با `python -u` و UTF-8 اجباری اجرا می‌کند و فایل `run_logs/train_dual_models.log`
+  را با appendهای کوتاه می‌نویسد تا `/api/log` بتواند وسط آموزش بخواند.
+- اگر آموزش از GUI شروع شود، پنل live output باید ظرف چند ثانیه حداقل خط command،
+  سربرگ TRAINING و batch/epoch progress را نشان دهد. اجرای دستی PowerShell همچنان
+  جداست و لاگ Dashboard را پر نمی‌کند.
 
 ## مسائل شناخته‌شده
 

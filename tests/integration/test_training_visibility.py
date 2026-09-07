@@ -120,6 +120,20 @@ class TestOutputIsVisibleWhileTheScriptRuns:
     def test_a_missing_log_reads_as_empty_not_an_error(self, tmp_path):
         assert read_run_log("never_run", tmp_path / "nowhere") == []
 
+    def test_the_dashboard_subprocess_stream_is_utf8_and_unbuffered(self):
+        """Windows GUI must not decode Persian/Unicode training output with a legacy codepage."""
+        source = (
+            Path(__file__).resolve().parents[2]
+            / "src/ShadBotTrader/presentation/commands/handlers.py"
+        ).read_text(encoding="utf-8")
+
+        assert 'environment["PYTHONUNBUFFERED"] = "1"' in source
+        assert 'environment["PYTHONUTF8"] = "1"' in source
+        assert 'environment["PYTHONIOENCODING"] = "utf-8"' in source
+        assert '[sys.executable, "-u", *arguments]' in source
+        assert 'encoding="utf-8"' in source
+        assert 'errors="replace"' in source
+
     def test_the_log_name_cannot_escape_its_directory(self, tmp_path):
         """A command value is not a path; treat it as untrusted anyway."""
         path = run_log_path("../../etc/passwd", tmp_path)

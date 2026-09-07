@@ -509,7 +509,10 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     if learning_rate <= 0:
         raise ValueError("learning rate must be positive")
     horizon_text = "until threshold hit" if role.name == "signal" else f"{role.horizon} ahead"
-    rule(f"{role.name.upper()} MODEL  ({timeframe} candles, {horizon_text})")
+    display_role = (
+        "TREND_SCORE" if role.model_id.startswith("gold_trend_score_") else role.name.upper()
+    )
+    rule(f"{display_role} MODEL  ({timeframe} candles, {horizon_text})")
     print(f"  learning rate: {learning_rate:.2e}")
     print(f"  model id : {role.model_id}")
     print(f"  dataset  : {args.symbol} {timeframe}")
@@ -584,7 +587,9 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     print(f"  usable rows    : {summary['rows']}")
     print(f"  feature columns: {summary['feature_columns']}")
     print(f"  dropped warmup : {summary['dropped_warmup']}")
-    if role.name == "range":
+    if role.model_id.startswith("gold_trend_score_"):
+        print("  target units   : score (dimensionless −1..+1; " "NOT a price offset)")
+    elif role.name == "range":
         # فاز ۹۵: واحد تارگت صریح — ATR یعنی مدل «چند ATR» یاد میگیرد
         units = summary.get("target_units", "pct")
         detail = (
@@ -1534,6 +1539,10 @@ def main(argv: list[str] | None = None) -> int:
         planned.append(f"trend({trend_tf_planned})")
     if wants_signal:
         planned.append(f"signal({args.signal_timeframe})")
+    if wants_trend_signal:
+        planned.append(f"trend_signal({args.signal_timeframe})")
+    if wants_trend_score:
+        planned.append(f"trend_score({args.signal_timeframe})")
     print(f"training: {', '.join(planned) or 'nothing'}")
 
     def run_role(role, timeframe: str) -> None:

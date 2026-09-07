@@ -1,5 +1,49 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — فاز ۱۰۱: رفع لاگ زندهٔ آموزش در GUI ویندوز
+
+**درخواست اپراتور:** آموزش از داخل GUI مثل قبل شروع شود و لاگ زنده واقعاً چاپ شود؛
+اجرای مستقیم PowerShell با `python -u` خروجی داشت ولی پنل لاگ GUI خالی می‌ماند.
+
+**عیب‌یابی (کد = واقعیت):** مسیر Train a model از
+`CommandBus.dispatch_async → AccountCommandHandlers.train_dual_models → _run_script`
+می‌گذرد. دو نقطهٔ شکننده پیدا شد:
+- race در `dispatch_async`: صفحه بعد از POST بلافاصله redirect می‌شد، اما `_running`
+  فقط داخل thread پس‌زمینه set می‌شد؛ اگر GET بعد از redirect زودتر می‌رسید،
+  dashboard اصلاً بنر live-log را رندر نمی‌کرد.
+- Windows pipe decoding/reading: child process متن فارسی و علامت‌های UTF-8
+  (`—`, `−`, `·`) چاپ می‌کند؛ parent با `text=True` بدون `encoding` ممکن بود با
+  codepage ویندوز decode کند و reader قبل از epoch اول قطع شود. علاوه بر آن،
+  نگه‌داشتن write handle فایل لاگ در تمام زمان آموزش روی Windows می‌تواند خواندن
+  همزمان `/api/log` را flaky کند.
+
+**تغییرات:**
+- `presentation/commands/bus.py`: رزرو synchronous وضعیت busy قبل از برگشت
+  `dispatch_async`؛ thread دیگر `dispatch()` را دوباره صدا نمی‌زند، بلکه handler
+  رزروشده را اجرا و history/running state را در یک مسیر مشترک جمع می‌کند.
+- `presentation/commands/handlers.py`: `_run_script` حالا child را با `python -u`
+  اجرا می‌کند، `PYTHONUNBUFFERED=1`, `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8`
+  می‌گذارد، pipe را صریحاً با `encoding="utf-8", errors="replace"` می‌خواند، و
+  فایل live log را با appendهای کوتاه باز/بسته می‌کند تا `/api/log` بتواند وسط
+  آموزش روی Windows بخواند.
+- `run_dual_models.py`: لاگ نمایشی trend_score اصلاح شد؛ دیگر `training: nothing`
+  و `RANGE MODEL` برای score چاپ نمی‌شود و واحد تارگت score به‌صورت
+  dimensionless `−1..+1` چاپ می‌شود.
+- تست‌ها: پوشش race فوری `dispatch_async` و الزام UTF-8/unbuffered برای stream
+  داشبورد اضافه شد.
+
+**تأیید:**
+- اجرای مستقیم اسکریپت trend_score بدون TensorFlow تا مرحلهٔ آماده‌سازی تأیید کرد
+  که سربرگ اکنون `training: trend_score(1D)` و `TREND_SCORE MODEL` چاپ می‌کند.
+- targeted tests: `tests/unit/presentation/test_commands.py` و
+  `tests/integration/test_training_visibility.py` سبز شدند.
+- کل pytest محیط فعلی سبز شد (TensorFlow در سندباکس نصب نیست، پس تست‌های AI وابسته
+  به TF طبق مارکرهای موجود skip شدند).
+- ruff/black روی فایل‌های تغییرکرده سبز است.
+- گیت کامل lint/type محیط فعلی هنوز خطاهای pre-existing و خارج از این فیکس دارد
+  (ruff/black روی notebook/فایل‌های قدیمی و mypy روی چند فایل قدیمی)؛ این فیکس
+  خطای جدیدی در فایل‌های touched اضافه نکرد.
+
 ## 2026-09-06 — فاز ۱۰۰: trend_score روی کندل واقعی 1D + آموزش v1 روی 10 سال دیتای واقعی
 
 **درخواست اپراتور:** «مدل رو بساز اول — ما باید اول ی تخمین درست‌حسابی از روند

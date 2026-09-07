@@ -1112,7 +1112,8 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     options=tuple(MODEL_ROLE_CHOICES),
                     hint=(
                         "range = future high/low · signal = binary buy/sell · "
-                        "trend = candle color · trend_signal = BUY/HOLD/SELL"
+                        "trend = candle color · trend_signal = BUY/HOLD/SELL · "
+                        "trend_score = next-candle strength"
                     ),
                 ),
                 CommandField(
@@ -1416,12 +1417,19 @@ class CommandHandlers:
         is indistinguishable from one that has hung, and the operator has
         no way to tell whether the loss is falling.
 
-        Two details make the stream actually live:
+        Three details make the stream actually live on Windows too:
 
-        * ``PYTHONUNBUFFERED=1`` — otherwise Python buffers 8 KB of stdout
-          when the far end is a pipe rather than a terminal, so the log
-          would arrive in bursts long after the epoch produced it.
-        * ``bufsize=1`` with ``text=True`` — line buffering on our side.
+        * ``PYTHONUNBUFFERED=1`` and ``python -u`` — otherwise Python
+          buffers stdout when the far end is a pipe rather than a terminal.
+        * ``PYTHONUTF8=1`` / ``PYTHONIOENCODING=utf-8`` plus an explicit
+          UTF-8 pipe decoder — the training script prints Persian text and
+          symbols such as ``—``/``−``.  On Windows the dashboard process may
+          otherwise decode the child pipe with a legacy code page and abort
+          the log reader before the first epoch line reaches the browser.
+        * The log file is opened only for each short append.  Holding a
+          write handle for the whole training run can make live reads flaky
+          on Windows; short appends leave ``/api/log`` free to read the file
+          between writes.
         """
         import os
         import subprocess
@@ -1430,54 +1438,74 @@ class CommandHandlers:
         log_path = self.run_log_path(command.kind.value)
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
+        def replace_log(line: str) -> None:
+            with log_path.open("w", encoding="utf-8", errors="replace") as log:
+                log.write(line)
+                log.flush()
+
+        def append_log(line: str) -> None:
+            with log_path.open("a", encoding="utf-8", errors="replace") as log:
+                log.write(line)
+                log.flush()
+
         environment = dict(os.environ)
         environment["PYTHONUNBUFFERED"] = "1"
+        environment["PYTHONUTF8"] = "1"
+        environment["PYTHONIOENCODING"] = "utf-8"
 
         tail: List[str] = []
         deadline = time.monotonic() + timeout
+        process: Any = None
+        returncode = 1
 
         try:
-            with log_path.open("w", encoding="utf-8", errors="replace") as log:
-                log.write(f"$ {' '.join(arguments)}\n")
-                log.flush()
+            replace_log(f"$ {' '.join(arguments)}\n")
 
-                process = subprocess.Popen(
-                    [sys.executable, *arguments],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    cwd=str(Path.cwd()),
-                    env=environment,
-                )
+            process = subprocess.Popen(
+                [sys.executable, "-u", *arguments],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                cwd=str(Path.cwd()),
+                env=environment,
+            )
 
-                assert process.stdout is not None
-                for line in process.stdout:
-                    log.write(line)
-                    log.flush()
-                    stripped = line.rstrip("\n")
-                    if stripped.strip():
-                        tail.append(stripped)
-                        if len(tail) > 400:
-                            del tail[:200]
-                    if time.monotonic() > deadline:
-                        process.kill()
-                        log.write("\n[killed: timeout]\n")
-                        return CommandResult.failure(
-                            command.kind,
-                            f"Timed out after {timeout // 60} minutes "
-                            f"(any completed epoch was checkpointed)",
-                            "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
-                            "from a terminal.",
-                            time.monotonic() - started,
-                        )
+            assert process.stdout is not None
+            for line in process.stdout:
+                append_log(line)
+                stripped = line.rstrip("\n")
+                if stripped.strip():
+                    tail.append(stripped)
+                    if len(tail) > 400:
+                        del tail[:200]
+                if time.monotonic() > deadline:
+                    process.kill()
+                    append_log("\n[killed: timeout]\n")
+                    return CommandResult.failure(
+                        command.kind,
+                        f"Timed out after {timeout // 60} minutes "
+                        f"(any completed epoch was checkpointed)",
+                        "\n".join(tail[-25:]) + "\n\nReduce the size of the run, or start it "
+                        "from a terminal.",
+                        time.monotonic() - started,
+                    )
 
-                returncode = process.wait()
+            returncode = process.wait()
         except Exception as error:
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
+            try:
+                append_log(f"\n[log reader failed: {type(error).__name__}: {error}]\n")
+            except OSError:
+                pass
             return CommandResult.failure(
                 command.kind,
-                "Could not start the script",
-                str(error),
+                "Could not stream the script output",
+                f"{type(error).__name__}: {error}",
                 time.monotonic() - started,
             )
 

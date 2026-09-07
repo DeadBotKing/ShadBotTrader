@@ -82,23 +82,27 @@ class CommandBus:
             return self._history[-1] if self._history else None
 
     # -- dispatch --------------------------------------------------------------
-    def dispatch(self, command: Command) -> CommandResult:
-        """Run a command and wait for it (used by tests and the CLI)."""
-        handler = self._handlers.get(command.kind)
-        if handler is None:
-            return CommandResult.rejected(
-                command.kind, f"No handler registered for '{command.kind.value}'"
-            )
+    def _reserve(self, command: Command, busy_message: str) -> Optional[CommandResult]:
+        """Mark a command as running before any slow handler work starts.
 
+        The web server redirects immediately after ``dispatch_async``.  If the
+        background thread is responsible for setting ``_running``, the GET that
+        follows the redirect can win the race and render a page with no live-log
+        panel even though training is about to start.  Reserving under the lock
+        makes the dashboard state true before the HTTP response is sent.
+        """
         with self._lock:
             if self._running is not None:
                 return CommandResult.rejected(
                     command.kind,
-                    f"'{self._running.value}' is still running — one at a time.",
+                    busy_message.format(running=self._running.value),
                 )
             self._running = command.kind
             self._started_at = datetime.now(timezone.utc)
+        return None
 
+    def _execute_reserved(self, command: Command, handler: Handler) -> CommandResult:
+        """Run an already-reserved command, record its result and clear busy state."""
         try:
             result = handler(command)
         except Exception as error:  # a handler must never kill the server
@@ -107,32 +111,41 @@ class CommandBus:
                 f"{type(error).__name__}: {error}",
                 traceback.format_exc()[-1500:],
             )
-        finally:
-            with self._lock:
-                self._running = None
-                self._started_at = None
 
         with self._lock:
+            self._running = None
+            self._started_at = None
             self._history.append(result)
         return result
 
-    def dispatch_async(self, command: Command) -> CommandResult:
-        """Start a command in the background and return immediately."""
-        if command.kind not in self._handlers:
+    def dispatch(self, command: Command) -> CommandResult:
+        """Run a command and wait for it (used by tests and the CLI)."""
+        handler = self._handlers.get(command.kind)
+        if handler is None:
             return CommandResult.rejected(
                 command.kind, f"No handler registered for '{command.kind.value}'"
             )
 
-        with self._lock:
-            if self._running is not None:
-                return CommandResult.rejected(
-                    command.kind,
-                    f"'{self._running.value}' is still running — wait for it to finish.",
-                )
+        rejected = self._reserve(command, "'{running}' is still running — one at a time.")
+        if rejected is not None:
+            return rejected
+        return self._execute_reserved(command, handler)
+
+    def dispatch_async(self, command: Command) -> CommandResult:
+        """Start a command in the background and return immediately."""
+        handler = self._handlers.get(command.kind)
+        if handler is None:
+            return CommandResult.rejected(
+                command.kind, f"No handler registered for '{command.kind.value}'"
+            )
+
+        rejected = self._reserve(command, "'{running}' is still running — wait for it to finish.")
+        if rejected is not None:
+            return rejected
 
         thread = threading.Thread(
-            target=self.dispatch,
-            args=(command,),
+            target=self._execute_reserved,
+            args=(command, handler),
             daemon=True,
             name=f"command-{command.kind.value}",
         )
@@ -142,7 +155,7 @@ class CommandBus:
         return CommandResult(
             kind=command.kind,
             status=CommandStatus.RUNNING,
-            message="Started — refresh to see the result.",
+            message="Started — live log is available now.",
         )
 
     def wait(self, timeout: float = 300.0) -> None:

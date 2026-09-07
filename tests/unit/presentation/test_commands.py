@@ -174,6 +174,26 @@ class TestCommandBus:
         assert bus.last_result() is not None
         assert bus.last_result().succeeded
 
+    def test_async_dispatch_marks_busy_before_returning(self):
+        """The redirected dashboard page must see the live-log banner immediately."""
+        release = threading.Event()
+
+        def slow(command: Command) -> CommandResult:
+            release.wait(timeout=5)
+            return CommandResult.success(command.kind, "done")
+
+        bus = CommandBus({CommandKind.RUN_BACKTEST: slow})
+
+        result = bus.dispatch_async(Command(CommandKind.RUN_BACKTEST))
+
+        try:
+            assert result.status is CommandStatus.RUNNING
+            assert bus.is_busy
+            assert bus.running is CommandKind.RUN_BACKTEST
+        finally:
+            release.set()
+            bus.wait(5)
+
     def test_bus_clears_running_state_after_a_failure(self):
         def handler(command: Command) -> CommandResult:
             raise ValueError("bad")
