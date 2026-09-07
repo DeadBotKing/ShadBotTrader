@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T12:51:03.004894+00:00
+- Snapshot generated at: 2026-09-07T12:47:43.380495+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: f4592f2c208e4294e53d996ce82fd00c20543a4b
-- Dirty: yes (26 files)
+- Dirty: yes (20 files)
 - Recent commits:
   - f4592f2 docs: Phase 106 external trading reviews and clean workspace references
   - fd4a190 Phase 104: scale trend_score inputs to minus one plus one

@@ -99,17 +99,24 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 #      min_sl_dist=6 | atr_mult=0.5 | max_entry_distance_atr=0.25
 ```
 
+## Phase roadmap handoff (ثبت 2026-09-07)
+
+- فازهای جدید در `docs/Phases` خرد شدند: `Phase100.md` تا `Phase115.md`.
+- index سریع: `docs/Phases/README_PHASE100_115.md`.
+- handoff کامل جلسه: `docs/SESSION_HANDOFF_2026-09-07.md`.
+- قدم اجرایی بعدی پیشنهادی: `Phase107` یعنی audit کامل `trend_signal_5m`، سپس
+  `Phase108` یعنی class weights + F1/PR-AUC.
+
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 
 - بررسی کامل سه منبع جدید در گزارش `docs/Report/PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md` ثبت شد.
-- repo `ari99/algorithmic_trading` در workspace clone شد: `/home/user/algorithmic_trading`، commit `c8479f3`.
+- repo `ari99/algorithmic_trading` موقتاً برای بررسی clone شد (commit `c8479f3`) و بعد از ثبت گزارش برای خلوت‌کردن workspace حذف شد.
 - نتیجهٔ roadmap: تمرکز بعدی باید روی `trend_signal` و event/action classification باشد: class weights، F1/PR-AUC، threshold calibration، feature selection، POS/NEG models و significance checks.
 - کپی مستقیم کد توصیه نمی‌شود: Alpaca/Onepagecode آموزشی و TF1 هستند؛ ari99 وابسته به `vectorbtpro` و بدون license واضح است.
 
 ## External reference review: Leci37 (فاز ۱۰۵)
 
-- repo مرجع clone شد: `/home/user/TensorFlow-stocks-prediction-Machine-learning-RealTime`
-  روی commit `7520351`.
+- repo مرجع Leci37 موقتاً برای بررسی clone شد (commit `7520351`) و بعد از ثبت گزارش برای خلوت‌کردن workspace حذف شد.
 - گزارش کامل: `docs/Report/PHASE105_LECI37_CODE_REVIEW_AND_ADOPTION_PLAN.md`.
 - نتیجهٔ تصمیم فنی: از پروژهٔ Leci37 کد را مستقیم وارد production نمی‌کنیم؛ ایده‌های
   event-based GT، POS/NEG binary models، feature selection، class weights/F1،

@@ -1,5 +1,35 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — ثبت نهایی handoff و خردکردن roadmap در Docs/Phases
+
+**درخواست اپراتور:** همهٔ پیشنهادهای استخراج‌شده از این چت به صورت چند فاز در
+`docs/Phases` ثبت شود؛ هر کاری که در کل چت انجام شده دقیق و قابل فهم برای چت
+جدید مستند شود؛ سپس پروژه zip شود.
+
+**انجام‌شده:**
+- برای فازهای انجام‌شدهٔ این جلسه فایل مستقل ساخته شد:
+  `Phase100.md` تا `Phase106.md`.
+- برای فازهای پیشنهادی آینده فایل مستقل ساخته شد:
+  `Phase107.md` تا `Phase115.md`.
+- index سریع ساخته شد:
+  `docs/Phases/README_PHASE100_115.md`.
+- handoff کامل جلسه ساخته شد:
+  `docs/SESSION_HANDOFF_2026-09-07.md`.
+- گزارش‌های review خارجی در `docs/Report` نگه داشته شدند:
+  `PHASE105_LECI37_CODE_REVIEW_AND_ADOPTION_PLAN.md` و
+  `PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md`.
+
+**وضعیت اجرایی بعدی:** اگر اپراتور تأیید کند، اجرای واقعی باید از `Phase107` شروع
+شود: audit کامل `trend_signal_5m`، بعد `Phase108` برای class weights + F1/PR-AUC.
+
+**Quality/verification این بستهٔ مستنداتی:**
+- `git diff --check` سبز شد.
+- `python -m pytest -q` سبز شد.
+- `ruff check .`، `black --check .` و `mypy src` همچنان به خطاهای قدیمی/pre-existing
+  خارج از این تغییرات می‌خورند: ruff حدود 219 خطا، black حدود 22 فایل قدیمی، mypy
+  همان 28 خطای شناخته‌شده. این مرحله code production را تغییر نداد؛ تغییرات اصلی
+  مستندسازی و phase planning بود.
+
 ## 2026-09-07 — فاز ۱۰۶: بررسی Alpaca، ari99/algorithmic_trading و Onepagecode برای نقشهٔ تکامل مدل‌های event
 
 **درخواست اپراتور:** سه منبع جدید دقیق بررسی شوند؛ اگر کدی لازم است وارد workspace شود؛
@@ -9,8 +39,8 @@
 - مقالهٔ Alpaca `tensorflow-market-forecasting` کامل بررسی شد: MLP دودسته‌ای با
   RSI/Stoch، target جهت روز بعد، train/eval chronological، overfit واضح، توصیه به
   normalized features، windows، neutral class و استفادهٔ ML فقط به‌عنوان indicator کمکی.
-- repo `ari99/algorithmic_trading` در `/home/user/algorithmic_trading` clone شد،
-  commit `c8479f3`؛ کدهای data download، feature engineering، labels، RNN/LSTM،
+- repo `ari99/algorithmic_trading` موقتاً در workspace clone شد، commit `c8479f3`؛
+  بعد از استخراج نکات برای خلوت‌کردن workspace حذف شد؛ کدهای data download، feature engineering، labels، RNN/LSTM،
   class weights، threshold grid، VectorBT backtest، random/Monte Carlo/White checks
   و Alpaca paper trading بررسی شدند.
 - مقالهٔ Onepagecode/Substack بررسی شد؛ بخش public شامل Alpha Vantage fetch،
@@ -31,8 +61,7 @@ baseline، Monte Carlo/White Reality significance، و دو-branch returns+featu
 ها برای ShadBotTrader قابل استفاده‌اند و روند کامل تغییرات چیست.
 
 **انجام‌شده:**
-- repo در workspace clone شد:
-  `/home/user/TensorFlow-stocks-prediction-Machine-learning-RealTime`، commit `7520351`.
+- repo موقتاً در workspace clone شد، commit `7520351`؛ بعد از استخراج نکات برای خلوت‌کردن workspace حذف شد.
 - فایل‌های کلیدی بررسی شدند: `Utils_buy_sell_points.py`, `Feature_selection_create_json.py`,
   `Data_multidimension.py`, `Model_TF_definitions.py`, `Model_train_*`,
   `Model_predictions_*`, `Utils_scoring.py`, `5_predict_POOL_enque_Thread.py`,
