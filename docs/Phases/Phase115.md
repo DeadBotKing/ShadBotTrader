@@ -1,7 +1,7 @@
 # فاز ۱۱۵ — پیشنهاد: live decision audit کامل
 
-**وضعیت:** 🟡 پیشنهادی  
-**نوع:** Observability / execution safety  
+**وضعیت:** 🟡 پیشنهادی
+**نوع:** Observability / execution safety
 **اولویت:** متوسط، قبل از live جدی الزامی
 
 ---

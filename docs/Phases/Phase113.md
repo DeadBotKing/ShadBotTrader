@@ -1,7 +1,7 @@
 # فاز ۱۱۳ — پیشنهاد: random baseline، Monte Carlo و White Reality-style checks
 
-**وضعیت:** 🟡 پیشنهادی  
-**نوع:** Backtest significance / anti-data-snooping  
+**وضعیت:** 🟡 پیشنهادی
+**نوع:** Backtest significance / anti-data-snooping
 **اولویت:** بالا بعد از threshold calibration
 
 ---

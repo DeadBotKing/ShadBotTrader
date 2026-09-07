@@ -77,7 +77,7 @@ docs/Phases/Phase100.md
 
 ### Phase 101 — رفع live log آموزش GUI روی Windows
 
-مشکل: وقتی اپراتور از GUI train می‌زد، log چاپ نمی‌شد یا live panel نمی‌آمد.  
+مشکل: وقتی اپراتور از GUI train می‌زد، log چاپ نمی‌شد یا live panel نمی‌آمد.
 علت‌ها:
 
 ```text
@@ -281,7 +281,7 @@ f4592f2
 فازهای زیر در `docs/Phases` اضافه شده‌اند:
 
 ```text
-Phase107.md — audit کامل trend_signal
+Phase107.md — audit کامل trend_signal — ✅ اجرا شد در همین ادامهٔ جلسه
 Phase108.md — class weights + F1/PR-AUC برای trend_signal
 Phase109.md — threshold calibration و heatmap backtest
 Phase110.md — train-only feature selection
@@ -296,10 +296,18 @@ Phase115.md — live decision audit کامل
 
 ## 5) اولویت پیشنهادی اجرای بعدی
 
-ترتیب پیشنهادی:
+Phase107 بعد از ساخت این handoff اجرا شد: script `scripts/evaluate_trend_signal_5m.py`
+و GUI command `Audit trend-signal labels` اضافه شد. اپراتور audit واقعی XAUUSD 5M
+را اجرا کرد: SELL=40.0%، HOLD=24.0%، BUY=36.0%، majority baseline=40.0%،
+ambiguous=28، partial horizon accepted=287، first-hit median=104 bars. یک follow-up
+fix هم انجام شد: اگر مدل ذخیره‌شده window متفاوت داشته باشد (مثلاً مدل قدیمی
+window=150 در برابر audit window=288)، scoring حالا graceful skip می‌شود و crash
+نمی‌کند.
+
+ترتیب پیشنهادی از اینجا:
 
 ```text
-1. Phase 107: trend_signal audit
+1. Run Phase107 audit on real XAUUSD 5M data from GUI
 2. Phase 108: class weights + F1/PR-AUC
 3. Phase 109: threshold calibration/heatmap
 4. Phase 110: feature selection train-only
@@ -381,7 +389,7 @@ input scale: minmax [-1, +1] per feature/window
 
 ## 9) Quality gate وضعیت آخرین فازهای docs
 
-برای تغییرات code phases 101-104 تست‌های مرتبط و full pytest در همان زمان اجرا شد.  
+برای تغییرات code phases 101-104 تست‌های مرتبط و full pytest در همان زمان اجرا شد.
 برای فازهای review/docs، تغییرات production code نداشتند. وضعیت شناخته‌شده gate:
 
 ```text

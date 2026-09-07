@@ -1,7 +1,7 @@
 # فاز ۱۱۰ — پیشنهاد: feature selection مخصوص مدل و train-only
 
-**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا  
-**نوع:** Feature engineering / anti-noise  
+**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا
+**نوع:** Feature engineering / anti-noise
 **اولویت:** بالا
 
 ---

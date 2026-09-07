@@ -1,7 +1,7 @@
 # فاز ۱۰۹ — پیشنهاد: threshold calibration و heatmap backtest
 
-**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا  
-**نوع:** Evaluation + trading decision calibration  
+**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا
+**نوع:** Evaluation + trading decision calibration
 **اولویت:** بالا
 
 ---

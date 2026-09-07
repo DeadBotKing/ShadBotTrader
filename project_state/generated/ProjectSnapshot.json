@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "764a9342cc16e51388bbf5b7120dd36e05e5d91d701eece38268621a702843af",
-      "size_bytes": 11223
+      "sha256": "b355b086c222b0d6f8c375854c07a7766e6cb5ba9ff44b2a7f2c3bdee4b07630",
+      "size_bytes": 11619
     },
     {
       "category": "documentation",
@@ -261,62 +261,62 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase100.md",
-      "sha256": "153baac839d1584964a6c765e9f37ee69deae8b78d4bc1892c5a3221a9c56450",
-      "size_bytes": 5673
+      "sha256": "e8d4d2b4cdfc3840b8b5e3bae7fdda90a1b921c919fb4700ffcbf49e439f9a23",
+      "size_bytes": 5669
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase101.md",
-      "sha256": "4801b1a96ca1151d4571e7649bb2f874bb75208a33e86b07a94325b1096c0892",
-      "size_bytes": 3518
+      "sha256": "7180fe3b850a4250ccb56e47a17df41286f54c8bccd8c744c59c266d17b76afb",
+      "size_bytes": 3514
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase102.md",
-      "sha256": "adbb09bec94d8bd526027e2e135f1b3e406cbf2276400ff0ba64972df54130b2",
-      "size_bytes": 3063
+      "sha256": "fe9cc478868411ea86a5cff88d65f6172fd5d4a7eabf2a5eb03569d93ea4d6ee",
+      "size_bytes": 3059
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase103.md",
-      "sha256": "03b9b59e557856bf500d5c7f7f71dc834bf1fb545c035310e5cd63d076b62c46",
-      "size_bytes": 2947
+      "sha256": "5e9bacc6f833322d635c24e1a134f112c3aa6208bbd221a9ebb42ef63261d963",
+      "size_bytes": 2943
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase104.md",
-      "sha256": "64743b87c36a15024591925e41deac940e1f67b96581ca6d3f254393085364fc",
-      "size_bytes": 2941
+      "sha256": "c120e6625c7b6cd80dc817a5c17b589a80f3b2dc0c4d5adc478b2071b4fdbd3b",
+      "size_bytes": 2937
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase105.md",
-      "sha256": "eded2071610a6cdca5d96c10472d5cb34511555f603ae11330563aeac18c4a8e",
-      "size_bytes": 2585
+      "sha256": "c4e426b0e6ecc4018609b7aeb70230a208d9080cd8c55ceb29bce97e12d860a6",
+      "size_bytes": 2581
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase106.md",
-      "sha256": "680b2dbabe64c99d459237a8fd4dbfbaf691010a06dbbf475b58040fed07076e",
-      "size_bytes": 3589
+      "sha256": "faa205a142e86cd670f47b45762068db764aa430cf210576a8dbc339a2719231",
+      "size_bytes": 3583
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase107.md",
-      "sha256": "d4e8bfbd87aaf661c22cd39247e587199c0918903670676f1fb6878e8db5db2a",
-      "size_bytes": 2348
+      "sha256": "43c9249b619e4dd31542ff01f1387009c54d1449481f6df1d5f174b9ed433d37",
+      "size_bytes": 5182
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase108.md",
-      "sha256": "79d679a90117e04b886025c5a1b7e69ed9ddb597171da9d975f549f932804c5a",
-      "size_bytes": 2380
+      "sha256": "768e9f9940726aa2d010df9dbadc9a2c2bee67185a4c3aa7f619b8aa2a4919ef",
+      "size_bytes": 2376
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase109.md",
-      "sha256": "eb27765fc1a33f825453df3cf0d49bf83be04c64df5fffac7e1abae37d01add6",
-      "size_bytes": 2260
+      "sha256": "dbfeab65f9e6f7e325048b6bdbac74bc211d1b2b208215a52f87c040a0c5dda6",
+      "size_bytes": 2256
     },
     {
       "category": "documentation",
@@ -327,38 +327,38 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase110.md",
-      "sha256": "efec7155869bd4476f4007d73a37363df7ca74da8cc8e65129dd009294015a3d",
-      "size_bytes": 1990
+      "sha256": "ebe17f14998dfdb777981b0e21d5d3b753ef388fc21e31b294922b1f53e23c3f",
+      "size_bytes": 1986
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase111.md",
-      "sha256": "f6c2f5e4722bf74566ca3b5d9cf050be79365c5cc5d81b7c0bc325de7690162b",
-      "size_bytes": 2157
+      "sha256": "d31a29b718806058702a6e0f1622dfb84424f1785b3b969b8dad8e927ac6272d",
+      "size_bytes": 2153
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase112.md",
-      "sha256": "06eaa1b44b032b2df250619cc9c545afd975baf0c714ee79d2f904f249f186e2",
-      "size_bytes": 1885
+      "sha256": "2bb0f549a7fb9f1ac0a408e41c83febec3a6a3786ea76550e89d8c513298d2b5",
+      "size_bytes": 1881
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase113.md",
-      "sha256": "bbb0a3425dee702f4d007749c9703b48e52540d2497bc011791e76ffdd89b278",
-      "size_bytes": 2056
+      "sha256": "da03ca3e2dd14b6953f19cd4cca67ab299ab6ab2b8662aa13675699a6212c93d",
+      "size_bytes": 2052
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase114.md",
-      "sha256": "747acc9b2a6d69562837c8a671a3813ea550bd0119e145ffef4f81950f542c82",
-      "size_bytes": 1917
+      "sha256": "7bf016c11a09f3c765a829b4e0efdac68492d7bad9b84edfa527f038ef8f7682",
+      "size_bytes": 1913
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase115.md",
-      "sha256": "6485696f25790799b3a4028dabe0165e0f5c5874f6a8bd3d51f8a080dd481c56",
-      "size_bytes": 1783
+      "sha256": "9eb248e0baf27f6c9aabdaa8df80bdc7c1239d293f4ff73d1b59a8082c084d01",
+      "size_bytes": 1779
     },
     {
       "category": "documentation",
@@ -639,8 +639,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "547f2a78ce1a567ca67a726ca28621f4deb93109dccd95243787c2762d802989",
-      "size_bytes": 2581
+      "sha256": "370baf1aa4ff7deb424e76ef7c28741e4794642caea72d60e98fdd454c1c8cdc",
+      "size_bytes": 2574
     },
     {
       "category": "documentation",
@@ -737,6 +737,12 @@
       "path": "docs/Report/PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md",
       "sha256": "549376c630e69b4bc3d648017e9f1da316e8cf9a379730453de8aa698d30959d",
       "size_bytes": 20410
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE107_TREND_SIGNAL_AUDIT_REPORT.md",
+      "sha256": "57c3bb0c7f5875d0c8a866163470d017f8eb1435363f43ec2f67bece5e604e25",
+      "size_bytes": 9383
     },
     {
       "category": "documentation",
@@ -1035,8 +1041,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_HANDOFF_2026-09-07.md",
-      "sha256": "dbb3a7b50985cff15b7875d8a532283294bb39a22ee6c90420a9920e751bb945",
-      "size_bytes": 9517
+      "sha256": "02731c08fe0ab6fc8e906ce8f045baae18d054a1b580bf7d25b0c1e3d6f79357",
+      "size_bytes": 10238
     },
     {
       "category": "documentation",
@@ -1101,8 +1107,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "eba442b82da0d960f41089f943a850306f27bcd339c4063b7a3b8eab2926ba55",
-      "size_bytes": 226382
+      "sha256": "b2c78459a38644126249b7578c60afb439cea735ad22bf77711a7e7a2860a2b7",
+      "size_bytes": 230052
     },
     {
       "category": "legacy",
@@ -2213,6 +2219,12 @@
       "path": "scripts/evaluate_trend_score_1d.py",
       "sha256": "8c19c6d46a3803b16082b289c08a209a7defba60069a06b1e37079724fab7fa4",
       "size_bytes": 8544
+    },
+    {
+      "category": "script",
+      "path": "scripts/evaluate_trend_signal_5m.py",
+      "sha256": "6a2bf6be87d6cb39488c86a52050b787747e6a23a4987d02375f76b52fb2e2b4",
+      "size_bytes": 24440
     },
     {
       "category": "script",
@@ -3399,8 +3411,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/target_builder.py",
-      "sha256": "4bffbf5ac5e5d958e3ab1606eafa8f8968c003a2c8745c6e62ea38845199ed4f",
-      "size_bytes": 31947
+      "sha256": "9953e940269e7481ebf257c6c85255111d6550c3a49a11a59b88746c2def308c",
+      "size_bytes": 32804
     },
     {
       "category": "source",
@@ -4083,14 +4095,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "cab007aa5ceb9212bb22b17d519a42063864741b56fadbdcc80e342313500f05",
-      "size_bytes": 6819
+      "sha256": "73c2de57426eaef0d80e0debf1727357052eb2ab76a9afa539a0bbebc73eb536",
+      "size_bytes": 6865
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "cb52fbee1a83b8ed063c564bd6a929158f4b9b8a6bb9589061490cc68d9035ae",
-      "size_bytes": 170308
+      "sha256": "e26fd12bb1220180d2b021764d0ab2afb240b4990494ded9fe412a0c8e1e1bd6",
+      "size_bytes": 174849
     },
     {
       "category": "source",
@@ -4496,6 +4508,12 @@
     },
     {
       "category": "test",
+      "path": "tests/integration/test_trend_signal_audit.py",
+      "sha256": "e3b60d292c07df9836c9000bc851149d7c75ed1fdb8c7c4783b8c63dec78b9c9",
+      "size_bytes": 3826
+    },
+    {
+      "category": "test",
       "path": "tests/learning_fixtures.py",
       "sha256": "e2cc9a59243c7ebca9cfdc3006ba59d74bb8856b83a0881105e353b90ff138bc",
       "size_bytes": 2628
@@ -4647,8 +4665,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_trend_signal_labels.py",
-      "sha256": "c62e52b01985c4bb618fff9655f2d77967d315078a06016f3dae8a3e791cc30f",
-      "size_bytes": 5481
+      "sha256": "0132af08b26f9ab0d26f3fddbea5d3998aad1da72ecf181ac399137db4d2d780",
+      "size_bytes": 5896
     },
     {
       "category": "test",
@@ -5149,14 +5167,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-07T12:51:03.004894+00:00",
+  "generated_at": "2026-09-07T14:14:59.211523+00:00",
   "git": {
     "branch": "main",
-    "commit": "f4592f2c208e4294e53d996ce82fd00c20543a4b",
+    "commit": "7688a8f553d3f32f4710678b98ee4366822e5b46",
     "dirty": true,
-    "dirty_files": 26,
+    "dirty_files": 12,
     "is_repo": true,
     "recent_commits": [
+      "7688a8f Phase 107: trend_signal label audit with GUI command",
+      "e241e80 docs: split session work and roadmap into phase handoff files",
       "f4592f2 docs: Phase 106 external trading reviews and clean workspace references",
       "fd4a190 Phase 104: scale trend_score inputs to minus one plus one",
       "db515b4 Phase 103: audit trend_score target normalization and drop fake tail label",
@@ -5164,9 +5184,7 @@
       "e5ca863 Phase 101: fix Windows dashboard live training log streaming",
       "d6ac7c7 docs: Phase 100 model card \u2014 dataset, real-candle target with worked examples, full WaveNet architecture (activations+RangeLoss), and the range-vs-score learnability proof (vol clusters corr 0.997 vs daily drift corr 0.002)",
       "08b596d Phase 100: trend_score on the REAL next 1D candle \u2014 first-class wiring, sanity-pred crash fix, stream-threshold env knob; trained gold_trend_score_1d v1 + gold_trend_1d v1 on 10y real gold data (honest verdict documented)",
-      "a062474 docs: trend_score_1d proposal \u2014 real daily candle score target analysis",
-      "a7f1ff9 docs: score constant across candles \u2014 model converged to mean, not a code bug",
-      "57f9467 Phase 98b: full target statistics printed before trend_score training"
+      "a062474 docs: trend_score_1d proposal \u2014 real daily candle score target analysis"
     ]
   },
   "modules": [
@@ -8935,7 +8953,7 @@
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 57,
+      "functions": 58,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
@@ -10078,6 +10096,17 @@
     {
       "classes": 0,
       "external_imports": [],
+      "functions": 8,
+      "internal_imports": [
+        "ShadBotTrader.presentation.commands",
+        "ShadBotTrader.presentation.commands.handlers"
+      ],
+      "name": "integration.test_trend_signal_audit",
+      "path": "tests/integration/test_trend_signal_audit.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
       "functions": 5,
       "internal_imports": [
         "ShadBotTrader.domain.learning.candidate",
@@ -10409,7 +10438,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 10,
+      "functions": 11,
       "internal_imports": [
         "ShadBotTrader.domain.common.errors",
         "ShadBotTrader.domain.market.candle",
@@ -11664,18 +11693,18 @@
   "statistics": {
     "class_count": 803,
     "config_file_count": 3,
-    "documentation_file_count": 164,
+    "documentation_file_count": 165,
     "external_dependency_count": 14,
-    "function_count": 4577,
+    "function_count": 4587,
     "internal_dependency_count": 263,
     "legacy_file_count": 176,
-    "module_count": 464,
+    "module_count": 465,
     "source_file_count": 319,
-    "source_lines": 52387,
-    "test_file_count": 145,
-    "test_lines": 24584,
-    "total_file_count": 848,
-    "total_lines": 122770
+    "source_lines": 52520,
+    "test_file_count": 146,
+    "test_lines": 24713,
+    "total_file_count": 851,
+    "total_lines": 123662
   },
-  "test_file_count": 145
+  "test_file_count": 146
 }

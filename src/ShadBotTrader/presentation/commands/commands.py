@@ -57,6 +57,7 @@ class CommandKind(str, Enum):
     TRAIN_MODEL = "train_model"
     TRAIN_DUAL_MODELS = "train_dual_models"
     OPTIMISE_LEARNING_RATE = "optimise_learning_rate"
+    AUDIT_TREND_SIGNAL = "audit_trend_signal"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"

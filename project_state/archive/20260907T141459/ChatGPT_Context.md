@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T14:14:59.211523+00:00
+- Snapshot generated at: 2026-09-07T14:11:47.395530+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 7688a8f553d3f32f4710678b98ee4366822e5b46
-- Dirty: yes (12 files)
+- Dirty: yes (6 files)
 - Recent commits:
   - 7688a8f Phase 107: trend_signal label audit with GUI command
   - e241e80 docs: split session work and roadmap into phase handoff files

@@ -1,8 +1,8 @@
-# فاز ۱۰۷ — پیشنهاد: audit کامل trend_signal
+# فاز ۱۰۷ — audit کامل trend_signal
 
-**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا  
-**نوع:** Research + tooling، بدون تغییر معماری  
-**اولویت:** بسیار بالا
+**تاریخ:** 2026-09-07
+**وضعیت:** ✅ کامل — script، GUI، metadata و تست انجام شد
+**گزارش:** `docs/Report/PHASE107_TREND_SIGNAL_AUDIT_REPORT.md`
 
 ---
 
@@ -12,15 +12,24 @@
 
 ---
 
-## فایل پیشنهادی جدید
+## خروجی اصلی فاز
+
+فایل جدید:
 
 ```text
 scripts/evaluate_trend_signal_5m.py
 ```
 
+Command جدید GUI:
+
+```text
+Audit trend-signal labels
+CommandKind.AUDIT_TREND_SIGNAL = "audit_trend_signal"
+```
+
 ---
 
-## ورودی‌ها
+## ورودی‌های script/GUI
 
 ```text
 --symbol XAUUSD
@@ -28,34 +37,53 @@ scripts/evaluate_trend_signal_5m.py
 --window 288
 --label-horizon 288
 --atr-mult 0.5
---storage-root datasets
+--folds 3
+--val-size 0
 --model-id gold_trend_signal_5m optional
+--max-windows 5000
+--storage-root datasets
 ```
 
 ---
 
-## گزارش‌های لازم قبل از model prediction
+## گزارش‌های label audit
+
+Script چاپ می‌کند:
 
 ```text
 candles count
-date range
-feature matrix rows/features/dropped_warmup
+تاریخ شروع/پایان
 label distribution: SELL/HOLD/BUY
 ambiguous samples count
 warmup skipped count
-first-hit distance stats: min/p25/median/p75/max
+partial-horizon near-tail count
+first-hit distance stats
 barrier distance stats
 class ratios
 majority baseline
 always-HOLD baseline
-fold train/validation distribution
 ```
 
 ---
 
-## گزارش‌های لازم بعد از model prediction
+## گزارش‌های feature/fold audit
 
-اگر model artifact موجود بود:
+```text
+usable feature rows
+feature columns
+dropped warmup
+excluded/skipped features
+labelled windows
+target column index
+roll-forward fold train/val label balances
+purged samples
+```
+
+---
+
+## گزارش‌های model scoring اختیاری
+
+اگر model artifact و TensorFlow موجود باشد:
 
 ```text
 confusion matrix
@@ -63,35 +91,123 @@ precision/recall/F1 per class
 macro-F1
 weighted-F1
 balanced accuracy
-PR-AUC BUY
-PR-AUC SELL
+PR-AUC / average precision برای BUY و SELL
 prediction probability spread
-collapse check: stdev(prob_buy), stdev(prob_sell), stdev(prob_hold)
+collapse check
 ```
+
+اگر TensorFlow یا مدل موجود نباشد، script بدون crash فقط scoring را skip می‌کند و label audit کامل انجام می‌شود.
 
 ---
 
-## فایل‌های درگیر
+## تغییرات کد
+
+### `target_builder.py`
+
+به `TrendSignalLabels` اضافه شد:
+
+```python
+barrier_price_dist: List[float]
+ambiguous_count: int
+warmup_skipped: int
+partial_horizon_count: int
+examined_count: int
+```
+
+رفتار labelسازی تغییر نکرد؛ فقط metadata برای audit اضافه شد.
+
+### `commands.py` / `handlers.py`
+
+Command جدید GUI اضافه شد و از مسیر live log موجود `_run_script` استفاده می‌کند:
 
 ```text
-src/ShadBotTrader/infrastructure/ai/target_builder.py
-src/ShadBotTrader/application/services/dual_model_service.py
 scripts/evaluate_trend_signal_5m.py
 ```
 
 ---
 
-## معیار پذیرش
+## تست‌ها
 
 ```text
-- بدون TensorFlow هم label audit کامل اجرا شود.
-- اگر TensorFlow/model artifact موجود نبود، graceful skip کند.
-- label distribution و fold distribution دقیق چاپ شود.
-- هیچ آینده‌ای وارد feature نشود.
+tests/unit/ai/test_trend_signal_labels.py
+tests/integration/test_trend_signal_audit.py
+tests/unit/presentation/test_commands.py
+tests/integration/test_gui_coverage.py
+```
+
+نتیجه targeted:
+
+```text
+66 passed
+```
+
+Full pytest:
+
+```text
+python -m pytest -q
+→ passed (TF tests طبق markerهای موجود skip شدند)
+```
+
+Targeted ruff/black روی فایل‌های تغییرکرده سبز شد. Full ruff/black/mypy هنوز همان خطاهای قدیمی خارج از این فاز را دارد.
+
+Smoke test script روی `TESTSYM 5M` هم اجرا شد و imbalance/partial horizon را درست گزارش کرد.
+
+---
+
+## نکتهٔ مهم کشف‌شده
+
+Target builder فعلی برای near-tail samples که horizon کامل ندارند، همچنان label می‌سازد. این رفتار در فاز ۱۰۷ تغییر داده نشد چون ممکن است رفتار آموزشی قبلی را بشکند، اما از این به بعد audit آن را صریح نشان می‌دهد:
+
+```text
+partial horizon labels exist near tail
+```
+
+در فازهای بعدی می‌توانیم با اجازه اپراتور گزینه‌ای مثل زیر اضافه کنیم:
+
+```text
+--drop-incomplete-label-horizon
 ```
 
 ---
 
-## دلیل اهمیت
+## دستور اجرای CLI
 
-مشکل score نشان داد قبل از train سنگین باید target را با عدد بشناسیم. این فاز اجازه می‌دهد قبل از هزینه training بفهمیم آیا `trend_signal` سالم و قابل یادگیری است یا باید target اصلاح شود.
+```bash
+PYTHONPATH=src python scripts/evaluate_trend_signal_5m.py \
+  --symbol XAUUSD \
+  --timeframe 5M \
+  --window 288 \
+  --label-horizon 288 \
+  --atr-mult 0.5 \
+  --folds 3 \
+  --storage-root datasets
+```
+
+---
+
+## اجرای واقعی اپراتور و follow-up fix
+
+اپراتور audit را روی دیتای واقعی `XAUUSD 5M` اجرا کرد:
+
+```text
+candles=53,198
+labels=52,881 accepted from 52,909 examined
+SELL=40.0% | HOLD=24.0% | BUY=36.0%
+majority baseline=40.0%
+ambiguous=28
+partial horizon accepted=287
+first-hit median=104 bars
+barrier median=$50.155
+```
+
+در بخش model scoring، مدل ذخیره‌شدهٔ قدیمی ورودی `(None, 150, 179)` می‌خواست ولی audit با `window=288` اجرا شده بود. این باعث crash شد. اصلاح شد: script حالا قبل از `model.predict`، window و feature count را چک می‌کند و در mismatch، scoring را skip می‌کند، نه اینکه crash کند.
+
+## گام بعدی
+
+Phase108:
+
+```text
+class weights + F1/PR-AUC برای trend_signal
+```
+
+با توجه به توزیع واقعی، target کلی قابل استفاده‌تر از score regression است، اما foldهای validation آخر regime-shift دارند؛ پس class weights و metricهای per-class الزامی‌اند.

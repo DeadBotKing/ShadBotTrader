@@ -56,14 +56,26 @@ class TestTrendSignalLabels:
 
     def test_ambiguous_bar_is_skipped(self):
         # یک کندل هم مانع بالا هم پایین را می‌زند → نمونه حذف
-        labels = build_trend_signal_labels([mk(0, 100, 101, 99), mk(1, 100, 103, 97)],
-                                           horizon=1, atr_mult=0.5)
+        labels = build_trend_signal_labels(
+            [mk(0, 100, 101, 99), mk(1, 100, 103, 97)], horizon=1, atr_mult=0.5
+        )
         assert len(labels) == 0
 
+    def test_audit_counts_ambiguous_and_warmup_rows(self):
+        warm = _warmup()
+        candles = warm + [mk(289, 100, 101, 99), mk(290, 100, 103, 97)]
+
+        labels = build_trend_signal_labels(candles, horizon=1, atr_mult=0.5)
+
+        assert labels.warmup_skipped >= 288
+        assert labels.ambiguous_count >= 1
+        assert labels.examined_count >= labels.ambiguous_count
+        assert labels.partial_horizon_count >= 0
+
     def test_quiet_series_is_hold(self):
-        candles = _warmup() + [mk(289, 100, 101, 99)] + [
-            mk(290 + i, 100, 100.3, 99.7) for i in range(4)
-        ]
+        candles = (
+            _warmup() + [mk(289, 100, 101, 99)] + [mk(290 + i, 100, 100.3, 99.7) for i in range(4)]
+        )
         labels = build_trend_signal_labels(candles, horizon=4, atr_mult=0.5)
         # آخرین ۴ برچسب باید HOLD باشند (کندل‌های آرام بعد از warm-up)
         assert labels.labels[-4:] == [1, 1, 1, 1]
@@ -105,7 +117,7 @@ class TestTrendSignalLabels:
         tail = [
             mk(289, 100, 101, 99),
             mk(290, 100, 100.5, 99.5),
-            mk(291, 100, 108, 92),   # برخورد هر دو مانع → مبهم → حذف
+            mk(291, 100, 108, 92),  # برخورد هر دو مانع → مبهم → حذف
             mk(292, 100, 100.5, 99.5),
             mk(293, 100, 102.5, 97.5),  # مانع بالا = close+1 → 102.5 ≥ 101 ✓ BUY
         ]

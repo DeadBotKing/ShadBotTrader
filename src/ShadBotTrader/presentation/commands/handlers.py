@@ -1067,6 +1067,65 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.AUDIT_TREND_SIGNAL,
+            label="Audit trend-signal labels",
+            description=(
+                "Inspect the BUY/HOLD/SELL trend-signal target before retraining: "
+                "label balance, ambiguous samples, fold geometry, baselines and, "
+                "when a model exists, per-class F1/precision/recall."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                    hint="trend_signal normally uses 5M candles",
+                ),
+                CommandField("window", "Window rows", "288", kind="number"),
+                CommandField(
+                    "label_horizon",
+                    "Label horizon (candles)",
+                    "288",
+                    kind="number",
+                    hint="288×5M ≈ one trading day for the current trend_signal target",
+                ),
+                CommandField(
+                    "atr_mult",
+                    "Barrier (×daily-range proxy)",
+                    "0.5",
+                    kind="number",
+                    hint="same distance used by trend_signal labels; e.g. 0.5",
+                ),
+                CommandField("folds", "Folds to audit", "3", kind="number"),
+                CommandField(
+                    "val_size",
+                    "Validation samples per fold",
+                    "0",
+                    kind="number",
+                    hint="0 = auto, same 10% geometry as training",
+                ),
+                CommandField(
+                    "model_id",
+                    "Model id (optional)",
+                    "",
+                    hint="empty = gold_trend_signal_{dataset}; scoring is skipped if missing",
+                ),
+                CommandField(
+                    "max_windows",
+                    "Score at most",
+                    "5000",
+                    kind="number",
+                    hint="0 = all labelled windows when a trained model exists",
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -1601,6 +1660,7 @@ class CommandHandlers:
                 CommandKind.WEEKLY_UPDATE: accounts.weekly_update,
                 CommandKind.BUILD_TIMEFRAME: accounts.build_timeframe,
                 CommandKind.EVALUATE_MODEL: accounts.evaluate_model,
+                CommandKind.AUDIT_TREND_SIGNAL: accounts.audit_trend_signal,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -3449,6 +3509,53 @@ class AccountCommandHandlers(CommandHandlers):
             f"{model_id} on {symbol} {dataset}: {result.headline}",
             lines,
             time.monotonic() - started,
+        )
+
+    def audit_trend_signal(self, command: Command) -> CommandResult:
+        """Audit the trend_signal BUY/HOLD/SELL labels before expensive training."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        model_id = command.text("model_id", "").strip()
+        model_args = ["--model-id", model_id] if model_id else []
+        val_size = max(command.integer("val_size", 0), 0)
+        val_args = ["--val-size", str(val_size)] if val_size else []
+
+        return self._run_script(
+            command,
+            [
+                "scripts/evaluate_trend_signal_5m.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(0.05, command.number("atr_mult", 0.5))),
+                "--folds",
+                str(max(command.integer("folds", 3), 1)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 5000), 0)),
+                "--storage-root",
+                str(self._storage_root),
+                *val_args,
+                *model_args,
+            ],
+            f"Audited trend_signal labels on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:

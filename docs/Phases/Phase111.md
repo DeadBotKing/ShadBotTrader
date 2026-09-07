@@ -1,7 +1,7 @@
 # فاز ۱۱۱ — پیشنهاد: مدل‌های binary POS/NEG برای event trading
 
-**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا  
-**نوع:** Model family / target variant  
+**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا
+**نوع:** Model family / target variant
 **اولویت:** بالا بعد از فاز ۱۰۸ و ۱۰۹
 
 ---

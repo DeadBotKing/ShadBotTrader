@@ -8,7 +8,7 @@ A HOLD label is never created.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from ShadBotTrader.domain.ai.prediction_target import SignalClass
@@ -445,7 +445,12 @@ class TrendSignalLabels:
     labels: List[int]  # 0=SELL / 1=HOLD / 2=BUY
     source_index: List[int]  # ایندکس کندل تصمیم t
     label_end_index: List[int]  # ایندکس کندلی که برچسب در آن تعیین شد (برای purge)
-    barrier_dist: List[float]  # فاصلهٔ مانع از close[t] (به ATR؛ = X)
+    barrier_dist: List[float]  # legacy per-5M distance used only for reporting
+    barrier_price_dist: List[float] = field(default_factory=list)
+    ambiguous_count: int = 0
+    warmup_skipped: int = 0
+    partial_horizon_count: int = 0
+    examined_count: int = 0
 
     def __len__(self) -> int:
         return len(self.labels)
@@ -516,6 +521,11 @@ def build_trend_signal_labels(
     indices: List[int] = []
     ends: List[int] = []
     dists: List[float] = []
+    barrier_price_dists: List[float] = []
+    ambiguous_count = 0
+    warmup_skipped = 0
+    partial_horizon_count = 0
+    examined_count = 0
     n = len(candles)
     for t in range(n - 1):
         stop = min(n, t + 1 + horizon)
@@ -523,9 +533,14 @@ def build_trend_signal_labels(
             continue  # آینده‌ای وجود ندارد
         scale = daily_ranges[t]
         if scale <= 0:
+            warmup_skipped += 1
             continue  # warm-up یا سری تخت — نمونهٔ بی‌معنا
-        upper = closes[t] + atr_mult * scale
-        lower = closes[t] - atr_mult * scale
+        examined_count += 1
+        if stop < t + 1 + horizon:
+            partial_horizon_count += 1
+        barrier_price_dist = atr_mult * scale
+        upper = closes[t] + barrier_price_dist
+        lower = closes[t] - barrier_price_dist
         label: Optional[int] = None
         end = stop - 1
         for k in range(t + 1, stop):
@@ -533,6 +548,7 @@ def build_trend_signal_labels(
             hit_dn = lows[k] <= lower
             if hit_up and hit_dn:
                 label = None  # کندل مبهم — هر دو مانع
+                ambiguous_count += 1
                 end = k
                 break
             if hit_up:
@@ -554,9 +570,18 @@ def build_trend_signal_labels(
         labels.append(label)
         indices.append(t)
         ends.append(end)
-        dists.append(scale * atr_mult / 288 if scale else 0)  # per-5M-candle dist
+        dists.append(scale * atr_mult / 288 if scale else 0)  # legacy per-5M-candle dist
+        barrier_price_dists.append(barrier_price_dist)
     return TrendSignalLabels(
-        labels=labels, source_index=indices, label_end_index=ends, barrier_dist=dists
+        labels=labels,
+        source_index=indices,
+        label_end_index=ends,
+        barrier_dist=dists,
+        barrier_price_dist=barrier_price_dists,
+        ambiguous_count=ambiguous_count,
+        warmup_skipped=warmup_skipped,
+        partial_horizon_count=partial_horizon_count,
+        examined_count=examined_count,
     )
 
 

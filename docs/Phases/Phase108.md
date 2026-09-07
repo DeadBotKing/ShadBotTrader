@@ -1,7 +1,7 @@
 # فاز ۱۰۸ — پیشنهاد: class weights + F1/PR-AUC برای trend_signal
 
-**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا  
-**نوع:** AI training quality improvement  
+**وضعیت:** 🟡 پیشنهادی / آمادهٔ اجرا
+**نوع:** AI training quality improvement
 **اولویت:** بسیار بالا
 
 ---

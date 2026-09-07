@@ -82,6 +82,11 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 # ماشین کم‌رم (سندباکس/کانتینر 1GB): استریم اجباری
 SHADBOT_STREAM_THRESHOLD_BYTES=1000000  # اختیاری
 
+# audit trend_signal قبل از آموزش سنگین (فاز ۱۰۷)
+python scripts/evaluate_trend_signal_5m.py --symbol XAUUSD \
+  --timeframe 5M --window 288 --label-horizon 288 \
+  --atr-mult 0.5 --folds 3 --storage-root datasets
+
 # آموزش trend_signal (سه‌کلاسه)
 python scripts/run_dual_models.py --with-features --symbol XAUUSD \
   --model trend_signal --range-timeframes 5M --signal-timeframe 5M \
@@ -104,7 +109,9 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - فازهای جدید در `docs/Phases` خرد شدند: `Phase100.md` تا `Phase115.md`.
 - index سریع: `docs/Phases/README_PHASE100_115.md`.
 - handoff کامل جلسه: `docs/SESSION_HANDOFF_2026-09-07.md`.
-- قدم اجرایی بعدی پیشنهادی: `Phase107` یعنی audit کامل `trend_signal_5m`، سپس
+- `Phase107` انجام شد: script و GUI جدید `Audit trend-signal labels` برای audit کامل
+  `trend_signal_5m` اضافه شد.
+- قدم اجرایی بعدی پیشنهادی: اجرای همین audit روی دیتای واقعی اپراتور و سپس
   `Phase108` یعنی class weights + F1/PR-AUC.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)

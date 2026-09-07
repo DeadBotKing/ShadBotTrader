@@ -22,7 +22,7 @@
 
 | فاز | وضعیت | خلاصه | اولویت |
 |---|---|---|---|
-| 107 | 🟡 پیشنهادی | audit کامل trend_signal و label distribution/metrics | بسیار بالا |
+| 107 | ✅ کامل | audit کامل trend_signal و label distribution/metrics + GUI | انجام شد |
 | 108 | 🟡 پیشنهادی | class weights + F1/PR-AUC برای trend_signal | بسیار بالا |
 | 109 | 🟡 پیشنهادی | threshold calibration و heatmap backtest | بالا |
 | 110 | 🟡 پیشنهادی | feature selection train-only | بالا |

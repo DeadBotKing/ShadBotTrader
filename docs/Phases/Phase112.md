@@ -1,7 +1,7 @@
 # فاز ۱۱۲ — پیشنهاد: benchmark مدل دو-شاخه returns + engineered features
 
-**وضعیت:** 🟡 پیشنهادی / بعد از فاز ۱۰۸-۱۱۱  
-**نوع:** Architecture benchmark، بدون جایگزینی فوری WaveNet  
+**وضعیت:** 🟡 پیشنهادی / بعد از فاز ۱۰۸-۱۱۱
+**نوع:** Architecture benchmark، بدون جایگزینی فوری WaveNet
 **اولویت:** متوسط/بالا
 
 ---

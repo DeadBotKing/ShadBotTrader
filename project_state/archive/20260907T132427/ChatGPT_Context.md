@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-07T14:14:59.211523+00:00
+- Snapshot generated at: 2026-09-07T13:19:48.462664+00:00
 
 ## Current Architecture
 
@@ -27,10 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 7688a8f553d3f32f4710678b98ee4366822e5b46
+- Commit: e241e8065c3c766284120a093d2881fc40ac4158
 - Dirty: yes (12 files)
 - Recent commits:
-  - 7688a8f Phase 107: trend_signal label audit with GUI command
   - e241e80 docs: split session work and roadmap into phase handoff files
   - f4592f2 docs: Phase 106 external trading reviews and clean workspace references
   - fd4a190 Phase 104: scale trend_score inputs to minus one plus one
@@ -40,6 +39,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - d6ac7c7 docs: Phase 100 model card — dataset, real-candle target with worked examples, full WaveNet architecture (activations+RangeLoss), and the range-vs-score learnability proof (vol clusters corr 0.997 vs daily drift corr 0.002)
   - 08b596d Phase 100: trend_score on the REAL next 1D candle — first-class wiring, sanity-pred crash fix, stream-threshold env knob; trained gold_trend_score_1d v1 + gold_trend_1d v1 on 10y real gold data (honest verdict documented)
   - a062474 docs: trend_score_1d proposal — real daily candle score target analysis
+  - a7f1ff9 docs: score constant across candles — model converged to mean, not a code bug
 
 ## Quality Gate
 
@@ -66,8 +66,8 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 - Test files: 146
 - Documentation files: 165
 - Legacy files: 176
-- Total Python lines: 123662
+- Total Python lines: 123626
 - Modules: 465
 - Classes: 803
-- Functions: 4587
+- Functions: 4585
 - External dependencies: 14

@@ -1,7 +1,7 @@
 # فاز ۱۱۴ — پیشنهاد: external/regime features مخصوص XAUUSD
 
-**وضعیت:** 🟡 پیشنهادی  
-**نوع:** Feature expansion، نیازمند proposal جدا برای data source  
+**وضعیت:** 🟡 پیشنهادی
+**نوع:** Feature expansion، نیازمند proposal جدا برای data source
 **اولویت:** متوسط/بالا
 
 ---

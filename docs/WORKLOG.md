@@ -1,5 +1,72 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — فاز ۱۰۷: audit کامل trend_signal + GUI command
+
+**درخواست اپراتور:** اجرای فازهای پیشنهادی به ترتیب شروع شود، با تست دقیق، GUI،
+مستندسازی و zip نهایی. اولین فاز ترتیب پیشنهادی، audit کامل `trend_signal_5m` بود.
+
+**پیاده‌سازی:**
+- `scripts/evaluate_trend_signal_5m.py` اضافه شد: بدون نیاز به TensorFlow، labelها،
+  baselineها، fold geometry، feature matrix و اگر model artifact موجود باشد metricهای
+  مدل را audit می‌کند.
+- `TrendSignalLabels` در `target_builder.py` metadata گرفت: `ambiguous_count`,
+  `warmup_skipped`, `partial_horizon_count`, `examined_count`, `barrier_price_dist`.
+- GUI command جدید اضافه شد: `Audit trend-signal labels` با action
+  `audit_trend_signal` و فیلدهای symbol/dataset/window/label_horizon/atr_mult/folds/val_size/model_id/max_windows.
+- مسیر command از live log موجود استفاده می‌کند و script جدید را اجرا می‌کند.
+- JSON خروجی audit در `run_logs/trend_signal_audit_latest.json` نوشته می‌شود.
+
+**Smoke test واقعی روی دیتای تست موجود:**
+```text
+TESTSYM 5M, window=50, horizon=20, atr_mult=0.5
+candles=500
+labels=211 accepted from 211 examined starts
+warmup skip=288
+ambiguous=0
+partial horizon=19 accepted labels
+SELL=0, HOLD=211, BUY=0
+majority baseline=100%, always-HOLD=100%
+feature columns=179, labelled windows=211
+```
+این نشان داد audit imbalance شدید و near-tail partial horizon را درست گزارش می‌کند.
+
+**تست‌ها:**
+```text
+python -m pytest tests/unit/ai/test_trend_signal_labels.py \
+  tests/integration/test_trend_signal_audit.py \
+  tests/unit/presentation/test_commands.py \
+  tests/integration/test_gui_coverage.py -q
+→ 66 passed
+
+python -m pytest -q
+→ passed (full suite in this environment; TF tests skipped by existing markers)
+```
+
+**Quality gate:**
+- targeted `ruff`/`black --check` روی فایل‌های تغییرکرده سبز شد.
+- full `ruff check .`, `black --check .`, `mypy src` همچنان به خطاهای قدیمی/pre-existing
+  خارج از این فاز می‌خورند (ruff≈219، black≈21 فایل، mypy=28 خطا). این خطاها قبل از
+  Phase107 هم وجود داشتند و در فایل‌های touched خطای ruff/black جدید نماند.
+
+**اجرای واقعی اپراتور روی XAUUSD 5M:**
+```text
+candles=53,198 | labels=52,881 از 52,909 examined
+SELL=21,130 (40.0%) | HOLD=12,715 (24.0%) | BUY=19,036 (36.0%)
+majority baseline=40.0% | always-HOLD=24.0%
+ambiguous=28 | warmup skip=288 | partial horizon accepted=287
+first-hit median=104 bars | barrier median=$50.155
+foldهای validation آخر: BUY-heavy (982/932/891) نسبت به SELL (424/627/640)
+```
+
+**رفع follow-up:** اجرای اپراتور هنگام scoring مدل ذخیره‌شده کرش کرد چون audit با
+`window=288` اجرا شده بود ولی مدل ذخیره‌شده `gold_trend_signal_5m` ورودی
+`(None, 150, 179)` می‌خواست. `score_model()` حالا قبل از `model.predict` هم window
+و هم feature width را بررسی می‌کند و در mismatch، model scoring را graceful skip
+می‌کند؛ label/fold audit همچنان معتبر می‌ماند.
+
+**گام بعد:** اپراتور بعد از دریافت zip می‌تواند دوباره GUI audit را اجرا کند؛ دیگر
+روی مدل قدیمی window=150 کرش نمی‌کند. سپس Phase108: class weights + F1/PR-AUC.
+
 ## 2026-09-07 — ثبت نهایی handoff و خردکردن roadmap در Docs/Phases
 
 **درخواست اپراتور:** همهٔ پیشنهادهای استخراج‌شده از این چت به صورت چند فاز در
