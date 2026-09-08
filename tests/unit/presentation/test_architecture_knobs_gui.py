@@ -325,3 +325,38 @@ def test_calibrate_trend_signal_boosters_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--sell-model-id") + 1] == "gold_sell_lightgbm_basic_5m"
     assert args[args.index("--threshold-min") + 1] == "0.4"
     assert args[args.index("--min-side-trades") + 1] == "25"
+
+
+def test_build_hybrid_xgboost_matrix_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BUILD_HYBRID_XGBOOST_MATRIX).fields
+    }
+    assert {"include_wavenet", "include_range", "range_1d_model_id", "range_4h_model_id"} <= fields
+
+
+def test_build_hybrid_xgboost_matrix_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.build_hybrid_xgboost_matrix(
+        Command(
+            CommandKind.BUILD_HYBRID_XGBOOST_MATRIX,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "window": "288",
+                "label_horizon": "288",
+                "booster": "lightgbm",
+                "range_1d_model_id": "gold_range_1d",
+                "range_4h_model_id": "gold_range_4h",
+                "include_wavenet": "1",
+                "require_range": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/build_hybrid_xgboost_matrix.py"
+    assert args[args.index("--include-wavenet") + 1] == "1"
+    assert args[args.index("--require-range") + 1] == "1"
+    assert args[args.index("--range-1d-model-id") + 1] == "gold_range_1d"
+    assert args[args.index("--range-4h-model-id") + 1] == "gold_range_4h"

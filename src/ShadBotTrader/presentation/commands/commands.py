@@ -61,6 +61,7 @@ class CommandKind(str, Enum):
     CALIBRATE_TREND_SIGNAL = "calibrate_trend_signal"
     TRAIN_TREND_SIGNAL_BOOSTER = "train_trend_signal_booster"
     CALIBRATE_TREND_SIGNAL_BOOSTERS = "calibrate_trend_signal_boosters"
+    BUILD_HYBRID_XGBOOST_MATRIX = "build_hybrid_xgboost_matrix"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"

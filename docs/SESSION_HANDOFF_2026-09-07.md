@@ -482,3 +482,52 @@ python -u scripts/train_trend_signal_boosters.py `
 ```
 
 If multiclass collapses, run specialist branches with `--output-mode buy` and `--output-mode sell`.
+
+---
+
+## Addendum — 2026-09-08: Phase123 hybrid XGBoost matrix
+
+Operator clarified the desired architecture: not a simple ensemble and not XGBoost as a differentiable layer inside WaveNet; instead, build a matrix from model outputs and feed that to XGBoost/LightGBM final head.
+
+Implemented:
+
+```text
+scripts/build_hybrid_xgboost_matrix.py
+CommandKind.BUILD_HYBRID_XGBOOST_MATRIX
+GUI card: Build hybrid XGBoost matrix
+docs/Phases/Phase123.md
+```
+
+Matrix columns include booster specialist probabilities, optional multiclass booster probabilities, optional WaveNet probabilities, and true range-model forecasts from `gold_range_1d` and `gold_range_4h` converted into up/down-room features. Range alignment is causal: only the latest closed 1D/4H bar is used for each 5M signal timestamp.
+
+Recommended next run:
+
+```powershell
+python -u scripts/build_hybrid_xgboost_matrix.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --window 288 `
+  --label-horizon 288 `
+  --atr-mult 0.5 `
+  --train-ratio 80 `
+  --scope holdout `
+  --max-windows 8000 `
+  --summary-mode basic `
+  --booster lightgbm `
+  --include-specialists 1 `
+  --include-multiclass-booster 1 `
+  --include-wavenet 1 `
+  --require-wavenet 0 `
+  --include-range 1 `
+  --require-range 1 `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --storage-root datasets
+```
+
+Output:
+
+```text
+datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+run_logs/hybrid_xgboost_matrix/latest.json
+```

@@ -478,6 +478,33 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "save_record",
         "timeout_minutes",
     },
+    CommandKind.BUILD_HYBRID_XGBOOST_MATRIX: {
+        "scope",
+        "folds",
+        "val_size",
+        "max_windows",
+        "include_tabular_summary",
+        "include_multiclass_booster",
+        "include_specialists",
+        "include_wavenet",
+        "require_wavenet",
+        "include_range",
+        "require_range",
+        "buy_model_id",
+        "sell_model_id",
+        "multiclass_model_id",
+        "wavenet_model_id",
+        "range_1d_model_id",
+        "range_4h_model_id",
+        "buy_model_version",
+        "sell_model_version",
+        "multiclass_model_version",
+        "wavenet_model_version",
+        "range_1d_version",
+        "range_4h_version",
+        "output_name",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -1537,6 +1564,103 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.BUILD_HYBRID_XGBOOST_MATRIX,
+            label="Build hybrid XGBoost matrix",
+            description=(
+                "Build the final XGBoost-ready matrix from booster probabilities, "
+                "optional WaveNet probabilities, and 1D/4H range-model room features."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("window", "Window rows", "288", kind="number"),
+                CommandField("label_horizon", "Label horizon", "288", kind="number"),
+                CommandField("atr_mult", "Barrier", "0.5", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "80", kind="number"),
+                CommandField("booster", "Booster", "lightgbm"),
+                CommandField(
+                    "summary_mode",
+                    "Summary mode",
+                    "basic",
+                    kind="select",
+                    options=WINDOW_SUMMARY_CHOICES,
+                ),
+                CommandField(
+                    "scope",
+                    "Scope",
+                    "holdout",
+                    kind="select",
+                    options=("auto", "holdout", "last-fold", "all"),
+                ),
+                CommandField("max_windows", "Max windows", "8000", kind="number"),
+                CommandField(
+                    "include_specialists",
+                    "Use specialists",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField(
+                    "include_multiclass_booster",
+                    "Use multiclass booster",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField(
+                    "include_wavenet",
+                    "Use WaveNet output",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField(
+                    "require_wavenet",
+                    "Require WaveNet",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField(
+                    "include_range",
+                    "Use range models",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField(
+                    "require_range",
+                    "Require range",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("buy_model_id", "BUY booster id", ""),
+                CommandField("sell_model_id", "SELL booster id", ""),
+                CommandField("multiclass_model_id", "Multiclass id", ""),
+                CommandField("wavenet_model_id", "WaveNet id", "gold_trend_signal_5m"),
+                CommandField("range_1d_model_id", "1D range id", "gold_range_1d"),
+                CommandField("range_4h_model_id", "4H range id", "gold_range_4h"),
+                CommandField("buy_model_version", "BUY version", "0", kind="number"),
+                CommandField("sell_model_version", "SELL version", "0", kind="number"),
+                CommandField("multiclass_model_version", "Multiclass version", "0", kind="number"),
+                CommandField("wavenet_model_version", "WaveNet version", "0", kind="number"),
+                CommandField("range_1d_version", "1D version", "0", kind="number"),
+                CommandField("range_4h_version", "4H version", "0", kind="number"),
+                CommandField("include_tabular_summary", "Include raw summary", "0"),
+                CommandField("output_name", "Output name", "hybrid_xgboost_matrix_v1"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2116,6 +2240,7 @@ class CommandHandlers:
                 CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS: (
                     accounts.calibrate_trend_signal_boosters
                 ),
+                CommandKind.BUILD_HYBRID_XGBOOST_MATRIX: accounts.build_hybrid_xgboost_matrix,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -4218,6 +4343,104 @@ class AccountCommandHandlers(CommandHandlers):
             f"Calibrated trend_signal booster specialists on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def build_hybrid_xgboost_matrix(self, command: Command) -> CommandResult:
+        """Build model-output meta-features for the final XGBoost head."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        optional_text_fields = [
+            ("--buy-model-id", "buy_model_id"),
+            ("--sell-model-id", "sell_model_id"),
+            ("--multiclass-model-id", "multiclass_model_id"),
+        ]
+        optional_args: List[str] = []
+        for flag, field in optional_text_fields:
+            value = command.text(field, "").strip()
+            if value:
+                optional_args += [flag, value]
+
+        return self._run_script(
+            command,
+            [
+                "scripts/build_hybrid_xgboost_matrix.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(0.05, command.number("atr_mult", 0.5))),
+                "--train-ratio",
+                str(command.number("train_ratio", 80.0)),
+                "--scope",
+                command.text("scope", "holdout").strip() or "holdout",
+                "--folds",
+                str(max(command.integer("folds", 3), 1)),
+                "--val-size",
+                str(max(command.integer("val_size", 2000), 4)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 8000), 0)),
+                "--summary-mode",
+                command.text("summary_mode", "basic").strip().lower() or "basic",
+                "--booster",
+                command.text("booster", "lightgbm").strip().lower() or "lightgbm",
+                "--include-tabular-summary",
+                "1" if command.text("include_tabular_summary", "0").strip() == "1" else "0",
+                "--include-specialists",
+                "1" if command.text("include_specialists", "1").strip() != "0" else "0",
+                "--include-multiclass-booster",
+                "1" if command.text("include_multiclass_booster", "1").strip() != "0" else "0",
+                "--include-wavenet",
+                "1" if command.text("include_wavenet", "1").strip() != "0" else "0",
+                "--require-wavenet",
+                "1" if command.text("require_wavenet", "0").strip() == "1" else "0",
+                "--include-range",
+                "1" if command.text("include_range", "1").strip() != "0" else "0",
+                "--require-range",
+                "1" if command.text("require_range", "1").strip() != "0" else "0",
+                "--wavenet-model-id",
+                command.text("wavenet_model_id", "gold_trend_signal_5m").strip()
+                or "gold_trend_signal_5m",
+                "--range-1d-model-id",
+                command.text("range_1d_model_id", "gold_range_1d").strip() or "gold_range_1d",
+                "--range-4h-model-id",
+                command.text("range_4h_model_id", "gold_range_4h").strip() or "gold_range_4h",
+                "--buy-model-version",
+                str(max(command.integer("buy_model_version", 0), 0)),
+                "--sell-model-version",
+                str(max(command.integer("sell_model_version", 0), 0)),
+                "--multiclass-model-version",
+                str(max(command.integer("multiclass_model_version", 0), 0)),
+                "--wavenet-model-version",
+                str(max(command.integer("wavenet_model_version", 0), 0)),
+                "--range-1d-version",
+                str(max(command.integer("range_1d_version", 0), 0)),
+                "--range-4h-version",
+                str(max(command.integer("range_4h_version", 0), 0)),
+                "--output-name",
+                command.text("output_name", "hybrid_xgboost_matrix_v1").strip()
+                or "hybrid_xgboost_matrix_v1",
+                "--storage-root",
+                str(self._storage_root),
+                *optional_args,
+            ],
+            f"Built hybrid XGBoost matrix on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:

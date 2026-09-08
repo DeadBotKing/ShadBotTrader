@@ -129,8 +129,11 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
   `pip install -r requirements-boosters.txt`.
 - `Phase122` انجام شد: script و GUI جدید `Calibrate booster specialists` برای کالیبراسیون مشترک
   BUY/SELL specialistها اضافه شد و threshold مشترک را در model record ذخیره می‌کند.
-- قدم اجرایی بعدی: با خروجی‌های `gold_buy_lightgbm_basic_5m` و `gold_sell_lightgbm_basic_5m`,
-  فاز ۱۲۲ را اجرا کن تا آستانهٔ BUY/SELL و no-trade gate پیدا شود.
+- `Phase123` انجام شد: script و GUI جدید `Build hybrid XGBoost matrix` ساخته شد. این ماتریس
+  خروجی‌های BUY/SELL booster، multiclass booster، WaveNet اختیاری و پیش‌بینی‌های range_1d/range_4h
+  را به featureهای آمادهٔ XGBoost/LightGBM تبدیل می‌کند.
+- قدم اجرایی بعدی: `Build hybrid XGBoost matrix` را اجرا کن تا فایل
+  `datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet` ساخته شود؛ بعد فاز ۱۲۴ head نهایی را train می‌کند.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 
@@ -233,8 +236,8 @@ finish Phase108 trend_signal training → Phase109 calibration → Phase110 feat
 
 1. روی سیستم اپراتور optional booster backend نصب شود:
    `pip install -r requirements-boosters.txt`
-2. چون `gold_buy_lightgbm_basic_5m` و `gold_sell_lightgbm_basic_5m` ساخته شدند، حالا از GUI/CLI
-   `Calibrate booster specialists` اجرا شود.
-3. اگر thresholdهای دوطرفه با precision/recall قابل قبول پیدا شد، فاز ۱۱۶ برای ترکیب با
-   `gold_range_1d` و `gold_range_4h` انجام شود.
-4. اگر calibration ضعیف بود، feature selection فاز ۱۱۰ و بعد tuning boosterها اجرا شود.
+2. از GUI/CLI دستور `Build hybrid XGBoost matrix` اجرا شود تا خروجی booster/WaveNet/range به یک
+   ماتریس نهایی برای XGBoost تبدیل شود.
+3. اگر ساخت ماتریس با range_1d/range_4h موفق بود، فاز ۱۲۴ برای آموزش head نهایی XGBoost/LightGBM
+   روی همین ماتریس اجرا شود.
+4. اگر مدل‌های range در نام پیش‌فرض نبودند، `--range-1d-model-id` و `--range-4h-model-id` اصلاح شوند.

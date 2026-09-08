@@ -35,6 +35,7 @@
 | 120 | ✅ کامل | Anti-collapse metrics برای جلوگیری از always-BUY/always-SELL و monitoring سخت‌گیرانه‌تر | `Phase120.md` |
 | 121 | ✅ زیرساخت کامل | Tabular Booster Branch برای `trend_signal`: LightGBM/XGBoost/CatBoost + GUI | `Phase121.md` |
 | 122 | ✅ کامل | Calibration برای BUY/SELL booster specialists و ذخیرهٔ threshold مشترک | `Phase122.md` |
+| 123 | ✅ ماتریس کامل | ساخت ماتریس نهایی XGBoost از خروجی booster/WaveNet و مدل‌های range 1D/4H | `Phase123.md` |
 
 ---
 
@@ -65,13 +66,15 @@ C) Phase120: anti-collapse معیارها برای رد always-BUY/always-SELL
 D) Phase121/112A: LightGBM/CatBoost/XGBoost branch benchmark
 E) Phase111/121: BUY/SELL specialist binary models
 F) Phase122: calibration مشترک BUY/SELL booster specialists
-G) Phase110: train-only feature selection برای branchهای برنده
-H) Phase116: range-aware hybrid decision engine
-I) Phase113: significance / random / Monte Carlo checks
-J) Phase114: external/regime features اگر baseline ارزشمند بود
-K) Phase117: advanced neural benchmarks
-L) Phase115: live decision audit کامل قبل از live جدی
-M) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
+G) Phase123: ساخت Hybrid XGBoost matrix با خروجی WaveNet/Boosters/Range
+H) Phase124: آموزش XGBoost/LightGBM head نهایی روی ماتریس hybrid
+I) Phase110: train-only feature selection برای branchهای برنده
+J) Phase116: range-aware hybrid decision engine
+K) Phase113: significance / random / Monte Carlo checks
+L) Phase114: external/regime features اگر baseline ارزشمند بود
+M) Phase117: advanced neural benchmarks
+N) Phase115: live decision audit کامل قبل از live جدی
+O) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
 ```
 
 ---

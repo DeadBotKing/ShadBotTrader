@@ -4584,3 +4584,57 @@ python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
 PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
 python3 -m pytest -q         ✅ passed.
 ```
+
+## 2026-09-08 — Phase 123 hybrid XGBoost matrix with WaveNet and range outputs
+
+در پاسخ به ایدهٔ اپراتور که به جای ensemble ساده، خروجی مدل‌ها به یک ماتریس داده شود تا XGBoost تصمیم نهایی را یاد بگیرد، فاز ۱۲۳ اضافه شد.
+
+اضافه شد:
+
+```text
+scripts/build_hybrid_xgboost_matrix.py
+CommandKind.BUILD_HYBRID_XGBOOST_MATRIX
+GUI card: Build hybrid XGBoost matrix
+docs/Phases/Phase123.md
+tests/unit/ai/test_hybrid_xgboost_matrix.py
+```
+
+ماتریس خروجی شامل این خانواده featureهاست:
+
+```text
+BUY/SELL specialist probabilities
+multiclass booster probabilities
+optional WaveNet trend_signal probabilities
+range_1d room/features
+range_4h room/features
+true label
+```
+
+خروجی:
+
+```text
+datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_v1.parquet
+datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+run_logs/hybrid_xgboost_matrix/latest.json
+```
+
+اصل علیت range:
+
+```text
+برای هر سیگنال 5M فقط آخرین کندل بسته‌شدهٔ 1D/4H استفاده می‌شود:
+range_open_time + range_delta <= signal_time
+```
+
+### Quality gate — Phase123
+
+Targeted checks:
+
+```text
+python3 -m ruff check scripts/build_hybrid_xgboost_matrix.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_xgboost_matrix.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check scripts/build_hybrid_xgboost_matrix.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_xgboost_matrix.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_hybrid_xgboost_matrix.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestEveryRunHasAButton tests/integration/test_gui_coverage.py::TestDashboardPage::test_every_button_is_rendered ✅
+PYTHONPATH=src python3 -m pytest -q ✅
+PYTHONPATH=src python3 -m py_compile scripts/build_hybrid_xgboost_matrix.py ✅
+```
+
+Full ruff/black/mypy state remains the same pre-existing red state documented earlier; full pytest is green.
