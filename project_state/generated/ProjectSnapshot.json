@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "2ace8668dddeaa099ede3cd9bc0701d9ecb25e30efba05822628c79b94beeaf0",
-      "size_bytes": 15207
+      "sha256": "e1b82cfd5e9edf3434df5e263fbfd95b60c887208e36542ade712569c372aa0a",
+      "size_bytes": 15376
     },
     {
       "category": "documentation",
@@ -401,6 +401,12 @@
       "path": "docs/Phases/Phase121.md",
       "sha256": "ab8b9db45de00f94c69059334941fe02c212dd908c1ebe5fd2db793ff5391190",
       "size_bytes": 3884
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase122.md",
+      "sha256": "b4964135e7f32a984381ec7baaec0c26f9e7cb8ba0e1eb12313411cda937852f",
+      "size_bytes": 3573
     },
     {
       "category": "documentation",
@@ -675,8 +681,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "073327f79a757bf5838d20ee540d0623b02afeedd8db983e2719c5e8105bf4ef",
-      "size_bytes": 7501
+      "sha256": "75fa980578ee9c8b1d2bdeb722b3a8e0415107b59e8ba29ec643464e32f9ee0f",
+      "size_bytes": 7698
     },
     {
       "category": "documentation",
@@ -1101,8 +1107,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_HANDOFF_2026-09-07.md",
-      "sha256": "f5b570984b030d15d07b88220706b2bbc08bb08cee98d21569026fd0f8f775bc",
-      "size_bytes": 12164
+      "sha256": "b6e35aeea3c8b7ecc6472e584b053b63f09c9bc630aac142929adddbd12c55e8",
+      "size_bytes": 13476
     },
     {
       "category": "documentation",
@@ -1167,8 +1173,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "ff401443163bbfc5312683aa703a3f38e0383dfb03ddd87c39136cd120811db0",
-      "size_bytes": 240747
+      "sha256": "ca4165d8599dcf4a391da62d4185f2c4543229d07441afc6a07ab126b8bd8bad",
+      "size_bytes": 245285
     },
     {
       "category": "legacy",
@@ -2279,6 +2285,12 @@
       "path": "run_logs/compute_features.log",
       "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
+    },
+    {
+      "category": "script",
+      "path": "scripts/calibrate_trend_signal_boosters.py",
+      "sha256": "b4e96d45be05ed5cd7a5d681e566f5e8824680a8cbad34e774250f831b36bcbe",
+      "size_bytes": 24511
     },
     {
       "category": "script",
@@ -4179,14 +4191,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "225deea964c244f0972029a2b182dc81b6327c2b3bc682df055038b3ccbc846c",
-      "size_bytes": 7373
+      "sha256": "5fcda5b6cf5166406e848585a319ae8c50bf1f40d1edbf096a6f06477019a823",
+      "size_bytes": 7445
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "0e73b7995f563df59da4b97d64901002d00a810c64a0c7e5eab28114bc92f8a2",
-      "size_bytes": 195249
+      "sha256": "e9136edb064a965a590cefaf774d5ff4244fbfa4dc65f0421e87e0b07612006f",
+      "size_bytes": 202461
     },
     {
       "category": "source",
@@ -4778,6 +4790,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_trend_signal_booster_calibration.py",
+      "sha256": "6e58344790dc3727a080dd6524b56a0430370b156a047a95cae5789ebad37db7",
+      "size_bytes": 1607
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_trend_signal_booster_script.py",
       "sha256": "2a4ed82708ab41efa2c71570bec6ddee5449d37305c08e6d4678906dea3ccbf7",
       "size_bytes": 1394
@@ -5115,8 +5133,8 @@
     {
       "category": "test",
       "path": "tests/unit/presentation/test_architecture_knobs_gui.py",
-      "sha256": "747139e5034da6b79b527a359b38f10bbf41140f2982a29a9ef5660f6fb1da46",
-      "size_bytes": 9895
+      "sha256": "1e52ff1a31ac4d58cddcd6f146c0c43b9484a13abe9dbdc73fbac37e0b488354",
+      "size_bytes": 11232
     },
     {
       "category": "test",
@@ -5287,14 +5305,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-08T11:34:35.283332+00:00",
+  "generated_at": "2026-09-08T14:04:38.228510+00:00",
   "git": {
     "branch": "main",
-    "commit": "65aeb7fd1905bce53d50882f367341fc2a7ac92b",
+    "commit": "9e71fae57c6067e4f3e5857f7a9a11fdf2d6c618",
     "dirty": true,
-    "dirty_files": 24,
+    "dirty_files": 15,
     "is_repo": true,
     "recent_commits": [
+      "9e71fae Phase 120: anti-collapse metrics and booster branch",
       "65aeb7f Phase 119: expose monitor metric in GUI",
       "ddeb089 docs: clarify Phase 108 training before calibration",
       "55315b2 Phase 116: hybrid model roadmap and GUI cleanup",
@@ -5303,8 +5322,7 @@
       "c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch",
       "7688a8f Phase 107: trend_signal label audit with GUI command",
       "e241e80 docs: split session work and roadmap into phase handoff files",
-      "f4592f2 docs: Phase 106 external trading reviews and clean workspace references",
-      "fd4a190 Phase 104: scale trend_score inputs to minus one plus one"
+      "f4592f2 docs: Phase 106 external trading reviews and clean workspace references"
     ]
   },
   "modules": [
@@ -9086,7 +9104,7 @@
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 63,
+      "functions": 64,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
@@ -10631,6 +10649,14 @@
       "path": "tests/unit/ai/test_training_progress_units.py"
     },
     {
+      "classes": 0,
+      "external_imports": [],
+      "functions": 3,
+      "internal_imports": [],
+      "name": "unit.ai.test_trend_signal_booster_calibration",
+      "path": "tests/unit/ai/test_trend_signal_booster_calibration.py"
+    },
+    {
       "classes": 1,
       "external_imports": [
         "numpy"
@@ -11458,7 +11484,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 22,
+      "functions": 24,
       "internal_imports": [
         "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.commands.handlers"
@@ -11900,18 +11926,18 @@
   "statistics": {
     "class_count": 806,
     "config_file_count": 3,
-    "documentation_file_count": 175,
+    "documentation_file_count": 176,
     "external_dependency_count": 14,
-    "function_count": 4645,
+    "function_count": 4651,
     "internal_dependency_count": 264,
     "legacy_file_count": 176,
-    "module_count": 472,
+    "module_count": 473,
     "source_file_count": 320,
-    "source_lines": 53556,
-    "test_file_count": 152,
-    "test_lines": 25232,
-    "total_file_count": 871,
-    "total_lines": 126534
+    "source_lines": 53718,
+    "test_file_count": 153,
+    "test_lines": 25319,
+    "total_file_count": 874,
+    "total_lines": 127406
   },
-  "test_file_count": 152
+  "test_file_count": 153
 }

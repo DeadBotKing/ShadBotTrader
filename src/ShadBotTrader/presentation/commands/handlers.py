@@ -461,6 +461,23 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "max_samples",
         "timeout_minutes",
     },
+    CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS: {
+        "buy_model_id",
+        "sell_model_id",
+        "buy_model_version",
+        "sell_model_version",
+        "scope",
+        "threshold_min",
+        "threshold_max",
+        "threshold_step",
+        "min_margin",
+        "min_trades",
+        "min_side_trades",
+        "precision_floor",
+        "max_windows",
+        "save_record",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -1451,6 +1468,75 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS,
+            label="Calibrate booster specialists",
+            description=(
+                "Load the BUY and SELL trend-signal booster specialists, scan "
+                "probability thresholds, and save the paired decision gate."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("booster", "Booster", "lightgbm"),
+                CommandField(
+                    "summary_mode",
+                    "Summary mode",
+                    "basic",
+                    kind="select",
+                    options=WINDOW_SUMMARY_CHOICES,
+                ),
+                CommandField("window", "Window rows", "288", kind="number"),
+                CommandField("label_horizon", "Label horizon", "288", kind="number"),
+                CommandField("atr_mult", "Barrier", "0.5", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "80", kind="number"),
+                CommandField(
+                    "buy_model_id",
+                    "BUY model id",
+                    "",
+                    hint="empty = gold_buy_{booster}_{summary}_{dataset}",
+                ),
+                CommandField(
+                    "sell_model_id",
+                    "SELL model id",
+                    "",
+                    hint="empty = gold_sell_{booster}_{summary}_{dataset}",
+                ),
+                CommandField("buy_model_version", "BUY version", "0", kind="number"),
+                CommandField("sell_model_version", "SELL version", "0", kind="number"),
+                CommandField(
+                    "scope",
+                    "Scope",
+                    "auto",
+                    kind="select",
+                    options=("auto", "holdout", "last-fold", "all"),
+                ),
+                CommandField("threshold_min", "Threshold min", "0.35", kind="number"),
+                CommandField("threshold_max", "Threshold max", "0.95", kind="number"),
+                CommandField("threshold_step", "Threshold step", "0.05", kind="number"),
+                CommandField("min_margin", "Min margin", "0", kind="number"),
+                CommandField("min_trades", "Min trades", "50", kind="number"),
+                CommandField("min_side_trades", "Min side trades", "10", kind="number"),
+                CommandField("precision_floor", "Precision floor", "0", kind="number"),
+                CommandField("max_windows", "Score at most", "8000", kind="number"),
+                CommandField(
+                    "save_record",
+                    "Save to model records",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2027,6 +2113,9 @@ class CommandHandlers:
                 CommandKind.AUDIT_TREND_SIGNAL: accounts.audit_trend_signal,
                 CommandKind.CALIBRATE_TREND_SIGNAL: accounts.calibrate_trend_signal,
                 CommandKind.TRAIN_TREND_SIGNAL_BOOSTER: accounts.train_trend_signal_booster,
+                CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS: (
+                    accounts.calibrate_trend_signal_boosters
+                ),
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -4057,6 +4146,78 @@ class AccountCommandHandlers(CommandHandlers):
             f"Trained {booster} trend_signal booster branch on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def calibrate_trend_signal_boosters(self, command: Command) -> CommandResult:
+        """Calibrate paired BUY/SELL booster specialist thresholds."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+        buy_model = command.text("buy_model_id", "").strip()
+        sell_model = command.text("sell_model_id", "").strip()
+        buy_args = ["--buy-model-id", buy_model] if buy_model else []
+        sell_args = ["--sell-model-id", sell_model] if sell_model else []
+
+        return self._run_script(
+            command,
+            [
+                "scripts/calibrate_trend_signal_boosters.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--booster",
+                command.text("booster", "lightgbm").strip().lower() or "lightgbm",
+                "--summary-mode",
+                command.text("summary_mode", "basic").strip().lower() or "basic",
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(0.05, command.number("atr_mult", 0.5))),
+                "--train-ratio",
+                str(command.number("train_ratio", 80.0)),
+                "--scope",
+                command.text("scope", "auto").strip() or "auto",
+                "--threshold-min",
+                str(command.number("threshold_min", 0.35)),
+                "--threshold-max",
+                str(command.number("threshold_max", 0.95)),
+                "--threshold-step",
+                str(command.number("threshold_step", 0.05)),
+                "--min-margin",
+                str(max(command.number("min_margin", 0.0), 0.0)),
+                "--min-trades",
+                str(max(command.integer("min_trades", 50), 0)),
+                "--min-side-trades",
+                str(max(command.integer("min_side_trades", 10), 0)),
+                "--precision-floor",
+                str(max(command.number("precision_floor", 0.0), 0.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 8000), 0)),
+                "--buy-model-version",
+                str(max(command.integer("buy_model_version", 0), 0)),
+                "--sell-model-version",
+                str(max(command.integer("sell_model_version", 0), 0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *buy_args,
+                *sell_args,
+            ],
+            f"Calibrated trend_signal booster specialists on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:

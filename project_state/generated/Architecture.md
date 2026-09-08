@@ -1,6 +1,6 @@
 # ShadBotTrader — Architecture (generated)
 
-> Generated 2026-09-08T11:34:35.283332+00:00
+> Generated 2026-09-08T14:04:38.228510+00:00
 > Architecture version: 1.0
 
 ## Layers

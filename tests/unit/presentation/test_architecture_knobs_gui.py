@@ -290,3 +290,38 @@ def test_train_trend_signal_booster_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--summary-mode") + 1] == "basic"
     assert args[args.index("--val-size") + 1] == "2000"
     assert args[args.index("--n-estimators") + 1] == "25"
+
+
+def test_calibrate_trend_signal_boosters_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS).fields
+    }
+    assert {"buy_model_id", "sell_model_id", "threshold_min", "min_side_trades"} <= fields
+
+
+def test_calibrate_trend_signal_boosters_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.calibrate_trend_signal_boosters(
+        Command(
+            CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "booster": "lightgbm",
+                "summary_mode": "basic",
+                "buy_model_id": "gold_buy_lightgbm_basic_5m",
+                "sell_model_id": "gold_sell_lightgbm_basic_5m",
+                "threshold_min": "0.40",
+                "threshold_max": "0.90",
+                "min_side_trades": "25",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/calibrate_trend_signal_boosters.py"
+    assert args[args.index("--buy-model-id") + 1] == "gold_buy_lightgbm_basic_5m"
+    assert args[args.index("--sell-model-id") + 1] == "gold_sell_lightgbm_basic_5m"
+    assert args[args.index("--threshold-min") + 1] == "0.4"
+    assert args[args.index("--min-side-trades") + 1] == "25"

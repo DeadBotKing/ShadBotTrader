@@ -4527,3 +4527,60 @@ python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
 PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
 python3 -m pytest -q         ✅ passed.
 ```
+
+## 2026-09-08 — Phase 122 booster specialist threshold calibration
+
+بعد از اجرای اپراتور برای BUY و SELL specialist، هر دو مدل LightGBM ذخیره شدند:
+
+```text
+gold_buy_lightgbm_basic_5m  v1
+gold_sell_lightgbm_basic_5m v1
+```
+
+نتایج specialistها نشان دادند مسیر booster از WaveNet سالم‌تر است، ولی برای تصمیم معاملاتی باید threshold مشترک BUY/SELL پیدا شود.
+
+اضافه شد:
+
+```text
+scripts/calibrate_trend_signal_boosters.py
+CommandKind.CALIBRATE_TREND_SIGNAL_BOOSTERS
+GUI card: Calibrate booster specialists
+docs/Phases/Phase122.md
+tests/unit/ai/test_trend_signal_booster_calibration.py
+```
+
+منطق تصمیم:
+
+```text
+BUY  اگر buy_prob >= buy_threshold و buy_prob - sell_prob >= min_margin
+SELL اگر sell_prob >= sell_threshold و sell_prob - buy_prob >= min_margin
+هر دو یا هیچکدام → no trade
+```
+
+خروجی:
+
+```text
+run_logs/trend_signal_booster_thresholds/latest.csv
+run_logs/trend_signal_booster_thresholds/latest.html
+run_logs/trend_signal_booster_thresholds/latest.json
+```
+
+### Quality gate — Phase122
+
+Targeted checks:
+
+```text
+python3 -m ruff check scripts/calibrate_trend_signal_boosters.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_trend_signal_booster_calibration.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check scripts/calibrate_trend_signal_boosters.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_trend_signal_booster_calibration.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_trend_signal_booster_calibration.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestEveryRunHasAButton tests/integration/test_gui_coverage.py::TestDashboardPage::test_every_button_is_rendered ✅
+PYTHONPATH=src python3 -m pytest -q ✅
+```
+
+Full gate remains pre-existing red except pytest:
+
+```text
+python3 -m ruff check .      ❌ 219 pre-existing errors.
+python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
+PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
+python3 -m pytest -q         ✅ passed.
+```

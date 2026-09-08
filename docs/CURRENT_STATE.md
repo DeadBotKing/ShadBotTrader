@@ -127,8 +127,10 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - `Phase121` انجام شد: branch مستقل `Train trend-signal booster` برای LightGBM/XGBoost/CatBoost
   روی خلاصهٔ causal پنجرهٔ 288 کندلی اضافه شد. اجرای واقعی نیازمند نصب optional dependencies است:
   `pip install -r requirements-boosters.txt`.
-- قدم اجرایی بعدی: به جای ادامهٔ WaveNet collapse‌شده، booster branch را با `output_mode=multiclass`
-  تست کن؛ اگر multiclass هم collapse کرد، `output_mode=buy` و `output_mode=sell` را جدا اجرا کن.
+- `Phase122` انجام شد: script و GUI جدید `Calibrate booster specialists` برای کالیبراسیون مشترک
+  BUY/SELL specialistها اضافه شد و threshold مشترک را در model record ذخیره می‌کند.
+- قدم اجرایی بعدی: با خروجی‌های `gold_buy_lightgbm_basic_5m` و `gold_sell_lightgbm_basic_5m`,
+  فاز ۱۲۲ را اجرا کن تا آستانهٔ BUY/SELL و no-trade gate پیدا شود.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 
@@ -231,9 +233,8 @@ finish Phase108 trend_signal training → Phase109 calibration → Phase110 feat
 
 1. روی سیستم اپراتور optional booster backend نصب شود:
    `pip install -r requirements-boosters.txt`
-2. از GUI یا CLI، `Train trend-signal booster` با `output_mode=multiclass`,
-   `summary_mode=basic`, `train_ratio=80`, `val_size=2000` اجرا شود.
-3. اگر multiclass هم action collapse داشت، دو branch جدا اجرا شوند:
-   `output_mode=buy` و `output_mode=sell`.
-4. فقط اگر booster/POSNEG metricهای ضد-collapse را پاس کردند، فاز ۱۰۹ calibration و سپس فاز ۱۱۶
-   برای ترکیب با `gold_range_1d` و `gold_range_4h` انجام شود.
+2. چون `gold_buy_lightgbm_basic_5m` و `gold_sell_lightgbm_basic_5m` ساخته شدند، حالا از GUI/CLI
+   `Calibrate booster specialists` اجرا شود.
+3. اگر thresholdهای دوطرفه با precision/recall قابل قبول پیدا شد، فاز ۱۱۶ برای ترکیب با
+   `gold_range_1d` و `gold_range_4h` انجام شود.
+4. اگر calibration ضعیف بود، feature selection فاز ۱۱۰ و بعد tuning boosterها اجرا شود.
