@@ -267,11 +267,18 @@ def classification_report_metrics(
     f1s: list[float] = []
     weighted_f1 = 0.0
     buy_sell_f1: list[float] = []
+    action_recalls: list[float] = []
+    action_supported_f1: list[float] = []
+    action_supported_recalls: list[float] = []
+    action_supported = 0
+    action_predicted_supported = 0
+    predicted_class_count = 0
     for cls, name in enumerate(names):
         tp = matrix[cls][cls]
         fp = sum(matrix[row][cls] for row in range(num_classes) if row != cls)
         fn = sum(matrix[cls][col] for col in range(num_classes) if col != cls)
         support = sum(matrix[cls])
+        predicted_count = sum(matrix[row][cls] for row in range(num_classes))
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
@@ -279,16 +286,39 @@ def classification_report_metrics(
         metrics[f"val_{name}_recall"] = recall
         metrics[f"val_{name}_f1"] = f1
         metrics[f"val_{name}_support"] = float(support)
+        metrics[f"val_{name}_predicted"] = float(predicted_count)
         recalls.append(recall)
         f1s.append(f1)
         weighted_f1 += f1 * support
+        if predicted_count > 0:
+            predicted_class_count += 1
         if name in ("sell", "buy"):
             buy_sell_f1.append(f1)
+            action_recalls.append(recall)
+            if support > 0:
+                action_supported += 1
+                action_supported_f1.append(f1)
+                action_supported_recalls.append(recall)
+                if predicted_count > 0:
+                    action_predicted_supported += 1
     metrics["val_balanced_accuracy"] = sum(recalls) / len(recalls) if recalls else 0.0
     metrics["val_macro_f1"] = sum(f1s) / len(f1s) if f1s else 0.0
     metrics["val_weighted_f1"] = weighted_f1 / total if total else 0.0
+    metrics["val_predicted_class_count"] = float(predicted_class_count)
+    metrics["val_single_class_collapse"] = 1.0 if predicted_class_count <= 1 and total else 0.0
     if buy_sell_f1:
         metrics["val_buy_sell_f1"] = sum(buy_sell_f1) / len(buy_sell_f1)
+        metrics["val_action_min_f1"] = min(buy_sell_f1)
+    if action_recalls:
+        metrics["val_action_min_recall"] = min(action_recalls)
+    if action_supported_f1:
+        metrics["val_action_min_f1_supported"] = min(action_supported_f1)
+        metrics["val_action_min_recall_supported"] = min(action_supported_recalls)
+    metrics["val_action_supported_class_count"] = float(action_supported)
+    metrics["val_action_predicted_supported_count"] = float(action_predicted_supported)
+    metrics["val_action_collapse"] = (
+        1.0 if action_supported >= 2 and action_predicted_supported < 2 else 0.0
+    )
 
     probs = np.asarray(probabilities, dtype=np.float64)
     if probs.ndim == 2 and probs.shape[1] == num_classes:

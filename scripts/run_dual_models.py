@@ -163,7 +163,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--monitor-metric",
-        choices=("auto", "val_loss", "val_mae", "val_macro_f1", "val_buy_sell_f1"),
+        choices=(
+            "auto",
+            "val_loss",
+            "val_mae",
+            "val_macro_f1",
+            "val_buy_sell_f1",
+            "val_action_min_f1",
+            "val_action_min_f1_supported",
+        ),
         default="auto",
         help=(
             "callback/checkpoint metric to minimize. auto uses val_mae for "
@@ -1513,16 +1521,36 @@ def print_quality(
                     print(f"    val_macro_f1          : {macro_f1:.4f}")
                 if buy_sell_f1 is not None:
                     print(f"    val_buy_sell_f1       : {buy_sell_f1:.4f}")
+                action_min_f1 = final.get("val_action_min_f1")
+                action_min_supported = final.get("val_action_min_f1_supported")
+                action_collapse = final.get("val_action_collapse")
+                predicted_classes = final.get("val_predicted_class_count")
+                if action_min_f1 is not None:
+                    print(f"    val_action_min_f1     : {action_min_f1:.4f}")
+                if action_min_supported is not None:
+                    print(
+                        f"    val_action_min_f1_sup : {action_min_supported:.4f} "
+                        "(supported BUY/SELL classes only)"
+                    )
+                if predicted_classes is not None:
+                    print(f"    predicted classes     : {predicted_classes:.0f}")
+                if action_collapse is not None and action_collapse >= 1.0:
+                    print(
+                        "    [!] ACTION COLLAPSE: at least one supported "
+                        "BUY/SELL side was never predicted."
+                    )
                 if balanced is not None:
                     print(f"    val_balanced_accuracy : {balanced:.1%}")
                 for name in ("sell", "hold", "buy"):
                     f1 = final.get(f"val_{name}_f1")
                     precision = final.get(f"val_{name}_precision")
                     recall = final.get(f"val_{name}_recall")
+                    predicted = final.get(f"val_{name}_predicted")
                     if f1 is not None and precision is not None and recall is not None:
+                        suffix = f" | pred {predicted:.0f}" if predicted is not None else ""
                         print(
                             f"    {name:<4} P/R/F1          : "
-                            f"{precision:.1%} / {recall:.1%} / {f1:.4f}"
+                            f"{precision:.1%} / {recall:.1%} / {f1:.4f}{suffix}"
                         )
             if accuracy <= val_baseline:
                 print(

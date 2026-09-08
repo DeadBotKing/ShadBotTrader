@@ -40,8 +40,22 @@ def test_classification_report_contains_trend_signal_metrics():
     assert metrics["val_buy_f1"] > 0
     assert "val_macro_f1" in metrics
     assert "val_buy_sell_f1" in metrics
+    assert "val_action_min_f1" in metrics
     assert "val_buy_ap" in metrics
     assert "val_sell_ap" in metrics
+
+
+def test_classification_report_detects_single_action_collapse():
+    probs = [[0.60, 0.20, 0.20], [0.61, 0.19, 0.20], [0.62, 0.18, 0.20]]
+    metrics = classification_report_metrics([0, 2, 2], [0, 0, 0], probs, 3)
+
+    assert metrics["val_sell_predicted"] == pytest.approx(3.0)
+    assert metrics["val_buy_predicted"] == pytest.approx(0.0)
+    assert metrics["val_predicted_class_count"] == pytest.approx(1.0)
+    assert metrics["val_single_class_collapse"] == pytest.approx(1.0)
+    assert metrics["val_action_collapse"] == pytest.approx(1.0)
+    assert metrics["val_action_min_f1"] == pytest.approx(0.0)
+    assert metrics["val_action_min_recall_supported"] == pytest.approx(0.0)
 
 
 def test_average_precision_score_without_sklearn():

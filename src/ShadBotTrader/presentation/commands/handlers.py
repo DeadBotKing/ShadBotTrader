@@ -12,6 +12,7 @@ something, it has crossed the line §4 draws.
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -246,6 +247,18 @@ MODEL_ROLE_CHOICES: tuple[str, ...] = (
 )
 TREND_SCORE_LOSS_CHOICES: tuple[str, ...] = ("composite", "mae")
 CLASS_WEIGHT_CHOICES: tuple[str, ...] = ("auto", "off")
+BOOSTER_CHOICES: tuple[str, ...] = ("auto", "lightgbm", "xgboost", "catboost")
+BOOSTER_OUTPUT_CHOICES: tuple[str, ...] = ("multiclass", "buy", "sell")
+WINDOW_SUMMARY_CHOICES: tuple[str, ...] = ("last", "basic", "multi_scale")
+MONITOR_METRIC_CHOICES: tuple[str, ...] = (
+    "auto",
+    "val_loss",
+    "val_mae",
+    "val_macro_f1",
+    "val_buy_sell_f1",
+    "val_action_min_f1",
+    "val_action_min_f1_supported",
+)
 
 
 def trend_signal_class_weight_args(command: Command, role: str) -> List[str]:
@@ -271,6 +284,35 @@ def trend_score_loss_args(command: Command, role: str) -> List[str]:
     if loss not in TREND_SCORE_LOSS_CHOICES:
         loss = "composite"
     return ["--trend-score-loss", loss]
+
+
+def monitor_metric_args(command: Command, role: str) -> List[str]:
+    """CLI args for choosing the checkpoint/early-stop metric.
+
+    The dashboard exposes this as an advanced knob. It is intentionally
+    role-gated so an operator cannot accidentally ask a range model to
+    monitor a classification-only metric that will never be emitted.
+    """
+    metric = command.text("monitor_metric", "auto").strip().lower() or "auto"
+    if metric not in MONITOR_METRIC_CHOICES or metric == "auto":
+        return []
+    allowed_by_role = {
+        "trend_signal": {
+            "val_loss",
+            "val_macro_f1",
+            "val_buy_sell_f1",
+            "val_action_min_f1",
+            "val_action_min_f1_supported",
+        },
+        "trend_score": {"val_loss", "val_mae"},
+        "trend": {"val_loss"},
+        "signal": {"val_loss"},
+        "range": {"val_loss"},
+        "all": {"val_loss"},
+    }
+    if metric not in allowed_by_role.get(role, {"val_loss"}):
+        return []
+    return ["--monitor-metric", metric]
 
 
 def stored_dataset_choices(storage_root: "str | Path" = "datasets") -> List[str]:
@@ -314,6 +356,141 @@ def trained_model_choices(storage_root: "str | Path" = "datasets") -> List[str]:
     return ModelCatalogue(storage_root).choices()
 
 
+#: Phase 119: keep the dashboard operator-friendly without deleting knobs.
+#: These field names are still rendered and submitted; they are simply folded
+#: under ``Advanced options`` so the default workflow shows only the controls
+#: an operator normally changes.
+_ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
+    CommandKind.FETCH_MARKET_DATA: {"max_candles", "allow_gap"},
+    CommandKind.AUDIT_CAUSAL_INVARIANCE: {"split_pct", "max_bars"},
+    CommandKind.TRAIN_MODEL: {
+        "range_horizon",
+        "threshold_pct",
+        "trend_score_loss",
+        "monitor_metric",
+        "es_patience",
+        "rlr_patience",
+        "n_layers",
+        "n_blocks",
+        "val_size",
+        "timeout_minutes",
+    },
+    CommandKind.RUN_BACKTEST: {
+        "mode",
+        "signal_model",
+        "range_model",
+        "threshold_pct",
+        "signal_window",
+        "range_window",
+        "reward_risk_multiplier",
+        "commission",
+        "filter_zero_bar",
+        "test_ratio",
+        "capital",
+        "quantity",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "same_bar_policy",
+        "last_n_candles",
+        "session_filter",
+        "slope_mode",
+        "max_entry_distance_atr",
+        "min_sl_distance",
+    },
+    CommandKind.RECORD_REPLAY: {
+        "use_last_settings",
+        "mode",
+        "signal_model",
+        "range_model",
+        "threshold_pct",
+        "signal_window",
+        "range_window",
+        "reward_risk_multiplier",
+        "commission",
+        "filter_zero_bar",
+        "test_ratio",
+        "capital",
+        "quantity",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "same_bar_policy",
+        "last_n_candles",
+        "session_filter",
+        "trend_filter",
+        "slope_mode",
+        "max_entry_distance_atr",
+        "min_sl_distance",
+    },
+    CommandKind.AUDIT_TREND_SIGNAL: {"val_size", "model_id", "max_windows", "timeout_minutes"},
+    CommandKind.CALIBRATE_TREND_SIGNAL: {
+        "model_id",
+        "scope",
+        "threshold_min",
+        "threshold_max",
+        "threshold_step",
+        "min_margin",
+        "min_trades",
+        "precision_floor",
+        "max_windows",
+        "save_record",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_DUAL_MODELS: {
+        "range_horizon",
+        "threshold_pct",
+        "trend_score_loss",
+        "monitor_metric",
+        "es_patience",
+        "rlr_patience",
+        "n_layers",
+        "n_blocks",
+        "val_size",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_TREND_SIGNAL_BOOSTER: {
+        "summary_mode",
+        "folds",
+        "val_size",
+        "class_weight",
+        "n_estimators",
+        "booster_lr",
+        "max_depth",
+        "num_leaves",
+        "max_samples",
+        "timeout_minutes",
+    },
+    CommandKind.OPTIMISE_LEARNING_RATE: {
+        "threshold_pct",
+        "atr_mult",
+        "class_weight",
+        "label_horizon",
+        "trend_score_loss",
+        "monitor_metric",
+        "n_layers",
+        "n_blocks",
+        "timeout_minutes",
+    },
+}
+
+
+def _with_advanced_fields(items: List[CommandDescriptor]) -> List[CommandDescriptor]:
+    """Return descriptors with rarely changed fields marked as advanced."""
+
+    marked: List[CommandDescriptor] = []
+    for descriptor in items:
+        advanced_names = _ADVANCED_COMMAND_FIELDS.get(descriptor.kind, set())
+        if not advanced_names:
+            marked.append(descriptor)
+            continue
+        fields = [
+            replace(field, advanced=field.name in advanced_names) for field in descriptor.fields
+        ]
+        marked.append(replace(descriptor, fields=fields))
+    return marked
+
+
 def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescriptor]:
     """Every command the dashboard offers, with its form.
 
@@ -322,7 +499,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
     """
     datasets = stored_dataset_choices(storage_root)
     trained = trained_model_choices(storage_root)
-    return [
+    items = [
         CommandDescriptor(
             kind=CommandKind.FETCH_MARKET_DATA,
             label="Fetch market data",
@@ -509,6 +686,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint=(
                         "فقط trend_score: composite = 3*Huber+6*MAE+1*MSE | "
                         "mae = آموزش با MAE خالص؛ checkpoint/ES روی val_mae"
+                    ),
+                ),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=MONITOR_METRIC_CHOICES,
+                    hint=(
+                        "پیشرفته: برای trend_signal بهتر است val_buy_sell_f1؛ "
+                        "auto یعنی پیش‌فرض اسکریپت"
                     ),
                 ),
                 CommandField(
@@ -1145,6 +1333,124 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.CALIBRATE_TREND_SIGNAL,
+            label="Calibrate trend-signal thresholds",
+            description=(
+                "After training a trend_signal model, scan BUY/SELL probability "
+                "thresholds and write CSV/HTML/JSON heatmaps. The selected "
+                "thresholds can be saved into the model record."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField(
+                    "model_id",
+                    "Model id",
+                    "",
+                    hint="empty = gold_trend_signal_{dataset}; latest version is used",
+                ),
+                CommandField("window", "Window rows", "288", kind="number"),
+                CommandField("label_horizon", "Label horizon", "288", kind="number"),
+                CommandField("atr_mult", "Barrier", "0.5", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "80", kind="number"),
+                CommandField(
+                    "scope",
+                    "Calibration scope",
+                    "auto",
+                    kind="select",
+                    options=("auto", "holdout", "last-fold", "all"),
+                    hint="auto = holdout when train_ratio < 100, otherwise last-fold",
+                ),
+                CommandField("threshold_min", "Threshold min", "0.35", kind="number"),
+                CommandField("threshold_max", "Threshold max", "0.95", kind="number"),
+                CommandField("threshold_step", "Threshold step", "0.05", kind="number"),
+                CommandField("min_margin", "Min probability margin", "0", kind="number"),
+                CommandField("min_trades", "Min trades", "50", kind="number"),
+                CommandField("precision_floor", "Precision floor", "0", kind="number"),
+                CommandField("max_windows", "Score at most", "8000", kind="number"),
+                CommandField(
+                    "save_record",
+                    "Save thresholds to model record",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_TREND_SIGNAL_BOOSTER,
+            label="Train trend-signal booster",
+            description=(
+                "Train a separate LightGBM/XGBoost/CatBoost branch on causal "
+                "window summaries for trend_signal. This does not overwrite the "
+                "WaveNet model; it creates a separate booster artifact."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField(
+                    "booster",
+                    "Booster",
+                    "auto",
+                    kind="select",
+                    options=BOOSTER_CHOICES,
+                    hint="auto tries LightGBM, then XGBoost, then CatBoost",
+                ),
+                CommandField(
+                    "output_mode",
+                    "Output",
+                    "multiclass",
+                    kind="select",
+                    options=BOOSTER_OUTPUT_CHOICES,
+                    hint="multiclass=SELL/HOLD/BUY; buy/sell=train specialist binary branch",
+                ),
+                CommandField("window", "Window rows", "288", kind="number"),
+                CommandField("label_horizon", "Label horizon", "288", kind="number"),
+                CommandField("atr_mult", "Barrier", "0.5", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "80", kind="number"),
+                CommandField(
+                    "summary_mode",
+                    "Summary mode",
+                    "basic",
+                    kind="select",
+                    options=WINDOW_SUMMARY_CHOICES,
+                    hint="basic is the recommended first booster benchmark",
+                ),
+                CommandField("folds", "Folds", "3", kind="number"),
+                CommandField("val_size", "Validation samples/fold", "2000", kind="number"),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("n_estimators", "Trees/iterations", "400", kind="number"),
+                CommandField("booster_lr", "Booster LR", "0.03", kind="number"),
+                CommandField("max_depth", "Max depth", "4", kind="number"),
+                CommandField("num_leaves", "LightGBM leaves", "31", kind="number"),
+                CommandField("max_samples", "Max samples", "0", kind="number"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -1280,6 +1586,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                     hint=(
                         "فقط trend_score: composite = 3*Huber+6*MAE+1*MSE | "
                         "mae = آموزش با MAE خالص؛ checkpoint/ES روی val_mae"
+                    ),
+                ),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=MONITOR_METRIC_CHOICES,
+                    hint=(
+                        "پیشرفته: برای trend_signal بهتر است val_buy_sell_f1؛ "
+                        "auto یعنی پیش‌فرض اسکریپت"
                     ),
                 ),
                 CommandField(
@@ -1430,6 +1747,17 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                         "LR sweep بر اساس val_mae انتخاب می‌شود"
                     ),
                 ),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=MONITOR_METRIC_CHOICES,
+                    hint=(
+                        "پیشرفته: metric انتخاب LR/final checkpoint؛ "
+                        "trend_signal = val_buy_sell_f1"
+                    ),
+                ),
                 CommandField("window", "Window rows", "100", kind="number"),
                 CommandField(
                     "n_layers",
@@ -1493,6 +1821,7 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="Operations",
         ),
     ]
+    return _with_advanced_fields(items)
 
 
 def descriptor_for(kind: CommandKind) -> CommandDescriptor:
@@ -1696,6 +2025,8 @@ class CommandHandlers:
                 CommandKind.BUILD_TIMEFRAME: accounts.build_timeframe,
                 CommandKind.EVALUATE_MODEL: accounts.evaluate_model,
                 CommandKind.AUDIT_TREND_SIGNAL: accounts.audit_trend_signal,
+                CommandKind.CALIBRATE_TREND_SIGNAL: accounts.calibrate_trend_signal,
+                CommandKind.TRAIN_TREND_SIGNAL_BOOSTER: accounts.train_trend_signal_booster,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -2237,6 +2568,7 @@ class CommandHandlers:
         )
         _score_loss_args = trend_score_loss_args(command, role)
         _class_weight_args = trend_signal_class_weight_args(command, role)
+        _monitor_metric_args = monitor_metric_args(command, role)
 
         return self._run_script(
             command,
@@ -2258,6 +2590,7 @@ class CommandHandlers:
                 *_lh_args,
                 *_score_loss_args,
                 *_class_weight_args,
+                *_monitor_metric_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 80.0)),
                 "--threshold",
@@ -3595,6 +3928,137 @@ class AccountCommandHandlers(CommandHandlers):
             timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
         )
 
+    def calibrate_trend_signal(self, command: Command) -> CommandResult:
+        """Calibrate BUY/SELL probability thresholds for a trend_signal model."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        model_id = command.text("model_id", "").strip()
+        model_args = ["--model-id", model_id] if model_id else []
+        return self._run_script(
+            command,
+            [
+                "scripts/calibrate_trend_signal_thresholds.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(0.05, command.number("atr_mult", 0.5))),
+                "--train-ratio",
+                str(command.number("train_ratio", 80.0)),
+                "--scope",
+                command.text("scope", "auto").strip() or "auto",
+                "--folds",
+                str(max(command.integer("folds", 3), 1)),
+                "--threshold-min",
+                str(command.number("threshold_min", 0.35)),
+                "--threshold-max",
+                str(command.number("threshold_max", 0.95)),
+                "--threshold-step",
+                str(command.number("threshold_step", 0.05)),
+                "--min-margin",
+                str(max(command.number("min_margin", 0.0), 0.0)),
+                "--min-trades",
+                str(max(command.integer("min_trades", 50), 0)),
+                "--precision-floor",
+                str(max(command.number("precision_floor", 0.0), 0.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 8000), 0)),
+                "--storage-root",
+                str(self._storage_root),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                *model_args,
+            ],
+            f"Calibrated trend_signal thresholds on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def train_trend_signal_booster(self, command: Command) -> CommandResult:
+        """Train a separate tabular booster branch for trend_signal."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        booster = command.text("booster", "auto").strip().lower() or "auto"
+        if booster not in BOOSTER_CHOICES:
+            booster = "auto"
+        output_mode = command.text("output_mode", "multiclass").strip().lower() or "multiclass"
+        if output_mode not in BOOSTER_OUTPUT_CHOICES:
+            output_mode = "multiclass"
+        summary_mode = command.text("summary_mode", "basic").strip().lower() or "basic"
+        if summary_mode not in WINDOW_SUMMARY_CHOICES:
+            summary_mode = "basic"
+
+        return self._run_script(
+            command,
+            [
+                "scripts/train_trend_signal_boosters.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--booster",
+                booster,
+                "--output-mode",
+                output_mode,
+                "--summary-mode",
+                summary_mode,
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(0.05, command.number("atr_mult", 0.5))),
+                "--train-ratio",
+                str(command.number("train_ratio", 80.0)),
+                "--folds",
+                str(max(command.integer("folds", 3), 1)),
+                "--val-size",
+                str(max(command.integer("val_size", 2000), 4)),
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--n-estimators",
+                str(max(command.integer("n_estimators", 400), 1)),
+                "--learning-rate",
+                str(max(command.number("booster_lr", 0.03), 1e-6)),
+                "--max-depth",
+                str(max(command.integer("max_depth", 4), 1)),
+                "--num-leaves",
+                str(max(command.integer("num_leaves", 31), 2)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--storage-root",
+                str(self._storage_root),
+            ],
+            f"Trained {booster} trend_signal booster branch on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
     def inspect_dataset(self, command: Command) -> CommandResult:
         """Describe a stored dataset: shape, columns, model input."""
         from ShadBotTrader.infrastructure.ai.model_diagram import describe_input_matrix
@@ -3846,6 +4310,7 @@ class AccountCommandHandlers(CommandHandlers):
         )
         _score_loss_args = trend_score_loss_args(command, role)
         _class_weight_args = trend_signal_class_weight_args(command, role)
+        _monitor_metric_args = monitor_metric_args(command, role)
         return self._run_script(
             command,
             [
@@ -3875,6 +4340,7 @@ class AccountCommandHandlers(CommandHandlers):
                 *_lh_args,
                 *_score_loss_args,
                 *_class_weight_args,
+                *_monitor_metric_args,
                 "--train-ratio",
                 str(command.number("train_ratio", 100.0)),
                 "--threshold",
@@ -3958,6 +4424,7 @@ class AccountCommandHandlers(CommandHandlers):
         )
         _score_loss_args = trend_score_loss_args(command, role)
         _class_weight_args = trend_signal_class_weight_args(command, role)
+        _monitor_metric_args = monitor_metric_args(command, role)
         arguments = [
             "scripts/run_dual_models.py",
             "--with-features",
@@ -3977,6 +4444,7 @@ class AccountCommandHandlers(CommandHandlers):
             *_lh_args,
             *_score_loss_args,
             *_class_weight_args,
+            *_monitor_metric_args,
             "--train-ratio",
             str(command.number("train_ratio", 100.0)),
             "--learning-rates",

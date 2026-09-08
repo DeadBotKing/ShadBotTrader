@@ -53,10 +53,17 @@ first hit -X*ATR → SELL_EVENT
 ## decision logic
 
 ```text
-اگر buy_prob >= buy_threshold و sell_prob < sell_block_threshold → BUY
-اگر sell_prob >= sell_threshold و buy_prob < buy_block_threshold → SELL
+اگر buy_prob >= buy_threshold و sell_prob < sell_block_threshold → BUY candidate
+اگر sell_prob >= sell_threshold و buy_prob < buy_block_threshold → SELL candidate
 اگر هر دو بالا → ambiguous / no trade
-اگر هر دو پایین → HOLD
+اگر هر دو پایین → HOLD / no trade
+```
+
+Candidate هنوز معاملهٔ نهایی نیست. در فاز ۱۱۶ باید با مدل‌های range ترکیب شود:
+
+```text
+BUY candidate  + range_4h فضای TP بدهد + range_1d سقف روزانه اجازه بدهد → BUY
+SELL candidate + range_4h فضای TP بدهد + range_1d کف روزانه اجازه بدهد → SELL
 ```
 
 ---

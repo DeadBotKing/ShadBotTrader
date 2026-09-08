@@ -1,5 +1,37 @@
 # WORKLOG — دفترچهٔ کار
 
+## 2026-09-07 — فاز ۱۰۹: threshold calibration و heatmap برای trend_signal
+
+**درخواست اپراتور:** بعد از شروع train فاز ۱۰۸، فاز ۱۰۹ هم طبق roadmap اجرا شود تا
+بعد از اتمام training بتوان thresholdهای BUY/SELL را کالیبره کرد.
+
+**پیاده‌سازی:**
+- `scripts/calibrate_trend_signal_thresholds.py` اضافه شد.
+- grid برای `buy_threshold × sell_threshold` با `threshold_min/max/step` پیاده شد.
+- decision rule با `min_margin` بین BUY/SELL/HOLD اضافه شد.
+- metricهای grid: trades, buy/sell trades, precision, recall, action_f1, coverage,
+  false_positive, ambiguous/no_trade.
+- خروجی CSV/HTML/JSON در `run_logs/trend_signal_thresholds/` نوشته می‌شود.
+- `ModelRecord` فیلد `decision_thresholds` گرفت؛ با `--save-record 1` threshold منتخب
+  داخل `v*_training.json` ذخیره می‌شود.
+- GUI command جدید اضافه شد: `Calibrate trend-signal thresholds` با action
+  `calibrate_trend_signal`.
+
+**تست‌ها:**
+```text
+tests/unit/ai/test_threshold_calibration.py
+tests/integration/test_trend_signal_calibration_gui.py
+→ passed
+Targeted ruff/black روی فایل‌های تغییرکرده: OK
+```
+
+**محدودیت صریح:** این فاز فعلاً label/probability calibration است، نه full PnL
+backtest با TP/SL. برای profit-aware calibration کامل باید thresholdها به triple
+backtest وصل شوند.
+
+**گام بعد:** بعد از اتمام training فعلی `gold_trend_signal_5m`، اپراتور خروجی
+QUALITY را بفرستد و سپس command جدید calibration را اجرا کند.
+
 ## 2026-09-07 — فاز ۱۰۸: class weights + F1/PR-AUC برای trend_signal
 
 **درخواست اپراتور:** بعد از audit واقعی Phase107، فاز بعدی طبق ترتیب پیشنهادی اجرا شود.
@@ -4326,3 +4358,172 @@ inspector model_role از signal به range تغییر کرد (trend_score = 184
 - فیچرهای رژیم‌محور (session، day-of-week، volatility regime)
 - بکتست با score آستانه‌بندی‌شده (score > 0.2 فقط خرید)
 - ترکیب با فیلترهای EMA50/session که قبلاً WR 36-49% نشان دادند
+
+## 2026-09-08 — Phase 116/119 roadmap refresh and GUI cleanup
+
+در پاسخ به درخواست اپراتور برای بررسی عمیق‌تر مدل‌ها/معماری‌ها و خلوت‌کردن GUI:
+
+- گزارش جدید اضافه شد:
+  - `docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md`
+- فازهای جدید اضافه شدند:
+  - `docs/Phases/Phase116.md` — Hybrid Range-Aware Decision Engine
+  - `docs/Phases/Phase117.md` — Advanced Neural Architecture Benchmarks
+  - `docs/Phases/Phase118.md` — Tick/Order-book optional branch
+  - `docs/Phases/Phase119.md` — GUI cleanup completed
+- `docs/Phases/README_PHASE100_115.md` تا فاز ۱۱۹ به‌روزرسانی شد.
+- فازهای ۱۱۱/۱۱۳/۱۱۴/۱۱۵ با نقش مدل‌های range موجود و مسیر ensemble تکمیل شدند.
+- `docs/CURRENT_STATE.md` با نقشهٔ جدید مدل ترکیبی آپدیت شد.
+- GUI بدون حذف قابلیت‌ها خلوت شد:
+  - `CommandField.advanced` اضافه شد.
+  - fieldهای کم‌مصرف/حرفه‌ای در Train/Retrain/Optimise/Backtest/Replay/Audit/Calibration زیر `Advanced options` رفتند.
+  - handlerها و defaults تغییر رفتاری ندارند؛ fieldها همچنان submit می‌شوند.
+- تست GUI اضافه شد که وجود `Advanced options` و fieldهای معماری مثل `n_layers/n_blocks` را تضمین می‌کند.
+
+تصمیم فنی ثبت‌شده:
+
+```text
+مدل نهایی نباید یک مدل تنها باشد؛ مسیر درست:
+WaveNet trend_signal + Booster branch + BUY/SELL specialists + range_1d envelope + range_4h TP/SL + meta/conformal no-trade gate.
+```
+
+### Quality gate — 2026-09-08
+
+Targeted checks for touched GUI/code files:
+
+```text
+python3 -m ruff check src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/web/renderer.py tests/integration/test_gui_coverage.py  ✅
+python3 -m black --check src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/web/renderer.py tests/integration/test_gui_coverage.py  ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py tests/unit/presentation/test_commands.py  ✅
+PYTHONPATH=src python3 -m pytest -q  ✅
+```
+
+Full gate state remains honest:
+
+```text
+python3 -m ruff check .      ❌ 219 pre-existing errors, mainly notebook/import formatting and long lines in feature catalogue/scripts.
+python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
+PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
+python3 -m pytest -q         ✅ passed.
+```
+
+## 2026-09-08 — Runtime status clarification for Phase108/Phase109
+
+اپراتور یادآوری کرد که روی سیستم خودش هنوز training فاز ۱۰۸ (`trend_signal` با class weights/F1 metrics) در حال اجراست و نتیجهٔ نهایی ارسال نشده است. بنابراین Docs شفاف‌تر شد:
+
+```text
+Phase108 = کد/GUI کامل، اجرای واقعی روی سیستم اپراتور هنوز in progress
+Phase109 = کد/GUI calibration کامل، اجرای عملیاتی فقط بعد از پایان train و ذخیره مدل جدید
+```
+
+فایل‌های به‌روزرسانی‌شده:
+
+```text
+docs/Phases/README_PHASE100_115.md
+docs/Phases/Phase109.md
+docs/CURRENT_STATE.md
+docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md
+docs/SESSION_HANDOFF_2026-09-07.md
+```
+
+## 2026-09-08 — GUI monitor metric for trend_signal pilots
+
+اپراتور گفت training را از GUI اجرا می‌کند و برای تست trend_signal نیاز دارد `--monitor-metric val_buy_sell_f1` را از داشبورد تنظیم کند. GUI قبلاً این knob را نشان نمی‌داد.
+
+تغییرات:
+
+```text
+- گزینهٔ Monitor metric به Train a model / Retrain a saved model / Find best learning rate اضافه شد.
+- گزینه زیر Advanced options نمایش داده می‌شود تا GUI شلوغ نشود.
+- مقدارهای مجاز: auto, val_loss, val_mae, val_macro_f1, val_buy_sell_f1
+- برای trend_signal می‌توان val_buy_sell_f1 را پاس داد.
+- role-gate اضافه شد تا metricهای classification-only اشتباهی به range/trend_score پاس نشوند.
+```
+
+تست‌ها:
+
+```text
+python3 -m ruff check src/ShadBotTrader/presentation/commands/handlers.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check src/ShadBotTrader/presentation/commands/handlers.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestDashboardPage::test_advanced_command_fields_are_collapsed ✅
+```
+
+## 2026-09-08 — Phase 120/121 anti-collapse metrics and booster branch
+
+بعد از pilotهای WaveNet روی `trend_signal` مشخص شد مدل یا uniform collapse می‌کند یا فقط یک کلاس مثل BUY/SELL را predict می‌کند. بنابراین قبل از ادامهٔ آموزش‌های سنگین، زیرساخت ضد-collapse و branch بوستر اضافه شد.
+
+### Phase120 — anti-collapse metrics
+
+اضافه شد:
+
+```text
+val_sell_predicted / val_hold_predicted / val_buy_predicted
+val_predicted_class_count
+val_single_class_collapse
+val_action_min_f1
+val_action_min_recall
+val_action_min_f1_supported
+val_action_min_recall_supported
+val_action_supported_class_count
+val_action_predicted_supported_count
+val_action_collapse
+```
+
+`--monitor-metric` حالا این‌ها را هم می‌پذیرد:
+
+```text
+val_action_min_f1
+val_action_min_f1_supported
+```
+
+### Phase121 — trend_signal booster branch
+
+فایل‌های جدید:
+
+```text
+src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py
+scripts/train_trend_signal_boosters.py
+requirements-boosters.txt
+docs/Phases/Phase120.md
+docs/Phases/Phase121.md
+```
+
+GUI command جدید:
+
+```text
+Train trend-signal booster
+```
+
+پشتیبانی:
+
+```text
+--booster auto|lightgbm|xgboost|catboost
+--output-mode multiclass|buy|sell
+--summary-mode last|basic|multi_scale
+```
+
+نکته: dependencyهای بوستر optional هستند و برای اجرا باید نصب شوند:
+
+```text
+pip install -r requirements-boosters.txt
+```
+
+### Quality gate — Phase120/121
+
+Targeted checks:
+
+```text
+python3 -m ruff check scripts/run_dual_models.py scripts/train_trend_signal_boosters.py src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py src/ShadBotTrader/infrastructure/ai/model_catalogue.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_classification_weights_metrics.py tests/unit/ai/test_tabular_window_summary.py tests/unit/ai/test_trend_signal_booster_script.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check scripts/run_dual_models.py scripts/train_trend_signal_boosters.py src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py src/ShadBotTrader/infrastructure/ai/model_catalogue.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_classification_weights_metrics.py tests/unit/ai/test_tabular_window_summary.py tests/unit/ai/test_trend_signal_booster_script.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+PYTHONPATH=src python3 -m mypy src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py src/ShadBotTrader/infrastructure/ai/model_catalogue.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_classification_weights_metrics.py tests/unit/ai/test_tabular_window_summary.py tests/unit/ai/test_trend_signal_booster_script.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestEveryRunHasAButton tests/integration/test_gui_coverage.py::TestDashboardPage::test_every_button_is_rendered ✅
+PYTHONPATH=src python3 -m pytest -q ✅
+```
+
+Full gate state remains:
+
+```text
+python3 -m ruff check .      ❌ 219 pre-existing errors outside the touched files.
+python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
+PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
+python3 -m pytest -q         ✅ passed.
+```

@@ -24,9 +24,11 @@ feature fingerprint
 input window range
 prediction probabilities/scores
 thresholds calibrated/default
-range forecast high/low/ATR
+range_1d forecast high/low/ATR و فاصله تا سقف/کف فردا
+range_4h forecast high/low/ATR و TP/SL پیشنهادی چهار ساعت آینده
 trend color
 trend_signal probabilities
+booster/POSNEG/meta probabilities در صورت فعال بودن
 licenses pass/fail با reason
 spread/slippage
 entry/TP/SL پیشنهادی

@@ -58,6 +58,8 @@ class CommandKind(str, Enum):
     TRAIN_DUAL_MODELS = "train_dual_models"
     OPTIMISE_LEARNING_RATE = "optimise_learning_rate"
     AUDIT_TREND_SIGNAL = "audit_trend_signal"
+    CALIBRATE_TREND_SIGNAL = "calibrate_trend_signal"
+    TRAIN_TREND_SIGNAL_BOOSTER = "train_trend_signal_booster"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"
@@ -202,7 +204,12 @@ class CommandDescriptor:
 
 @dataclass(frozen=True)
 class CommandField:
-    """One input on a command's form."""
+    """One input on a command's form.
+
+    ``advanced`` keeps the field available to the handler while allowing
+    the dashboard to tuck rarely changed knobs behind a collapsed section.
+    This keeps the GUI readable without removing expert controls.
+    """
 
     name: str
     label: str
@@ -214,6 +221,9 @@ class CommandField:
     #: instead of typing a name and discovering the typo three minutes
     #: into a training run (Phase 40).
     options: tuple[str, ...] = ()
+    #: Render under a collapsed "Advanced options" area instead of the
+    #: always-visible form body. The field still posts its default value.
+    advanced: bool = False
 
     @property
     def is_select(self) -> bool:

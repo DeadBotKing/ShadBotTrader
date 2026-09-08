@@ -89,6 +89,8 @@ class ModelRecord:
     #: Per-window min-max scale used for model inputs. Older models default
     #: to the historical range [-2,+2]; Phase 104 score models record [-1,+1].
     input_scale_range: List[float] = field(default_factory=lambda: [-2.0, 2.0])
+    #: Calibrated trading thresholds selected after model evaluation/backtest.
+    decision_thresholds: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def threshold_percent(self) -> str:
@@ -106,6 +108,18 @@ class ModelRecord:
     def headline_metric(self) -> str:
         """The single number that matters for this kind of model."""
         if self.role == "signal":
+            if "trend_signal" in self.model_id or self.model_id.startswith(
+                ("gold_buy_", "gold_sell_")
+            ):
+                strict = self.metrics.get("val_action_min_f1_supported")
+                if strict is not None:
+                    return f"val_action_min_f1_supported {strict:.4f}"
+                event_f1 = self.metrics.get("val_event_f1")
+                if event_f1 is not None:
+                    return f"val_event_f1 {event_f1:.4f}"
+                buy_sell = self.metrics.get("val_buy_sell_f1")
+                if buy_sell is not None:
+                    return f"val_buy_sell_f1 {buy_sell:.4f}"
             value = self.metrics.get("val_accuracy")
             return "n/a" if value is None else f"val_accuracy {value:.1%}"
         value = self.metrics.get("val_mae")
@@ -133,6 +147,7 @@ class ModelRecord:
             "note": self.note,
             "target_units": self.target_units,
             "input_scale_range": list(self.input_scale_range),
+            "decision_thresholds": dict(self.decision_thresholds),
         }
 
     @classmethod
@@ -160,6 +175,7 @@ class ModelRecord:
             note=str(payload.get("note", "")),
             target_units=str(payload.get("target_units", "") or "pct"),
             input_scale_range=_input_scale_range_from_payload(payload),
+            decision_thresholds=dict(payload.get("decision_thresholds") or {}),
         )
 
     def summary_lines(self) -> List[str]:

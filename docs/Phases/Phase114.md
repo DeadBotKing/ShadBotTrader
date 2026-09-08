@@ -25,6 +25,9 @@ DXY returns/trend
 US10Y yield / change
 real yield proxy
 VIX level/change
+WTI/Brent oil returns/trend
+Silver/XAGUSD یا SI futures returns/trend
+COMEX session/calendar context
 CPI/FOMC/NFP calendar flags
 London/NY session flags
 day-of-week

@@ -4,15 +4,15 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 92
+      "used_by": 94
     },
     {
       "name": "numpy",
-      "used_by": 30
+      "used_by": 32
     },
     {
       "name": "pandas",
-      "used_by": 23
+      "used_by": 24
     },
     {
       "name": "tests",
@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "66ad35c93d3afc98811c93b309757306adef0f4cbb70fea21ab00aed304cc45d",
-      "size_bytes": 11964
+      "sha256": "2ace8668dddeaa099ede3cd9bc0701d9ecb25e30efba05822628c79b94beeaf0",
+      "size_bytes": 15207
     },
     {
       "category": "documentation",
@@ -315,8 +315,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase109.md",
-      "sha256": "dbfeab65f9e6f7e325048b6bdbac74bc211d1b2b208215a52f87c040a0c5dda6",
-      "size_bytes": 2256
+      "sha256": "0dca16762514e9478cf84a3f4c57d4733c48a447f47b353dcbc7677420b77d59",
+      "size_bytes": 3109
     },
     {
       "category": "documentation",
@@ -333,38 +333,74 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase111.md",
-      "sha256": "d31a29b718806058702a6e0f1622dfb84424f1785b3b969b8dad8e927ac6272d",
-      "size_bytes": 2153
+      "sha256": "713b0c8a902dc367ea5a0cd89c973f6153d856a7925e64e341507157e55e970e",
+      "size_bytes": 2538
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase112.md",
-      "sha256": "2bb0f549a7fb9f1ac0a408e41c83febec3a6a3786ea76550e89d8c513298d2b5",
-      "size_bytes": 1881
+      "sha256": "2baed952015c9120adc5f47c10edf5f4d6c781aabd4dc9bf10f9044dbcf1e827",
+      "size_bytes": 5518
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase113.md",
-      "sha256": "da03ca3e2dd14b6953f19cd4cca67ab299ab6ab2b8662aa13675699a6212c93d",
-      "size_bytes": 2052
+      "sha256": "611399430b3fe974890cbbbaf5644f0fbb3b1733a00d07d6c0fea4a3db49d9ea",
+      "size_bytes": 2086
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase114.md",
-      "sha256": "7bf016c11a09f3c765a829b4e0efdac68492d7bad9b84edfa527f038ef8f7682",
-      "size_bytes": 1913
+      "sha256": "45a5e4ea1fc00d03ae238fa484b865038b4d3ed600c28737601f21e29e4d4c6c",
+      "size_bytes": 2016
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase115.md",
-      "sha256": "9eb248e0baf27f6c9aabdaa8df80bdc7c1239d293f4ff73d1b59a8082c084d01",
-      "size_bytes": 1779
+      "sha256": "4c61e7ce08ef254c997ec5a4ab31373a5b9fd32a5a0d87fce215dd2ebd537ae6",
+      "size_bytes": 1974
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase116.md",
+      "sha256": "fc756e5f9b5586dcdf3a6edb59c4db57fa72a65028bf855bbdedf3e061380225",
+      "size_bytes": 6960
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase117.md",
+      "sha256": "b99715fcfe9d45f035375a2375c2976b9c598c0c4f60175754648308aae5adf7",
+      "size_bytes": 4202
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase118.md",
+      "sha256": "d23e9dcf775bc293f5b1b247a669c7b50eb212cafc433528f029defc6e2c85f3",
+      "size_bytes": 2416
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase119.md",
+      "sha256": "5eb9b3ac33b315d5eb4af381421095e70d3b341ad54ce709e5b39d25edfcdaad",
+      "size_bytes": 3287
     },
     {
       "category": "documentation",
       "path": "docs/Phases/Phase12.md",
       "sha256": "3d77b0c8385fa2f95e834645252a110381cfa6335c35b5283157047e9608556f",
       "size_bytes": 63935
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase120.md",
+      "sha256": "5b90293babf937629de5c2fb64108ba1e1a5341564a5cda2e4bda37d9cc0637d",
+      "size_bytes": 3544
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase121.md",
+      "sha256": "ab8b9db45de00f94c69059334941fe02c212dd908c1ebe5fd2db793ff5391190",
+      "size_bytes": 3884
     },
     {
       "category": "documentation",
@@ -639,8 +675,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "29df995fc1113bf520a1df8b078e169b0ecc7f15b9e0514aef466579fe394ad6",
-      "size_bytes": 2567
+      "sha256": "073327f79a757bf5838d20ee540d0623b02afeedd8db983e2719c5e8105bf4ef",
+      "size_bytes": 7501
     },
     {
       "category": "documentation",
@@ -749,6 +785,24 @@
       "path": "docs/Report/PHASE108_TREND_SIGNAL_CLASS_WEIGHT_F1_REPORT.md",
       "sha256": "e773445318b80fb4b0bc3535f86ea21e27a27d7da012e943233af13aa2400810",
       "size_bytes": 7415
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE109_TREND_SIGNAL_THRESHOLD_CALIBRATION_REPORT.md",
+      "sha256": "560892278df12b5625117e898e2ee8897b0c65e7f379e87f748ab3e14185ea8c",
+      "size_bytes": 6614
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md",
+      "sha256": "7e351518cf3744f29081b81b5835e08eb0e421c9e0417034bed0c4cff74f043e",
+      "size_bytes": 12713
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE120_121_ANTI_COLLAPSE_AND_BOOSTER_BRANCH_REPORT.md",
+      "sha256": "0df3bdc00878564f51d9b516106629fbb349473c4f0bfc95279155f7d6abae94",
+      "size_bytes": 4159
     },
     {
       "category": "documentation",
@@ -1047,8 +1101,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_HANDOFF_2026-09-07.md",
-      "sha256": "c7d0150a4f469e17d228668e694d7d78828b8d4bb8cf70dc8360c0151d14ea12",
-      "size_bytes": 10398
+      "sha256": "f5b570984b030d15d07b88220706b2bbc08bb08cee98d21569026fd0f8f775bc",
+      "size_bytes": 12164
     },
     {
       "category": "documentation",
@@ -1113,8 +1167,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "4f54fb9718810896f1bc6acf3dbd952d8519dac7f67cd702db3f0821762fb835",
-      "size_bytes": 232472
+      "sha256": "ff401443163bbfc5312683aa703a3f38e0383dfb03ddd87c39136cd120811db0",
+      "size_bytes": 240747
     },
     {
       "category": "legacy",
@@ -2186,6 +2240,12 @@
     },
     {
       "category": "other",
+      "path": "requirements-boosters.txt",
+      "sha256": "7d0b2d0089c10eb168a04eda9f08d597c03c126ed58486c61c17978b06b8d018",
+      "size_bytes": 411
+    },
+    {
+      "category": "other",
       "path": "requirements-dev.txt",
       "sha256": "a43e83d55cf2a55ddc6ab02407a378d49101a89d757f171a577111b6542de921",
       "size_bytes": 494
@@ -2217,8 +2277,14 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
+      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
+    },
+    {
+      "category": "script",
+      "path": "scripts/calibrate_trend_signal_thresholds.py",
+      "sha256": "2f5a4b0184cd8f31ba511e886a4d6654112279877ffcec3402e1bbf59763931e",
+      "size_bytes": 24601
     },
     {
       "category": "script",
@@ -2301,8 +2367,8 @@
     {
       "category": "script",
       "path": "scripts/run_dual_models.py",
-      "sha256": "4b5396fe473752f00fdadf1091f2ff23e805bcb5cef933723a90d565ee93655b",
-      "size_bytes": 80416
+      "sha256": "3827ae7af3e79f9936b5505aad9a1f4f98af13c19541caf2c562323cf7fd8c2a",
+      "size_bytes": 81777
     },
     {
       "category": "script",
@@ -2375,6 +2441,12 @@
       "path": "scripts/run_weekly_update.py",
       "sha256": "5c297f4ef00e56f6d1999957057e5f3fe8c3293e696ca16145a08fe3a3f36055",
       "size_bytes": 7927
+    },
+    {
+      "category": "script",
+      "path": "scripts/train_trend_signal_boosters.py",
+      "sha256": "cb5f60d17fbce9406d316a1ca93d5fd5817144c5f27aa819659b5f8479a4e658",
+      "size_bytes": 23619
     },
     {
       "category": "other",
@@ -3375,8 +3447,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/model_catalogue.py",
-      "sha256": "320377df62f3a835435bb66dc1c6eb96c2911ac46d181c6f4127b90d16368efb",
-      "size_bytes": 10493
+      "sha256": "6d017eba85dc86e8189510b4a4bef8e17479eca038557ebd4a0da3e064f234a4",
+      "size_bytes": 11431
     },
     {
       "category": "source",
@@ -3416,6 +3488,12 @@
     },
     {
       "category": "source",
+      "path": "src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py",
+      "sha256": "aa7d0fa93168b010d124a0671da1c5be997f53b02c2485401794c2f028e6c867",
+      "size_bytes": 6273
+    },
+    {
+      "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/target_builder.py",
       "sha256": "9953e940269e7481ebf257c6c85255111d6550c3a49a11a59b88746c2def308c",
       "size_bytes": 32804
@@ -3447,8 +3525,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/infrastructure/ai/wavenet/wavenet_trainer.py",
-      "sha256": "82c1e78ceec39e400914b50acd95f21d0f0ef87a864b688344644ac3f1181aee",
-      "size_bytes": 64256
+      "sha256": "41276aa3b956414e526e462eb02401b9879799c107d70eff1f2cbb148767d542",
+      "size_bytes": 65773
     },
     {
       "category": "source",
@@ -4101,14 +4179,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "73c2de57426eaef0d80e0debf1727357052eb2ab76a9afa539a0bbebc73eb536",
-      "size_bytes": 6865
+      "sha256": "225deea964c244f0972029a2b182dc81b6327c2b3bc682df055038b3ccbc846c",
+      "size_bytes": 7373
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "8122d2084eeba44e48effe2734e97c900128945b4a192d02978eff218887be9d",
-      "size_bytes": 176691
+      "sha256": "0e73b7995f563df59da4b97d64901002d00a810c64a0c7e5eab28114bc92f8a2",
+      "size_bytes": 195249
     },
     {
       "category": "source",
@@ -4161,8 +4239,8 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/web/renderer.py",
-      "sha256": "a8bae2d95fe269a9a96cc770a2c59d9d7b7cd5011b40245149c32074112db30a",
-      "size_bytes": 26019
+      "sha256": "3130c099c2dd3a7778b8cec5dfa2a14c46658ed1b8c29c3f038b2e7e9ab0db61",
+      "size_bytes": 27113
     },
     {
       "category": "source",
@@ -4413,8 +4491,8 @@
     {
       "category": "test",
       "path": "tests/integration/test_gui_coverage.py",
-      "sha256": "743818b53df69df5ac3d440926409480735c67bc0fcc341075e4e1a2c3719675",
-      "size_bytes": 13102
+      "sha256": "a4a754e22f8460c50ef0192fe12ddfb12189161083787a89610986727fceda22",
+      "size_bytes": 13453
     },
     {
       "category": "test",
@@ -4520,6 +4598,12 @@
     },
     {
       "category": "test",
+      "path": "tests/integration/test_trend_signal_calibration_gui.py",
+      "sha256": "9781f6cfdd87d4f2c74a16e636d98fa63d944a25f8cc3d2020b91dff347d669f",
+      "size_bytes": 2783
+    },
+    {
+      "category": "test",
       "path": "tests/learning_fixtures.py",
       "sha256": "e2cc9a59243c7ebca9cfdc3006ba59d74bb8856b83a0881105e353b90ff138bc",
       "size_bytes": 2628
@@ -4563,8 +4647,8 @@
     {
       "category": "test",
       "path": "tests/unit/ai/test_classification_weights_metrics.py",
-      "sha256": "a3b6a8390e054c4ee38b0b021ab183a73f47409bb497442b7aba7312d71dcf00",
-      "size_bytes": 1686
+      "sha256": "3185dd5f426bd1310aefb725961329f308dd7a7cf96018e6df4caea21f1d8bf8",
+      "size_bytes": 2412
     },
     {
       "category": "test",
@@ -4664,9 +4748,21 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_tabular_window_summary.py",
+      "sha256": "7b451e6ddbba2b39fe2b93366632b8ec366cb1315a156a277c2d2b13c4854023",
+      "size_bytes": 1692
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_target_builder.py",
       "sha256": "a3710c5b01806d0ede2d350477c439f802efffee40ec9b8d36d5f94aab2a73d7",
       "size_bytes": 8546
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/ai/test_threshold_calibration.py",
+      "sha256": "761966f96d8dcd49e6917e36ef25e54244aed66cddbfa8132a9d8015716f0e58",
+      "size_bytes": 2013
     },
     {
       "category": "test",
@@ -4679,6 +4775,12 @@
       "path": "tests/unit/ai/test_training_progress_units.py",
       "sha256": "857306303401ff9a35e7a0f3cf3d90140635f4424e9f051978a4f1f091e10ae1",
       "size_bytes": 2305
+    },
+    {
+      "category": "test",
+      "path": "tests/unit/ai/test_trend_signal_booster_script.py",
+      "sha256": "2a4ed82708ab41efa2c71570bec6ddee5449d37305c08e6d4678906dea3ccbf7",
+      "size_bytes": 1394
     },
     {
       "category": "test",
@@ -5013,8 +5115,8 @@
     {
       "category": "test",
       "path": "tests/unit/presentation/test_architecture_knobs_gui.py",
-      "sha256": "c430a22d90d8f3a1af865f1427c48bf9bb2fd813ef012f01f94238b93c99d3db",
-      "size_bytes": 7431
+      "sha256": "747139e5034da6b79b527a359b38f10bbf41140f2982a29a9ef5660f6fb1da46",
+      "size_bytes": 9895
     },
     {
       "category": "test",
@@ -5185,24 +5287,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-07T16:54:58.622259+00:00",
+  "generated_at": "2026-09-08T11:34:35.283332+00:00",
   "git": {
     "branch": "main",
-    "commit": "c7da4fa41b259f637c8f5af032bf0e9187c670a7",
+    "commit": "65aeb7fd1905bce53d50882f367341fc2a7ac92b",
     "dirty": true,
-    "dirty_files": 27,
+    "dirty_files": 24,
     "is_repo": true,
     "recent_commits": [
+      "65aeb7f Phase 119: expose monitor metric in GUI",
+      "ddeb089 docs: clarify Phase 108 training before calibration",
+      "55315b2 Phase 116: hybrid model roadmap and GUI cleanup",
+      "7d4b834 Phase 109: trend_signal threshold calibration heatmaps",
+      "23f0c72 Phase 108: trend_signal class weights and per-class metrics",
       "c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch",
       "7688a8f Phase 107: trend_signal label audit with GUI command",
       "e241e80 docs: split session work and roadmap into phase handoff files",
       "f4592f2 docs: Phase 106 external trading reviews and clean workspace references",
-      "fd4a190 Phase 104: scale trend_score inputs to minus one plus one",
-      "db515b4 Phase 103: audit trend_score target normalization and drop fake tail label",
-      "3f4174a Phase 102: trend_score MAE objective and val_mae monitor",
-      "e5ca863 Phase 101: fix Windows dashboard live training log streaming",
-      "d6ac7c7 docs: Phase 100 model card \u2014 dataset, real-candle target with worked examples, full WaveNet architecture (activations+RangeLoss), and the range-vs-score learnability proof (vol clusters corr 0.997 vs daily drift corr 0.002)",
-      "08b596d Phase 100: trend_score on the REAL next 1D candle \u2014 first-class wiring, sanity-pred crash fix, stream-threshold env knob; trained gold_trend_score_1d v1 + gold_trend_1d v1 on 10y real gold data (honest verdict documented)"
+      "fd4a190 Phase 104: scale trend_score inputs to minus one plus one"
     ]
   },
   "modules": [
@@ -7354,6 +7456,19 @@
       "path": "src/ShadBotTrader/infrastructure/ai/stored_feature_source.py"
     },
     {
+      "classes": 1,
+      "external_imports": [
+        "numpy",
+        "pandas"
+      ],
+      "functions": 6,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors"
+      ],
+      "name": "ShadBotTrader.infrastructure.ai.tabular_window_summary",
+      "path": "src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py"
+    },
+    {
       "classes": 7,
       "external_imports": [],
       "functions": 42,
@@ -8971,7 +9086,7 @@
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 59,
+      "functions": 63,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
@@ -9773,7 +9888,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 34,
+      "functions": 35,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.infrastructure.account",
@@ -10125,6 +10240,17 @@
     {
       "classes": 0,
       "external_imports": [],
+      "functions": 3,
+      "internal_imports": [
+        "ShadBotTrader.presentation.commands",
+        "ShadBotTrader.presentation.commands.handlers"
+      ],
+      "name": "integration.test_trend_signal_calibration_gui",
+      "path": "tests/integration/test_trend_signal_calibration_gui.py"
+    },
+    {
+      "classes": 0,
+      "external_imports": [],
       "functions": 5,
       "internal_imports": [
         "ShadBotTrader.domain.learning.candidate",
@@ -10216,7 +10342,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 5,
+      "functions": 6,
       "internal_imports": [
         "ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer"
       ],
@@ -10441,6 +10567,19 @@
       "path": "tests/unit/ai/test_signal_label_split.py"
     },
     {
+      "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 3,
+      "internal_imports": [
+        "ShadBotTrader.domain.common.errors",
+        "ShadBotTrader.infrastructure.ai.tabular_window_summary"
+      ],
+      "name": "unit.ai.test_tabular_window_summary",
+      "path": "tests/unit/ai/test_tabular_window_summary.py"
+    },
+    {
       "classes": 3,
       "external_imports": [
         "pytest"
@@ -10461,6 +10600,18 @@
     },
     {
       "classes": 0,
+      "external_imports": [
+        "pytest"
+      ],
+      "functions": 4,
+      "internal_imports": [
+        "ShadBotTrader.infrastructure.ai.model_catalogue"
+      ],
+      "name": "unit.ai.test_threshold_calibration",
+      "path": "tests/unit/ai/test_threshold_calibration.py"
+    },
+    {
+      "classes": 0,
       "external_imports": [],
       "functions": 9,
       "internal_imports": [
@@ -10478,6 +10629,16 @@
       ],
       "name": "unit.ai.test_training_progress_units",
       "path": "tests/unit/ai/test_training_progress_units.py"
+    },
+    {
+      "classes": 1,
+      "external_imports": [
+        "numpy"
+      ],
+      "functions": 4,
+      "internal_imports": [],
+      "name": "unit.ai.test_trend_signal_booster_script",
+      "path": "tests/unit/ai/test_trend_signal_booster_script.py"
     },
     {
       "classes": 1,
@@ -11297,7 +11458,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 17,
+      "functions": 22,
       "internal_imports": [
         "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.commands.handlers"
@@ -11735,22 +11896,22 @@
   ],
   "project_name": "ShadBotTrader",
   "python_version": "3.13.14",
-  "source_file_count": 319,
+  "source_file_count": 320,
   "statistics": {
-    "class_count": 804,
+    "class_count": 806,
     "config_file_count": 3,
-    "documentation_file_count": 166,
+    "documentation_file_count": 175,
     "external_dependency_count": 14,
-    "function_count": 4614,
-    "internal_dependency_count": 263,
+    "function_count": 4645,
+    "internal_dependency_count": 264,
     "legacy_file_count": 176,
-    "module_count": 467,
-    "source_file_count": 319,
-    "source_lines": 52852,
-    "test_file_count": 148,
-    "test_lines": 24882,
-    "total_file_count": 854,
-    "total_lines": 124221
+    "module_count": 472,
+    "source_file_count": 320,
+    "source_lines": 53556,
+    "test_file_count": 152,
+    "test_lines": 25232,
+    "total_file_count": 871,
+    "total_lines": 126534
   },
-  "test_file_count": 148
+  "test_file_count": 152
 }

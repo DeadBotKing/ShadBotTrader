@@ -143,6 +143,15 @@ class TestDashboardPage:
         for group in ("Accounts", "Data", "AI", "Simulation", "Trading", "Operations"):
             assert group in page
 
+    def test_advanced_command_fields_are_collapsed(self, server):
+        """Long AI/backtest forms keep expert knobs but do not show them upfront."""
+        page = get(f"{server}/")
+
+        assert "Advanced options" in page
+        assert "advanced-inputs" in page
+        assert 'name="n_layers"' in page
+        assert 'name="n_blocks"' in page
+
     def test_the_account_panel_lists_the_profile(self, server):
         page = get(f"{server}/")
 

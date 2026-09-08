@@ -6,15 +6,15 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-08T11:34:35.283332+00:00
+- Snapshot generated at: 2026-09-07T17:18:47.125084+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 320
-- Test modules: 152
+- Source modules: 319
+- Test modules: 150
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 65aeb7fd1905bce53d50882f367341fc2a7ac92b
-- Dirty: yes (24 files)
+- Commit: 23f0c727ac2a14ac0351ec23a57bdc2fc5d03f1d
+- Dirty: yes (12 files)
 - Recent commits:
-  - 65aeb7f Phase 119: expose monitor metric in GUI
-  - ddeb089 docs: clarify Phase 108 training before calibration
-  - 55315b2 Phase 116: hybrid model roadmap and GUI cleanup
-  - 7d4b834 Phase 109: trend_signal threshold calibration heatmaps
   - 23f0c72 Phase 108: trend_signal class weights and per-class metrics
   - c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch
   - 7688a8f Phase 107: trend_signal label audit with GUI command
   - e241e80 docs: split session work and roadmap into phase handoff files
   - f4592f2 docs: Phase 106 external trading reviews and clean workspace references
   - fd4a190 Phase 104: scale trend_score inputs to minus one plus one
+  - db515b4 Phase 103: audit trend_score target normalization and drop fake tail label
+  - 3f4174a Phase 102: trend_score MAE objective and val_mae monitor
+  - e5ca863 Phase 101: fix Windows dashboard live training log streaming
+  - d6ac7c7 docs: Phase 100 model card — dataset, real-candle target with worked examples, full WaveNet architecture (activations+RangeLoss), and the range-vs-score learnability proof (vol clusters corr 0.997 vs daily drift corr 0.002)
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 871
-- Source files: 320
-- Test files: 152
-- Documentation files: 175
+- Total files: 858
+- Source files: 319
+- Test files: 150
+- Documentation files: 167
 - Legacy files: 176
-- Total Python lines: 126534
-- Modules: 472
-- Classes: 806
-- Functions: 4645
+- Total Python lines: 125131
+- Modules: 469
+- Classes: 804
+- Functions: 4622
 - External dependencies: 14

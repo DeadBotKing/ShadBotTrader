@@ -283,7 +283,7 @@ f4592f2
 ```text
 Phase107.md — audit کامل trend_signal — ✅ اجرا شد در همین ادامهٔ جلسه
 Phase108.md — class weights + F1/PR-AUC برای trend_signal — ✅ اجرا شد
-Phase109.md — threshold calibration و heatmap backtest
+Phase109.md — threshold calibration و heatmap برای trend_signal — ✅ ابزار اجرا شد
 Phase110.md — train-only feature selection
 Phase111.md — POS/NEG binary event models
 Phase112.md — two-branch returns+features benchmark
@@ -308,8 +308,8 @@ per-class F1/precision/recall/AP و GUI field اضافه شد.
 ترتیب پیشنهادی از اینجا:
 
 ```text
-1. Run real trend_signal training with class_weight=auto and send QUALITY output
-2. Phase 109: threshold calibration/heatmap
+1. Finish real trend_signal training with class_weight=auto and send QUALITY output
+2. Run Phase109 calibration tool on that trained model and inspect thresholds
 3. Phase 110: feature selection train-only
 4. Phase 111: POS/NEG binary event models
 5. Phase 113: significance checks
@@ -398,3 +398,87 @@ ruff/black/mypy کامل پروژه: خطاهای قدیمی/pre-existing خار
 ```
 
 در هر فاز اجرایی بعدی دوباره باید gate کامل یا حداقل targeted + documented full gate اجرا شود.
+
+---
+
+## Addendum — 2026-09-08: deep architecture roadmap + GUI cleanup
+
+اپراتور درخواست کرد مدل‌ها/معماری‌های بهتر از منابع GitHub/Google/کتاب‌ها دوباره بررسی شوند و فازها کامل‌تر شوند. نتیجه در گزارش زیر ثبت شد:
+
+```text
+docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md
+```
+
+فازهای اضافه/به‌روزرسانی‌شده:
+
+```text
+Phase112: Branch benchmark — LightGBM/CatBoost/XGBoost + two-branch neural + MiniRocket/LITE
+Phase116: Hybrid Range-Aware Decision Engine
+Phase117: Advanced neural benchmarks — xLSTM-TS, TSMixer, PatchTST, Mamba, KAN
+Phase118: Optional tick/order-book branch — DeepLOB/TLOB/LiT فقط با دادهٔ واقعی
+Phase119: GUI cleanup — Advanced options collapse completed
+```
+
+اصل مسیر جدید:
+
+```text
+gold_trend_signal_5m + booster branches + BUY/SELL specialists
++ gold_range_1d daily envelope + gold_range_4h TP/SL bracket
++ meta-label / conformal uncertainty gate
+=> BUY / SELL / NO_TRADE
+```
+
+وضعیت عملیاتی مهم: اپراتور هنوز training واقعی فاز ۱۰۸ را روی سیستم خودش اجرا می‌کند. فاز ۱۰۹ فقط از نظر ابزار/GUI آماده است و باید بعد از `SAVED/KEPT` شدن مدل جدید `gold_trend_signal_5m` اجرا شود.
+
+GUI تغییر کرد، اما قابلیت‌ها حذف نشدند: fieldهای کم‌مصرف/حرفه‌ای با `CommandField.advanced=True` زیر `<details class="advanced-inputs">` نمایش داده می‌شوند و همچنان defaultشان submit می‌شود.
+
+---
+
+## Addendum — 2026-09-08: Phase120/121 after WaveNet trend_signal collapse
+
+Real pilot logs showed WaveNet `gold_trend_signal_5m` was not producing a healthy 3-class model:
+
+```text
+class_weight auto → uniform probability collapse
+class_weight off  → single-class collapse (always BUY/SELL depending on fold)
+```
+
+Implemented Phase120:
+
+```text
+val_action_min_f1, val_action_min_f1_supported, val_action_collapse,
+val_predicted_class_count, per-class predicted counts
+```
+
+Implemented Phase121:
+
+```text
+scripts/train_trend_signal_boosters.py
+src/ShadBotTrader/infrastructure/ai/tabular_window_summary.py
+Dashboard command: Train trend-signal booster
+Optional deps: requirements-boosters.txt
+```
+
+Recommended next operator command after installing optional deps:
+
+```powershell
+pip install -r requirements-boosters.txt
+python -u scripts/train_trend_signal_boosters.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --booster auto `
+  --output-mode multiclass `
+  --summary-mode basic `
+  --window 288 `
+  --label-horizon 288 `
+  --atr-mult 0.5 `
+  --train-ratio 80 `
+  --folds 3 `
+  --val-size 2000 `
+  --class-weight auto `
+  --n-estimators 400 `
+  --learning-rate 0.03 `
+  --storage-root datasets
+```
+
+If multiclass collapses, run specialist branches with `--output-mode buy` and `--output-mode sell`.

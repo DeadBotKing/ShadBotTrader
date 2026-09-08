@@ -58,6 +58,11 @@ def test_train_descriptor_has_trend_signal_class_weight_field():
     assert "class_weight" in fields
 
 
+def test_train_descriptor_has_monitor_metric_field():
+    fields = {field.name for field in descriptor_for(CommandKind.TRAIN_DUAL_MODELS).fields}
+    assert "monitor_metric" in fields
+
+
 def test_retrain_descriptor_has_architecture_fields():
     fields = {field.name for field in descriptor_for(CommandKind.TRAIN_MODEL).fields}
     assert {"n_layers", "n_blocks", "val_size"} <= fields
@@ -143,6 +148,37 @@ def test_train_dual_models_passes_trend_signal_class_weight(gui, monkeypatch):
     assert args[args.index("--class-weight") + 1] == "auto"
 
 
+def test_train_dual_models_passes_trend_signal_monitor_metric(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {
+                "model": "trend_signal",
+                "dataset": "5M",
+                "monitor_metric": "val_buy_sell_f1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[args.index("--monitor-metric") + 1] == "val_buy_sell_f1"
+
+
+def test_train_dual_models_ignores_invalid_monitor_metric_for_range(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_dual_models(
+        Command(
+            CommandKind.TRAIN_DUAL_MODELS,
+            {"model": "range", "dataset": "5M", "monitor_metric": "val_buy_sell_f1"},
+        )
+    )
+
+    assert "--monitor-metric" not in captured["args"]
+
+
 def test_train_dual_models_ignores_class_weight_for_other_roles(gui, monkeypatch):
     captured = _capture(monkeypatch, gui)
 
@@ -215,3 +251,42 @@ def test_optimise_passes_trend_score_mae_loss(gui, monkeypatch):
     args = captured["args"]
     assert args[args.index("--signal-timeframe") + 1] == "5M"
     assert args[args.index("--trend-score-loss") + 1] == "mae"
+
+
+def test_train_trend_signal_booster_descriptor_exists():
+    fields = {field.name for field in descriptor_for(CommandKind.TRAIN_TREND_SIGNAL_BOOSTER).fields}
+    assert {"booster", "output_mode", "summary_mode", "window", "label_horizon"} <= fields
+
+
+def test_train_trend_signal_booster_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_trend_signal_booster(
+        Command(
+            CommandKind.TRAIN_TREND_SIGNAL_BOOSTER,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "booster": "lightgbm",
+                "output_mode": "buy",
+                "summary_mode": "basic",
+                "window": "288",
+                "label_horizon": "288",
+                "atr_mult": "0.5",
+                "train_ratio": "80",
+                "folds": "3",
+                "val_size": "2000",
+                "class_weight": "auto",
+                "n_estimators": "25",
+                "booster_lr": "0.03",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_trend_signal_boosters.py"
+    assert args[args.index("--booster") + 1] == "lightgbm"
+    assert args[args.index("--output-mode") + 1] == "buy"
+    assert args[args.index("--summary-mode") + 1] == "basic"
+    assert args[args.index("--val-size") + 1] == "2000"
+    assert args[args.index("--n-estimators") + 1] == "25"

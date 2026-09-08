@@ -88,6 +88,12 @@ a { color: var(--accent); }
 .action h3 { margin: 0 0 6px; font-size: 13px; }
 .action p { margin: 0 0 10px; color: var(--muted); font-size: 11px; flex: 1; }
 .action .inputs { display: grid; gap: 6px; margin-bottom: 10px; }
+.action .inputs.advanced { margin: 8px 0 10px; padding-top: 8px;
+                           border-top: 1px solid rgba(38,45,56,.65); }
+.advanced-inputs { margin: 0 0 10px; color: var(--muted); }
+.advanced-inputs summary { cursor: pointer; font-size: 11px; color: var(--accent);
+                           margin-bottom: 6px; user-select: none; }
+.advanced-inputs summary:hover { filter: brightness(1.15); }
 .action label { display: grid; grid-template-columns: 92px 1fr; align-items: center;
                 gap: 6px; font-size: 11px; color: var(--muted); }
 .action input { background: var(--panel); border: 1px solid var(--border);
@@ -418,7 +424,20 @@ def render_actions(
     for group, items in grouped.items():
         cards = []
         for descriptor in items:
-            inputs = "".join(_render_field(field) for field in descriptor.fields)
+            basic_fields = [field for field in descriptor.fields if not field.advanced]
+            advanced_fields = [field for field in descriptor.fields if field.advanced]
+            basic_inputs = "".join(_render_field(field) for field in basic_fields)
+            advanced_inputs = "".join(_render_field(field) for field in advanced_fields)
+            inputs_html = ""
+            if basic_inputs:
+                inputs_html += f'<div class="inputs">{basic_inputs}</div>'
+            if advanced_inputs:
+                inputs_html += (
+                    '<details class="advanced-inputs">'
+                    f"<summary>Advanced options ({len(advanced_fields)})</summary>"
+                    f'<div class="inputs advanced">{advanced_inputs}</div>'
+                    "</details>"
+                )
             disabled = " disabled" if busy is not None else ""
             notes = []
             if descriptor.slow:
@@ -431,7 +450,7 @@ def render_actions(
   <input type="hidden" name="command" value="{_e(descriptor.action)}">
   <h3>{_e(descriptor.label)}</h3>
   <p>{_e(descriptor.description)}</p>
-  {f'<div class="inputs">{inputs}</div>' if inputs else ""}
+  {inputs_html}
   <button type="submit"{disabled}>Run</button>
   {"".join(notes)}
 </form>""")

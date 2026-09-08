@@ -104,18 +104,31 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 #      min_sl_dist=6 | atr_mult=0.5 | max_entry_distance_atr=0.25
 ```
 
-## Phase roadmap handoff (ثبت 2026-09-07)
+## Phase roadmap handoff (به‌روزرسانی 2026-09-08)
 
-- فازهای جدید در `docs/Phases` خرد شدند: `Phase100.md` تا `Phase115.md`.
-- index سریع: `docs/Phases/README_PHASE100_115.md`.
-- handoff کامل جلسه: `docs/SESSION_HANDOFF_2026-09-07.md`.
+- فازهای جدید در `docs/Phases` خرد شدند: `Phase100.md` تا `Phase119.md`.
+- index سریع همچنان برای سازگاری در این مسیر است: `docs/Phases/README_PHASE100_115.md`، اما محتوایش تا فاز ۱۱۹ به‌روزرسانی شده است.
+- گزارش سرچ عمیق معماری/مدل‌های بهتر: `docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md`.
+- handoff کامل جلسه قبلی: `docs/SESSION_HANDOFF_2026-09-07.md`.
 - `Phase107` انجام شد: script و GUI جدید `Audit trend-signal labels` برای audit کامل
   `trend_signal_5m` اضافه شد.
-- `Phase108` انجام شد: training مدل `trend_signal` حالا گزینهٔ GUI/CLI برای
+- `Phase108` از نظر کد انجام شد: training مدل `trend_signal` حالا گزینهٔ GUI/CLI برای
   `--class-weight auto` دارد، وزن کلاس‌ها per-fold train محاسبه می‌شود و metricهای
-  F1/precision/recall/PR-AUC per-class ذخیره و چاپ می‌شوند.
-- قدم اجرایی بعدی: اپراتور یک train واقعی `trend_signal` با class weights اجرا کند؛
-  بعد با خروجی QUALITY می‌رویم سراغ `Phase109` یعنی threshold calibration/heatmap.
+  F1/precision/recall/PR-AUC per-class ذخیره و چاپ می‌شوند. **وضعیت عملیاتی اپراتور:**
+  آموزش واقعی فاز ۱۰۸ هنوز در حال اجراست و نتیجهٔ نهایی هنوز ارسال نشده است.
+- `Phase109` از نظر کد انجام شد: script و GUI جدید `Calibrate trend-signal thresholds` برای
+  grid کردن BUY/SELL probability thresholds و ذخیره `decision_thresholds` در model
+  record اضافه شد. **وضعیت عملیاتی:** اجرای calibration منتظر پایان training فاز ۱۰۸ و
+  ذخیره‌شدن مدل جدید `gold_trend_signal_5m` است.
+- `Phase119` انجام شد: GUI خلوت شد؛ پارامترهای کم‌مصرف/حرفه‌ای زیر `Advanced options`
+  رفتند، بدون اینکه field یا قابلیت حذف شود.
+- `Phase120` انجام شد: metricهای ضد-collapse اضافه شدند (`val_action_min_f1_supported`,
+  `val_action_collapse`, predicted class counts) تا always-BUY/SELL گول‌زننده رد شود.
+- `Phase121` انجام شد: branch مستقل `Train trend-signal booster` برای LightGBM/XGBoost/CatBoost
+  روی خلاصهٔ causal پنجرهٔ 288 کندلی اضافه شد. اجرای واقعی نیازمند نصب optional dependencies است:
+  `pip install -r requirements-boosters.txt`.
+- قدم اجرایی بعدی: به جای ادامهٔ WaveNet collapse‌شده، booster branch را با `output_mode=multiclass`
+  تست کن؛ اگر multiclass هم collapse کرد، `output_mode=buy` و `output_mode=sell` را جدا اجرا کن.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 
@@ -168,6 +181,8 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - علت فیکس: `dispatch_async` قبل از redirect وضعیت busy را رزرو می‌کند؛ `_run_script`
   child را با `python -u` و UTF-8 اجباری اجرا می‌کند و فایل `run_logs/train_dual_models.log`
   را با appendهای کوتاه می‌نویسد تا `/api/log` بتواند وسط آموزش بخواند.
+- فاز ۱۱۹: فرم‌های طولانی GUI خلوت شدند؛ fieldهای کم‌مصرف/حرفه‌ای حذف نشدند، فقط زیر
+  `Advanced options` رفتند. این شامل Train/Retrain/Optimise/Backtest/Replay/Audit/Calibration است.
 - اگر آموزش از GUI شروع شود، پنل live output باید ظرف چند ثانیه حداقل خط command،
   سربرگ TRAINING و batch/epoch progress را نشان دهد. اجرای دستی PowerShell همچنان
   جداست و لاگ Dashboard را پر نمی‌کند.
@@ -179,12 +194,46 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - gold_signal_5m فقط 10 epoch آموزش دیده — ریترین جدی لازم دارد
 - ES patience=400 عملاً خاموش است — 15-30 کافی است
 
+## نقشهٔ مدل ترکیبی پیشنهادی
+
+دارایی‌های فعلی که باید محور سیستم باشند:
+
+```text
+gold_range_1d  → سقف/کف فردا و daily envelope
+gold_range_4h  → سقف/کف چهار ساعت آینده برای TP/SL محلی
+gold_trend_signal_5m → احتمال SELL/HOLD/BUY
+```
+
+هدف بعدی این نیست که فقط یک مدل neural بزرگ‌تر بسازیم؛ هدف ساخت decision engine چندشاخه‌ای است:
+
+```text
+WaveNet trend_signal
++ LightGBM/CatBoost/XGBoost branch
++ BUY/SELL specialist models
++ 1D range envelope
++ 4H TP/SL range bracket
++ meta-label / uncertainty no-trade gate
+=> BUY / SELL / NO_TRADE
+```
+
+ترتیب عملی جدید، با توجه به اینکه training فاز ۱۰۸ هنوز روی سیستم اپراتور تمام نشده:
+
+```text
+finish Phase108 trend_signal training → Phase109 calibration → Phase110 feature selection
+→ Phase120 anti-collapse metrics → Phase121/112 booster branch benchmark
+→ Phase111 BUY/SELL specialists → Phase110 feature selection for winning branches
+→ Phase116 hybrid range-aware decision engine → Phase113 significance checks
+→ Phase114 external/regime features → Phase117 advanced neural benchmarks
+→ Phase115 live decision audit
+```
+
 ## گام بعدی
 
-1. آموزش gold_trend_signal_5m با مانع روزانه فیکس‌شده (دستگاه اپراتور)
-2. بازآموزی gold_trend_score_1d و gold_trend_1d روی دیتای MT5 اپراتور
-   (سیم‌کشی فاز ۱۰۰ آماده است — فقط Fetch 1D + همان دستور)
-3. فیچر رژیم‌محور برای score (DOW/vol-regime) — پروپوزال جدا لازم دارد
-4. مجوز ۵ (رنگ کندل) و مجوز ۶ (probهای trend_signal) در بکتست تریپل
-3. بکتست triple با مدل‌های جدید
-4. مجوز ۶: رنگ ترند از gold_trend_<tf> در بکتست
+1. روی سیستم اپراتور optional booster backend نصب شود:
+   `pip install -r requirements-boosters.txt`
+2. از GUI یا CLI، `Train trend-signal booster` با `output_mode=multiclass`,
+   `summary_mode=basic`, `train_ratio=80`, `val_size=2000` اجرا شود.
+3. اگر multiclass هم action collapse داشت، دو branch جدا اجرا شوند:
+   `output_mode=buy` و `output_mode=sell`.
+4. فقط اگر booster/POSNEG metricهای ضد-collapse را پاس کردند، فاز ۱۰۹ calibration و سپس فاز ۱۱۶
+   برای ترکیب با `gold_range_1d` و `gold_range_4h` انجام شود.
