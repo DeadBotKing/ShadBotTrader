@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "pytest",
-      "used_by": 94
+      "used_by": 95
     },
     {
       "name": "numpy",
@@ -12,7 +12,7 @@
     },
     {
       "name": "pandas",
-      "used_by": 24
+      "used_by": 25
     },
     {
       "name": "tests",
@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "88c6db0b8ad0c68158aa267d6fd3e3e6314e153539ebcf6860346020080161ff",
-      "size_bytes": 15780
+      "sha256": "c3abd75c226e8badbb641bf6caa1454b8cf1b52182d008c3902ddef41871d1f4",
+      "size_bytes": 16032
     },
     {
       "category": "documentation",
@@ -413,6 +413,12 @@
       "path": "docs/Phases/Phase123.md",
       "sha256": "54aaddba55e13150513b8e0f0d0df47784391f90a081f73a822dda82fcad1b8e",
       "size_bytes": 4977
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase124.md",
+      "sha256": "be86b17d2f2aea74c5438a87d6ed0157472b85c8ec21036e8b327688ab8aea68",
+      "size_bytes": 3084
     },
     {
       "category": "documentation",
@@ -687,8 +693,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "e11e14142671052d5ba0d501cb0fdc06b240112cd3ceba7cc76e8725f6a9e076",
-      "size_bytes": 8023
+      "sha256": "cc3bcdecd442bfa9d19b2c78ab451b36db3432f4f9df215df824b4f0c6c6b798",
+      "size_bytes": 8153
     },
     {
       "category": "documentation",
@@ -1113,8 +1119,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_HANDOFF_2026-09-07.md",
-      "sha256": "d20caad275d12eed72b369c5243ce014effee97ecd44131ab073de0195392c65",
-      "size_bytes": 14957
+      "sha256": "2aa3b8e1543945663f025f9a81480809a3c50699fb8e9c6fc77e6fb4f82e5fa5",
+      "size_bytes": 15853
     },
     {
       "category": "documentation",
@@ -1179,8 +1185,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "cf87301e5fe5c0c5ff84fd4342411973b1529004283488b06e47560e124ca893",
-      "size_bytes": 247589
+      "sha256": "9afae6ad2dccbc6961cd1317bfd10aedb006c7d98b73612951bc9d0fb01d7b7f",
+      "size_bytes": 249437
     },
     {
       "category": "legacy",
@@ -2289,7 +2295,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
+      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
       "size_bytes": 26005
     },
     {
@@ -2465,6 +2471,12 @@
       "path": "scripts/run_weekly_update.py",
       "sha256": "5c297f4ef00e56f6d1999957057e5f3fe8c3293e696ca16145a08fe3a3f36055",
       "size_bytes": 7927
+    },
+    {
+      "category": "script",
+      "path": "scripts/train_hybrid_xgboost_head.py",
+      "sha256": "8f2ec1e4f01a0e97904e56d94c6e2e72db8e464a081b55944f2724fa5544684c",
+      "size_bytes": 14876
     },
     {
       "category": "script",
@@ -4688,6 +4700,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_hybrid_xgboost_head.py",
+      "sha256": "1e216cc1a925189cbb94689c4b64d17274aadc9b8bf800b77ec3808dc5899173",
+      "size_bytes": 1609
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_hybrid_xgboost_matrix.py",
       "sha256": "8abba9e786f035f2c680a0347beeb078ab9572f4d13afd03a0f97dcaf1f59a20",
       "size_bytes": 1506
@@ -5323,14 +5341,15 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-08T16:04:05.484902+00:00",
+  "generated_at": "2026-09-08T16:31:20.084790+00:00",
   "git": {
     "branch": "main",
-    "commit": "55cd643948410723f4783ba8dea23e39c9da6ae5",
+    "commit": "4424f47d749f547dac930480c4c0009981f9da7a",
     "dirty": true,
-    "dirty_files": 16,
+    "dirty_files": 13,
     "is_repo": true,
     "recent_commits": [
+      "4424f47 Phase 123: build hybrid XGBoost matrix",
       "55cd643 Phase 122: calibrate booster specialist thresholds",
       "9e71fae Phase 120: anti-collapse metrics and booster branch",
       "65aeb7f Phase 119: expose monitor metric in GUI",
@@ -5339,8 +5358,7 @@
       "7d4b834 Phase 109: trend_signal threshold calibration heatmaps",
       "23f0c72 Phase 108: trend_signal class weights and per-class metrics",
       "c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch",
-      "7688a8f Phase 107: trend_signal label audit with GUI command",
-      "e241e80 docs: split session work and roadmap into phase handoff files"
+      "7688a8f Phase 107: trend_signal label audit with GUI command"
     ]
   },
   "modules": [
@@ -10415,6 +10433,17 @@
     },
     {
       "classes": 0,
+      "external_imports": [
+        "pandas",
+        "pytest"
+      ],
+      "functions": 4,
+      "internal_imports": [],
+      "name": "unit.ai.test_hybrid_xgboost_head",
+      "path": "tests/unit/ai/test_hybrid_xgboost_head.py"
+    },
+    {
+      "classes": 0,
       "external_imports": [],
       "functions": 4,
       "internal_imports": [],
@@ -11952,18 +11981,18 @@
   "statistics": {
     "class_count": 806,
     "config_file_count": 3,
-    "documentation_file_count": 177,
+    "documentation_file_count": 178,
     "external_dependency_count": 14,
-    "function_count": 4658,
+    "function_count": 4662,
     "internal_dependency_count": 264,
     "legacy_file_count": 176,
-    "module_count": 474,
+    "module_count": 475,
     "source_file_count": 320,
     "source_lines": 53942,
-    "test_file_count": 154,
-    "test_lines": 25398,
-    "total_file_count": 877,
-    "total_lines": 128401
+    "test_file_count": 155,
+    "test_lines": 25457,
+    "total_file_count": 880,
+    "total_lines": 128856
   },
-  "test_file_count": 154
+  "test_file_count": 155
 }

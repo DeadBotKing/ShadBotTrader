@@ -132,8 +132,10 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - `Phase123` انجام شد: script و GUI جدید `Build hybrid XGBoost matrix` ساخته شد. این ماتریس
   خروجی‌های BUY/SELL booster، multiclass booster، WaveNet اختیاری و پیش‌بینی‌های range_1d/range_4h
   را به featureهای آمادهٔ XGBoost/LightGBM تبدیل می‌کند.
-- قدم اجرایی بعدی: `Build hybrid XGBoost matrix` را اجرا کن تا فایل
-  `datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet` ساخته شود؛ بعد فاز ۱۲۴ head نهایی را train می‌کند.
+- `Phase124` انجام شد: script جدید `train_hybrid_xgboost_head.py` برای آموزش head نهایی
+  روی ماتریس فاز ۱۲۳ اضافه شد. خروجی هدف فعلاً SELL/HOLD/BUY است و HOLD نقش NO_TRADE دارد.
+- قدم اجرایی بعدی: اول `Build hybrid XGBoost matrix` را اجرا کن تا فایل
+  `datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet` ساخته شود؛ سپس `train_hybrid_xgboost_head.py` را اجرا کن.
 
 ## External TensorFlow/algo-trading references (فاز ۱۰۶)
 

@@ -4638,3 +4638,39 @@ PYTHONPATH=src python3 -m py_compile scripts/build_hybrid_xgboost_matrix.py ✅
 ```
 
 Full ruff/black/mypy state remains the same pre-existing red state documented earlier; full pytest is green.
+
+## 2026-09-08 — Phase 124 hybrid XGBoost head trainer
+
+بعد از ساخت ماتریس فاز ۱۲۳، CLI آموزش head نهایی اضافه شد:
+
+```text
+scripts/train_hybrid_xgboost_head.py
+```
+
+این اسکریپت ماتریس زیر را می‌خواند:
+
+```text
+datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+```
+
+و یک مدل نهایی LightGBM/XGBoost/CatBoost روی featureهای خروجی مدل‌ها و range می‌سازد. خروجی فعلی سه‌کلاسه است:
+
+```text
+SELL / HOLD / BUY
+```
+
+که در decision نهایی، HOLD یعنی NO_TRADE.
+
+پیش‌فرض، price-levelهای مستقیم مثل `close` و `*_price` را حذف می‌کند تا وابستگی خام به سطح قیمت کمتر شود، ولی room/pct/probabilityها باقی می‌مانند.
+
+### Quality gate — Phase124
+
+Targeted checks:
+
+```text
+python3 -m ruff check scripts/train_hybrid_xgboost_head.py tests/unit/ai/test_hybrid_xgboost_head.py scripts/build_hybrid_xgboost_matrix.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_xgboost_matrix.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check scripts/train_hybrid_xgboost_head.py tests/unit/ai/test_hybrid_xgboost_head.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_hybrid_xgboost_head.py tests/unit/ai/test_hybrid_xgboost_matrix.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestEveryRunHasAButton tests/integration/test_gui_coverage.py::TestDashboardPage::test_every_button_is_rendered ✅
+PYTHONPATH=src python3 -m py_compile scripts/train_hybrid_xgboost_head.py scripts/build_hybrid_xgboost_matrix.py ✅
+PYTHONPATH=src python3 -m pytest -q ✅
+```

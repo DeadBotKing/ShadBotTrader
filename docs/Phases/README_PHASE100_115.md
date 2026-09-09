@@ -36,6 +36,7 @@
 | 121 | ✅ زیرساخت کامل | Tabular Booster Branch برای `trend_signal`: LightGBM/XGBoost/CatBoost + GUI | `Phase121.md` |
 | 122 | ✅ کامل | Calibration برای BUY/SELL booster specialists و ذخیرهٔ threshold مشترک | `Phase122.md` |
 | 123 | ✅ ماتریس کامل | ساخت ماتریس نهایی XGBoost از خروجی booster/WaveNet و مدل‌های range 1D/4H | `Phase123.md` |
+| 124 | ✅ CLI کامل | آموزش head نهایی XGBoost/LightGBM روی ماتریس hybrid فاز ۱۲۳ | `Phase124.md` |
 
 ---
 

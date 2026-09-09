@@ -3,28 +3,28 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Current phase: Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, live loop) + Phase 24 Deployment + Phases 9/21/22 completed + Phase 32 (multi-account profiles, per-broker symbol mapping, every run driven from the GUI) + Phase 33 (incremental dataset updates with learned market calendar and gap backfill) + Phase 34 (candlestick chart and dataset inspection at /data) + Phase 35 (two separate 5M/1H training datasets, rows trimmed only from the ends, generated candles never stored under a real symbol, one canonical symbol per instrument) + Phase 36 (live training progress in the console and the dashboard, per-fold metrics reported against a majority-class baseline) + Phase 37 (live feature-computation progress, and one feature store per symbol/timeframe instead of a shared directory) + Phase 38 (features reused until the candle fingerprint changes, then fully recomputed; the training matrix is 14 candle columns plus all 109 catalogue features) + Phase 39 (the training matrix reads stored features and is proven byte-identical to the computed one; the 1D timeframe has its own candles, features, dataset and range model; the operator chooses which model trains on which dataset) + Phase 40 (model type, dataset and saved model are dropdowns; trained models are persisted with the role and dataset that produced them; retraining adds a version instead of replacing one) + Phases 41-48 (streamed training, capped progress lines, batch count from fold geometry, batch size scaled to the data, a signal threshold field and a live broker spread, per-epoch checkpoints, the best epoch kept rather than the last, and buttons to test a model on a dataset and inspect a dataset) + Phase 50 (the signal model is binary SELL/BUY only; the old neutral-band/HOLD label is no longer part of the neural-network output; no-trade remains a strategy-level decision)
-- Generated at: 2026-09-08T16:04:05.484902+00:00
+- Generated at: 2026-09-08T16:31:20.084790+00:00
 - Python version: 3.13.14
 - Git branch: main
-- Git commit: 55cd643948410723f4783ba8dea23e39c9da6ae5
+- Git commit: 4424f47d749f547dac930480c4c0009981f9da7a
 - Dirty: yes
 
 ## Statistics
 
 - Source files: 320
-- Test files: 154
-- Documentation files: 177
+- Test files: 155
+- Documentation files: 178
 - Legacy files: 176
-- Total Python lines: 128401
-- Modules: 474
+- Total Python lines: 128856
+- Modules: 475
 - Classes: 806
-- Functions: 4658
+- Functions: 4662
 
 ## External dependencies (top 20)
 
-- pytest: used by 94 module(s)
+- pytest: used by 95 module(s)
 - numpy: used by 32 module(s)
-- pandas: used by 24 module(s)
+- pandas: used by 25 module(s)
 - tests: used by 12 module(s)
 - tensorflow: used by 10 module(s)
 - conftest: used by 4 module(s)

@@ -531,3 +531,38 @@ Output:
 datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
 run_logs/hybrid_xgboost_matrix/latest.json
 ```
+
+---
+
+## Addendum — 2026-09-08: Phase124 hybrid XGBoost head trainer
+
+Implemented CLI for the final hybrid head:
+
+```text
+scripts/train_hybrid_xgboost_head.py
+```
+
+Input defaults to:
+
+```text
+datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+```
+
+It trains a LightGBM/XGBoost/CatBoost multiclass final head on the Phase123 matrix. HOLD is interpreted downstream as NO_TRADE. It reports collapse-safe metrics (`val_action_min_f1_supported`, `val_action_collapse`, per-class P/R/F1) and stores artifacts in ModelCatalogue.
+
+Recommended run after Phase123 matrix exists:
+
+```powershell
+python -u scripts/train_hybrid_xgboost_head.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --booster auto `
+  --train-frac 0.70 `
+  --drop-price-levels 1 `
+  --class-weight auto `
+  --n-estimators 500 `
+  --learning-rate 0.03 `
+  --max-depth 3 `
+  --num-leaves 31 `
+  --storage-root datasets
+```
