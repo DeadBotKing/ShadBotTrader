@@ -48,7 +48,7 @@
 | 110 | 🟡 پیشنهادی | feature selection مخصوص مدل و train-only، بدون leakage | خیلی بالا |
 | 111 | 🟡 پیشنهادی | مدل‌های BUY/SELL binary specialist (`gold_buy_event_5m`, `gold_sell_event_5m`) | خیلی بالا |
 | 112 | 🟡 پیشنهادی | Branch benchmark: LightGBM/CatBoost/XGBoost، two-branch neural، MiniRocket/LITE/InceptionTime | خیلی بالا برای boosters |
-| 113 | 🟡 پیشنهادی | random baseline، Monte Carlo، White Reality-style checks | بالا |
+| 113 | ✅ CLI/GUI کامل | random baseline، Monte Carlo و White Reality-style max check برای hybrid-head/range-aware | قبل از live الزامی |
 | 114 | 🟡 پیشنهادی | external/regime features مخصوص XAUUSD: DXY، US10Y، VIX، Oil، Silver، calendar/news | بالا بعد از baseline |
 | 115 | 🟡 پیشنهادی | live decision audit کامل برای هر TRADE/NO_TRADE | قبل از live جدی الزامی |
 | 116 | 🟡 پیشنهادی | Hybrid Range-Aware Decision Engine: ترکیب trend branches با `range_1d` و `range_4h` | خیلی بالا بعد از branchها |
@@ -70,13 +70,14 @@ E) Phase111/121: BUY/SELL specialist binary models
 F) Phase122: calibration مشترک BUY/SELL booster specialists
 G) Phase123: ساخت Hybrid XGBoost matrix با خروجی WaveNet/Boosters/Range
 H) Phase124: آموزش XGBoost/LightGBM head نهایی روی ماتریس hybrid
-I) Phase110: train-only feature selection برای branchهای برنده
-J) Phase116: range-aware hybrid decision engine
-K) Phase113: significance / random / Monte Carlo checks
-L) Phase114: external/regime features اگر baseline ارزشمند بود
-M) Phase117: advanced neural benchmarks
-N) Phase115: live decision audit کامل قبل از live جدی
-O) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
+I) Phase125: range-aware TP/SL backtest و ذخیرهٔ threshold سودده
+J) Phase113: significance / random / Monte Carlo checks
+K) Phase116: range-aware hybrid decision engine integration اگر significance تأیید شد
+L) Phase110: train-only feature selection برای branchهای برنده
+M) Phase114: external/regime features اگر baseline ارزشمند بود
+N) Phase117: advanced neural benchmarks
+O) Phase115: live decision audit کامل قبل از live جدی
+P) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
 ```
 
 ---

@@ -339,3 +339,181 @@ python -u scripts/backtest_hybrid_xgboost_head.py `
 ```text
 run_logs/hybrid_head_backtest/latest.json
 ```
+
+
+## آخرین اجرای عملیاتی فاز ۱۲۵
+
+### اجرای پایه با `score_metric=total_pnl`
+
+```text
+model      : gold_hybrid_lightgbm_head_5m v1
+samples    : 2400
+best th    : buy=0.80 sell=0.65 margin=0.00
+trades     : 344 (coverage=14.33%)
+buy/sell   : 170 / 174
+wins/losses: 172 / 172
+label_precision: 66.57%
+total_pnl  : +266.03
+avg_pnl    : +0.7733
+profit_factor: 1.2199
+max_drawdown : 355.58
+```
+
+### اجرای محافظه‌کارانه با room filters
+
+تنظیمات:
+
+```text
+min_margin=0.05
+min_4h_room=2
+min_1d_room=5
+min_tp_distance=2
+min_sl_distance=2
+precision_floor=0.55
+```
+
+اگر معیار انتخاب فقط `precision_then_pnl` باشد، بهترین منتخب precision بالا ولی PnL کمی منفی داشت:
+
+```text
+buy=0.95 sell=0.75
+trades=90
+label_precision=83.33%
+total_pnl=-8.52
+profit_factor=0.9719
+```
+
+اما بهترین ردیف معاملاتی مثبت در همان grid:
+
+```text
+buy=0.80 sell=0.65 margin=0.05
+trades=325
+win_rate=51.69%
+label_precision=65.85%
+total_pnl=+291.15
+profit_factor=1.2472
+max_drawdown=347.04
+coverage=13.54%
+```
+
+برداشت فعلی: فاز ۱۲۵ edge اولیه نشان داده، اما قبل از live باید threshold مثبت با قیود precision/profit-factor ذخیره شود و سپس significance check اجرا شود.
+
+گام اجرایی پیشنهادی بعدی:
+
+```powershell
+python -u scripts/backtest_hybrid_xgboost_head.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --eval-frac 0.30 `
+  --threshold-min 0.45 `
+  --threshold-max 0.95 `
+  --threshold-step 0.05 `
+  --min-margin 0.05 `
+  --min-trades 100 `
+  --precision-floor 0.60 `
+  --min-profit-factor 1.05 `
+  --score-metric total_pnl `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+## Phase125B saved threshold + Phase113 implementation status
+
+کاربر rerun فاز ۱۲۵ را با قیود سخت‌تر اجرا کرد و خروجی نشان می‌دهد threshold سودده در رکورد مدل ذخیره شده است:
+
+```text
+model_id        : gold_hybrid_lightgbm_head_5m
+model_version   : 1
+matrix_rows     : 8000
+eval_rows       : 2400
+buy_threshold   : 0.80
+sell_threshold  : 0.65
+min_margin      : 0.05
+trades          : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+total_pnl       : +291.154987683185
+avg_pnl         : +0.8958615005636462
+profit_factor   : 1.2471739846573604
+max_drawdown    : 347.044035279524
+coverage        : 13.5417%
+record_path     : datasets\models\gold_hybrid_lightgbm_head_5m\v1_training.json
+```
+
+فاز ۱۱۳ اکنون برای همین مسیر پیاده‌سازی شده است:
+
+```text
+scripts/backtest_significance_check.py
+GUI: Check hybrid significance
+outputs:
+  run_logs/significance_checks/latest.json
+  run_logs/significance_checks/latest.csv
+```
+
+گام اجرایی فعلی روی ماشین کاربر:
+
+```powershell
+python -u scripts/backtest_significance_check.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --trials 1000 `
+  --seed 42 `
+  --white-check 1 `
+  --candidate-rows-path run_logs/hybrid_head_backtest/latest.json `
+  --storage-root datasets
+```
+
+بعد از اجرا باید `run_logs\significance_checks\latest.json` بررسی شود. اگر p-value بالا باشد، نتیجهٔ فاز ۱۲۵ هنوز فقط exploratory است؛ اگر p-value پایین باشد، قدم بعدی integration/paper در مسیر Phase116 است.
+
+## Phase113 result — significance passed strongly
+
+فاز ۱۱۳ روی threshold ذخیره‌شدهٔ مدل hybrid اجرا شد و نتیجه از random baseline و White-style max check عبور کرد:
+
+```text
+threshold_source: model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold       : buy=0.80 sell=0.65 margin=0.05
+observed_pnl    : +291.154987683185
+observed_pf     : 1.2471739846573604
+observed_trades : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+random_mean     : -944.2369557544658
+random_p95      : -665.0864972670641
+random_p99      : -529.5757005996354
+random_max      : -317.02241025066814
+random_p_value  : 0.000999000999000999
+white_candidates: 23
+white_p99       : -128.05536537052174
+white_max       : -28.658925889975762
+white_p_value   : 0.000999000999000999
+```
+
+تصمیم فعلی:
+
+```text
+Phase113 برای این holdout پاس شد. گام بعدی مجاز: Phase116 integration برای hybrid range-aware decision path.
+هنوز live واقعی مجاز نیست؛ بعد از integration باید Phase115 decision audit و paper/live shadow اجرا شود.
+```

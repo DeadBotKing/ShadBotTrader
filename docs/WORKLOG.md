@@ -4801,3 +4801,318 @@ python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
 PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
 python3 -m pytest -q         ✅ passed.
 ```
+
+## 2026-09-09 — Phase125 real backtest results received
+
+اپراتور دو اجرای واقعی از `scripts/backtest_hybrid_xgboost_head.py` ارسال کرد.
+
+### اجرای ۱ — score_metric=total_pnl، بدون فیلتر room سخت‌گیرانه
+
+```text
+model      : gold_hybrid_lightgbm_head_5m v1
+samples    : 2400
+best th    : buy=0.80 sell=0.65 margin=0.00
+trades     : 344 (coverage=14.33%)
+buy/sell   : 170 / 174
+wins/losses: 172 / 172
+label_precision: 66.57%
+total_pnl  : +266.03
+avg_pnl    : +0.7733
+profit_factor: 1.2199
+max_drawdown : 355.58
+```
+
+### اجرای ۲ — conservative filters، score_metric=precision_then_pnl، save_record=0
+
+تنظیمات مهم:
+
+```text
+min_margin=0.05
+min_4h_room=2
+min_1d_room=5
+min_tp_distance=2
+min_sl_distance=2
+precision_floor=0.55
+score_metric=precision_then_pnl
+```
+
+خروجی منتخب توسط score precision-first:
+
+```text
+best th    : buy=0.95 sell=0.75 margin=0.05
+trades     : 90 (coverage=3.75%)
+label_precision: 83.33%
+total_pnl  : -8.52
+profit_factor: 0.9719
+max_drawdown : 135.29
+```
+
+اما در همان grid، بهترین نتیجهٔ معاملاتی مثبت‌تر با فیلترهای محافظه‌کارانه:
+
+```text
+buy=0.80 sell=0.65 margin=0.05
+trades=325
+buy/sell=160/165
+win_rate=51.69%
+label_precision=65.85%
+total_pnl=+291.15
+avg_pnl=+0.8959
+profit_factor=1.2472
+max_drawdown=347.04
+coverage=13.54%
+```
+
+برداشت:
+
+```text
+- فاز ۱۲۵ edge معاملاتی اولیه نشان داد؛ برخلاف classification-only، PnL هم مثبت شد.
+- threshold پایدار فعلی نزدیک buy=0.80 / sell=0.65 است.
+- فیلترهای room محافظه‌کارانه نتیجه را کمی بهتر کردند (+291 vs +266) و PF را بالا بردند.
+- score_metric=precision_then_pnl می‌تواند threshold با precision بالا ولی PnL منفی را انتخاب کند؛ برای ذخیرهٔ production فعلاً بهتر است total_pnl با precision_floor/min_profit_factor استفاده شود.
+```
+
+پیشنهاد بعدی:
+
+```text
+rerun Phase125 with:
+score_metric=total_pnl
+min_margin=0.05
+min_4h_room=2
+min_1d_room=5
+min_tp_distance=2
+min_sl_distance=2
+precision_floor=0.60
+min_profit_factor=1.05
+save_record=1
+```
+
+سپس Phase113 significance/random baseline قبل از live integration.
+
+## 2026-09-09 — Phase 125B saved profitable hybrid-head threshold
+
+کاربر rerun فاز ۱۲۵ را با قیود سخت‌تر و `save_record=1` اجرا کرد:
+
+```text
+score_metric=total_pnl
+min_margin=0.05
+min_trades=100
+precision_floor=0.60
+min_profit_factor=1.05
+min_4h_room=2
+min_1d_room=5
+min_tp_distance=2
+min_sl_distance=2
+max_hold_bars=48
+spread_mode=pct
+spread_value=0.06
+same_bar_policy=stop_first
+```
+
+نتیجهٔ انتخاب‌شده و ذخیره‌شده:
+
+```text
+model_version : 1
+matrix_rows   : 8000
+eval_rows     : 2400
+best th       : buy=0.80 sell=0.65 margin=0.05
+trades        : 325 / 2400 (coverage=13.5417%)
+buy/sell      : 160 / 165
+wins/losses   : 168 / 157
+timeouts      : 44
+label_correct : 214
+false_positive: 111
+win_rate      : 51.6923%
+label_precision: 65.8462%
+total_pnl     : +291.154987683185
+avg_pnl       : +0.8958615005636462
+profit_factor : 1.2471739846573604
+max_drawdown  : 347.044035279524
+record_path   : datasets\models\gold_hybrid_lightgbm_head_5m\v1_training.json
+```
+
+برداشت دقیق:
+
+```text
+- قیود سخت‌تر همان candidate عملی مطلوب را انتخاب کرد.
+- threshold حالا طبق خروجی کاربر در رکورد مدل ذخیره شده است.
+- این هنوز مجوز live نیست؛ چون چندین grid/model تست شده و باید significance/random baseline اجرا شود.
+```
+
+## 2026-09-09 — Phase 113 implementation: hybrid-head random significance check
+
+فاز ۱۱۳ از حالت پیشنهاد به پیاده‌سازی عملی برای مسیر hybrid-head/range-aware رسید.
+
+فایل‌های اضافه/تغییرکرده:
+
+```text
+scripts/backtest_significance_check.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_significance_check.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase113.md
+```
+
+قابلیت‌ها:
+
+```text
+- بارگذاری threshold از decision_thresholds رکورد مدل یا از CLI/Phase125 JSON
+- اجرای دوباره observed hybrid-head backtest با همان منطق فاز ۱۲۵
+- ساخت BUY/SELL random trade pool فقط از candidateهایی که با همان range filters و TP/SL قابل اجرا هستند
+- match کردن تعداد BUY و SELL random با مدل مشاهده‌شده
+- Monte Carlo p-value با فرمول plus-one
+- White Reality-style max check روی ردیف‌های معتبر threshold grid فاز ۱۲۵
+- خروجی run_logs/significance_checks/latest.json و latest.csv
+```
+
+دستور پیشنهادی کاربر:
+
+```powershell
+python -u scripts/backtest_significance_check.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --trials 1000 `
+  --seed 42 `
+  --white-check 1 `
+  --candidate-rows-path run_logs/hybrid_head_backtest/latest.json `
+  --storage-root datasets
+```
+
+Quality gate اجراشده برای فایل‌های touched:
+
+```text
+python -m ruff check scripts/backtest_significance_check.py tests/unit/ai/test_significance_check.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/backtest_significance_check.py tests/unit/ai/test_significance_check.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_significance_check.py tests/unit/ai/test_hybrid_head_backtest.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 62 passed
+```
+
+Full gate هنوز به‌علت بدهی‌های قدیمی repo قرمز است و جداگانه ثبت می‌شود.
+
+Full quality gate بعد از Phase113 implementation:
+
+```text
+python -m pytest
+# 1669 passed, 54 skipped in 263.92s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+# examples:
+#   ShadBotTrader_Colab.ipynb:cell 5 E401/I001/F541
+#   scripts/fetch_1d_gold_yahoo.py:65 E501
+#   scripts/find_best_lr.py:123 F401
+#   src/ShadBotTrader/infrastructure/feature/standard_catalog.py:770-787 E501
+
+python -m black --check .
+# FAIL: 21 pre-existing files would be reformatted
+# examples:
+#   scripts/fetch_1d_gold_yahoo.py
+#   scripts/find_best_lr.py
+#   src/ShadBotTrader/infrastructure/ai/feature_matrix.py
+#   src/ShadBotTrader/infrastructure/feature/standard_catalog.py
+#   tests/integration/test_data_inspector.py
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+# examples:
+#   domain/simulation/replay.py object comparison
+#   infrastructure/ai/target_builder.py optional list indexing
+#   infrastructure/simulation/dual_model_prediction_source.py Candle | None
+#   infrastructure/feature/calculators/price_context.py FeatureResult/FeatureDefinition mismatch
+#   infrastructure/ai/window_generator.py seq2seq return types
+#   infrastructure/ai/wavenet/wavenet_trainer.py tf.keras type names
+#   application/services/dual_model_service.py dict float/int
+#   presentation/commands/handlers.py existing tuple[int,str]|None issue
+#   presentation/web/server.py missing returns
+```
+
+## 2026-09-09 — Phase 113 significance result: passed strongly
+
+کاربر خروجی `run_logs/significance_checks/latest.json` را ارسال کرد. فاز ۱۱۳ روی threshold ذخیره‌شدهٔ فاز ۱۲۵ اجرا شد:
+
+```text
+threshold_source: model_record:gold_hybrid_lightgbm_head_5m:v1
+buy_threshold  : 0.80
+sell_threshold : 0.65
+min_margin     : 0.05
+matrix_rows    : 8000
+eval_rows      : 2400
+trials         : 1000
+seed           : 42
+white_check    : 1
+```
+
+Observed hybrid-head/range-aware result:
+
+```text
+trades         : 325
+buy/sell       : 160 / 165
+wins/losses    : 168 / 157
+timeouts       : 44
+win_rate       : 51.6923%
+label_precision: 65.8462%
+total_pnl      : +291.154987683185
+avg_pnl        : +0.8958615005636462
+profit_factor  : 1.2471739846573604
+max_drawdown   : 347.044035279524
+coverage       : 13.5417%
+```
+
+Random same-count/same-filter baseline:
+
+```text
+trade_pool.buy_candidates : 960
+trade_pool.sell_candidates: 1175
+random_mean               : -944.2369557544658
+random_stdev              : 174.3501617266993
+random_p95                : -665.0864972670641
+random_p99                : -529.5757005996354
+random_max                : -317.02241025066814
+random_probability_positive: 0.0
+random_better_or_equal    : 0 / 1000
+random_p_value            : 0.000999000999000999
+```
+
+White Reality-style max check over valid Phase125 candidates:
+
+```text
+white_candidate_count     : 23
+white_mean_max            : -346.06975128145194
+white_p95                 : -193.67326141904985
+white_p99                 : -128.05536537052174
+white_max                 : -28.658925889975762
+white_probability_positive: 0.0
+white_better_or_equal     : 0 / 1000
+white_p_value             : 0.000999000999000999
+```
+
+برداشت:
+
+```text
+- observed +291.15 نه‌تنها از میانگین random بهتر است، بلکه از بهترین random trial هم حدود +608.18 دلار بالاتر است.
+- در White-style max check هم حتی بهترین max تصادفی بین 23 candidate معتبر به مثبت نرسید.
+- p-value با 1000 trial به حداقل قابل مشاهده رسید: 1/(1000+1)=0.000999.
+- بنابراین Phase113 برای این holdout و همین هزینه/TP/SL با قدرت پاس شد.
+```
+
+محدودیت باقی‌مانده:
+
+```text
+این هنوز فقط یک holdout تاریخی است. قبل از live واقعی باید Phase116 integration و سپس Phase115 live decision audit/paper validation انجام شود.
+```

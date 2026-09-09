@@ -537,6 +537,28 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "save_record",
         "timeout_minutes",
     },
+    CommandKind.CHECK_HYBRID_SIGNIFICANCE: {
+        "matrix_path",
+        "model_version",
+        "eval_frac",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "max_hold_bars",
+        "min_4h_room",
+        "min_1d_room",
+        "min_tp_distance",
+        "min_sl_distance",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "same_bar_policy",
+        "max_windows",
+        "white_check",
+        "candidate_rows_path",
+        "white_max_candidates",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -1753,6 +1775,63 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.CHECK_HYBRID_SIGNIFICANCE,
+            label="Check hybrid significance",
+            description=(
+                "Run the Phase 113 Monte Carlo random baseline for the saved hybrid-head "
+                "thresholds using the same range TP/SL, spread, slippage and eval slice."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("model_id", "Hybrid head id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField("trials", "Random trials", "1000", kind="number"),
+                CommandField("seed", "Random seed", "42", kind="number"),
+                CommandField("matrix_path", "Matrix path", ""),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "0.30", kind="number"),
+                CommandField("buy_threshold", "BUY threshold", "-1", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "-1", kind="number"),
+                CommandField("min_margin", "Min margin", "-1", kind="number"),
+                CommandField("max_hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("min_4h_room", "Min 4H room ($)", "2", kind="number"),
+                CommandField("min_1d_room", "Min 1D room ($)", "5", kind="number"),
+                CommandField("min_tp_distance", "Min TP distance ($)", "2", kind="number"),
+                CommandField("min_sl_distance", "Min SL distance ($)", "2", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread type", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField(
+                    "white_check", "White-style max check", "1", kind="select", options=("1", "0")
+                ),
+                CommandField(
+                    "candidate_rows_path",
+                    "Phase125 rows JSON",
+                    "run_logs/hybrid_head_backtest/latest.json",
+                ),
+                CommandField("white_max_candidates", "Max white candidates", "0", kind="number"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2334,6 +2413,7 @@ class CommandHandlers:
                 ),
                 CommandKind.BUILD_HYBRID_XGBOOST_MATRIX: accounts.build_hybrid_xgboost_matrix,
                 CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD: accounts.backtest_hybrid_xgboost_head,
+                CommandKind.CHECK_HYBRID_SIGNIFICANCE: accounts.check_hybrid_significance,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -4613,6 +4693,85 @@ class AccountCommandHandlers(CommandHandlers):
                 *matrix_args,
             ],
             f"Backtested hybrid XGBoost head on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def check_hybrid_significance(self, command: Command) -> CommandResult:
+        """Run the Phase 113 random baseline for the saved hybrid head."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        matrix_path = command.text("matrix_path", "").strip()
+        matrix_args = ["--matrix-path", matrix_path] if matrix_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_significance_check.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 0.30)),
+                "--buy-threshold",
+                str(command.number("buy_threshold", -1.0)),
+                "--sell-threshold",
+                str(command.number("sell_threshold", -1.0)),
+                "--min-margin",
+                str(command.number("min_margin", -1.0)),
+                "--max-hold-bars",
+                str(max(command.integer("max_hold_bars", 48), 1)),
+                "--min-4h-room",
+                str(max(command.number("min_4h_room", 2.0), 0.0)),
+                "--min-1d-room",
+                str(max(command.number("min_1d_room", 5.0), 0.0)),
+                "--min-tp-distance",
+                str(max(command.number("min_tp_distance", 2.0), 0.0)),
+                "--min-sl-distance",
+                str(max(command.number("min_sl_distance", 2.0), 0.0)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--slippage",
+                str(max(command.number("slippage", 0.0), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip() or "stop_first",
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--trials",
+                str(max(command.integer("trials", 1000), 1)),
+                "--seed",
+                str(command.integer("seed", 42)),
+                "--white-check",
+                "1" if command.text("white_check", "1").strip() != "0" else "0",
+                "--candidate-rows-path",
+                command.text(
+                    "candidate_rows_path", "run_logs/hybrid_head_backtest/latest.json"
+                ).strip()
+                or "run_logs/hybrid_head_backtest/latest.json",
+                "--white-max-candidates",
+                str(max(command.integer("white_max_candidates", 0), 0)),
+                "--storage-root",
+                str(self._storage_root),
+                *matrix_args,
+            ],
+            f"Checked hybrid-head significance on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
         )

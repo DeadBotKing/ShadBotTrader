@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "2b2d20954cb7378d0a9e7ab5e4117da96aaa76e2cfd969d1ffa02c2633510e1c",
-      "size_bytes": 18130
+      "sha256": "011727a4425e775156698069499c033c6f07ed3c8d1839160a009833eb9287a0",
+      "size_bytes": 22124
     },
     {
       "category": "documentation",
@@ -345,8 +345,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase113.md",
-      "sha256": "611399430b3fe974890cbbbaf5644f0fbb3b1733a00d07d6c0fea4a3db49d9ea",
-      "size_bytes": 2086
+      "sha256": "861849474d263a89a46c95ced2d53b8424caacb25e988fffd6aa14973e0118f4",
+      "size_bytes": 5411
     },
     {
       "category": "documentation",
@@ -423,8 +423,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/Phase125.md",
-      "sha256": "e032b2ff74ec5b5d3dae16ac268a5018ca0221501b3828aeb32508bd12522253",
-      "size_bytes": 3860
+      "sha256": "c603f7db2d9ffb53681d9720bad8c706631965a16f5fb272ae2d525151f9bdf4",
+      "size_bytes": 4856
     },
     {
       "category": "documentation",
@@ -699,8 +699,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "ce54cc515346e3e2c5d01247181fbc62ff8f366e71e2b124fcfc9beb9f760dbb",
-      "size_bytes": 8303
+      "sha256": "b4dc0721a92c41b6ea54b0de5dc10bae682249ff41c2d5ac88523e3a16d0c4e7",
+      "size_bytes": 8485
     },
     {
       "category": "documentation",
@@ -815,6 +815,12 @@
       "path": "docs/Report/PHASE109_TREND_SIGNAL_THRESHOLD_CALIBRATION_REPORT.md",
       "sha256": "560892278df12b5625117e898e2ee8897b0c65e7f379e87f748ab3e14185ea8c",
       "size_bytes": 6614
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Report/PHASE113_HYBRID_SIGNIFICANCE_CHECK_REPORT.md",
+      "sha256": "ba50ac41e0c0403ea3193caa9322cf81a002e4c97414ae94e3e8b4413523b02f",
+      "size_bytes": 2990
     },
     {
       "category": "documentation",
@@ -1191,8 +1197,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "b730329f97f71798e13970bad9db6781130f7304bf527244d8b6a08b5f7900f4",
-      "size_bytes": 252889
+      "sha256": "67821c3a9de396923f3cb99b63e007b8d49ffa57ea5418c1254956bd86d294ed",
+      "size_bytes": 262120
     },
     {
       "category": "legacy",
@@ -2301,7 +2307,7 @@
     {
       "category": "other",
       "path": "run_logs/compute_features.log",
-      "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
+      "sha256": "20fee5fd30726416186e0a81dc127b5cfd678661e201fbd3c255c7e93554fded",
       "size_bytes": 26005
     },
     {
@@ -2309,6 +2315,12 @@
       "path": "scripts/backtest_hybrid_xgboost_head.py",
       "sha256": "29e43156c1b59edaf39989ee8008caadfb8c064131fb8cf74deb142b71f847dd",
       "size_bytes": 22492
+    },
+    {
+      "category": "script",
+      "path": "scripts/backtest_significance_check.py",
+      "sha256": "c3781ac8edf426b879263758d9be1d156485c3b1d9992858c18a95ab7210dfb6",
+      "size_bytes": 22441
     },
     {
       "category": "script",
@@ -4227,14 +4239,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "dbb7a5181d4b874d50271fb6a4fce963d28ee8e9935e0c9e9524f9d1af4b287d",
-      "size_bytes": 7575
+      "sha256": "b7764618459df38b7e07f3480803660327f64457c508e5aa9d8a364874d45108",
+      "size_bytes": 7635
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "bf39de8125239c3f0d9ee6e248afcc5f9bd89b3db9271ee501b61e2c67f25d17",
-      "size_bytes": 220430
+      "sha256": "78f6413fd0d5f1ad4c787b2b8237a9f3d2c773de721b99d679800fc7f7c92cba",
+      "size_bytes": 227902
     },
     {
       "category": "source",
@@ -4814,6 +4826,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_significance_check.py",
+      "sha256": "b1d34f91ef2ad0a771618ffdaf7e314f8779f0e69d645e1a61ede83d00c83501",
+      "size_bytes": 3456
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_tabular_window_summary.py",
       "sha256": "7b451e6ddbba2b39fe2b93366632b8ec366cb1315a156a277c2d2b13c4854023",
       "size_bytes": 1692
@@ -5187,8 +5205,8 @@
     {
       "category": "test",
       "path": "tests/unit/presentation/test_architecture_knobs_gui.py",
-      "sha256": "0dd43e910ccc1ba1310d6f145ea71e18e935ca0a735b79694bfa58110c8948b4",
-      "size_bytes": 13769
+      "sha256": "db6a5781ab45f2732a696975e29d6bc8b07861f4a7c4d20c3a0dc054c066a31f",
+      "size_bytes": 15046
     },
     {
       "category": "test",
@@ -5359,14 +5377,16 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-09T05:14:45.245509+00:00",
+  "generated_at": "2026-09-09T05:56:35.540903+00:00",
   "git": {
     "branch": "main",
-    "commit": "c53263db26fa357dddf7b166c2cf11acc9037d72",
+    "commit": "22f9a5b3423cdfd4f380ce18f6e71189e5539981",
     "dirty": true,
-    "dirty_files": 10,
+    "dirty_files": 17,
     "is_repo": true,
     "recent_commits": [
+      "22f9a5b docs: record Phase 125 hybrid backtest results",
+      "ffe5a4f Phase 125: backtest hybrid head with range brackets",
       "c53263d docs: record Phase 124 hybrid head result",
       "00b6695 docs: update operational phase status after hybrid matrix",
       "e94d555 Phase 124: train hybrid XGBoost head",
@@ -5374,9 +5394,7 @@
       "55cd643 Phase 122: calibrate booster specialist thresholds",
       "9e71fae Phase 120: anti-collapse metrics and booster branch",
       "65aeb7f Phase 119: expose monitor metric in GUI",
-      "ddeb089 docs: clarify Phase 108 training before calibration",
-      "55315b2 Phase 116: hybrid model roadmap and GUI cleanup",
-      "7d4b834 Phase 109: trend_signal threshold calibration heatmaps"
+      "ddeb089 docs: clarify Phase 108 training before calibration"
     ]
   },
   "modules": [
@@ -9158,7 +9176,7 @@
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 66,
+      "functions": 67,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
@@ -10667,6 +10685,14 @@
     },
     {
       "classes": 0,
+      "external_imports": [],
+      "functions": 5,
+      "internal_imports": [],
+      "name": "unit.ai.test_significance_check",
+      "path": "tests/unit/ai/test_significance_check.py"
+    },
+    {
+      "classes": 0,
       "external_imports": [
         "pytest"
       ],
@@ -11565,7 +11591,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 28,
+      "functions": 30,
       "internal_imports": [
         "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.commands.handlers"
@@ -12007,18 +12033,18 @@
   "statistics": {
     "class_count": 806,
     "config_file_count": 3,
-    "documentation_file_count": 179,
+    "documentation_file_count": 180,
     "external_dependency_count": 14,
-    "function_count": 4669,
+    "function_count": 4677,
     "internal_dependency_count": 264,
     "legacy_file_count": 176,
-    "module_count": 476,
+    "module_count": 477,
     "source_file_count": 320,
-    "source_lines": 54117,
-    "test_file_count": 156,
-    "test_lines": 25532,
-    "total_file_count": 883,
-    "total_lines": 129724
+    "source_lines": 54277,
+    "test_file_count": 157,
+    "test_lines": 25671,
+    "total_file_count": 886,
+    "total_lines": 130652
   },
-  "test_file_count": 156
+  "test_file_count": 157
 }

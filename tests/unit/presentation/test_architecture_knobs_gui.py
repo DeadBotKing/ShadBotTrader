@@ -395,3 +395,37 @@ def test_backtest_hybrid_xgboost_head_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--eval-frac") + 1] == "0.25"
     assert args[args.index("--score-metric") + 1] == "profit_factor"
     assert args[args.index("--spread-mode") + 1] == "fixed"
+
+
+def test_check_hybrid_significance_descriptor_exists():
+    fields = {field.name for field in descriptor_for(CommandKind.CHECK_HYBRID_SIGNIFICANCE).fields}
+    assert {"model_id", "trials", "seed", "white_check", "candidate_rows_path"} <= fields
+
+
+def test_check_hybrid_significance_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.check_hybrid_significance(
+        Command(
+            CommandKind.CHECK_HYBRID_SIGNIFICANCE,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "trials": "250",
+                "seed": "123",
+                "buy_threshold": "0.80",
+                "sell_threshold": "0.65",
+                "white_check": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_significance_check.py"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--trials") + 1] == "250"
+    assert args[args.index("--seed") + 1] == "123"
+    assert args[args.index("--buy-threshold") + 1] == "0.8"
+    assert args[args.index("--sell-threshold") + 1] == "0.65"
+    assert args[args.index("--white-check") + 1] == "1"

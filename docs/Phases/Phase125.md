@@ -202,3 +202,32 @@ TP/SL/timeout counts
 ## محدودیت
 
 این backtest هنوز execution کامل production نیست؛ اما از classification-only جلوتر است، چون TP/SL و مسیر قیمت آینده را لحاظ می‌کند.
+
+---
+
+## نتیجهٔ ذخیره‌شده با قیود سخت‌تر — 2026-09-09
+
+کاربر rerun پیشنهادی را با `score_metric=total_pnl`، `precision_floor=0.60`، `min_profit_factor=1.05` و `save_record=1` اجرا کرد. خروجی ذخیره‌شده:
+
+```text
+model_version : 1
+matrix_rows   : 8000
+eval_rows     : 2400
+buy_threshold : 0.80
+sell_threshold: 0.65
+min_margin    : 0.05
+trades        : 325
+buy/sell      : 160 / 165
+wins/losses   : 168 / 157
+timeouts      : 44
+win_rate      : 51.6923%
+label_precision: 65.8462%
+total_pnl     : +291.154987683185
+avg_pnl       : +0.8958615005636462
+profit_factor : 1.2471739846573604
+max_drawdown  : 347.044035279524
+coverage      : 13.5417%
+record_path   : datasets\models\gold_hybrid_lightgbm_head_5m\v1_training.json
+```
+
+این candidate فعلاً threshold مرجع hybrid-head/range-aware است. تصمیم live هنوز ممنوع است تا فاز ۱۱۳ significance/random baseline اجرا و تفسیر شود.
