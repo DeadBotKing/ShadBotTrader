@@ -4674,3 +4674,130 @@ PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_hybrid_xgboost_head.py te
 PYTHONPATH=src python3 -m py_compile scripts/train_hybrid_xgboost_head.py scripts/build_hybrid_xgboost_matrix.py ✅
 PYTHONPATH=src python3 -m pytest -q ✅
 ```
+
+## 2026-09-08 — Operational status after Phase123 matrix build
+
+اپراتور خروجی اجرای Phase123 را ارسال کرد و وضعیت عملیاتی در `docs/CURRENT_STATE.md` به‌روزرسانی شد.
+
+نتیجهٔ ماتریس hybrid:
+
+```text
+path latest : datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows        : 8000
+columns     : 45
+scope       : holdout
+labels      : sell=2687, hold=1789, buy=3524
+warnings    : []
+```
+
+وضعیت مسیر:
+
+```text
+WaveNet trend_signal خام = no-edge/collapse، optional only
+Booster multiclass + BUY/SELL specialists = مسیر فعال
+Phase122 calibration = انجام شده، precision خام 48.65% و aggressive coverage 97.39%
+Phase123 matrix = ساخته شد و آمادهٔ Phase124
+Next = train_hybrid_xgboost_head.py و ارسال run_logs/hybrid_xgboost_head/latest.json
+```
+
+## 2026-09-08 — Phase124 hybrid head real run received
+
+اپراتور خروجی اجرای واقعی `scripts/train_hybrid_xgboost_head.py` را ارسال کرد.
+
+مدل ذخیره‌شده:
+
+```text
+gold_hybrid_lightgbm_head_5m v1
+record: datasets/models/gold_hybrid_lightgbm_head_5m/v1_training.json
+matrix: datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows/features: 8000 / 36
+train/val: 5600 / 2400
+```
+
+نتیجهٔ validation:
+
+```text
+val_accuracy              = 43.79%
+val_balanced_accuracy     = 46.23%
+val_macro_f1              = 0.4380
+val_buy_sell_f1           = 0.4570
+val_action_min_f1         = 0.4517
+val_action_min_f1_supported = 0.4517
+val_action_collapse       = 0
+predicted_class_count     = 3
+```
+
+Per-class:
+
+```text
+SELL P/R/F1 = 48.68% / 44.02% / 0.4623
+HOLD P/R/F1 = 30.93% / 56.59% / 0.4000
+BUY  P/R/F1 = 55.49% / 38.09% / 0.4517
+```
+
+برداشت فنی:
+
+```text
+- head نهایی collapse نکرده و هر سه کلاس را predict کرده است.
+- نسبت به booster-only strict score قبلی (0.4367)، action_min_f1 به 0.4517 رسید؛ بهبود کوچک ولی واقعی در معیار ضد-collapse.
+- accuracy از majority خام validation پایین‌تر است، ولی balanced/macro/action metrics مهم‌ترند چون کلاس‌ها skew هستند.
+- action precision تقریبی روی BUY/SELL ≈ 52.8% است و coverage اکشن ≈ 58.9%؛ نسبت به calibration خام فاز 122 که precision=48.65% و coverage=97.39% داشت، محافظه‌کارتر و تمیزتر است.
+```
+
+قدم بعدی پیشنهادی:
+
+```text
+Phase125 — calibrate hybrid head thresholds and run range-aware TP/SL backtest.
+```
+
+## 2026-09-09 — Phase125 hybrid head range TP/SL backtest
+
+فاز ۱۲۵ پیاده‌سازی شد تا مدل `gold_hybrid_lightgbm_head_5m` از حالت classification-only وارد تست معاملاتی شود.
+
+اضافه شد:
+
+```text
+scripts/backtest_hybrid_xgboost_head.py
+CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD
+GUI card: Backtest hybrid XGBoost head
+docs/Phases/Phase125.md
+tests/unit/ai/test_hybrid_head_backtest.py
+```
+
+منطق:
+
+```text
+hybrid probabilities → threshold grid → BUY/SELL/NO_TRADE
+BUY:  TP=min(range_4h_high, range_1d_high), SL=range_4h_low
+SELL: TP=max(range_4h_low, range_1d_low),  SL=range_4h_high
+entry = next 5M open with spread/slippage
+future path scanned for max_hold_bars (default 48 = 4h)
+```
+
+خروجی:
+
+```text
+run_logs/hybrid_head_backtest/latest.csv
+run_logs/hybrid_head_backtest/latest.json
+```
+
+### Quality gate — Phase125
+
+Targeted checks:
+
+```text
+python3 -m ruff check scripts/backtest_hybrid_xgboost_head.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_head_backtest.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+python3 -m black --check scripts/backtest_hybrid_xgboost_head.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_head_backtest.py tests/unit/presentation/test_architecture_knobs_gui.py ✅
+PYTHONPATH=src python3 -m pytest -q tests/unit/ai/test_hybrid_head_backtest.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py::TestEveryRunHasAButton tests/integration/test_gui_coverage.py::TestDashboardPage::test_every_button_is_rendered ✅
+PYTHONPATH=src python3 -m py_compile scripts/backtest_hybrid_xgboost_head.py ✅
+PYTHONPATH=src python3 -m pytest -q ✅
+```
+
+Full gate remains pre-existing red except pytest:
+
+```text
+python3 -m ruff check .      ❌ 219 pre-existing errors outside touched files.
+python3 -m black --check .   ❌ 21 pre-existing files would be reformatted.
+PYTHONPATH=src python3 -m mypy src ❌ 28 pre-existing errors in 10 files.
+python3 -m pytest -q         ✅ passed.
+```

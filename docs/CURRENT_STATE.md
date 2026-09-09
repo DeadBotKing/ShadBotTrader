@@ -112,14 +112,11 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - handoff کامل جلسه قبلی: `docs/SESSION_HANDOFF_2026-09-07.md`.
 - `Phase107` انجام شد: script و GUI جدید `Audit trend-signal labels` برای audit کامل
   `trend_signal_5m` اضافه شد.
-- `Phase108` از نظر کد انجام شد: training مدل `trend_signal` حالا گزینهٔ GUI/CLI برای
-  `--class-weight auto` دارد، وزن کلاس‌ها per-fold train محاسبه می‌شود و metricهای
-  F1/precision/recall/PR-AUC per-class ذخیره و چاپ می‌شوند. **وضعیت عملیاتی اپراتور:**
-  آموزش واقعی فاز ۱۰۸ هنوز در حال اجراست و نتیجهٔ نهایی هنوز ارسال نشده است.
-- `Phase109` از نظر کد انجام شد: script و GUI جدید `Calibrate trend-signal thresholds` برای
-  grid کردن BUY/SELL probability thresholds و ذخیره `decision_thresholds` در model
-  record اضافه شد. **وضعیت عملیاتی:** اجرای calibration منتظر پایان training فاز ۱۰۸ و
-  ذخیره‌شدن مدل جدید `gold_trend_signal_5m` است.
+- `Phase108` از نظر کد انجام شد و روی سیستم اپراتور تست عملیاتی شد. نتیجهٔ WaveNet
+  برای `gold_trend_signal_5m` قابل قبول نبود: با `class_weight=auto` به uniform نزدیک شد و
+  با `class_weight=off` به always-BUY/SELL collapse کرد. بنابراین WaveNet فعلاً core مسیر نیست.
+- `Phase109` از نظر کد انجام شد، اما calibration اصلی WaveNet به دلیل no-edge/collapse اجرا/استفاده
+  نشد. مسیر عملیاتی به booster-specialist calibration در فاز ۱۲۲ منتقل شد.
 - `Phase119` انجام شد: GUI خلوت شد؛ پارامترهای کم‌مصرف/حرفه‌ای زیر `Advanced options`
   رفتند، بدون اینکه field یا قابلیت حذف شود.
 - `Phase120` انجام شد: metricهای ضد-collapse اضافه شدند (`val_action_min_f1_supported`,
@@ -201,45 +198,144 @@ python scripts/run_dual_models.py --with-features --symbol XAUUSD \
 - gold_signal_5m فقط 10 epoch آموزش دیده — ریترین جدی لازم دارد
 - ES patience=400 عملاً خاموش است — 15-30 کافی است
 
-## نقشهٔ مدل ترکیبی پیشنهادی
+## نقشهٔ مدل ترکیبی فعلی
 
 دارایی‌های فعلی که باید محور سیستم باشند:
 
 ```text
 gold_range_1d  → سقف/کف فردا و daily envelope
 gold_range_4h  → سقف/کف چهار ساعت آینده برای TP/SL محلی
-gold_trend_signal_5m → احتمال SELL/HOLD/BUY
+gold_trend_signal_lightgbm_basic_5m → multiclass booster SELL/HOLD/BUY
+gold_buy_lightgbm_basic_5m → BUY specialist
+gold_sell_lightgbm_basic_5m → SELL specialist
+gold_trend_signal_5m → WaveNet optional/diagnostic، نه core فعلی
 ```
 
-هدف بعدی این نیست که فقط یک مدل neural بزرگ‌تر بسازیم؛ هدف ساخت decision engine چندشاخه‌ای است:
+مسیر عملیاتی فعلی:
 
 ```text
-WaveNet trend_signal
-+ LightGBM/CatBoost/XGBoost branch
-+ BUY/SELL specialist models
-+ 1D range envelope
-+ 4H TP/SL range bracket
-+ meta-label / uncertainty no-trade gate
-=> BUY / SELL / NO_TRADE
+Boosters/Specialists + optional WaveNet + range_1d/range_4h
+→ Phase123 hybrid_xgboost_matrix_latest.parquet
+→ Phase124 final hybrid XGBoost/LightGBM head
+→ Phase125 calibration/backtest با TP/SL واقعی
+→ Phase113 significance checks
+→ Phase116 live/range-aware integration
 ```
 
-ترتیب عملی جدید، با توجه به اینکه training فاز ۱۰۸ هنوز روی سیستم اپراتور تمام نشده:
+## آخرین اجرای عملیاتی ثبت‌شده
+
+### Booster multiclass فاز ۱۲۱
 
 ```text
-finish Phase108 trend_signal training → Phase109 calibration → Phase110 feature selection
-→ Phase120 anti-collapse metrics → Phase121/112 booster branch benchmark
-→ Phase111 BUY/SELL specialists → Phase110 feature selection for winning branches
-→ Phase116 hybrid range-aware decision engine → Phase113 significance checks
-→ Phase114 external/regime features → Phase117 advanced neural benchmarks
-→ Phase115 live decision audit
+model      : gold_trend_signal_lightgbm_basic_5m v1
+best strict score : val_action_min_f1_supported = 0.436703
+collapse   : 0
 ```
+
+### BUY/SELL specialists
+
+```text
+gold_buy_lightgbm_basic_5m v1:
+  best F1=0.612355 · precision=51.98% · recall=74.51%
+
+gold_sell_lightgbm_basic_5m v1:
+  best F1=0.680203 · precision=61.03% · recall=76.82%
+```
+
+### Phase122 booster-specialist calibration روی holdout
+
+```text
+samples=8000
+best buy_threshold=0.35
+best sell_threshold=0.35
+trades=7791
+coverage=97.39%
+action_precision=48.65%
+action_recall=61.02%
+action_f1=0.541351
+```
+
+نتیجه: threshold خام 0.35/0.35 برای trading نهایی بیش از حد aggressive است؛ نیاز به head نهایی/precision-aware calibration باقی است.
+
+### Phase123 hybrid matrix
+
+```text
+path latest : datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows        : 8000
+columns     : 45
+scope       : holdout
+labels      : sell=2687, hold=1789, buy=3524
+warnings    : []
+```
+
+## آخرین اجرای عملیاتی فاز ۱۲۴
+
+```text
+model_id      : gold_hybrid_lightgbm_head_5m v1
+matrix        : datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows/features : 8000 / 36
+train/val     : 5600 / 2400
+val_accuracy  : 43.79%
+balanced_acc  : 46.23%
+macro_f1      : 0.4380
+buy_sell_f1   : 0.4570
+action_min_f1 : 0.4517
+action_collapse: 0
+predicted classes: 3
+SELL P/R/F1   : 48.68% / 44.02% / 0.4623
+HOLD P/R/F1   : 30.93% / 56.59% / 0.4000
+BUY  P/R/F1   : 55.49% / 38.09% / 0.4517
+```
+
+برداشت: مدل hybrid head collapse نکرد و هر سه کلاس را predict کرد. نسبت به booster-only strict score قبلی `0.4367`، معیار ضد-collapse به `0.4517` رسید. این بهبود بزرگ نیست، ولی مسیر hybrid را زنده نگه می‌دارد.
 
 ## گام بعدی
 
-1. روی سیستم اپراتور optional booster backend نصب شود:
-   `pip install -r requirements-boosters.txt`
-2. از GUI/CLI دستور `Build hybrid XGBoost matrix` اجرا شود تا خروجی booster/WaveNet/range به یک
-   ماتریس نهایی برای XGBoost تبدیل شود.
-3. اگر ساخت ماتریس با range_1d/range_4h موفق بود، فاز ۱۲۴ برای آموزش head نهایی XGBoost/LightGBM
-   روی همین ماتریس اجرا شود.
-4. اگر مدل‌های range در نام پیش‌فرض نبودند، `--range-1d-model-id` و `--range-4h-model-id` اصلاح شوند.
+1. فاز ۱۲۵ را بسازیم/اجرا کنیم: calibration آستانه‌های hybrid head و backtest با TP/SL واقعی.
+2. معیار فاز ۱۲۵ باید trading-aware باشد، نه فقط accuracy/F1:
+   `action_precision`, `coverage`, `PnL`, `max_drawdown`, `range_4h TP/SL`, `range_1d envelope`.
+3. اگر فاز ۱۲۵ نتیجهٔ مثبت داد، بعد فاز ۱۱۳ significance/random baseline و سپس اتصال production فاز ۱۱۶ انجام شود.
+
+## Phase125 status
+
+فاز ۱۲۵ پیاده‌سازی شد:
+
+```text
+scripts/backtest_hybrid_xgboost_head.py
+GUI: Backtest hybrid XGBoost head
+```
+
+این فاز `gold_hybrid_lightgbm_head_5m` را با threshold grid و TP/SL مبتنی بر `range_4h` و فیلتر room مبتنی بر `range_1d` backtest می‌کند.
+
+گام اجرایی بعدی:
+
+```powershell
+python -u scripts/backtest_hybrid_xgboost_head.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --eval-frac 0.30 `
+  --threshold-min 0.35 `
+  --threshold-max 0.95 `
+  --threshold-step 0.05 `
+  --min-margin 0 `
+  --min-trades 30 `
+  --score-metric total_pnl `
+  --max-hold-bars 48 `
+  --min-4h-room 0 `
+  --min-1d-room 0 `
+  --min-tp-distance 1 `
+  --min-sl-distance 1 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs/hybrid_head_backtest/latest.json
+```

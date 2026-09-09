@@ -171,8 +171,8 @@
     {
       "category": "documentation",
       "path": "docs/CURRENT_STATE.md",
-      "sha256": "c3abd75c226e8badbb641bf6caa1454b8cf1b52182d008c3902ddef41871d1f4",
-      "size_bytes": 16032
+      "sha256": "2b2d20954cb7378d0a9e7ab5e4117da96aaa76e2cfd969d1ffa02c2633510e1c",
+      "size_bytes": 18130
     },
     {
       "category": "documentation",
@@ -419,6 +419,12 @@
       "path": "docs/Phases/Phase124.md",
       "sha256": "be86b17d2f2aea74c5438a87d6ed0157472b85c8ec21036e8b327688ab8aea68",
       "size_bytes": 3084
+    },
+    {
+      "category": "documentation",
+      "path": "docs/Phases/Phase125.md",
+      "sha256": "e032b2ff74ec5b5d3dae16ac268a5018ca0221501b3828aeb32508bd12522253",
+      "size_bytes": 3860
     },
     {
       "category": "documentation",
@@ -693,8 +699,8 @@
     {
       "category": "documentation",
       "path": "docs/Phases/README_PHASE100_115.md",
-      "sha256": "cc3bcdecd442bfa9d19b2c78ab451b36db3432f4f9df215df824b4f0c6c6b798",
-      "size_bytes": 8153
+      "sha256": "ce54cc515346e3e2c5d01247181fbc62ff8f366e71e2b124fcfc9beb9f760dbb",
+      "size_bytes": 8303
     },
     {
       "category": "documentation",
@@ -1119,8 +1125,8 @@
     {
       "category": "documentation",
       "path": "docs/SESSION_HANDOFF_2026-09-07.md",
-      "sha256": "2aa3b8e1543945663f025f9a81480809a3c50699fb8e9c6fc77e6fb4f82e5fa5",
-      "size_bytes": 15853
+      "sha256": "0db35b1bbf7e27f684e800b770f8542196dc111be7da12e5807ac929a525e509",
+      "size_bytes": 16392
     },
     {
       "category": "documentation",
@@ -1185,8 +1191,8 @@
     {
       "category": "documentation",
       "path": "docs/WORKLOG.md",
-      "sha256": "9afae6ad2dccbc6961cd1317bfd10aedb006c7d98b73612951bc9d0fb01d7b7f",
-      "size_bytes": 249437
+      "sha256": "b730329f97f71798e13970bad9db6781130f7304bf527244d8b6a08b5f7900f4",
+      "size_bytes": 252889
     },
     {
       "category": "legacy",
@@ -2297,6 +2303,12 @@
       "path": "run_logs/compute_features.log",
       "sha256": "66d07f5e4f159d16b13b724a6b30151a1dd081ebe368b4810a0bcfae15ab509c",
       "size_bytes": 26005
+    },
+    {
+      "category": "script",
+      "path": "scripts/backtest_hybrid_xgboost_head.py",
+      "sha256": "29e43156c1b59edaf39989ee8008caadfb8c064131fb8cf74deb142b71f847dd",
+      "size_bytes": 22492
     },
     {
       "category": "script",
@@ -4215,14 +4227,14 @@
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/commands.py",
-      "sha256": "293053959c977961bd635a816c5164f82ba15133cd1d2e6a0ab1233ab290e2b9",
-      "size_bytes": 7509
+      "sha256": "dbb7a5181d4b874d50271fb6a4fce963d28ee8e9935e0c9e9524f9d1af4b287d",
+      "size_bytes": 7575
     },
     {
       "category": "source",
       "path": "src/ShadBotTrader/presentation/commands/handlers.py",
-      "sha256": "4982692d678d3e03c6ef314ea2c2e6f79d382d1d84fe4b3868d0571ed6685d15",
-      "size_bytes": 212470
+      "sha256": "bf39de8125239c3f0d9ee6e248afcc5f9bd89b3db9271ee501b61e2c67f25d17",
+      "size_bytes": 220430
     },
     {
       "category": "source",
@@ -4700,6 +4712,12 @@
     },
     {
       "category": "test",
+      "path": "tests/unit/ai/test_hybrid_head_backtest.py",
+      "sha256": "c268d20f88a1bcfdec958ea6f4dbdd35c2b01533c8c9fd68c2e009f332690f6e",
+      "size_bytes": 1272
+    },
+    {
+      "category": "test",
       "path": "tests/unit/ai/test_hybrid_xgboost_head.py",
       "sha256": "1e216cc1a925189cbb94689c4b64d17274aadc9b8bf800b77ec3808dc5899173",
       "size_bytes": 1609
@@ -5169,8 +5187,8 @@
     {
       "category": "test",
       "path": "tests/unit/presentation/test_architecture_knobs_gui.py",
-      "sha256": "647ebc01ecf4bba2a67377b3bc2c89738d1191aca235e9fd2b3887e63cffdb53",
-      "size_bytes": 12502
+      "sha256": "0dd43e910ccc1ba1310d6f145ea71e18e935ca0a735b79694bfa58110c8948b4",
+      "size_bytes": 13769
     },
     {
       "category": "test",
@@ -5341,24 +5359,24 @@
       "size_bytes": 21652
     }
   ],
-  "generated_at": "2026-09-08T16:31:20.084790+00:00",
+  "generated_at": "2026-09-09T05:14:45.245509+00:00",
   "git": {
     "branch": "main",
-    "commit": "4424f47d749f547dac930480c4c0009981f9da7a",
+    "commit": "c53263db26fa357dddf7b166c2cf11acc9037d72",
     "dirty": true,
-    "dirty_files": 13,
+    "dirty_files": 10,
     "is_repo": true,
     "recent_commits": [
+      "c53263d docs: record Phase 124 hybrid head result",
+      "00b6695 docs: update operational phase status after hybrid matrix",
+      "e94d555 Phase 124: train hybrid XGBoost head",
       "4424f47 Phase 123: build hybrid XGBoost matrix",
       "55cd643 Phase 122: calibrate booster specialist thresholds",
       "9e71fae Phase 120: anti-collapse metrics and booster branch",
       "65aeb7f Phase 119: expose monitor metric in GUI",
       "ddeb089 docs: clarify Phase 108 training before calibration",
       "55315b2 Phase 116: hybrid model roadmap and GUI cleanup",
-      "7d4b834 Phase 109: trend_signal threshold calibration heatmaps",
-      "23f0c72 Phase 108: trend_signal class weights and per-class metrics",
-      "c7da4fa Phase 107b: skip trend_signal model scoring on input shape mismatch",
-      "7688a8f Phase 107: trend_signal label audit with GUI command"
+      "7d4b834 Phase 109: trend_signal threshold calibration heatmaps"
     ]
   },
   "modules": [
@@ -9140,7 +9158,7 @@
       "external_imports": [
         "tensorflow"
       ],
-      "functions": 65,
+      "functions": 66,
       "internal_imports": [
         "ShadBotTrader",
         "ShadBotTrader.application.services.backtest_service",
@@ -10433,6 +10451,14 @@
     },
     {
       "classes": 0,
+      "external_imports": [],
+      "functions": 4,
+      "internal_imports": [],
+      "name": "unit.ai.test_hybrid_head_backtest",
+      "path": "tests/unit/ai/test_hybrid_head_backtest.py"
+    },
+    {
+      "classes": 0,
       "external_imports": [
         "pandas",
         "pytest"
@@ -11539,7 +11565,7 @@
       "external_imports": [
         "pytest"
       ],
-      "functions": 26,
+      "functions": 28,
       "internal_imports": [
         "ShadBotTrader.presentation.commands",
         "ShadBotTrader.presentation.commands.handlers"
@@ -11981,18 +12007,18 @@
   "statistics": {
     "class_count": 806,
     "config_file_count": 3,
-    "documentation_file_count": 178,
+    "documentation_file_count": 179,
     "external_dependency_count": 14,
-    "function_count": 4662,
+    "function_count": 4669,
     "internal_dependency_count": 264,
     "legacy_file_count": 176,
-    "module_count": 475,
+    "module_count": 476,
     "source_file_count": 320,
-    "source_lines": 53942,
-    "test_file_count": 155,
-    "test_lines": 25457,
-    "total_file_count": 880,
-    "total_lines": 128856
+    "source_lines": 54117,
+    "test_file_count": 156,
+    "test_lines": 25532,
+    "total_file_count": 883,
+    "total_lines": 129724
   },
-  "test_file_count": 155
+  "test_file_count": 156
 }

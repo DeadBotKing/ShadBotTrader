@@ -566,3 +566,23 @@ python -u scripts/train_hybrid_xgboost_head.py `
   --num-leaves 31 `
   --storage-root datasets
 ```
+
+---
+
+## Addendum — 2026-09-09: Phase125 hybrid head range backtest
+
+Implemented Phase125:
+
+```text
+scripts/backtest_hybrid_xgboost_head.py
+GUI: Backtest hybrid XGBoost head
+docs/Phases/Phase125.md
+```
+
+It loads `gold_hybrid_lightgbm_head_5m`, scores `hybrid_xgboost_matrix_latest.parquet`, searches BUY/SELL thresholds, then simulates trades using 4H range TP/SL and 1D range room filters. It uses next 5M open as entry and applies spread/slippage.
+
+Next operator run should send:
+
+```text
+run_logs/hybrid_head_backtest/latest.json
+```

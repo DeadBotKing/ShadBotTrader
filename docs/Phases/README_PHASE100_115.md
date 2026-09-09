@@ -37,6 +37,7 @@
 | 122 | ✅ کامل | Calibration برای BUY/SELL booster specialists و ذخیرهٔ threshold مشترک | `Phase122.md` |
 | 123 | ✅ ماتریس کامل | ساخت ماتریس نهایی XGBoost از خروجی booster/WaveNet و مدل‌های range 1D/4H | `Phase123.md` |
 | 124 | ✅ CLI کامل | آموزش head نهایی XGBoost/LightGBM روی ماتریس hybrid فاز ۱۲۳ | `Phase124.md` |
+| 125 | ✅ CLI/GUI کامل | calibration و backtest معاملاتی hybrid head با TP/SL از range_4h و فیلتر range_1d | `Phase125.md` |
 
 ---
 

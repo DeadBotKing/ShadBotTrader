@@ -360,3 +360,38 @@ def test_build_hybrid_xgboost_matrix_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--require-range") + 1] == "1"
     assert args[args.index("--range-1d-model-id") + 1] == "gold_range_1d"
     assert args[args.index("--range-4h-model-id") + 1] == "gold_range_4h"
+
+
+def test_backtest_hybrid_xgboost_head_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD).fields
+    }
+    assert {"model_id", "threshold_min", "score_metric", "max_hold_bars"} <= fields
+
+
+def test_backtest_hybrid_xgboost_head_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_hybrid_xgboost_head(
+        Command(
+            CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "eval_frac": "0.25",
+                "threshold_min": "0.45",
+                "score_metric": "profit_factor",
+                "max_hold_bars": "48",
+                "spread_mode": "fixed",
+                "spread_value": "1.8",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_hybrid_xgboost_head.py"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--eval-frac") + 1] == "0.25"
+    assert args[args.index("--score-metric") + 1] == "profit_factor"
+    assert args[args.index("--spread-mode") + 1] == "fixed"

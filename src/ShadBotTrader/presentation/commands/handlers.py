@@ -250,6 +250,12 @@ CLASS_WEIGHT_CHOICES: tuple[str, ...] = ("auto", "off")
 BOOSTER_CHOICES: tuple[str, ...] = ("auto", "lightgbm", "xgboost", "catboost")
 BOOSTER_OUTPUT_CHOICES: tuple[str, ...] = ("multiclass", "buy", "sell")
 WINDOW_SUMMARY_CHOICES: tuple[str, ...] = ("last", "basic", "multi_scale")
+SCORE_METRIC_CHOICES: tuple[str, ...] = (
+    "total_pnl",
+    "profit_factor",
+    "precision_then_pnl",
+    "winrate_then_pnl",
+)
 MONITOR_METRIC_CHOICES: tuple[str, ...] = (
     "auto",
     "val_loss",
@@ -503,6 +509,32 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "range_1d_version",
         "range_4h_version",
         "output_name",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD: {
+        "matrix_path",
+        "model_id",
+        "model_version",
+        "eval_frac",
+        "threshold_min",
+        "threshold_max",
+        "threshold_step",
+        "min_margin",
+        "min_trades",
+        "precision_floor",
+        "min_profit_factor",
+        "score_metric",
+        "max_hold_bars",
+        "min_4h_room",
+        "min_1d_room",
+        "min_tp_distance",
+        "min_sl_distance",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "same_bar_policy",
+        "max_windows",
+        "save_record",
         "timeout_minutes",
     },
     CommandKind.OPTIMISE_LEARNING_RATE: {
@@ -1661,6 +1693,66 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD,
+            label="Backtest hybrid XGBoost head",
+            description=(
+                "Calibrate BUY/SELL probability thresholds for the final hybrid "
+                "head, then simulate TP/SL using the 4H range bracket and 1D range filter."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("model_id", "Hybrid head id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField("eval_frac", "Eval fraction", "0.30", kind="number"),
+                CommandField("threshold_min", "Threshold min", "0.35", kind="number"),
+                CommandField("threshold_max", "Threshold max", "0.95", kind="number"),
+                CommandField("threshold_step", "Threshold step", "0.05", kind="number"),
+                CommandField(
+                    "score_metric",
+                    "Score metric",
+                    "total_pnl",
+                    kind="select",
+                    options=SCORE_METRIC_CHOICES,
+                ),
+                CommandField("matrix_path", "Matrix path", ""),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("min_margin", "Min margin", "0", kind="number"),
+                CommandField("min_trades", "Min trades", "30", kind="number"),
+                CommandField("precision_floor", "Precision floor", "0", kind="number"),
+                CommandField("min_profit_factor", "Min profit factor", "0", kind="number"),
+                CommandField("max_hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("min_4h_room", "Min 4H room ($)", "0", kind="number"),
+                CommandField("min_1d_room", "Min 1D room ($)", "0", kind="number"),
+                CommandField("min_tp_distance", "Min TP distance ($)", "1", kind="number"),
+                CommandField("min_sl_distance", "Min SL distance ($)", "1", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread type", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField(
+                    "save_record", "Save thresholds", "1", kind="select", options=("1", "0")
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2241,6 +2333,7 @@ class CommandHandlers:
                     accounts.calibrate_trend_signal_boosters
                 ),
                 CommandKind.BUILD_HYBRID_XGBOOST_MATRIX: accounts.build_hybrid_xgboost_matrix,
+                CommandKind.BACKTEST_HYBRID_XGBOOST_HEAD: accounts.backtest_hybrid_xgboost_head,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -4441,6 +4534,87 @@ class AccountCommandHandlers(CommandHandlers):
             f"Built hybrid XGBoost matrix on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def backtest_hybrid_xgboost_head(self, command: Command) -> CommandResult:
+        """Calibrate and backtest the hybrid head with range TP/SL."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+        matrix_path = command.text("matrix_path", "").strip()
+        matrix_args = ["--matrix-path", matrix_path] if matrix_path else []
+        score_metric = command.text("score_metric", "total_pnl").strip() or "total_pnl"
+        if score_metric not in SCORE_METRIC_CHOICES:
+            score_metric = "total_pnl"
+
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_hybrid_xgboost_head.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 0.30)),
+                "--threshold-min",
+                str(command.number("threshold_min", 0.35)),
+                "--threshold-max",
+                str(command.number("threshold_max", 0.95)),
+                "--threshold-step",
+                str(command.number("threshold_step", 0.05)),
+                "--min-margin",
+                str(max(command.number("min_margin", 0.0), 0.0)),
+                "--min-trades",
+                str(max(command.integer("min_trades", 30), 0)),
+                "--precision-floor",
+                str(max(command.number("precision_floor", 0.0), 0.0)),
+                "--min-profit-factor",
+                str(max(command.number("min_profit_factor", 0.0), 0.0)),
+                "--score-metric",
+                score_metric,
+                "--max-hold-bars",
+                str(max(command.integer("max_hold_bars", 48), 1)),
+                "--min-4h-room",
+                str(max(command.number("min_4h_room", 0.0), 0.0)),
+                "--min-1d-room",
+                str(max(command.number("min_1d_room", 0.0), 0.0)),
+                "--min-tp-distance",
+                str(max(command.number("min_tp_distance", 1.0), 0.0)),
+                "--min-sl-distance",
+                str(max(command.number("min_sl_distance", 1.0), 0.0)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--slippage",
+                str(max(command.number("slippage", 0.0), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip() or "stop_first",
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *matrix_args,
+            ],
+            f"Backtested hybrid XGBoost head on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:
