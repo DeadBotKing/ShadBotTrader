@@ -5116,3 +5116,207 @@ white_p_value             : 0.000999000999000999
 ```text
 این هنوز فقط یک holdout تاریخی است. قبل از live واقعی باید Phase116 integration و سپس Phase115 live decision audit/paper validation انجام شود.
 ```
+
+## 2026-09-09 — Phase 116 implementation: hybrid range-aware decision integration
+
+Phase116 v1 پیاده‌سازی شد تا خروجی research فازهای ۱۲۵/۱۱۳ وارد مسیر استاندارد decision پروژه شود، بدون redesign.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+src/ShadBotTrader/domain/ai/prediction_target.py
+src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py
+src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py
+src/ShadBotTrader/infrastructure/trading/__init__.py
+scripts/audit_hybrid_range_aware_decisions.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_prediction_target.py
+tests/unit/ai/test_hybrid_head_predictor.py
+tests/unit/strategy/test_hybrid_range_aware_strategy.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase116.md
+docs/Phases/README_PHASE100_115.md
+```
+
+اجزای اصلی:
+
+```text
+HybridHeadForecast:
+  سه کلاس sell/hold/buy با ترتیب 0/1/2 و marginهای buy/sell.
+
+HybridHeadPredictor:
+  artifact pickled فاز ۱۲۴ را load می‌کند و predict_proba را به ترتیب sell/hold/buy align می‌کند.
+
+HybridRangeAwareStrategy:
+  threshold ذخیره‌شدهٔ Phase125 را با range_1d و range_4h اعمال می‌کند و یک TradingSignal استاندارد می‌دهد.
+
+Audit CLI:
+  scripts/audit_hybrid_range_aware_decisions.py
+  HybridRangeAwareStrategy -> PositionAwareDecisionEngine -> PolicyRiskGate -> DefaultIntentFactory
+```
+
+قانون اجرایی Phase116 v1:
+
+```text
+BUY:
+  buy_prob >= 0.80
+  buy_prob - sell_prob >= 0.05
+  buy_prob - hold_prob >= 0.05
+  4H up room >= 2
+  1D up room >= 5
+  TP = min(range_4h_high, range_1d_high)
+  SL = range_4h_low
+
+SELL:
+  sell_prob >= 0.65
+  sell_prob - buy_prob >= 0.05
+  sell_prob - hold_prob >= 0.05
+  4H down room >= 2
+  1D down room >= 5
+  TP = max(range_4h_low, range_1d_low)
+  SL = range_4h_high
+```
+
+خروجی audit:
+
+```text
+run_logs/hybrid_decision_audit/latest.json
+run_logs/hybrid_decision_audit/latest.csv
+```
+
+دستور پیشنهادی روی ماشین کاربر:
+
+```powershell
+python -u scripts/audit_hybrid_range_aware_decisions.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --capital 10000 `
+  --base-quantity 1 `
+  --storage-root datasets
+```
+
+انتظار sanity-check:
+
+```text
+trade_intents ≈ 325
+buy_intents ≈ 160
+sell_intents ≈ 165
+label_precision ≈ 65.85%
+coverage ≈ 13.54%
+```
+
+اگر audit با Phase125 اختلاف بزرگ داشته باشد، قبل از Phase115 باید debug شود.
+
+Quality gate بعد از Phase116:
+
+```text
+python -m ruff check src/ShadBotTrader/domain/ai/prediction_target.py src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py src/ShadBotTrader/infrastructure/trading/__init__.py scripts/audit_hybrid_range_aware_decisions.py tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check src/ShadBotTrader/domain/ai/prediction_target.py src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py src/ShadBotTrader/infrastructure/trading/__init__.py scripts/audit_hybrid_range_aware_decisions.py tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 91 passed
+
+python -m pytest
+# 1685 passed, 54 skipped in 193.75s
+
+python -m mypy src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py
+# PASS
+```
+
+Full gate وضعیت صادقانه:
+
+```text
+python -m ruff check .
+# FAIL: 219 خطای قدیمی، نمونه‌ها همان ShadBotTrader_Colab.ipynb، scripts/find_best_lr.py، scripts/fetch_1d_gold_yahoo.py و standard_catalog.py هستند.
+
+python -m black --check .
+# FAIL: 21 فایل قدیمی would be reformatted.
+
+python -m mypy src
+# FAIL: 28 خطای قدیمی در 10 فایل؛ فایل جدید hybrid_head_predictor دیگر خطای mypy ندارد.
+```
+
+گزارش فاز ۱۱۶ نیز اضافه شد:
+
+```text
+docs/Report/PHASE116_HYBRID_RANGE_AWARE_INTEGRATION_REPORT.md
+```
+
+## 2026-09-09 — Phase 116 audit result: runtime integration matched Phase125
+
+کاربر خروجی `run_logs/hybrid_decision_audit/latest.json` را ارسال کرد. مسیر runtime فاز ۱۱۶ با threshold ذخیره‌شدهٔ فاز ۱۲۵ اجرا شد:
+
+```text
+model_id       : gold_hybrid_lightgbm_head_5m
+model_version  : 1
+threshold_src  : model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold      : buy=0.80 sell=0.65 margin=0.05
+matrix_rows    : 8000
+eval_rows      : 2400
+config         : min_4h_room=2, min_1d_room=5, min_tp_distance=2, min_sl_distance=2, spread_mode=pct, spread_value=0.06, slippage=0
+```
+
+Summary:
+
+```text
+rows           : 2400
+trade_intents  : 325
+no_trade       : 2075
+buy_intents    : 160
+sell_intents   : 165
+label_correct  : 214
+label_precision: 0.6584615384615384
+coverage       : 0.13541666666666666
+```
+
+مقایسه با Phase125 best:
+
+```text
+Phase125 trades       : 325
+Phase116 trade_intents: 325
+Phase125 buy/sell     : 160 / 165
+Phase116 buy/sell     : 160 / 165
+Phase125 precision    : 0.6584615384615384
+Phase116 precision    : 0.6584615384615384
+Phase125 coverage     : 0.13541666666666666
+Phase116 coverage     : 0.13541666666666666
+```
+
+نتیجه:
+
+```text
+Phase116 integration sanity-check PASS.
+Runtime Strategy -> DecisionEngine -> RiskGate -> IntentFactory دقیقاً همان تصمیم‌های Phase125 را تولید کرد.
+گام بعدی مجاز: Phase115 live decision audit / paper shadow. live واقعی هنوز ممنوع است.
+```
+
+Quality re-check بعد از ثبت نتیجهٔ audit کاربر:
+
+```text
+python -m ruff check <Phase116 touched files>
+# PASS
+
+python -m black --check <Phase116 touched files>
+# PASS
+
+python -m pytest tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 91 passed
+
+python -m pytest
+# 1685 passed, 54 skipped in 200.80s
+```

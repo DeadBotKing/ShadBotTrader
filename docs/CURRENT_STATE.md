@@ -517,3 +517,96 @@ white_p_value   : 0.000999000999000999
 Phase113 برای این holdout پاس شد. گام بعدی مجاز: Phase116 integration برای hybrid range-aware decision path.
 هنوز live واقعی مجاز نیست؛ بعد از integration باید Phase115 decision audit و paper/live shadow اجرا شود.
 ```
+
+## Phase116 status — hybrid range-aware decision integration built
+
+Phase116 v1 پیاده‌سازی شد. مسیر hybrid دیگر فقط research/backtest script نیست و وارد pipeline استاندارد trading decision شده است:
+
+```text
+HybridHeadPredictor
+→ HybridHeadForecast
+→ HybridRangeAwareStrategy
+→ PositionAwareDecisionEngine
+→ PolicyRiskGate
+→ DefaultIntentFactory
+→ audit JSON/CSV
+```
+
+فایل‌های مهم:
+
+```text
+src/ShadBotTrader/domain/ai/prediction_target.py
+src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py
+src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py
+scripts/audit_hybrid_range_aware_decisions.py
+```
+
+GUI command جدید:
+
+```text
+Audit hybrid range-aware decisions
+```
+
+دستور اجرای sanity audit روی ماشین کاربر:
+
+```powershell
+python -u scripts/audit_hybrid_range_aware_decisions.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --capital 10000 `
+  --base-quantity 1 `
+  --storage-root datasets
+```
+
+خروجی مورد انتظار اگر integration با Phase125 هم‌خوان باشد:
+
+```text
+trade_intents حدود 325
+buy/sell حدود 160/165
+label_precision حدود 65.85%
+coverage حدود 13.54%
+```
+
+بعد از تأیید این audit، قدم بعدی Phase115 live decision audit / paper shadow است. live واقعی هنوز مجاز نیست.
+
+## Phase116 audit result — matched Phase125 exactly
+
+کاربر `scripts/audit_hybrid_range_aware_decisions.py` را اجرا کرد. خروجی runtime integration با Phase125 کاملاً هم‌خوان بود:
+
+```text
+threshold_source: model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold       : buy=0.80 sell=0.65 margin=0.05
+rows            : 2400
+trade_intents   : 325
+no_trade        : 2075
+buy/sell intents: 160 / 165
+label_correct   : 214
+label_precision : 0.6584615384615384
+coverage        : 0.13541666666666666
+```
+
+این دقیقاً با بهترین candidate فاز ۱۲۵ یکی است:
+
+```text
+Phase125 trades/coverage/precision = 325 / 0.13541666666666666 / 0.6584615384615384
+Phase116 intents/coverage/precision = 325 / 0.13541666666666666 / 0.6584615384615384
+```
+
+تصمیم فعلی:
+
+```text
+Phase116 PASS.
+اکنون مسیر hybrid range-aware وارد pipeline واقعی تصمیم شده است.
+قدم بعدی Phase115 live decision audit / paper shadow است؛ ارسال order واقعی هنوز مجاز نیست.
+```

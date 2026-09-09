@@ -6,15 +6,15 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T07:11:35.215447+00:00
+- Snapshot generated at: 2026-09-09T05:56:35.540903+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 322
-- Test modules: 159
+- Source modules: 320
+- Test modules: 157
 
 ## Current Phase
 
@@ -27,10 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 5ce471a6c4a312d86b5818c58b181bcdfc21da18
-- Dirty: yes (43 files)
+- Commit: 22f9a5b3423cdfd4f380ce18f6e71189e5539981
+- Dirty: yes (17 files)
 - Recent commits:
-  - 5ce471a Phase 113: add hybrid significance check
   - 22f9a5b docs: record Phase 125 hybrid backtest results
   - ffe5a4f Phase 125: backtest hybrid head with range brackets
   - c53263d docs: record Phase 124 hybrid head result
@@ -40,6 +39,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 55cd643 Phase 122: calibrate booster specialist thresholds
   - 9e71fae Phase 120: anti-collapse metrics and booster branch
   - 65aeb7f Phase 119: expose monitor metric in GUI
+  - ddeb089 docs: clarify Phase 108 training before calibration
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 892
-- Source files: 322
-- Test files: 159
-- Documentation files: 181
+- Total files: 886
+- Source files: 320
+- Test files: 157
+- Documentation files: 180
 - Legacy files: 176
-- Total Python lines: 132271
-- Modules: 481
-- Classes: 814
-- Functions: 4739
+- Total Python lines: 130652
+- Modules: 477
+- Classes: 806
+- Functions: 4677
 - External dependencies: 14

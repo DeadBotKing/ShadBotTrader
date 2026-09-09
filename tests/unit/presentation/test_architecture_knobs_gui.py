@@ -429,3 +429,40 @@ def test_check_hybrid_significance_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--buy-threshold") + 1] == "0.8"
     assert args[args.index("--sell-threshold") + 1] == "0.65"
     assert args[args.index("--white-check") + 1] == "1"
+
+
+def test_audit_hybrid_range_aware_decisions_descriptor_exists():
+    fields = {
+        field.name
+        for field in descriptor_for(CommandKind.AUDIT_HYBRID_RANGE_AWARE_DECISIONS).fields
+    }
+    assert {"model_id", "min_4h_room", "min_1d_room", "base_quantity"} <= fields
+
+
+def test_audit_hybrid_range_aware_decisions_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.audit_hybrid_range_aware_decisions(
+        Command(
+            CommandKind.AUDIT_HYBRID_RANGE_AWARE_DECISIONS,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "eval_frac": "0.30",
+                "buy_threshold": "0.80",
+                "sell_threshold": "0.65",
+                "min_4h_room": "2",
+                "base_quantity": "0.5",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_hybrid_range_aware_decisions.py"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--eval-frac") + 1] == "0.3"
+    assert args[args.index("--buy-threshold") + 1] == "0.8"
+    assert args[args.index("--sell-threshold") + 1] == "0.65"
+    assert args[args.index("--min-4h-room") + 1] == "2.0"
+    assert args[args.index("--base-quantity") + 1] == "0.5"

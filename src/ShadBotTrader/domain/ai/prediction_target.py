@@ -52,6 +52,34 @@ class SignalClass(int, Enum):
             ) from exc
 
 
+class HybridSignalClass(int, Enum):
+    """Three-class ordering used by the hybrid head.
+
+    The Phase 124 head emits probabilities in the same order as the Phase 123
+    matrix labels: ``0 = sell``, ``1 = hold`` and ``2 = buy``.  This class is
+    separate from :class:`SignalClass` so the older binary signal contract does
+    not silently accept a HOLD output.
+    """
+
+    SELL = 0
+    HOLD = 1
+    BUY = 2
+
+    @property
+    def label(self) -> str:
+        return self.name.lower()
+
+    @classmethod
+    def from_index(cls, index: int) -> "HybridSignalClass":
+        try:
+            return cls(index)
+        except ValueError as exc:
+            raise ValidationError(
+                "Unknown hybrid signal class index: "
+                f"{index}; expected 0 (sell), 1 (hold) or 2 (buy)"
+            ) from exc
+
+
 @dataclass(frozen=True)
 class PredictionTarget:
     """Declares what a model predicts and how far ahead.
@@ -292,4 +320,107 @@ class SignalForecast:
             "horizon": self.horizon,
             "timeframe": self.timeframe,
             "generated_at": self.generated_at,
+        }
+
+
+@dataclass(frozen=True)
+class HybridHeadForecast:
+    """Three-class SELL/HOLD/BUY forecast produced by the hybrid head."""
+
+    sell_probability: float
+    hold_probability: float
+    buy_probability: float
+    horizon: int
+    timeframe: str = ""
+    generated_at: str = ""
+    model_id: str = ""
+    model_version: int = 0
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("sell", self.sell_probability),
+            ("hold", self.hold_probability),
+            ("buy", self.buy_probability),
+        ):
+            if not 0.0 <= value <= 1.0:
+                raise ValidationError(f"{name}_probability must be in [0, 1], got {value}")
+        total = self.sell_probability + self.hold_probability + self.buy_probability
+        if abs(total - 1.0) > 0.02:
+            raise ValidationError(f"Hybrid probabilities must sum to 1.0, got {total:.4f}")
+
+    @classmethod
+    def from_vector(
+        cls,
+        probabilities: Sequence[float],
+        horizon: int,
+        timeframe: str = "",
+        generated_at: str = "",
+        model_id: str = "",
+        model_version: int = 0,
+    ) -> "HybridHeadForecast":
+        """Build from a vector ordered ``(sell, hold, buy)`` and normalize it."""
+        if len(probabilities) != 3:
+            raise ValidationError(
+                "The hybrid head must provide exactly 3 probabilities "
+                "ordered as (sell, hold, buy)."
+            )
+        values = [float(value) for value in probabilities]
+        total = sum(values)
+        if total <= 0:
+            raise ValidationError("The hybrid head returned a zero probability vector")
+        normalised = [value / total for value in values]
+        return cls(
+            sell_probability=normalised[0],
+            hold_probability=normalised[1],
+            buy_probability=normalised[2],
+            horizon=horizon,
+            timeframe=timeframe,
+            generated_at=generated_at,
+            model_id=model_id,
+            model_version=model_version,
+        )
+
+    @property
+    def probabilities(self) -> Tuple[float, float, float]:
+        return (self.sell_probability, self.hold_probability, self.buy_probability)
+
+    @property
+    def predicted_class(self) -> HybridSignalClass:
+        best = max(range(3), key=lambda index: self.probabilities[index])
+        return HybridSignalClass.from_index(best)
+
+    @property
+    def confidence(self) -> float:
+        return max(self.probabilities)
+
+    @property
+    def buy_margin(self) -> float:
+        return self.buy_probability - max(self.sell_probability, self.hold_probability)
+
+    @property
+    def sell_margin(self) -> float:
+        return self.sell_probability - max(self.buy_probability, self.hold_probability)
+
+    @property
+    def action_margin(self) -> float:
+        return abs(self.buy_probability - self.sell_probability)
+
+    def describe(self) -> str:
+        return f"{self.predicted_class.label} {self.confidence * 100:.1f}%"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "sell_probability": self.sell_probability,
+            "hold_probability": self.hold_probability,
+            "buy_probability": self.buy_probability,
+            "predicted_class": self.predicted_class.label,
+            "confidence": self.confidence,
+            "buy_margin": self.buy_margin,
+            "sell_margin": self.sell_margin,
+            "action_margin": self.action_margin,
+            "horizon": self.horizon,
+            "timeframe": self.timeframe,
+            "generated_at": self.generated_at,
+            "model_id": self.model_id,
+            "model_version": self.model_version,
         }

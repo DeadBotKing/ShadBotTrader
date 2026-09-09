@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T07:11:35.215447+00:00
+- Snapshot generated at: 2026-09-09T07:11:19.699057+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: 5ce471a6c4a312d86b5818c58b181bcdfc21da18
-- Dirty: yes (43 files)
+- Dirty: yes (39 files)
 - Recent commits:
   - 5ce471a Phase 113: add hybrid significance check
   - 22f9a5b docs: record Phase 125 hybrid backtest results

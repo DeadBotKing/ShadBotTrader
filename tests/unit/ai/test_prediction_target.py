@@ -3,6 +3,8 @@
 import pytest
 
 from ShadBotTrader.domain.ai.prediction_target import (
+    HybridHeadForecast,
+    HybridSignalClass,
     PredictionTarget,
     RangeForecast,
     SignalClass,
@@ -119,3 +121,23 @@ class TestSignalForecast:
     def test_class_indices_match_the_binary_softmax_order(self):
         assert int(SignalClass.SELL) == 0
         assert int(SignalClass.BUY) == 1
+
+
+class TestHybridHeadForecast:
+    def test_three_class_vector_is_normalised_and_labelled(self):
+        forecast = HybridHeadForecast.from_vector((2.0, 1.0, 7.0), horizon=288, timeframe="5M")
+        assert forecast.sell_probability == pytest.approx(0.2)
+        assert forecast.hold_probability == pytest.approx(0.1)
+        assert forecast.buy_probability == pytest.approx(0.7)
+        assert forecast.predicted_class is HybridSignalClass.BUY
+        assert forecast.buy_margin == pytest.approx(0.5)
+        assert forecast.describe() == "buy 70.0%"
+
+    def test_hybrid_hold_is_explicit_not_binary_signal(self):
+        forecast = HybridHeadForecast.from_vector((0.20, 0.55, 0.25), horizon=288)
+        assert forecast.predicted_class is HybridSignalClass.HOLD
+        assert forecast.to_dict()["hold_probability"] == pytest.approx(0.55)
+
+    def test_hybrid_head_rejects_binary_vectors(self):
+        with pytest.raises(ValidationError, match="exactly 3"):
+            HybridHeadForecast.from_vector((0.4, 0.6), horizon=288)

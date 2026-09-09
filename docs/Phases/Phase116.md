@@ -1,277 +1,305 @@
-# فاز ۱۱۶ — پیشنهاد: Hybrid Range-Aware Decision Engine
+# فاز ۱۱۶ — Hybrid Range-Aware Decision Engine Integration
 
-**وضعیت:** 🟡 پیشنهادی / طراحی مستند شد  
-**نوع:** Ensemble decision layer / استفادهٔ کامل از مدل‌های range موجود  
-**اولویت:** خیلی بالا بعد از فازهای ۱۱۰، ۱۱۱ و branch benchmark فاز ۱۱۲
+**وضعیت:** ✅ نسخهٔ اول پیاده‌سازی شد
+**نوع:** Runtime decision integration / live-shadow audit path
+**اولویت:** بعد از Phase125 + Phase113، قبل از Phase115 live decision audit
 
 ---
 
 ## هدف
 
-ساخت تصمیم نهایی معاملاتی از چند شاخهٔ مستقل، به جای تکیه روی یک مدل direction.
+نتیجهٔ مثبت فاز ۱۲۵ و تأیید آماری فاز ۱۱۳ را از حالت research script به مسیر تصمیم‌گیری استاندارد پروژه وصل کنیم؛ بدون redesign و بدون دور زدن معماری موجود.
 
-مدل‌های موجود که باید حتماً در طراحی لحاظ شوند:
+مسیر جدید:
 
 ```text
-gold_range_1d  → high/low فردا، daily envelope
-gold_range_4h  → high/low چهار ساعت آینده، TP/SL محلی
-gold_trend_signal_5m → SELL/HOLD/BUY probability روی horizon 24h
+hybrid head probabilities
++ saved Phase125 thresholds
++ range_1d daily envelope
++ range_4h TP/SL bracket
+→ HybridRangeAwareStrategy
+→ PositionAwareDecisionEngine
+→ PolicyRiskGate
+→ DefaultIntentFactory
+→ audit JSON/CSV
 ```
 
-مدل‌های پیشنهادی آینده:
+این فاز هنوز order واقعی MT5 ارسال نمی‌کند. خروجی آن `TradingIntent` و لاگ کامل TRADE/NO_TRADE است تا قبل از live واقعی، Phase115 audit/paper اجرا شود.
+
+---
+
+## ورودی معتبر فعلی
+
+Threshold ذخیره‌شده در مدل:
 
 ```text
-Tabular Boosters: LightGBM/CatBoost/XGBoost
-BUY/SELL specialists: gold_buy_event_5m / gold_sell_event_5m
-Meta-labeler: trade/no-trade filter
-Conformal/Bayesian uncertainty gate
+model_id        : gold_hybrid_lightgbm_head_5m
+model_version   : 1
+buy_threshold   : 0.80
+sell_threshold  : 0.65
+min_margin      : 0.05
+```
+
+گیت‌های range-aware مطابق Phase125/Phase113:
+
+```text
+min_4h_room      = 2
+min_1d_room      = 5
+min_tp_distance  = 2
+min_sl_distance  = 2
+spread_mode      = pct
+spread_value     = 0.06
+slippage         = 0
 ```
 
 ---
 
-## معماری تصمیم نهایی
+## فایل‌های پیاده‌سازی‌شده
 
 ```text
-5M feature window
-      |
-      |------------------------------
-      |                              |
-Direction branch                Range branch
-      |                              |
-WaveNet trend_signal             1D range: tomorrow envelope
-Booster trend_signal             4H range: TP/SL bracket
-BUY/SELL specialists             volatility/range sufficiency
-      |                              |
-      -------- calibrated signals ----
-                    |
-             Meta-label filter
-                    |
-          Uncertainty/no-trade gate
-                    |
-              Final decision
-            BUY / SELL / NO_TRADE
+src/ShadBotTrader/domain/ai/prediction_target.py
+  + HybridSignalClass
+  + HybridHeadForecast
+
+src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py
+  + HybridHeadPredictor
+  + HybridHeadPayload
+
+src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py
+  + HybridRangeAwareConfig
+  + HybridRangeAwareStrategy
+
+scripts/audit_hybrid_range_aware_decisions.py
+  + Phase116 integration audit CLI
+
+src/ShadBotTrader/presentation/commands/commands.py
+  + audit_hybrid_range_aware_decisions
+
+src/ShadBotTrader/presentation/commands/handlers.py
+  + GUI descriptor
+  + handler method
+```
+
+Tests:
+
+```text
+tests/unit/ai/test_prediction_target.py
+tests/unit/ai/test_hybrid_head_predictor.py
+tests/unit/strategy/test_hybrid_range_aware_strategy.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+tests/integration/test_gui_coverage.py
 ```
 
 ---
 
-## نقش دقیق هر مدل
+## قانون تصمیم نسخهٔ اول
 
-### 1) `gold_trend_signal_5m`
+### Hybrid probabilities
 
-وظیفه:
-
-```text
-احتمال SELL/HOLD/BUY بر اساس 24h گذشته و 24h horizon آینده
-```
-
-استفاده:
+کلاس‌ها دقیقاً به ترتیب زیر هستند:
 
 ```text
-side confidence اولیه
+0 = sell
+1 = hold
+2 = buy
 ```
-
-مثال:
-
-```text
-buy_prob=0.64, hold_prob=0.18, sell_prob=0.18 → BUY candidate
-```
-
----
-
-### 2) `gold_range_1d`
-
-وظیفه:
-
-```text
-پیش‌بینی high/low فردا
-```
-
-استفاده:
-
-```text
-- daily envelope gate
-- ممنوع کردن BUY نزدیک سقف پیش‌بینی‌شدهٔ فردا
-- ممنوع کردن SELL نزدیک کف پیش‌بینی‌شدهٔ فردا
-- بررسی کافی بودن فضای حرکت روزانه
-```
-
-قانون نمونه:
-
-```text
-BUY فقط اگر predicted_daily_high - entry >= min_reward_distance
-SELL فقط اگر entry - predicted_daily_low  >= min_reward_distance
-```
-
----
-
-### 3) `gold_range_4h`
-
-وظیفه:
-
-```text
-پیش‌بینی high/low چهار ساعت آینده
-```
-
-استفاده:
-
-```text
-- ساخت TP و SL واقع‌بینانه برای معاملهٔ جاری
-- جلوگیری از TP غیرمنطقی خارج از range نزدیک
-```
-
-قانون نمونه برای BUY:
-
-```text
-TP = min(predicted_4h_high, predicted_daily_high)
-SL = پایین‌تر از entry یا نزدیک predicted_4h_low، با رعایت min_sl_distance و spread
-```
-
-قانون نمونه برای SELL:
-
-```text
-TP = max(predicted_4h_low, predicted_daily_low)
-SL = بالاتر از entry یا نزدیک predicted_4h_high، با رعایت min_sl_distance و spread
-```
-
----
-
-### 4) Booster / POSNEG branches
-
-وظیفه:
-
-```text
-تأیید یا رد سیگنال direction اصلی
-```
-
-نمونه:
-
-```text
-trend_signal says BUY
-LightGBM says BUY with enough probability
-buy_event confirms
-sell_event does not block
-→ candidate stays alive
-```
-
----
-
-### 5) Meta-labeler
-
-وظیفه:
-
-```text
-آیا این candidate واقعاً ارزش اجرا دارد؟
-```
-
-label برای meta-model:
-
-```text
-1 = اگر بعد از ورود، TP قبل از SL بخورد
-0 = اگر SL اول بخورد یا timeout شود
-```
-
-ورودی meta-model:
-
-```text
-probabilities from all models
-range_1d distances
-range_4h TP/SL distances
-spread/slippage/session/regime features
-```
-
----
-
-### 6) Uncertainty gate
-
-وظیفه:
-
-```text
-اگر مدل‌ها نامطمئن‌اند، NO_TRADE بده.
-```
-
-روش‌های پیشنهادی:
-
-```text
-probability margin
-entropy
-conformal prediction set
-MC-dropout/Bayesian uncertainty later
-```
-
----
-
-## Decision rule پیشنهادی نسخهٔ اول
 
 ### BUY
 
 ```text
 BUY اگر:
-  trend_signal.buy_prob >= buy_threshold
-  و trend_signal.buy_prob - max(sell_prob, hold_prob) >= min_margin
-  و buy_event_prob >= buy_event_threshold          [بعد از فاز 111]
-  و sell_event_prob <= sell_block_threshold        [بعد از فاز 111]
-  و predicted_4h_high - entry >= min_tp_distance
-  و predicted_daily_high - entry >= min_daily_room
-  و TP/SL پس از spread/slippage معتبر باشد
-  و meta_filter_prob >= meta_threshold             [بعد از meta]
+  buy_probability >= buy_threshold
+  buy_probability - sell_probability >= min_margin
+  buy_probability - hold_probability >= min_margin
+  range_4h.predicted_high - room_reference >= min_4h_room
+  range_1d.predicted_high - room_reference >= min_1d_room
+  TP = min(range_4h.predicted_high, range_1d.predicted_high)
+  SL = range_4h.predicted_low
+  TP > entry
+  SL < entry
+  TP distance >= min_tp_distance
+  SL distance >= min_sl_distance
 ```
 
 ### SELL
 
 ```text
 SELL اگر:
-  trend_signal.sell_prob >= sell_threshold
-  و trend_signal.sell_prob - max(buy_prob, hold_prob) >= min_margin
-  و sell_event_prob >= sell_event_threshold
-  و buy_event_prob <= buy_block_threshold
-  و entry - predicted_4h_low >= min_tp_distance
-  و entry - predicted_daily_low >= min_daily_room
-  و TP/SL پس از spread/slippage معتبر باشد
-  و meta_filter_prob >= meta_threshold
+  sell_probability >= sell_threshold
+  sell_probability - buy_probability >= min_margin
+  sell_probability - hold_probability >= min_margin
+  room_reference - range_4h.predicted_low >= min_4h_room
+  room_reference - range_1d.predicted_low >= min_1d_room
+  TP = max(range_4h.predicted_low, range_1d.predicted_low)
+  SL = range_4h.predicted_high
+  TP < entry
+  SL > entry
+  TP distance >= min_tp_distance
+  SL distance >= min_sl_distance
 ```
 
 در غیر این صورت:
 
 ```text
-NO_TRADE
+HOLD / NO_TRADE با reason دقیق
 ```
 
 ---
 
-## چرا این حالت از یک مدل تنها بهتر است؟
+## نکتهٔ entry و room reference
+
+برای سازگاری با Phase125:
 
 ```text
-- direction model فقط جهت را می‌گوید.
-- range_4h می‌گوید آیا برای 4 ساعت آینده TP/SL منطقی داریم یا نه.
-- range_1d می‌گوید آیا در envelope روزانه فضا داریم یا نه.
-- POS/NEG متخصص‌ها BUY و SELL را جدا می‌سنجند.
-- meta-labeler false positiveها را کم می‌کند.
-- uncertainty gate جلوی معامله روی پیش‌بینی نامطمئن را می‌گیرد.
+room_reference_price = close همان ردیف matrix
+raw_entry_price      = next 5M open mid-price
+entry BUY            = raw_entry + half_spread + slippage
+entry SELL           = raw_entry - half_spread - slippage
+```
+
+در live/paper بعدی، `raw_entry_price` می‌تواند از quote فعلی broker/mid بیاید، ولی هنوز باید همین explainability keys ثبت شوند.
+
+---
+
+## Audit CLI
+
+دستور پیشنهادی روی ماشین کاربر:
+
+```powershell
+python -u scripts/audit_hybrid_range_aware_decisions.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --capital 10000 `
+  --base-quantity 1 `
+  --storage-root datasets
+```
+
+چون threshold در رکورد مدل ذخیره شده، پارامترهای زیر لازم نیست مگر برای override دستی:
+
+```text
+--buy-threshold
+--sell-threshold
+--min-margin
+```
+
+خروجی‌ها:
+
+```text
+run_logs/hybrid_decision_audit/latest.json
+run_logs/hybrid_decision_audit/latest.csv
 ```
 
 ---
 
-## فایل‌های درگیر پیشنهادی
+## خروجی مورد انتظار
+
+اگر matrix/model/threshold همان Phase125 باشد، انتظار داریم audit مسیر runtime تقریباً همان تعداد intent تولید کند:
 
 ```text
-src/ShadBotTrader/domain/strategy/hybrid_decision.py
-src/ShadBotTrader/application/services/hybrid_decision_service.py
-src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py
-src/ShadBotTrader/infrastructure/simulation/hybrid_prediction_source.py
-scripts/run_hybrid_backtest.py
-scripts/evaluate_hybrid_decisions.py
+trade_intents ≈ 325
+buy_intents   ≈ 160
+sell_intents  ≈ 165
+coverage      ≈ 13.54%
+label_precision ≈ 65.85%
 ```
 
-اما نباید معماری فعلی بدون اجازه redesign شود. نسخهٔ اول می‌تواند با extension روی backtest/strategy فعلی ساخته شود.
+اگر اختلاف بزرگ بود، integration با research backtest هم‌خوان نیست و قبل از Phase115 باید debug شود.
 
 ---
 
-## معیار پذیرش
+## محدودیت فعلی
 
 ```text
-- هیچ trade بدون reason log باز/رد نشود.
-- 1D range و 4H range هر دو در تصمیم نهایی ثبت شوند.
-- TP/SL خروجی همیشه spread/slippage/min distance را رعایت کند.
-- اگر یکی از مدل‌ها missing/mismatched بود، خطای قابل فهم یا graceful fallback بدهد.
-- نتیجه باید با model-only و random baseline مقایسه شود.
+- این فاز order واقعی نمی‌فرستد.
+- هنوز live quote / MT5 order placement به hybrid path وصل نشده است.
+- هنوز Phase115 live decision audit/paper shadow انجام نشده است.
+- هنوز walk-forward/out-of-time مستقل انجام نشده است.
+```
+
+---
+
+## تصمیم بعدی
+
+بعد از اجرای موفق `audit_hybrid_range_aware_decisions.py` و تأیید اینکه تعداد و دلایل با Phase125 هم‌خوان است، گام بعدی:
+
+```text
+Phase115 — live decision audit / paper shadow
+```
+
+در Phase115 باید هر tick زنده بدون ارسال order واقعی log شود:
+
+```text
+timestamp
+symbol/timeframe
+raw_entry_price / spread
+hybrid sell/hold/buy probabilities
+thresholds
+range_1d high/low
+range_4h high/low
+TP/SL
+TRADE یا NO_TRADE
+reason
+```
+
+---
+
+## نتیجهٔ اجرای audit کاربر — 2026-09-09
+
+کاربر دستور audit فاز ۱۱۶ را اجرا کرد. خروجی:
+
+```text
+model_version  : 1
+matrix_rows    : 8000
+eval_rows      : 2400
+threshold_src  : model_record:gold_hybrid_lightgbm_head_5m:v1
+buy_threshold  : 0.80
+sell_threshold : 0.65
+min_margin     : 0.05
+```
+
+Summary:
+
+```text
+rows           : 2400
+trade_intents  : 325
+no_trade       : 2075
+buy_intents    : 160
+sell_intents   : 165
+label_correct  : 214
+label_precision: 0.6584615384615384
+coverage       : 0.13541666666666666
+```
+
+Sanity-check با Phase125:
+
+```text
+Phase125 best trades     : 325
+Phase116 runtime intents : 325
+Phase125 buy/sell        : 160 / 165
+Phase116 buy/sell        : 160 / 165
+Phase125 precision       : 0.6584615384615384
+Phase116 precision       : 0.6584615384615384
+```
+
+نتیجه:
+
+```text
+PASS — runtime decision integration با research backtest هم‌خوان است.
+```
+
+گام بعدی:
+
+```text
+Phase115 — live decision audit / paper shadow
 ```

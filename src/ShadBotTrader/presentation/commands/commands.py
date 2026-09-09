@@ -64,6 +64,7 @@ class CommandKind(str, Enum):
     BUILD_HYBRID_XGBOOST_MATRIX = "build_hybrid_xgboost_matrix"
     BACKTEST_HYBRID_XGBOOST_HEAD = "backtest_hybrid_xgboost_head"
     CHECK_HYBRID_SIGNIFICANCE = "check_hybrid_significance"
+    AUDIT_HYBRID_RANGE_AWARE_DECISIONS = "audit_hybrid_range_aware_decisions"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"

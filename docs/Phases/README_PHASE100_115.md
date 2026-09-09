@@ -51,7 +51,7 @@
 | 113 | ✅ CLI/GUI کامل | random baseline، Monte Carlo و White Reality-style max check برای hybrid-head/range-aware | قبل از live الزامی |
 | 114 | 🟡 پیشنهادی | external/regime features مخصوص XAUUSD: DXY، US10Y، VIX، Oil، Silver، calendar/news | بالا بعد از baseline |
 | 115 | 🟡 پیشنهادی | live decision audit کامل برای هر TRADE/NO_TRADE | قبل از live جدی الزامی |
-| 116 | 🟡 پیشنهادی | Hybrid Range-Aware Decision Engine: ترکیب trend branches با `range_1d` و `range_4h` | خیلی بالا بعد از branchها |
+| 116 | ✅ CLI/GUI integration audit | Hybrid Range-Aware Decision Engine: hybrid head + saved thresholds + `range_1d`/`range_4h` وارد Strategy/Decision/Risk/Intent path شد | قبل از Phase115 |
 | 117 | 🟡 پیشنهادی | Advanced neural benchmarks: xLSTM-TS، TSMixer، PatchTST، Mamba، KANsLTformer | متوسط/تحقیقاتی |
 | 118 | 🟡 اختیاری | Tick/order-book branch: DeepLOB/TLOB/LiT فقط اگر دیتای microstructure واقعی داشته باشیم | مشروط |
 

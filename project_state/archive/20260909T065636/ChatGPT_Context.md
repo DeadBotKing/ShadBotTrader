@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T07:11:35.215447+00:00
+- Snapshot generated at: 2026-09-09T06:56:09.562535+00:00
 
 ## Current Architecture
 
@@ -27,9 +27,10 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: 5ce471a6c4a312d86b5818c58b181bcdfc21da18
-- Dirty: yes (43 files)
+- Commit: c55ca2a03a486615041a3d59127013f17533825f
+- Dirty: yes (24 files)
 - Recent commits:
+  - c55ca2a docs: record Phase 113 significance result
   - 5ce471a Phase 113: add hybrid significance check
   - 22f9a5b docs: record Phase 125 hybrid backtest results
   - ffe5a4f Phase 125: backtest hybrid head with range brackets
@@ -39,7 +40,6 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 4424f47 Phase 123: build hybrid XGBoost matrix
   - 55cd643 Phase 122: calibrate booster specialist thresholds
   - 9e71fae Phase 120: anti-collapse metrics and booster branch
-  - 65aeb7f Phase 119: expose monitor metric in GUI
 
 ## Quality Gate
 
@@ -61,10 +61,10 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 892
+- Total files: 891
 - Source files: 322
 - Test files: 159
-- Documentation files: 181
+- Documentation files: 180
 - Legacy files: 176
 - Total Python lines: 132271
 - Modules: 481
