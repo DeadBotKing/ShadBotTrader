@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T11:08:49.322035+00:00
+- Snapshot generated at: 2026-09-09T07:11:35.215447+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 322
-- Test modules: 160
+- Test modules: 159
 
 ## Current Phase
 
@@ -27,12 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: ab36196896d1e2d4a95d42a07f84db880cd6b396
-- Dirty: yes (4 files)
+- Commit: 5ce471a6c4a312d86b5818c58b181bcdfc21da18
+- Dirty: yes (43 files)
 - Recent commits:
-  - ab36196 docs: record hybrid replay sizing result
-  - 94ddf4d Phase 116: add hybrid candle replay report
-  - 6037a28 Phase 116: add full hybrid 5M report
   - 5ce471a Phase 113: add hybrid significance check
   - 22f9a5b docs: record Phase 125 hybrid backtest results
   - ffe5a4f Phase 125: backtest hybrid head with range brackets
@@ -40,6 +37,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - 00b6695 docs: update operational phase status after hybrid matrix
   - e94d555 Phase 124: train hybrid XGBoost head
   - 4424f47 Phase 123: build hybrid XGBoost matrix
+  - 55cd643 Phase 122: calibrate booster specialist thresholds
+  - 9e71fae Phase 120: anti-collapse metrics and booster branch
+  - 65aeb7f Phase 119: expose monitor metric in GUI
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 894
+- Total files: 892
 - Source files: 322
-- Test files: 160
+- Test files: 159
 - Documentation files: 181
 - Legacy files: 176
-- Total Python lines: 133858
-- Modules: 482
+- Total Python lines: 132271
+- Modules: 481
 - Classes: 814
-- Functions: 4748
+- Functions: 4739
 - External dependencies: 14

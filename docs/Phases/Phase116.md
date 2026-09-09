@@ -303,3 +303,155 @@ PASS — runtime decision integration با research backtest هم‌خوان ا�
 ```text
 Phase115 — live decision audit / paper shadow
 ```
+
+---
+
+## افزونهٔ گزارش کامل 5M / GUI HTML
+
+برای اینکه قبل از Phase115 رفتار سیستم روی کل matrix 5M دیده شود، report script اضافه شد:
+
+```text
+scripts/report_hybrid_full_backtest.py
+GUI command: Full hybrid 5M backtest report
+```
+
+این اسکریپت:
+
+```text
+- threshold search انجام نمی‌دهد.
+- threshold ذخیره‌شدهٔ Phase125 را از model record می‌خواند.
+- همان TP/SL و range filters فاز ۱۲۵ را اجرا می‌کند.
+- خروجی HTML با equity curve، کارت‌های metric، breakdown ماهانه و trades می‌سازد.
+```
+
+خروجی:
+
+```text
+run_logs/hybrid_full_backtest/latest.html
+run_logs/hybrid_full_backtest/latest.json
+run_logs/hybrid_full_backtest/latest.csv
+```
+
+برای full واقعی کل دیتای 5M باید matrix با `--scope all --max-windows 0` ساخته شود؛ اگر فقط `hybrid_xgboost_matrix_latest.parquet` قدیمی استفاده شود، report فقط همان matrix موجود را کامل ارزیابی می‌کند.
+
+### Replay candle-by-candle و سرمایهٔ اولیه
+
+بعد از بازخورد کاربر، `report_hybrid_full_backtest.py` از report ثابت به HTML replay هم ارتقا داده شد:
+
+```text
+--initial-capital 100
+--units 1
+```
+
+در HTML:
+
+```text
+- slider برای حرکت روی کندل‌ها
+- ورود با circle
+- خروج با square
+- خط entry زرد
+- خط TP سبز
+- خط SL قرمز
+- نمایش active trade و balance after closed trades
+```
+
+فرمول سرمایه:
+
+```text
+final_balance = initial_capital + total_pnl * units
+```
+
+برای اکانت 100 دلاری، اگر `units=1` باشد، drawdown تاریخی Phase125 حدود 347 دلار می‌شود و گزارش `would_breach_zero=true` می‌دهد. برای دیدن سناریوی کوچک‌تر:
+
+```text
+--units 0.1
+```
+
+با holdout فاز ۱۲۵، تقریب عددی با `units=0.1`:
+
+```text
+initial 100
+net profit ≈ +29.12
+max DD ≈ 34.70
+final ≈ 129.12
+```
+
+### نتیجهٔ اجرای replay با سرمایه 100 دلار — 2026-09-09
+
+کاربر report/replay را با `initial_capital=100` و `units=0.1` اجرا کرد. اجرا روی matrix موجود 8000-row و `eval_frac=0.30` بود:
+
+```text
+matrix_rows     : 8000
+evaluated_rows  : 2400
+threshold       : buy=0.80 sell=0.65 margin=0.05
+trades          : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+total_pnl       : +291.154987683185
+profit_factor   : 1.2471739846573604
+max_drawdown    : 347.044035279524
+```
+
+Account view:
+
+```text
+initial_capital   : 100
+units             : 0.1
+final_balance     : 129.1154987683185
+net_profit        : +29.115498768318503
+return_percent    : +29.115498768318504%
+max_drawdown_cash : 34.7044035279524
+would_breach_zero : false
+```
+
+محدودیت: monthly فقط `2026-08` است، پس این replay همان holdout فاز ۱۲۵ است و هنوز کل تاریخ 5M نیست.
+
+### Fix replay black screen + streamed full 5M mode
+
+مشکل HTML replay که صفحهٔ chart را سیاه نشان می‌داد رفع شد. علت: JSON replay با `html.escape` داخل `<script type="application/json">` ذخیره شده بود و در browser به‌صورت `&quot;` باقی می‌ماند، پس `JSON.parse` شکست می‌خورد. اکنون `script_json()` داده را به‌صورت raw-safe می‌نویسد و chart fallback loading/error دارد.
+
+برای full 5M بدون RAM spike، `report_hybrid_full_backtest.py` حالت stream گرفت:
+
+```text
+--source-mode stream
+--stream-scope all
+--stream-chunk-size 1000
+--stream-wavenet neutral
+```
+
+این حالت نیازی به ساخت `hybrid_xgboost_matrix_all_5m.parquet` ندارد و هر chunk را جداگانه می‌سازد، score می‌کند و وارد backtest/replay می‌کند. بنابراین دستور سنگین قبلی با `build_hybrid_xgboost_matrix.py --scope all --max-windows 0` نباید تکرار شود.
+
+### نتیجهٔ full streamed 5M — شکست robustness
+
+کاربر mode جدید stream را روی کل scope اجرا کرد:
+
+```text
+source_mode=stream
+stream_scope=all
+stream_chunk_size=500
+stream_wavenet=neutral
+rows=52832
+```
+
+نتیجه:
+
+```text
+trades          : 13757
+buy/sell        : 8583 / 5174
+win_rate        : 41.2663%
+label_precision : 51.1085%
+total_pnl       : -43309.811277104236
+profit_factor   : 0.6215092452818565
+max_drawdown    : 45887.011698256094
+coverage        : 26.0391%
+```
+
+با `initial_capital=100` و `units=0.1`:
+
+```text
+final_balance     : -4230.981127710424
+would_breach_zero : true
+```
+
+نتیجهٔ فنی: Phase116 integration درست است، اما ثابت‌های Phase125 روی کل تاریخ robust نیستند. این نتیجه، Phase125/113 را باطل نمی‌کند چون آن‌ها holdout خاص خودشان را تست کرده بودند؛ اما نشان می‌دهد قبل از Phase115 باید walk-forward validation ساخته شود.

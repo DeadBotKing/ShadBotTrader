@@ -5320,3 +5320,444 @@ python -m pytest tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybr
 python -m pytest
 # 1685 passed, 54 skipped in 200.80s
 ```
+
+## 2026-09-09 — Workspace cleanup + full 5M hybrid backtest report GUI
+
+کاربر خواست workspace خلوت شود و قبل از Phase115 یک backtest کامل‌تر روی دیتای 5M با نمایش GUI/HTML داشته باشیم.
+
+Cleanup انجام‌شده در workspace:
+
+```text
+قبل از cleanup: /home/user حدود 158M، شامل 14 فایل zip قدیمی
+بعد از cleanup: /home/user حدود 50M
+حذف شد: /home/user/ShadBotTrader_Phase*.zip های قدیمی و cacheهای pytest/ruff/mypy
+```
+
+پیاده‌سازی اضافه‌شده:
+
+```text
+scripts/report_hybrid_full_backtest.py
+GUI command: Full hybrid 5M backtest report
+tests/unit/ai/test_hybrid_full_backtest_report.py
+```
+
+این report برخلاف Phase125 threshold search انجام نمی‌دهد؛ threshold ذخیره‌شدهٔ مدل را می‌خواند و همان rule را fixed روی کل matrix انتخاب‌شده اجرا می‌کند:
+
+```text
+threshold source: datasets/models/gold_hybrid_lightgbm_head_5m/v1_training.json
+BUY/SELL gates  : buy=0.80 sell=0.65 margin=0.05
+TP/SL logic     : همان Phase125
+outputs         : run_logs/hybrid_full_backtest/latest.html, latest.json, latest.csv
+```
+
+برای full واقعی کل دیتای 5M، ابتدا باید matrix با scope=all ساخته شود:
+
+```powershell
+python -u scripts/build_hybrid_xgboost_matrix.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --window 288 `
+  --label-horizon 288 `
+  --atr-mult 0.5 `
+  --train-ratio 80 `
+  --scope all `
+  --max-windows 0 `
+  --summary-mode basic `
+  --booster lightgbm `
+  --include-specialists 1 `
+  --include-multiclass-booster 1 `
+  --include-wavenet 1 `
+  --require-wavenet 0 `
+  --include-range 1 `
+  --require-range 1 `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --output-name hybrid_xgboost_matrix_all_5m `
+  --storage-root datasets
+```
+
+سپس report:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --matrix-path datasets\processed\XAUUSD\5M\hybrid_xgboost_matrix_all_5m.parquet `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --storage-root datasets
+```
+
+هشدار: این full-history diagnostic ممکن است شامل دورهٔ train مدل‌ها باشد و جایگزین holdout/significance نیست. هدفش دیدن equity curve، توزیع tradeها و رفتار کل تاریخ در GUI است.
+
+Quality gate بعد از اضافه‌شدن full 5M report:
+
+```text
+python -m ruff check <Phase116 + full-report touched files>
+# PASS
+
+python -m black --check <Phase116 + full-report touched files>
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 96 passed
+
+python -m pytest
+# 1690 passed, 54 skipped in 200.14s
+```
+
+Full gate هنوز به‌خاطر بدهی‌های قدیمی repo قرمز است:
+
+```text
+python -m ruff check .
+# FAIL: 219 errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted
+
+python -m mypy src
+# FAIL: 28 old errors in 10 files
+```
+
+## 2026-09-09 — Full hybrid report upgraded to candle replay + $100 balance view
+
+کاربر پرسید آیا report جدید مثل replay قدیمی امکان حرکت دونه‌دونه روی کندل‌ها، دیدن نقطهٔ ورود، TP/SL و محاسبهٔ خروجی با سرمایهٔ 100 دلار را دارد یا نه. پاسخ دقیق: نسخهٔ اول فقط report/summary بود، نه replay کندل‌به‌کندل. بنابراین همان ابزار full report ارتقا داده شد.
+
+تغییرات:
+
+```text
+scripts/report_hybrid_full_backtest.py
+  + --initial-capital default 100
+  + --units default 1
+  + account summary: final_balance, return_percent, max_drawdown_cash, would_breach_zero
+  + embedded candle-by-candle replay inside latest.html
+  + slider برای حرکت کندل‌به‌کندل
+  + markers: entry circle, exit square, TP/SL/entry horizontal lines
+
+GUI: Full hybrid 5M backtest report
+  + Initial capital ($)
+  + PnL units
+```
+
+معنی capital:
+
+```text
+final_balance = initial_capital + total_pnl * units
+```
+
+هشدار مهم:
+
+```text
+با units=1 و initial_capital=100، اگر max_drawdown_cash از 100 بیشتر شود، گزارش flag would_breach_zero=true می‌دهد. این margin-call/broker liquidation واقعی نیست؛ فقط نشان می‌دهد sizing برای اکانت 100 دلاری زیادی بزرگ است.
+```
+
+دستور امن برای دیدن همان holdout معتبر Phase125/116 با 325 trade:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 1 `
+  --storage-root datasets
+```
+
+برای اکانت 100 دلاری، `--units 1` احتمالاً بزرگ است چون در Phase125 max_drawdown حدود 347 بود. برای sanity sizing بهتر:
+
+```text
+--units 0.1  → maxDD حدود 34.7 دلار، final balance روی holdout حدود 129.12 دلار
+--units 0.2  → maxDD حدود 69.4 دلار، final balance روی holdout حدود 158.23 دلار
+```
+
+Quality re-check:
+
+```text
+python -m ruff check scripts/report_hybrid_full_backtest.py tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/commands/commands.py
+# PASS
+
+python -m black --check scripts/report_hybrid_full_backtest.py tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/commands/commands.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/ai/test_prediction_target.py tests/unit/ai/test_hybrid_head_predictor.py tests/unit/strategy/test_hybrid_range_aware_strategy.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 97 passed
+
+python -m pytest
+# 1691 passed, 54 skipped in 175.84s
+```
+
+## 2026-09-09 — Hybrid candle replay report result on validated holdout
+
+کاربر خروجی `run_logs/hybrid_full_backtest/latest.json` را برای report/replay جدید ارسال کرد. این اجرا روی matrix موجود 8000 ردیفی و `eval_frac=0.30` انجام شده؛ یعنی همان holdout معتبر 2400 ردیفی، نه کل تاریخ 5M.
+
+تنظیمات:
+
+```text
+model_id       : gold_hybrid_lightgbm_head_5m
+model_version  : 1
+matrix_rows    : 8000
+evaluated_rows : 2400
+threshold_src  : model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold      : buy=0.80 sell=0.65 margin=0.05
+max_hold_bars  : 48
+min_4h_room    : 2
+min_1d_room    : 5
+min_tp_distance: 2
+min_sl_distance: 2
+spread_mode    : pct
+spread_value   : 0.06
+slippage       : 0
+initial_capital: 100
+units          : 0.1
+```
+
+Trading result:
+
+```text
+samples        : 2400
+trades         : 325
+buy/sell       : 160 / 165
+wins/losses    : 168 / 157
+timeouts       : 44
+label_correct  : 214
+false_positive : 111
+win_rate       : 51.6923%
+label_precision: 65.8462%
+total_pnl      : +291.154987683185
+avg_pnl        : +0.8958615005636462
+profit_factor  : 1.2471739846573604
+max_drawdown   : 347.044035279524
+coverage       : 13.5417%
+```
+
+Account sizing view:
+
+```text
+initial_capital    : 100.0
+units              : 0.1
+final_balance      : 129.1154987683185
+net_profit         : +29.115498768318503
+return_percent     : +29.115498768318504%
+max_drawdown_cash  : 34.7044035279524
+would_breach_zero  : false
+```
+
+Replay output:
+
+```text
+run_logs\hybrid_full_backtest\latest.html
+candles in replay: 2440
+trades in replay : 325
+```
+
+برداشت:
+
+```text
+- report/replay جدید با Phase125/Phase116 دقیقاً هم‌خوان است.
+- با سایز units=0.1، سناریوی $100 روی این holdout از $100 به $129.12 می‌رسد و drawdown cash حدود $34.70 است.
+- این نتیجه خوب است ولی فقط برای holdout ماه 2026-08 است؛ چون monthly فقط 2026-08 را نشان می‌دهد.
+- برای «کل دیتای 5M» هنوز باید نسخهٔ memory-safe/chunked matrix/backtest ساخته شود. دستور --scope all --max-windows 0 بدون chunk برای سیستم کاربر RAM را پر کرد و نباید تکرار شود.
+```
+
+## 2026-09-09 — Fix hybrid replay black chart + add memory-safe streamed full 5M mode
+
+کاربر گزارش داد که بخش کندل/ورود/خروج در HTML replay صفحهٔ سیاه است و همچنین خواست قبل از Phase115 بک‌تست کامل گرفته شود. علت chart سیاه در report قبلی این بود که JSON replay داخل `<script type="application/json">` با `html.escape` نوشته می‌شد؛ در script raw-text، `&quot;` به quote تبدیل نمی‌شود و `JSON.parse` fail می‌کند، بنابراین chart رندر نمی‌شد.
+
+رفع UI replay:
+
+```text
+scripts/report_hybrid_full_backtest.py
+  + script_json(): safe raw JSON for script block without &quot;
+  + fallback SVG text if JSON parse fails
+  + no optional chaining in replay buttons
+  + loading/error text instead of empty black panel
+```
+
+برای بک‌تست کامل 5M بدون ساخت matrix عظیم و بدون RAM spike، همان script به mode جدید مجهز شد:
+
+```text
+--source-mode stream
+--stream-scope all
+--stream-chunk-size 2000
+--stream-wavenet neutral|batch
+```
+
+رفتار stream:
+
+```text
+- دیگر لازم نیست build_hybrid_xgboost_matrix.py --scope all --max-windows 0 اجرا شود.
+- rowهای hybrid در chunk ساخته و همان‌جا scoring/backtest می‌شوند.
+- خروجی نهایی همان latest.html/latest.json/latest.csv است.
+- پیش‌فرض stream_wavenet=neutral است تا tensor عظیم WaveNet ساخته نشود؛ چون WaveNet در فازهای قبل no-edge/collapsed بود.
+- اگر اجرای دقیق‌تر با WaveNet لازم شد: --stream-wavenet batch با chunk کوچک، ولی ممکن است کندتر/سنگین‌تر باشد.
+```
+
+GUI نیز update شد:
+
+```text
+Full hybrid 5M backtest report
+  Source mode: matrix|stream
+  Stream scope: all|holdout|last-fold|auto
+  Stream chunk rows
+  Stream WaveNet: neutral|batch
+  Initial capital
+  PnL units
+```
+
+دستور پیشنهادی full memory-safe:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 1000 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality re-check:
+
+```text
+python -m ruff check scripts/report_hybrid_full_backtest.py tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/commands/commands.py
+# PASS
+
+python -m black --check scripts/report_hybrid_full_backtest.py tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/handlers.py src/ShadBotTrader/presentation/commands/commands.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 64 passed
+
+python -m pytest
+# 1691 passed, 54 skipped in 248.01s
+```
+
+## 2026-09-09 — Streamed full 5M hybrid replay result: failed robustness test
+
+کاربر full 5M streamed report را با mode memory-safe اجرا کرد:
+
+```text
+source_mode       : stream
+stream_scope      : all
+stream_chunk_size : 500
+stream_wavenet    : neutral
+symbol/timeframe  : XAUUSD 5M
+model             : gold_hybrid_lightgbm_head_5m v1
+threshold_source  : model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold         : buy=0.80 sell=0.65 margin=0.05
+initial_capital   : 100
+units             : 0.1
+```
+
+Full streamed result:
+
+```text
+matrix_rows/evaluated_rows: 52832 / 52832
+trades        : 13757
+buy/sell      : 8583 / 5174
+wins/losses   : 5677 / 8080
+timeouts      : 1358
+label_correct : 7031
+false_positive: 6726
+win_rate      : 41.2663%
+label_precision: 51.1085%
+total_pnl     : -43309.811277104236
+avg_pnl       : -3.1482017356330765
+profit_factor : 0.6215092452818565
+max_drawdown  : 45887.011698256094
+coverage      : 26.0391%
+```
+
+Account view:
+
+```text
+initial_capital   : 100.0
+units             : 0.1
+final_balance     : -4230.981127710424
+net_profit        : -4330.981127710424
+return_percent    : -4330.981127710424%
+max_drawdown_cash : 4588.701169825609
+would_breach_zero : true
+```
+
+Monthly breakdown:
+
+```text
+2025-12: trades=2035 pnl=-3469.92  PF=0.6467
+2026-01: trades=1310 pnl=-2812.86  PF=0.7087
+2026-02: trades=1945 pnl=-21573.37 PF=0.3872
+2026-03: trades=2080 pnl=-9142.95  PF=0.6049
+2026-04: trades=1267 pnl=-2902.95  PF=0.7307
+2026-05: trades=1552 pnl=-3055.75  PF=0.6699
+2026-06: trades=979  pnl=-2129.33  PF=0.6599
+2026-07: trades=1697 pnl=+2319.21  PF=1.3863
+2026-08: trades=885  pnl=-522.19   PF=0.8778
+2026-09: trades=7    pnl=-19.72    PF=0.4591
+```
+
+برداشت فنی:
+
+```text
+- این یک robustness/stress test روی کل تاریخ بود، نه یک walk-forward صحیح.
+- نتیجهٔ fixed-threshold single-head روی کل تاریخ شکست خورد.
+- coverage از 13.54% در holdout معتبر به 26.04% در کل تاریخ رسیده؛ یعنی مدل/threshold خارج از پنجرهٔ انتخاب‌شده بیش از حد trade می‌کند.
+- تنها ماه مثبت 2026-07 بود؛ بقیه ماه‌ها منفی‌اند. این نشانهٔ regime sensitivity یا overfit/selection bias در threshold/head است.
+- اجرای full stream با stream_wavenet=neutral انجام شده، پس دقیقاً همان feature distribution ماتریس Phase123 نیست؛ اما بزرگی شکست نشان می‌دهد نمی‌توانیم با همین ثابت‌ها وارد live شویم.
+```
+
+پاسخ به سؤال کاربر درباره train روی کل دیتاست:
+
+```text
+برای بک‌تست معتبر نباید مدل را روی کل دیتاست train کنیم و بعد روی همان کل دیتاست backtest بگیریم؛ این leakage/in-sample است.
+کار درست برای «کل تاریخ» walk-forward/out-of-time است:
+  train فقط روی گذشته
+  calibrate threshold فقط روی گذشته/validation
+  test روی ماه/بلاک بعدی که مدل ندیده
+برای production نهایی، بعد از پاس شدن walk-forward، می‌توان مدل final را روی کل دادهٔ گذشته train کرد و سپس فقط روی آینده/paper/live ارزیابی کرد.
+```
+
+نتیجهٔ تصمیمی:
+
+```text
+Phase115/live حتی paper جدی با trade واقعی هنوز زود است.
+گام بعدی باید Phase126 walk-forward hybrid validation باشد، نه train-all-then-backtest-same-data.
+```

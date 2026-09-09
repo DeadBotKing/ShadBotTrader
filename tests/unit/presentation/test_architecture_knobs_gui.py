@@ -466,3 +466,56 @@ def test_audit_hybrid_range_aware_decisions_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--sell-threshold") + 1] == "0.65"
     assert args[args.index("--min-4h-room") + 1] == "2.0"
     assert args[args.index("--base-quantity") + 1] == "0.5"
+
+
+def test_report_hybrid_full_backtest_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.REPORT_HYBRID_FULL_BACKTEST).fields
+    }
+    assert {
+        "model_id",
+        "source_mode",
+        "stream_chunk_size",
+        "stream_wavenet",
+        "eval_frac",
+        "max_hold_bars",
+        "initial_capital",
+        "units",
+    } <= fields
+
+
+def test_report_hybrid_full_backtest_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.report_hybrid_full_backtest(
+        Command(
+            CommandKind.REPORT_HYBRID_FULL_BACKTEST,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "source_mode": "stream",
+                "stream_chunk_size": "500",
+                "stream_wavenet": "neutral",
+                "eval_frac": "1.0",
+                "min_4h_room": "2",
+                "same_bar_policy": "stop_first",
+                "initial_capital": "100",
+                "units": "0.1",
+                "report_title": "Full report",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/report_hybrid_full_backtest.py"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--source-mode") + 1] == "stream"
+    assert args[args.index("--stream-chunk-size") + 1] == "500"
+    assert args[args.index("--stream-wavenet") + 1] == "neutral"
+    assert args[args.index("--eval-frac") + 1] == "1.0"
+    assert args[args.index("--min-4h-room") + 1] == "2.0"
+    assert args[args.index("--same-bar-policy") + 1] == "stop_first"
+    assert args[args.index("--initial-capital") + 1] == "100.0"
+    assert args[args.index("--units") + 1] == "0.1"
+    assert args[args.index("--report-title") + 1] == "Full report"

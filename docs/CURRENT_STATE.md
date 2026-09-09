@@ -610,3 +610,237 @@ Phase116 PASS.
 اکنون مسیر hybrid range-aware وارد pipeline واقعی تصمیم شده است.
 قدم بعدی Phase115 live decision audit / paper shadow است؛ ارسال order واقعی هنوز مجاز نیست.
 ```
+
+## Full 5M hybrid backtest report GUI
+
+برای مشاهدهٔ کامل‌تر قبل از Phase115، command/script جدید اضافه شد:
+
+```text
+GUI: Full hybrid 5M backtest report
+CLI: scripts/report_hybrid_full_backtest.py
+outputs:
+  run_logs/hybrid_full_backtest/latest.html
+  run_logs/hybrid_full_backtest/latest.json
+  run_logs/hybrid_full_backtest/latest.csv
+```
+
+این script threshold search نمی‌کند؛ threshold ذخیره‌شدهٔ فاز ۱۲۵ را fixed اجرا می‌کند. برای بک‌تست واقعی روی کل دیتای 5M، ابتدا matrix کامل باید ساخته شود:
+
+```text
+scripts/build_hybrid_xgboost_matrix.py --scope all --max-windows 0 --output-name hybrid_xgboost_matrix_all_5m
+```
+
+سپس report با:
+
+```text
+scripts/report_hybrid_full_backtest.py --matrix-path datasets\processed\XAUUSD\5M\hybrid_xgboost_matrix_all_5m.parquet --eval-frac 1.0
+```
+
+توجه: full-history report ممکن است in-sample باشد؛ برای تصمیم live، Phase125 holdout + Phase113 significance همچنان معیار اصلی‌اند.
+
+## Full hybrid report now includes candle replay + account balance
+
+`Full hybrid 5M backtest report` فقط summary نیست؛ اکنون در `latest.html` یک replay کندل‌به‌کندل دارد:
+
+```text
+slider candle-by-candle
+entry marker = circle
+exit marker = square
+entry line = yellow
+TP line = green
+SL line = red
+balance after closed trades
+active trade details
+```
+
+پارامترهای سرمایه:
+
+```text
+--initial-capital 100
+--units 1
+```
+
+محاسبه:
+
+```text
+final_balance = initial_capital + total_pnl * units
+```
+
+برای اکانت 100 دلاری، `units=1` احتمالاً بزرگ است چون max drawdown فاز ۱۲۵ حدود 347 دلار per unit بود. پیشنهاد تست نمایشی امن‌تر:
+
+```text
+--units 0.1
+```
+
+دستور پیشنهادی برای همان holdout معتبر 325 trade:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+خروجی:
+
+```text
+run_logs\hybrid_full_backtest\latest.html
+run_logs\hybrid_full_backtest\latest.json
+```
+
+## Latest hybrid replay result — holdout visual backtest
+
+کاربر HTML replay/full-report را با `initial_capital=100` و `units=0.1` اجرا کرد. این اجرا روی matrix موجود 8000-row و `eval_frac=0.30` بود؛ بنابراین همان holdout 2400-row معتبر است، نه کل تاریخ 5M.
+
+نتیجه:
+
+```text
+trades          : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+total_pnl       : +291.154987683185
+profit_factor   : 1.2471739846573604
+max_drawdown    : 347.044035279524
+coverage        : 13.5417%
+```
+
+با capital sizing:
+
+```text
+initial_capital   : 100
+units             : 0.1
+final_balance     : 129.1154987683185
+net_profit        : +29.115498768318503
+return_percent    : +29.115498768318504%
+max_drawdown_cash : 34.7044035279524
+would_breach_zero : false
+```
+
+خروجی replay:
+
+```text
+run_logs\hybrid_full_backtest\latest.html
+replay.candles = 2440
+replay.trades  = 325
+```
+
+تصمیم فعلی:
+
+```text
+برای مشاهده و sanity-check، replay holdout خوب است و با Phase125/116 match دارد.
+برای بک‌تست کامل کل دیتای 5M، باید نسخهٔ memory-safe/chunked ساخته شود؛ نباید دوباره --scope all --max-windows 0 بدون chunk اجرا شود.
+```
+
+## Hybrid replay UI fixed + streamed full 5M mode
+
+Replay HTML سیاه می‌شد چون JSON داخل script با `html.escape` نوشته شده بود و `JSON.parse` در مرورگر fail می‌کرد. رفع شد:
+
+```text
+scripts/report_hybrid_full_backtest.py
+  script_json() without &quot;
+  fallback loading/error SVG
+  candle replay slider remains inline/offline
+```
+
+برای بک‌تست کامل 5M دیگر نباید matrix کامل با دستور سنگین ساخته شود. حالت stream اضافه شد:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 1000 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+تفاوت مهم:
+
+```text
+source-mode=matrix  → report روی matrix موجود
+source-mode=stream  → ساخت/score/backtest chunked روی کل scope انتخابی، بدون ذخیرهٔ matrix عظیم
+stream-wavenet=neutral → RAM-safe، WaveNet features = neutral 1/3 چون WaveNet قبلاً no-edge/collapse بود
+stream-wavenet=batch   → دقیق‌تر نسبت به WaveNet، اما کندتر و ممکن است سنگین‌تر باشد
+```
+
+## Full streamed 5M result — robustness failed
+
+کاربر full 5M streamed replay/backtest را اجرا کرد:
+
+```text
+source_mode=stream
+stream_scope=all
+stream_chunk_size=500
+stream_wavenet=neutral
+matrix/evaluated rows=52832/52832
+threshold=buy 0.80 / sell 0.65 / margin 0.05
+```
+
+نتیجه:
+
+```text
+trades          : 13757
+buy/sell        : 8583 / 5174
+win_rate        : 41.2663%
+label_precision : 51.1085%
+total_pnl       : -43309.811277104236
+profit_factor   : 0.6215092452818565
+max_drawdown    : 45887.011698256094
+coverage        : 26.0391%
+```
+
+با capital=100 و units=0.1:
+
+```text
+final_balance     : -4230.981127710424
+net_profit        : -4330.981127710424
+max_drawdown_cash : 4588.701169825609
+would_breach_zero : true
+```
+
+Monthly فقط 2026-07 مثبت بود:
+
+```text
+2026-07 pnl=+2319.21 PF=1.3863
+all other months negative
+```
+
+تصمیم فعلی:
+
+```text
+Fixed threshold/head روی کل تاریخ robustness ندارد.
+نباید مدل را روی کل دیتاست train و روی همان data backtest کنیم؛ این leakage است.
+گام بعدی درست: Phase126 walk-forward/out-of-time hybrid validation.
+```

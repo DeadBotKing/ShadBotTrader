@@ -578,6 +578,32 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "base_quantity",
         "timeout_minutes",
     },
+    CommandKind.REPORT_HYBRID_FULL_BACKTEST: {
+        "source_mode",
+        "matrix_path",
+        "model_version",
+        "eval_frac",
+        "max_windows",
+        "stream_scope",
+        "stream_chunk_size",
+        "stream_wavenet",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "max_hold_bars",
+        "min_4h_room",
+        "min_1d_room",
+        "min_tp_distance",
+        "min_sl_distance",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "initial_capital",
+        "units",
+        "same_bar_policy",
+        "report_title",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -1777,6 +1803,14 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 ),
                 CommandField("spread_value", "Spread value", "0.06", kind="number"),
                 CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField(
+                    "units",
+                    "PnL units",
+                    "1",
+                    kind="number",
+                    hint="1 = one XAUUSD price-dollar move changes balance by $1",
+                ),
                 CommandField(
                     "same_bar_policy",
                     "Same-bar policy",
@@ -1886,6 +1920,85 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
                 CommandField("capital", "Audit capital", "10000", kind="number"),
                 CommandField("base_quantity", "Intent quantity", "1", kind="number"),
                 CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.REPORT_HYBRID_FULL_BACKTEST,
+            label="Full hybrid 5M backtest report",
+            description=(
+                "Run the saved hybrid range-aware threshold over all selected 5M matrix rows "
+                "and generate an HTML report with PnL, equity curve and trades."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("model_id", "Hybrid head id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField(
+                    "source_mode",
+                    "Source mode",
+                    "matrix",
+                    kind="select",
+                    options=("matrix", "stream"),
+                    hint="stream = memory-safe full 5M evaluation without building one huge matrix",
+                ),
+                CommandField("matrix_path", "Matrix path", ""),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField(
+                    "stream_scope",
+                    "Stream scope",
+                    "all",
+                    kind="select",
+                    options=("all", "holdout", "last-fold", "auto"),
+                ),
+                CommandField("stream_chunk_size", "Stream chunk rows", "2000", kind="number"),
+                CommandField(
+                    "stream_wavenet",
+                    "Stream WaveNet",
+                    "neutral",
+                    kind="select",
+                    options=("neutral", "batch"),
+                    hint="neutral avoids the RAM spike from building one huge WaveNet tensor",
+                ),
+                CommandField("buy_threshold", "BUY threshold", "-1", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "-1", kind="number"),
+                CommandField("min_margin", "Min margin", "-1", kind="number"),
+                CommandField("max_hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("min_4h_room", "Min 4H room ($)", "2", kind="number"),
+                CommandField("min_1d_room", "Min 1D room ($)", "5", kind="number"),
+                CommandField("min_tp_distance", "Min TP distance ($)", "2", kind="number"),
+                CommandField("min_sl_distance", "Min SL distance ($)", "2", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread type", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField(
+                    "units",
+                    "PnL units",
+                    "1",
+                    kind="number",
+                    hint="1 = one XAUUSD price-dollar move changes balance by $1",
+                ),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField("report_title", "Report title", "Hybrid range-aware full 5M backtest"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
             ],
             slow=True,
             group="AI",
@@ -2476,6 +2589,7 @@ class CommandHandlers:
                 CommandKind.AUDIT_HYBRID_RANGE_AWARE_DECISIONS: (
                     accounts.audit_hybrid_range_aware_decisions
                 ),
+                CommandKind.REPORT_HYBRID_FULL_BACKTEST: accounts.report_hybrid_full_backtest,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -4902,6 +5016,87 @@ class AccountCommandHandlers(CommandHandlers):
             f"Audited Phase116 hybrid range-aware decisions on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def report_hybrid_full_backtest(self, command: Command) -> CommandResult:
+        """Generate an HTML full-history hybrid 5M backtest report."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        matrix_path = command.text("matrix_path", "").strip()
+        matrix_args = ["--matrix-path", matrix_path] if matrix_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/report_hybrid_full_backtest.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--source-mode",
+                command.text("source_mode", "matrix").strip().lower() or "matrix",
+                "--stream-scope",
+                command.text("stream_scope", "all").strip().lower() or "all",
+                "--stream-chunk-size",
+                str(max(command.integer("stream_chunk_size", 2000), 50)),
+                "--stream-wavenet",
+                command.text("stream_wavenet", "neutral").strip().lower() or "neutral",
+                "--model-id",
+                command.text("model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--buy-threshold",
+                str(command.number("buy_threshold", -1.0)),
+                "--sell-threshold",
+                str(command.number("sell_threshold", -1.0)),
+                "--min-margin",
+                str(command.number("min_margin", -1.0)),
+                "--max-hold-bars",
+                str(max(command.integer("max_hold_bars", 48), 1)),
+                "--min-4h-room",
+                str(max(command.number("min_4h_room", 2.0), 0.0)),
+                "--min-1d-room",
+                str(max(command.number("min_1d_room", 5.0), 0.0)),
+                "--min-tp-distance",
+                str(max(command.number("min_tp_distance", 2.0), 0.0)),
+                "--min-sl-distance",
+                str(max(command.number("min_sl_distance", 2.0), 0.0)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--slippage",
+                str(max(command.number("slippage", 0.0), 0.0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 1.0), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip() or "stop_first",
+                "--report-title",
+                command.text("report_title", "Hybrid range-aware full 5M backtest").strip()
+                or "Hybrid range-aware full 5M backtest",
+                "--storage-root",
+                str(self._storage_root),
+                *matrix_args,
+            ],
+            f"Generated full hybrid 5M backtest report on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:

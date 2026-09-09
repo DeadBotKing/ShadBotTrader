@@ -3,14 +3,14 @@
   "config_file_count": 3,
   "documentation_file_count": 181,
   "external_dependency_count": 14,
-  "function_count": 4739,
+  "function_count": 4748,
   "internal_dependency_count": 266,
   "legacy_file_count": 176,
-  "module_count": 481,
+  "module_count": 482,
   "source_file_count": 322,
-  "source_lines": 55063,
-  "test_file_count": 159,
-  "test_lines": 25976,
-  "total_file_count": 892,
-  "total_lines": 132271
+  "source_lines": 55259,
+  "test_file_count": 160,
+  "test_lines": 26181,
+  "total_file_count": 894,
+  "total_lines": 133858
 }
