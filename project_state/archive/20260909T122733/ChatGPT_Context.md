@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T12:27:33.072843+00:00
+- Snapshot generated at: 2026-09-09T12:22:56.904560+00:00
 
 ## Current Architecture
 
@@ -28,7 +28,7 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 
 - Branch: main
 - Commit: a27b8bf6dfbae6ca35fd7de20519aef2cc24bae4
-- Dirty: yes (19 files)
+- Dirty: yes (10 files)
 - Recent commits:
   - a27b8bf docs: record full streamed hybrid failure
   - 7f7d793 Phase 116: stream full hybrid replay report

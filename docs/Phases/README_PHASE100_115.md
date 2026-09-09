@@ -38,6 +38,7 @@
 | 123 | ✅ ماتریس کامل | ساخت ماتریس نهایی XGBoost از خروجی booster/WaveNet و مدل‌های range 1D/4H | `Phase123.md` |
 | 124 | ✅ CLI کامل | آموزش head نهایی XGBoost/LightGBM روی ماتریس hybrid فاز ۱۲۳ | `Phase124.md` |
 | 125 | ✅ CLI/GUI کامل | calibration و backtest معاملاتی hybrid head با TP/SL از range_4h و فیلتر range_1d | `Phase125.md` |
+| 126A | ✅ CLI/GUI کامل | replay کندل‌به‌کندل chronological با فقط یک پوزیشن باز، HTML entry/exit/TP/SL و balance از 100 دلار | `Phase126.md` |
 
 ---
 
@@ -73,11 +74,13 @@ H) Phase124: آموزش XGBoost/LightGBM head نهایی روی ماتریس hyb
 I) Phase125: range-aware TP/SL backtest و ذخیرهٔ threshold سودده
 J) Phase113: significance / random / Monte Carlo checks
 K) Phase116: range-aware hybrid decision engine integration اگر significance تأیید شد
-L) Phase110: train-only feature selection برای branchهای برنده
-M) Phase114: external/regime features اگر baseline ارزشمند بود
-N) Phase117: advanced neural benchmarks
-O) Phase115: live decision audit کامل قبل از live جدی
-P) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
+L) Phase126A: chronological single-position replay قبل از هر paper/live
+M) Phase126B: walk-forward/out-of-time hybrid validation
+N) Phase110: train-only feature selection برای branchهای برنده
+O) Phase114: external/regime features اگر baseline ارزشمند بود
+P) Phase117: advanced neural benchmarks
+Q) Phase115: live decision audit کامل قبل از live جدی
+R) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
 ```
 
 ---

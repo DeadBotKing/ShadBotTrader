@@ -519,3 +519,40 @@ def test_report_hybrid_full_backtest_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--initial-capital") + 1] == "100.0"
     assert args[args.index("--units") + 1] == "0.1"
     assert args[args.index("--report-title") + 1] == "Full report"
+
+
+def test_replay_hybrid_chronological_descriptor_exists():
+    fields = {
+        field.name
+        for field in descriptor_for(CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST).fields
+    }
+    assert {"source_mode", "stream_chunk_size", "stream_wavenet", "initial_capital"} <= fields
+
+
+def test_replay_hybrid_chronological_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.replay_hybrid_chronological_backtest(
+        Command(
+            CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "source_mode": "stream",
+                "stream_chunk_size": "250",
+                "stream_wavenet": "neutral",
+                "initial_capital": "100",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/replay_hybrid_chronological_backtest.py"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--source-mode") + 1] == "stream"
+    assert args[args.index("--stream-chunk-size") + 1] == "250"
+    assert args[args.index("--stream-wavenet") + 1] == "neutral"
+    assert args[args.index("--initial-capital") + 1] == "100.0"
+    assert args[args.index("--units") + 1] == "0.1"

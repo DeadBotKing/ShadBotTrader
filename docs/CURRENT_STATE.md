@@ -844,3 +844,65 @@ Fixed threshold/head روی کل تاریخ robustness ندارد.
 نباید مدل را روی کل دیتاست train و روی همان data backtest کنیم؛ این leakage است.
 گام بعدی درست: Phase126 walk-forward/out-of-time hybrid validation.
 ```
+
+## Phase126A status — chronological single-position replay built
+
+بعد از اینکه full streamed independent-trade test روی کل 5M شکست خورد، Phase126A پیاده‌سازی شد:
+
+```text
+scripts/replay_hybrid_chronological_backtest.py
+GUI: Chronological hybrid replay
+```
+
+این نسخه با بک‌تست قبلی فرق دارد:
+
+```text
+قبلی: هر سیگنال به‌صورت trade مستقل حساب می‌شد.
+جدید: کندل‌به‌کندل جلو می‌رود و فقط یک پوزیشن هم‌زمان باز است.
+```
+
+قانون:
+
+```text
+اگر پوزیشن باز است:
+  سیگنال‌های بعدی skip می‌شوند و در chronological.skipped_while_open ثبت می‌شوند.
+اگر پوزیشن بسته است:
+  hybrid head + range_1d/4h gate ارزیابی می‌شود و در صورت عبور trade باز می‌شود.
+```
+
+دستور اجرای کامل memory-safe:
+
+```powershell
+python -u scripts/replay_hybrid_chronological_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 500 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+بعد از اجرا باید بررسی شود:
+
+```text
+run_logs\hybrid_chronological_backtest\latest.json
+run_logs\hybrid_chronological_backtest\latest.html
+```
+
+اگر این هم روی کل تاریخ شکست بخورد، گام بعدی Phase126B walk-forward/out-of-time validation است.

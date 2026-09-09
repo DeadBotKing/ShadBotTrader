@@ -66,6 +66,7 @@ class CommandKind(str, Enum):
     CHECK_HYBRID_SIGNIFICANCE = "check_hybrid_significance"
     AUDIT_HYBRID_RANGE_AWARE_DECISIONS = "audit_hybrid_range_aware_decisions"
     REPORT_HYBRID_FULL_BACKTEST = "report_hybrid_full_backtest"
+    REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST = "replay_hybrid_chronological_backtest"
 
     # -- simulation and trading ------------------------------------------
     RUN_BACKTEST = "run_backtest"

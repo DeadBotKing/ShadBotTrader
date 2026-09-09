@@ -5761,3 +5761,108 @@ Monthly breakdown:
 Phase115/live حتی paper جدی با trade واقعی هنوز زود است.
 گام بعدی باید Phase126 walk-forward hybrid validation باشد، نه train-all-then-backtest-same-data.
 ```
+
+## 2026-09-09 — Phase126A implementation: chronological single-position hybrid replay
+
+بعد از شکست full streamed independent-trade test، Phase126A ساخته شد تا replay واقعی‌تر حساب انجام شود: کندل‌به‌کندل، فقط یک پوزیشن هم‌زمان، و skip کردن سیگنال‌های جدید تا وقتی معاملهٔ قبلی بسته نشده است.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/replay_hybrid_chronological_backtest.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_chronological_replay.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase126.md
+docs/Phases/README_PHASE100_115.md
+docs/WORKLOG.md
+docs/CURRENT_STATE.md
+```
+
+قانون جدید:
+
+```text
+for each signal row chronologically:
+  if source_index <= open_until_index:
+      skipped_while_open += 1
+      continue
+  else:
+      evaluate hybrid probability thresholds
+      evaluate range_1d/range_4h filters
+      simulate TP/SL/timeout up to max_hold_bars
+      open_until_index = trade.exit_index
+```
+
+خروجی‌ها:
+
+```text
+run_logs/hybrid_chronological_backtest/latest.html
+run_logs/hybrid_chronological_backtest/latest.json
+run_logs/hybrid_chronological_backtest/latest.csv
+```
+
+دستور پیشنهادی کاربر:
+
+```powershell
+python -u scripts/replay_hybrid_chronological_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 500 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality check اجراشده:
+
+```text
+python -m ruff check scripts/replay_hybrid_chronological_backtest.py tests/unit/ai/test_hybrid_chronological_replay.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py scripts/report_hybrid_full_backtest.py
+# PASS
+
+python -m black --check scripts/replay_hybrid_chronological_backtest.py tests/unit/ai/test_hybrid_chronological_replay.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py scripts/report_hybrid_full_backtest.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_chronological_replay.py tests/unit/ai/test_hybrid_full_backtest_report.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 68 passed
+```
+
+گزارش فاز ۱۲۶A اضافه شد:
+
+```text
+docs/Report/PHASE126A_CHRONOLOGICAL_HYBRID_REPLAY_REPORT.md
+```
+
+Full quality gate بعد از Phase126A:
+
+```text
+python -m pytest
+# 1695 passed, 54 skipped in 245.80s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+# examples include ShadBotTrader_Colab.ipynb, scripts/find_best_lr.py,
+# scripts/fetch_1d_gold_yahoo.py, standard_catalog.py.
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 497 files unchanged.
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files.
+```

@@ -604,6 +604,32 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "report_title",
         "timeout_minutes",
     },
+    CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST: {
+        "source_mode",
+        "matrix_path",
+        "model_version",
+        "eval_frac",
+        "max_windows",
+        "stream_scope",
+        "stream_chunk_size",
+        "stream_wavenet",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "max_hold_bars",
+        "min_4h_room",
+        "min_1d_room",
+        "min_tp_distance",
+        "min_sl_distance",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "initial_capital",
+        "units",
+        "same_bar_policy",
+        "report_title",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -2004,6 +2030,89 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST,
+            label="Chronological hybrid replay",
+            description=(
+                "Run the hybrid range-aware model candle-by-candle with only one open "
+                "position at a time, then generate an HTML replay with entry/TP/SL/exit."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("model_id", "Hybrid head id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField(
+                    "source_mode",
+                    "Source mode",
+                    "stream",
+                    kind="select",
+                    options=("stream", "matrix"),
+                    hint="stream is the memory-safe full-history default",
+                ),
+                CommandField("matrix_path", "Matrix path", ""),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField(
+                    "stream_scope",
+                    "Stream scope",
+                    "all",
+                    kind="select",
+                    options=("all", "holdout", "last-fold", "auto"),
+                ),
+                CommandField("stream_chunk_size", "Stream chunk rows", "500", kind="number"),
+                CommandField(
+                    "stream_wavenet",
+                    "Stream WaveNet",
+                    "neutral",
+                    kind="select",
+                    options=("neutral", "batch"),
+                    hint="neutral avoids the RAM spike from building one huge WaveNet tensor",
+                ),
+                CommandField("buy_threshold", "BUY threshold", "-1", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "-1", kind="number"),
+                CommandField("min_margin", "Min margin", "-1", kind="number"),
+                CommandField("max_hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("min_4h_room", "Min 4H room ($)", "2", kind="number"),
+                CommandField("min_1d_room", "Min 1D room ($)", "5", kind="number"),
+                CommandField("min_tp_distance", "Min TP distance ($)", "2", kind="number"),
+                CommandField("min_sl_distance", "Min SL distance ($)", "2", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread type", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField(
+                    "units",
+                    "PnL units",
+                    "0.1",
+                    kind="number",
+                    hint="0.1 = one XAUUSD price-dollar move changes balance by $0.10",
+                ),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField(
+                    "report_title",
+                    "Report title",
+                    "Chronological hybrid single-position replay",
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2590,6 +2699,9 @@ class CommandHandlers:
                     accounts.audit_hybrid_range_aware_decisions
                 ),
                 CommandKind.REPORT_HYBRID_FULL_BACKTEST: accounts.report_hybrid_full_backtest,
+                CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST: (
+                    accounts.replay_hybrid_chronological_backtest
+                ),
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -5095,6 +5207,87 @@ class AccountCommandHandlers(CommandHandlers):
                 *matrix_args,
             ],
             f"Generated full hybrid 5M backtest report on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def replay_hybrid_chronological_backtest(self, command: Command) -> CommandResult:
+        """Run the Phase126A single-position chronological hybrid replay."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        matrix_path = command.text("matrix_path", "").strip()
+        matrix_args = ["--matrix-path", matrix_path] if matrix_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/replay_hybrid_chronological_backtest.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--source-mode",
+                command.text("source_mode", "stream").strip().lower() or "stream",
+                "--stream-scope",
+                command.text("stream_scope", "all").strip().lower() or "all",
+                "--stream-chunk-size",
+                str(max(command.integer("stream_chunk_size", 500), 50)),
+                "--stream-wavenet",
+                command.text("stream_wavenet", "neutral").strip().lower() or "neutral",
+                "--model-id",
+                command.text("model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--buy-threshold",
+                str(command.number("buy_threshold", -1.0)),
+                "--sell-threshold",
+                str(command.number("sell_threshold", -1.0)),
+                "--min-margin",
+                str(command.number("min_margin", -1.0)),
+                "--max-hold-bars",
+                str(max(command.integer("max_hold_bars", 48), 1)),
+                "--min-4h-room",
+                str(max(command.number("min_4h_room", 2.0), 0.0)),
+                "--min-1d-room",
+                str(max(command.number("min_1d_room", 5.0), 0.0)),
+                "--min-tp-distance",
+                str(max(command.number("min_tp_distance", 2.0), 0.0)),
+                "--min-sl-distance",
+                str(max(command.number("min_sl_distance", 2.0), 0.0)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--slippage",
+                str(max(command.number("slippage", 0.0), 0.0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip() or "stop_first",
+                "--report-title",
+                command.text("report_title", "Chronological hybrid single-position replay").strip()
+                or "Chronological hybrid single-position replay",
+                "--storage-root",
+                str(self._storage_root),
+                *matrix_args,
+            ],
+            f"Generated chronological hybrid replay on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
         )

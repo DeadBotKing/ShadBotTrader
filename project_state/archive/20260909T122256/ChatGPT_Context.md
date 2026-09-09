@@ -6,7 +6,7 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T12:27:33.072843+00:00
+- Snapshot generated at: 2026-09-09T11:08:49.322035+00:00
 
 ## Current Architecture
 
@@ -14,7 +14,7 @@
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
 - Source modules: 322
-- Test modules: 161
+- Test modules: 160
 
 ## Current Phase
 
@@ -27,11 +27,9 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: a27b8bf6dfbae6ca35fd7de20519aef2cc24bae4
-- Dirty: yes (19 files)
+- Commit: ab36196896d1e2d4a95d42a07f84db880cd6b396
+- Dirty: yes (4 files)
 - Recent commits:
-  - a27b8bf docs: record full streamed hybrid failure
-  - 7f7d793 Phase 116: stream full hybrid replay report
   - ab36196 docs: record hybrid replay sizing result
   - 94ddf4d Phase 116: add hybrid candle replay report
   - 6037a28 Phase 116: add full hybrid 5M report
@@ -40,6 +38,8 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
   - ffe5a4f Phase 125: backtest hybrid head with range brackets
   - c53263d docs: record Phase 124 hybrid head result
   - 00b6695 docs: update operational phase status after hybrid matrix
+  - e94d555 Phase 124: train hybrid XGBoost head
+  - 4424f47 Phase 123: build hybrid XGBoost matrix
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 898
+- Total files: 894
 - Source files: 322
-- Test files: 161
-- Documentation files: 183
+- Test files: 160
+- Documentation files: 181
 - Legacy files: 176
-- Total Python lines: 134752
-- Modules: 483
+- Total Python lines: 133858
+- Modules: 482
 - Classes: 814
-- Functions: 4755
+- Functions: 4748
 - External dependencies: 14
