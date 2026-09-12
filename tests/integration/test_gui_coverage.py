@@ -102,6 +102,8 @@ class TestEveryRunHasAButton:
             "run_live_loop.py",
             "run_training_dataset.py",
             "run_weekly_update.py",
+            "run_hybrid_walk_forward_validation.py",
+            "run_hybrid_paper_shadow.py",
         }
 
         unaccounted = scripts - covered - set(NOT_GUI_OPERATIONS)

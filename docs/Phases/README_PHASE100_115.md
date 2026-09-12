@@ -39,6 +39,14 @@
 | 124 | ✅ CLI کامل | آموزش head نهایی XGBoost/LightGBM روی ماتریس hybrid فاز ۱۲۳ | `Phase124.md` |
 | 125 | ✅ CLI/GUI کامل | calibration و backtest معاملاتی hybrid head با TP/SL از range_4h و فیلتر range_1d | `Phase125.md` |
 | 126A | ✅ CLI/GUI کامل | replay کندل‌به‌کندل chronological با فقط یک پوزیشن باز، HTML entry/exit/TP/SL و balance از 100 دلار | `Phase126.md` |
+| 127 | 🟡 طراحی ثبت‌شده | Causal 3D Hybrid Telemetry Tensor با safe_lag=48 و Target C | `Phase127.md` |
+| 128 | ✅ CLI/GUI کامل | LightGBM/CatBoost/XGBoost meta-labeler train + backtest روی telemetry flat projection | `Phase128.md` |
+| 129 | ✅ CLI/GUI کامل | WaveNet/TCN جدید روی telemetry tensor با train/backtest و purge-gap roll-forward split | `Phase129.md` |
+| 130 | ✅ CLI/GUI کامل | TSMixer benchmark train/backtest روی tensor سه‌بعدی telemetry | `Phase130.md` |
+| 131 | ✅ CLI/GUI کامل | PatchTST benchmark train/backtest روی tensor سه‌بعدی telemetry | `Phase131.md` |
+| 132 | ✅ CLI/GUI کامل | Meta-filtered chronological hybrid backtest؛ مقایسهٔ base/LightGBM/WaveNet/TSMixer/PatchTST candidateها | `Phase132.md` |
+| 133 | ✅ CLI/GUI کامل | Walk-forward/out-of-time validation ماه‌به‌ماه برای flat telemetry meta-labeler، بدون leakage | `Phase133.md` |
+| 134 | ✅ CLI/GUI scaffold | Production consolidation scaffold: config validation، safety gates و paper shadow بدون real orders | `Phase134.md` |
 
 ---
 
@@ -75,12 +83,16 @@ I) Phase125: range-aware TP/SL backtest و ذخیرهٔ threshold سودده
 J) Phase113: significance / random / Monte Carlo checks
 K) Phase116: range-aware hybrid decision engine integration اگر significance تأیید شد
 L) Phase126A: chronological single-position replay قبل از هر paper/live
-M) Phase126B: walk-forward/out-of-time hybrid validation
-N) Phase110: train-only feature selection برای branchهای برنده
-O) Phase114: external/regime features اگر baseline ارزشمند بود
-P) Phase117: advanced neural benchmarks
-Q) Phase115: live decision audit کامل قبل از live جدی
-R) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
+M) Phase127: ساخت causal 3D telemetry tensor با safe_lag=48 و Target C
+N) Phase128: LightGBM/CatBoost meta-labeler baseline
+O) Phase129: WaveNet/TCN روی telemetry tensor با roll-forward
+P) Phase130: TSMixer benchmark
+Q) Phase131: PatchTST benchmark
+R) Phase132: meta-filtered chronological backtest comparison
+S) Phase133: walk-forward/out-of-time hybrid validation
+T) Phase134: production consolidation / online bot assembly اگر validation پاس شد
+U) Phase115: live decision audit کامل قبل از live جدی
+V) Phase118: order-book/tick فقط در صورت داشتن دیتای واقعی
 ```
 
 ---
@@ -155,3 +167,22 @@ docs/SESSION_HANDOFF_2026-09-07.md
 docs/CURRENT_STATE.md
 docs/Phases/README_PHASE100_115.md
 ```
+
+---
+
+## قانون جدید اجرای اپراتور از GUI
+
+از Phase126 به بعد، هر فازی که چیزی برای اجرای اپراتور می‌سازد باید همزمان Dashboard/GUI command داشته باشد. CLI تنها کافی نیست.
+
+برای هر script اجرایی باید این‌ها اضافه شود:
+
+```text
+CommandKind
+CommandDescriptor با label/description/fields
+Handler که script/application service را اجرا کند
+Advanced fields برای پارامترهای تخصصی
+GUI tests برای descriptor و arg pass-through
+Dashboard visibility در integration coverage
+```
+
+این قانون در Phase115 و Phase126 تا Phase134 به‌صورت جداگانه ثبت شده است.

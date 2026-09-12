@@ -73,3 +73,31 @@ src/ShadBotTrader/dashboard_cli.py optional display
 - log قابل parse باشد.
 - اطلاعات محرمانه account/password هرگز ثبت نشود.
 ```
+---
+
+## GUI/operator execution requirement
+
+این فاز حتماً باید از Dashboard قابل اجرا باشد، چون اپراتور نباید live/paper audit را با دستورهای دستی و طولانی اجرا کند.
+
+حداقل command لازم:
+
+```text
+CommandKind.RUN_HYBRID_LIVE_DECISION_AUDIT
+Dashboard label: Run hybrid live decision audit
+Handler/application service: runs paper/shadow decisions without real orders
+```
+
+GUI باید نشان دهد:
+
+```text
+latest candle/quote
+hybrid probabilities
+meta probabilities if enabled
+range_1d/range_4h forecasts
+TP/SL
+TRADE/NO_TRADE reason
+paper/live mode
+execution disabled/enabled flag
+```
+
+تا وقتی این GUI/audit وجود ندارد، real live trading مجاز نیست.

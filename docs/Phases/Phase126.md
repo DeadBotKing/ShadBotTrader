@@ -200,3 +200,63 @@ walk-forward:
 ```
 
 هرگز نباید برای اعتبارسنجی، مدل را روی کل دیتاست train و بعد روی همان کل دیتاست backtest کرد؛ آن in-sample leakage است.
+---
+
+## GUI/operator execution requirement
+
+این فاز قبلاً GUI command دارد و باید حفظ شود:
+
+```text
+CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST
+Dashboard label: Chronological hybrid replay
+Handler: runs scripts/replay_hybrid_chronological_backtest.py
+```
+
+قاعده از اینجا به بعد: هر replay/backtest/train/audit که اپراتور باید اجرا کند، باید در Dashboard command داشته باشد و تست‌های GUI هم به‌روزرسانی شوند. CLI تنها کافی نیست.
+
+---
+
+## Full chronological execution result — 2026-09-10
+
+کاربر Phase126A را روی کل 5M با `source_mode=stream`, `stream_scope=all`, `stream_wavenet=neutral`, `initial_capital=100`, `units=0.1` اجرا کرد.
+
+```text
+source_rows     : 52832
+evaluated_rows  : 52832
+threshold       : buy=0.80 sell=0.65 margin=0.05
+trades          : 1693
+buy/sell        : 1118 / 575
+wins/losses     : 512 / 1181
+win_rate        : 30.2422%
+label_precision : 47.6669%
+total_pnl       : -4590.797210656048
+profit_factor   : 0.5787103197097719
+max_drawdown    : 4590.797210656047
+coverage        : 3.2045%
+```
+
+Chronological counters:
+
+```text
+no_trade_probability: 21949
+skipped_while_open  : 17299
+invalid_range       : 5357
+invalid_bracket     : 6534
+```
+
+Account view:
+
+```text
+initial_capital   : 100
+units             : 0.1
+final_balance     : -359.0797210656049
+max_drawdown_cash : 459.07972106560476
+would_breach_zero : true
+```
+
+نتیجه:
+
+```text
+Base hybrid fixed-threshold حتی با single-position chronology روی کل تاریخ robust نیست.
+این نتیجه اجرای Phase127/128/132/133 را ضروری می‌کند و live/paper جدی همچنان ممنوع است.
+```

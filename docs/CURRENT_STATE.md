@@ -906,3 +906,683 @@ run_logs\hybrid_chronological_backtest\latest.html
 ```
 
 اگر این هم روی کل تاریخ شکست بخورد، گام بعدی Phase126B walk-forward/out-of-time validation است.
+
+## Roadmap locked before Phase127 implementation
+
+ایدهٔ جدید کاربر به فازهای جداگانه تبدیل و ثبت شد تا چیزی گم نشود. مسیر آینده:
+
+```text
+Phase126A — chronological single-position replay   [implemented]
+Phase127  — causal 3D telemetry tensor with Target C
+Phase128  — LightGBM/CatBoost meta-labeler baseline
+Phase129  — WaveNet/TCN on telemetry tensor
+Phase130  — TSMixer benchmark
+Phase131  — PatchTST benchmark
+Phase132  — meta-filtered chronological backtest comparison
+Phase133  — walk-forward/out-of-time validation
+Phase134  — production consolidation / online bot assembly
+Phase115  — live decision audit / paper shadow after consolidation
+```
+
+Key decisions:
+
+```text
+safe_lag = 48 bars
+Target C = target_trade_win + target_trade_score_r + target_trade_pnl
+3D tensor = [samples, tensor_window, channels]
+4H/1D features enter as aligned channels, using only closed higher-timeframe candles
+WaveNet phase exists as Phase129, but it is a new telemetry-target WaveNet/TCN, not the old collapsed trend_signal model
+```
+
+Production complexity concern:
+
+```text
+Phase134 is explicitly reserved for simplifying/consolidating the final online bot path. If a model stack passes validation, live code must be one narrow service/config path, not a pile of research scripts.
+```
+
+## GUI execution rule for all upcoming executable phases
+
+از این نقطه به بعد، CLI-only برای فازهای اجرایی قابل قبول نیست. هر فاز آینده که نیاز به اجرای اپراتور دارد باید Dashboard/GUI command داشته باشد.
+
+ثبت‌شده در:
+
+```text
+Phase115
+Phase126
+Phase127
+Phase128
+Phase129
+Phase130
+Phase131
+Phase132
+Phase133
+Phase134
+```
+
+حداقل الزامات هر فاز اجرایی:
+
+```text
+CommandKind
+CommandDescriptor
+Handler
+advanced fields برای پارامترهای تخصصی
+unit/integration GUI tests
+```
+
+این قانون برای جلوگیری از پیچیده‌شدن workflow و وابستگی به دستورهای دستی ثبت شد.
+
+## Phase127A built — causal telemetry tensor builder
+
+Phase127A پیاده‌سازی شد:
+
+```text
+scripts/build_hybrid_telemetry_tensor.py
+GUI: Build hybrid telemetry tensor
+```
+
+خروجی‌ها:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_v1.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+ویژگی‌ها:
+
+```text
+Target C: target_trade_win + target_trade_score_r + target_trade_pnl
+safe_lag_bars=48
+3D tensor: X=[samples, tensor_window, channels]
+source-mode matrix|stream
+max_tensor_mb guard
+GUI command موجود است
+```
+
+اولین اجرای پیشنهادی کاربر باید matrix-mode باشد. بعد از دیدن `latest.json`، اگر shape/candidate/target stats درست بود، اجرای stream full با stride/max_samples انجام شود.
+
+راهنمای کامل ترتیب اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase128A built — hybrid meta-labeler baseline
+
+Phase128A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_meta_labeler.py
+scripts/backtest_hybrid_meta_labeler.py
+GUI: Train hybrid meta-labeler
+GUI: Backtest hybrid meta-labeler
+```
+
+پیش‌نیاز:
+
+```text
+Phase127A باید hybrid_telemetry_flat_latest.parquet را ساخته باشد.
+```
+
+مدل پیشنهادی اول:
+
+```text
+gold_hybrid_meta_lightgbm_5m
+```
+
+Target اول:
+
+```text
+target_trade_win
+```
+
+بعد از train، backtest meta-filtered روی telemetry candidates اجرا می‌شود و خروجی‌ها:
+
+```text
+run_logs\hybrid_meta_labeler\latest.json
+run_logs\hybrid_meta_backtest\latest.json
+run_logs\hybrid_meta_backtest\latest.html
+run_logs\hybrid_meta_backtest\latest.csv
+```
+
+راهنمای اجرای ترتیب فردا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase129A built — telemetry WaveNet/TCN
+
+Phase129A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_wavenet.py
+scripts/backtest_hybrid_telemetry_wavenet.py
+GUI: Train telemetry WaveNet/TCN
+GUI: Backtest telemetry WaveNet/TCN
+```
+
+این فاز تکرار WaveNet قبلی نیست. ورودی آن Phase127 tensor است:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+causal dilated Conv1D/TCN
+train-only scaler
+purge_gap default=336
+artifact format=pickle_keras with scaler metadata
+backtest decision_mode=meta|score|both
+```
+
+برای اجرا باید TensorFlow نصب باشد:
+
+```powershell
+python -m pip install -r requirements-ai.txt
+```
+
+بعد از train/backtest باید این فایل‌ها ارسال شوند:
+
+```text
+run_logs\hybrid_telemetry_wavenet\latest.json
+run_logs\hybrid_telemetry_wavenet_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase130A built — telemetry TSMixer benchmark
+
+Phase130A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_tsmixer.py
+scripts/backtest_hybrid_telemetry_tsmixer.py
+GUI: Train telemetry TSMixer
+GUI: Backtest telemetry TSMixer
+```
+
+ورودی:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+TSMixer time-mixing + feature-mixing blocks
+train-only scaler
+purge_gap default=336
+backtest decision_mode=meta|score|both
+```
+
+بعد از train/backtest باید ارسال شود:
+
+```text
+run_logs\hybrid_telemetry_tsmixer\latest.json
+run_logs\hybrid_telemetry_tsmixer_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase131A built — telemetry PatchTST benchmark
+
+Phase131A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_patchtst.py
+scripts/backtest_hybrid_telemetry_patchtst.py
+GUI: Train telemetry PatchTST
+GUI: Backtest telemetry PatchTST
+```
+
+ورودی:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+PatchTST temporal patches + Transformer encoder
+train-only scaler
+purge_gap default=336
+backtest decision_mode=meta|score|both
+```
+
+بعد از train/backtest باید ارسال شود:
+
+```text
+run_logs\hybrid_telemetry_patchtst\latest.json
+run_logs\hybrid_telemetry_patchtst_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase132A built — meta-filtered hybrid comparison
+
+Phase132A پیاده‌سازی شد:
+
+```text
+scripts/backtest_meta_filtered_hybrid.py
+GUI: Backtest meta-filtered hybrid
+```
+
+کاربرد:
+
+```text
+مقایسه base hybrid candidates با meta-filterهای Phase128/129/130/131 روی همان chronological replay.
+```
+
+خروجی‌ها:
+
+```text
+run_logs\hybrid_meta_comparison\latest.json
+run_logs\hybrid_meta_comparison\latest.csv
+run_logs\hybrid_meta_comparison\latest.html
+run_logs\hybrid_meta_comparison\best_replay.html
+```
+
+ویژگی مهم:
+
+```text
+skip_missing=1 پیش‌فرض است، پس اگر هنوز بعضی مدل‌ها train نشده باشند comparison فقط آن‌ها را skipped ثبت می‌کند.
+```
+
+راهنمای اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase133A built — flat meta-labeler walk-forward validation
+
+Phase133A پیاده‌سازی شد:
+
+```text
+scripts/run_hybrid_walk_forward_validation.py
+GUI: Run hybrid walk-forward validation
+```
+
+کاربرد:
+
+```text
+برای هر test month، فقط گذشته train می‌شود، فقط validation گذشته threshold انتخاب می‌کند، و ماه آینده test می‌شود.
+```
+
+محدودهٔ فعلی:
+
+```text
+flat telemetry booster meta-labeler از Phase128
+```
+
+خروجی:
+
+```text
+run_logs\hybrid_walk_forward_validation\latest.json
+run_logs\hybrid_walk_forward_validation\latest.csv
+run_logs\hybrid_walk_forward_validation\latest.html
+```
+
+اگر این مرحله شکست بخورد، Phase134/production نباید اجرا شود. باید برگردیم به feature/regime/threshold/model اصلاحی.
+
+## Phase134A built — production validation + paper shadow scaffold
+
+Phase134A پیاده‌سازی شد:
+
+```text
+src/ShadBotTrader/application/services/hybrid_production_service.py
+scripts/validate_production_hybrid_stack.py
+scripts/run_hybrid_paper_shadow.py
+GUI: Validate production hybrid stack
+GUI: Run hybrid paper shadow
+```
+
+خروجی validation:
+
+```text
+run_logs\hybrid_production_validation\latest.json
+configs\hybrid_production_stack.json
+```
+
+خروجی paper shadow:
+
+```text
+run_logs\hybrid_paper_shadow\latest.json
+run_logs\hybrid_paper_shadow\latest.csv
+run_logs\hybrid_paper_shadow\latest.html
+```
+
+ایمنی:
+
+```text
+run_hybrid_paper_shadow.py هیچ order واقعی نمی‌فرستد و اگر config.mode=live باشد اجرا را رد می‌کند.
+Live واقعی همچنان تا بعد از Phase115 ممنوع است.
+```
+
+Phase134A فعلاً scaffold است. بعد از Phase133 اگر یک candidate واقعاً قبول شود، همین config با مدل منتخب freeze می‌شود و سپس Phase115 live decision audit/paper shadow انجام می‌شود.
+
+## Latest execution result — Phase126A failed; Phase127 timestamp bug fixed
+
+Phase126A chronological full 5M result from user:
+
+```text
+rows            : 52832
+trades          : 1693
+buy/sell        : 1118 / 575
+win_rate        : 30.2422%
+label_precision : 47.6669%
+total_pnl       : -4590.797210656048
+profit_factor   : 0.5787103197097719
+max_drawdown    : 4590.797210656047
+coverage        : 3.2045%
+final_balance   : -359.0797210656049  # initial=100, units=0.1
+would_breach_zero: true
+```
+
+Conclusion:
+
+```text
+Base hybrid fixed-threshold fails full chronological replay. Continue with telemetry/meta-filter/walk-forward; do not go live.
+```
+
+Phase127A first matrix-mode run failed with:
+
+```text
+TypeError: '<' not supported between instances of 'str' and 'datetime.datetime'
+```
+
+Fix committed in `scripts/build_hybrid_telemetry_tensor.py`:
+
+```text
+matrix timestamp strings are converted to UTC pandas Timestamp before latest-closed 4H/1D lookup.
+```
+
+Next user action:
+
+```text
+rerun Phase127A matrix-mode command exactly as before.
+Then send run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+## Phase127A matrix-mode execution succeeded
+
+کاربر Phase127A را با `source_mode=matrix` اجرا کرد و خروجی ساختاراً سالم بود:
+
+```text
+rows               : 8000
+tensor_samples     : 7851
+tensor_shape       : [7851, 150, 94]
+channels           : 94
+candidate_rows     : 2307
+candidate_rate     : 28.8375%
+target_win_rate    : 57.2605%
+target_score_r_mean: +0.07910706847906113
+target_pnl_sum     : +3714.10546875
+warnings           : []
+```
+
+فایل‌های ساخته‌شده:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+```
+
+تفسیر:
+
+```text
+Phase127A PASS از نظر data build. اما این matrix-mode فقط 8000 ردیف دارد و validation نیست. گام بعدی Phase128A است.
+```
+
+## Latest Phase128A train result — LightGBM meta-labeler v1
+
+کاربر Phase128A classifier را train کرد:
+
+```text
+model_id       : gold_hybrid_meta_lightgbm_5m
+version        : 1
+rows           : 2307 candidate rows
+features       : 94
+train/val/test : 1614 / 346 / 347
+record_path    : datasets\models\gold_hybrid_meta_lightgbm_5m\v1_training.json
+```
+
+نتیجه:
+
+```text
+validation AP  : 0.7864 vs base_rate 0.6445
+validation precision/recall/F1 @0.55: 0.6572 / 0.9372 / 0.7726
+validation positive_rate @0.55: 91.91%
+
+test AP        : 0.6190 vs base_rate 0.4841
+test precision/recall/F1 @0.55: 0.4955 / 0.9940 / 0.6614
+test positive_rate @0.55: 97.12%
+```
+
+Interpretation:
+
+```text
+Ranking signal exists (AP > base_rate), but threshold=0.55 is too permissive and almost does not filter on test.
+```
+
+Next action:
+
+```text
+Run Phase128A backtest with saved threshold first, then Phase132A threshold grid.
+```
+
+## Latest Phase128A backtest result — positive but month-concentrated
+
+کاربر Phase128A backtest را اجرا کرد:
+
+```text
+model              : gold_hybrid_meta_lightgbm_5m v1
+threshold          : meta=0.55 from model_record
+rows/evaluated     : 8000 / 8000
+trades             : 143
+buy/sell           : 74 / 69
+win_rate           : 65.7343%
+total_pnl          : +509.5359231829643
+profit_factor      : 2.608242691826868
+max_drawdown       : 91.44515466690063
+coverage           : 1.7875%
+final_balance      : 150.95359231829644  # initial=100, units=0.1
+max_drawdown_cash  : 9.144515466690065
+would_breach_zero  : false
+```
+
+Monthly:
+
+```text
+2026-07: +526.1065, 60/60 wins, PF=999
+2026-08: -16.5706, 34/83 wins, PF=0.9477
+```
+
+Interpretation:
+
+```text
+Meta-filter is clearly useful on this 8000-row matrix, but profit is highly concentrated in July. Need Phase132 threshold grid and Phase133 walk-forward before trusting it.
+```
+
+Next action:
+
+```text
+Run Phase132A comparison/threshold grid.
+```
+
+## Phase132A best replay bug fixed
+
+کاربر Phase132A را با candidates `base,gold_hybrid_meta_lightgbm_5m` اجرا کرد و خطا گرفت:
+
+```text
+AttributeError: 'ComparisonRow' object has no attribute 'label_correct'
+```
+
+رفع شد:
+
+```text
+BestReplay now stores the original FixedBacktestSummary.
+best_replay.html uses replay.summary instead of reconstructing summary from ComparisonRow.
+```
+
+کاربر باید همان Phase132A command قبلی را دوباره اجرا کند و ارسال کند:
+
+```text
+run_logs\hybrid_meta_comparison\latest.json
+```
+
+## Latest Phase132A result — meta-filter strongly improves 8000-row replay
+
+Phase132A threshold grid نتیجه داد:
+
+```text
+Base:
+trades=219, win_rate=42.47%, total_pnl=+55.1465, PF=1.0678, DD=98.2513
+
+Best meta:
+candidate=gold_hybrid_meta_lightgbm_5m:meta:meta=record:score=0.0
+threshold=0.55
+trades=142, win_rate=65.49%, total_pnl=+502.8292, PF=2.5871, DD=91.4452
+final_balance=150.2829 with initial=100 and units=0.1
+```
+
+Grid summary:
+
+```text
+0.55: +502.83 PF=2.587 trades=142
+0.60: +488.53 PF=2.552 trades=140
+0.65: +481.79 PF=2.541 trades=138
+0.70: +467.51 PF=2.507 trades=136
+0.75: +446.61 PF=2.450 trades=131
+0.80: +420.53 PF=2.365 trades=130
+```
+
+Interpretation:
+
+```text
+Meta-filter works on the 8000-row matrix, but this is not final validation because it is not full-history walk-forward. Next build full stream telemetry, retrain meta, then run Phase133A walk-forward.
+```
+
+## Latest implementation fix — Phase127A stream same-bar-policy — 2026-09-12
+
+The operator's full stream Phase127A run stopped after the first chunk:
+
+```text
+stream rows : 500/52,832
+[X] AttributeError: 'Namespace' object has no attribute 'same_bar_policy'
+```
+
+Implemented fix:
+
+```text
+scripts/build_hybrid_telemetry_tensor.py
+  added --same-bar-policy {stop_first,tp_first}, default=stop_first
+
+Dashboard / GUI
+  Build hybrid telemetry tensor now exposes Same-bar policy and forwards --same-bar-policy
+```
+
+Additional stream consistency correction:
+
+```text
+stream-mode lagged trade telemetry is recomputed globally after all chunks are concatenated,
+so lagged_trade_count and rolling win-rate features do not reset every stream_chunk_size rows.
+```
+
+Verification status:
+
+```text
+Targeted ruff/black: PASS
+Targeted tests: 65 passed
+Full pytest: 1760 passed, 54 skipped
+Full ruff/black/mypy: still fail from pre-existing repo debt.
+```
+
+Next required operator action remains:
+
+```text
+Rerun Phase127A full stream telemetry with the same command.
+Optional explicit addition: --same-bar-policy stop_first
+```
+
+## Latest execution result — full stream telemetry + Phase133 walk-forward — 2026-09-12
+
+Phase127A full stream telemetry succeeded:
+
+```text
+rows                : 52832
+tensor_samples      : 10537
+tensor_shape        : [10537, 150, 94]
+candidate_rows      : 13757
+candidate_rate      : 26.0391%
+target_win_rate     : 41.2663%
+target_score_r_mean : -0.23007889091968536
+target_pnl_sum      : -43309.8125
+warnings            : []
+```
+
+Phase128A retrain on full stream telemetry produced:
+
+```text
+model_id         : gold_hybrid_meta_lightgbm_5m
+version          : 2
+rows             : 13757
+train/val/test   : 9629 / 2064 / 2064
+val AP/base      : 0.6117950637217242 / 0.4806201550387597
+test AP/base     : 0.7147311817866087 / 0.5184108527131783
+test precision   : 0.6214614878209348
+test recall      : 0.8822429906542056
+```
+
+Phase133A walk-forward result:
+
+```text
+folds                  : 6
+positive_months        : 1
+negative_months        : 4
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : -387.9482191801071
+meta_profit_factor     : 0.764435361497561
+meta_max_drawdown      : 460.49957263469696
+meta_trades            : 288
+meta_final_balance     : 61.20517808198929
+meta_would_breach_zero : false
+```
+
+Current decision:
+
+```text
+Phase133A FAILED. The full-stream flat LightGBM meta-filter reduces losses versus base but does not generalize into a profitable out-of-time strategy.
+No Phase134 paper shadow, no live trading, and no production acceptance from this candidate.
+```
+
+Recommended next research direction:
+
+```text
+1) Run a full-stream Phase132A comparison for v2 to confirm in-sample full-history behaviour.
+2) Run Phase133A diagnostic variants with stricter meta_thresholds, class_weight=off, and drawdown_adjusted scoring.
+3) If flat model still fails, evaluate Phase129/130/131 telemetry tensor models only in walk-forward mode before any deployment discussion.
+```

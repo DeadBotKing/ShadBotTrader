@@ -630,6 +630,281 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "report_title",
         "timeout_minutes",
     },
+    CommandKind.BUILD_HYBRID_TELEMETRY_TENSOR: {
+        "source_mode",
+        "matrix_path",
+        "model_version",
+        "eval_frac",
+        "max_windows",
+        "stream_scope",
+        "stream_chunk_size",
+        "stream_wavenet",
+        "window",
+        "label_horizon",
+        "atr_mult",
+        "train_ratio",
+        "tensor_window",
+        "safe_lag_bars",
+        "telemetry_lag_mode",
+        "sample_stride",
+        "max_samples",
+        "candidate_samples_only",
+        "dtype",
+        "max_tensor_mb",
+        "include_htf_context",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "max_hold_bars",
+        "min_4h_room",
+        "min_1d_room",
+        "min_tp_distance",
+        "min_sl_distance",
+        "spread_mode",
+        "spread_value",
+        "slippage",
+        "same_bar_policy",
+        "output_name",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_HYBRID_META_LABELER: {
+        "flat_path",
+        "model_id",
+        "task",
+        "target",
+        "booster",
+        "candidate_only",
+        "train_frac",
+        "val_frac",
+        "min_samples",
+        "class_weight",
+        "n_estimators",
+        "booster_lr",
+        "max_depth",
+        "num_leaves",
+        "meta_threshold",
+        "score_threshold",
+        "save_record",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_HYBRID_META_LABELER: {
+        "flat_path",
+        "meta_model_version",
+        "meta_threshold",
+        "score_threshold",
+        "eval_frac",
+        "max_windows",
+        "initial_capital",
+        "units",
+        "report_title",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_HYBRID_TELEMETRY_WAVENET: {
+        "tensor_path",
+        "model_id",
+        "task",
+        "candidate_only",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_samples",
+        "batch_size",
+        "epochs",
+        "learning_rate",
+        "filters",
+        "kernel_size",
+        "n_layers",
+        "n_blocks",
+        "dense_units",
+        "dropout",
+        "score_loss_weight",
+        "class_weight",
+        "meta_threshold",
+        "score_threshold",
+        "monitor_metric",
+        "early_stopping_patience",
+        "save_record",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_HYBRID_TELEMETRY_WAVENET: {
+        "tensor_path",
+        "flat_path",
+        "model_version",
+        "decision_mode",
+        "meta_threshold",
+        "score_threshold",
+        "eval_frac",
+        "max_windows",
+        "initial_capital",
+        "units",
+        "report_title",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_HYBRID_TELEMETRY_TSMIXER: {
+        "tensor_path",
+        "model_id",
+        "task",
+        "candidate_only",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_samples",
+        "batch_size",
+        "epochs",
+        "learning_rate",
+        "mixer_layers",
+        "time_hidden_units",
+        "feature_hidden_units",
+        "dense_units",
+        "dropout",
+        "score_loss_weight",
+        "class_weight",
+        "meta_threshold",
+        "score_threshold",
+        "monitor_metric",
+        "early_stopping_patience",
+        "save_record",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_HYBRID_TELEMETRY_TSMIXER: {
+        "tensor_path",
+        "flat_path",
+        "model_version",
+        "decision_mode",
+        "meta_threshold",
+        "score_threshold",
+        "eval_frac",
+        "max_windows",
+        "initial_capital",
+        "units",
+        "report_title",
+        "timeout_minutes",
+    },
+    CommandKind.TRAIN_HYBRID_TELEMETRY_PATCHTST: {
+        "tensor_path",
+        "model_id",
+        "task",
+        "candidate_only",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_samples",
+        "batch_size",
+        "epochs",
+        "learning_rate",
+        "patch_len",
+        "stride",
+        "d_model",
+        "layers",
+        "heads",
+        "ff_units",
+        "dense_units",
+        "dropout",
+        "score_loss_weight",
+        "class_weight",
+        "meta_threshold",
+        "score_threshold",
+        "monitor_metric",
+        "early_stopping_patience",
+        "save_record",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_HYBRID_TELEMETRY_PATCHTST: {
+        "tensor_path",
+        "flat_path",
+        "model_version",
+        "decision_mode",
+        "meta_threshold",
+        "score_threshold",
+        "eval_frac",
+        "max_windows",
+        "initial_capital",
+        "units",
+        "report_title",
+        "timeout_minutes",
+    },
+    CommandKind.BACKTEST_META_FILTERED_HYBRID: {
+        "flat_path",
+        "tensor_path",
+        "candidates",
+        "candidate_versions",
+        "decision_modes",
+        "meta_thresholds",
+        "score_thresholds",
+        "eval_frac",
+        "max_windows",
+        "min_trades",
+        "score_metric",
+        "initial_capital",
+        "units",
+        "skip_missing",
+        "report_title",
+        "timeout_minutes",
+    },
+    CommandKind.RUN_HYBRID_WALK_FORWARD_VALIDATION: {
+        "flat_path",
+        "model_id",
+        "task",
+        "target",
+        "booster",
+        "candidate_only",
+        "start_month",
+        "end_month",
+        "train_months_min",
+        "validation_months",
+        "purge_gap_bars",
+        "meta_thresholds",
+        "score_thresholds",
+        "min_trades",
+        "score_metric",
+        "class_weight",
+        "n_estimators",
+        "booster_lr",
+        "max_depth",
+        "num_leaves",
+        "initial_capital",
+        "units",
+        "timeout_minutes",
+    },
+    CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: {
+        "config_path",
+        "mode",
+        "base_model_version",
+        "meta_model_id",
+        "meta_model_version",
+        "meta_model_type",
+        "decision_mode",
+        "meta_threshold",
+        "score_threshold",
+        "range_1d_model_id",
+        "range_1d_version",
+        "range_4h_model_id",
+        "range_4h_version",
+        "telemetry_flat_path",
+        "telemetry_tensor_path",
+        "telemetry_schema_hash",
+        "max_daily_loss_percent",
+        "max_open_positions",
+        "position_size_units",
+        "initial_capital",
+        "paper_shadow_passed",
+        "account_profile_confirmed",
+        "symbol_mapping_confirmed",
+        "kill_switch_enabled",
+        "explicit_live_confirm",
+        "write_config",
+        "require_models",
+        "timeout_minutes",
+    },
+    CommandKind.RUN_HYBRID_PAPER_SHADOW: {
+        "config_path",
+        "flat_path",
+        "eval_frac",
+        "max_windows",
+        "allow_validation_fail",
+        "report_title",
+        "timeout_minutes",
+    },
     CommandKind.OPTIMISE_LEARNING_RATE: {
         "threshold_pct",
         "atr_mult",
@@ -2113,6 +2388,788 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.BUILD_HYBRID_TELEMETRY_TENSOR,
+            label="Build hybrid telemetry tensor",
+            description=(
+                "Build the Phase127 causal 3D telemetry tensor with Target C, safe_lag=48, "
+                "lagged backtest telemetry and aligned 4H/1D context."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("model_id", "Hybrid head id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField(
+                    "source_mode",
+                    "Source mode",
+                    "matrix",
+                    kind="select",
+                    options=("matrix", "stream"),
+                    hint="matrix is safest for first run; stream can build rows in chunks",
+                ),
+                CommandField("matrix_path", "Matrix path", ""),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max source rows", "0", kind="number"),
+                CommandField(
+                    "stream_scope",
+                    "Stream scope",
+                    "all",
+                    kind="select",
+                    options=("all", "holdout", "last-fold", "auto"),
+                ),
+                CommandField("stream_chunk_size", "Stream chunk rows", "500", kind="number"),
+                CommandField(
+                    "stream_wavenet",
+                    "Stream WaveNet",
+                    "neutral",
+                    kind="select",
+                    options=("neutral", "batch"),
+                ),
+                CommandField("tensor_window", "Tensor window", "150", kind="number"),
+                CommandField("safe_lag_bars", "Safe lag bars", "48", kind="number"),
+                CommandField(
+                    "telemetry_lag_mode",
+                    "Telemetry lag mode",
+                    "fixed",
+                    kind="select",
+                    options=("fixed", "exit_closed"),
+                ),
+                CommandField("sample_stride", "Sample stride", "1", kind="number"),
+                CommandField("max_samples", "Max tensor samples", "0", kind="number"),
+                CommandField(
+                    "candidate_samples_only",
+                    "Candidate samples only",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField(
+                    "dtype",
+                    "Tensor dtype",
+                    "float16",
+                    kind="select",
+                    options=("float16", "float32"),
+                ),
+                CommandField("max_tensor_mb", "Max tensor MB", "512", kind="number"),
+                CommandField(
+                    "include_htf_context",
+                    "Include 4H/1D context",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("window", "Base model window", "288", kind="number"),
+                CommandField("label_horizon", "Label horizon", "288", kind="number"),
+                CommandField("atr_mult", "Barrier", "0.5", kind="number"),
+                CommandField("train_ratio", "Training prefix %", "80", kind="number"),
+                CommandField("buy_threshold", "BUY threshold", "-1", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "-1", kind="number"),
+                CommandField("min_margin", "Min margin", "-1", kind="number"),
+                CommandField("max_hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("min_4h_room", "Min 4H room ($)", "2", kind="number"),
+                CommandField("min_1d_room", "Min 1D room ($)", "5", kind="number"),
+                CommandField("min_tp_distance", "Min TP distance ($)", "2", kind="number"),
+                CommandField("min_sl_distance", "Min SL distance ($)", "2", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread type", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("slippage", "Slippage ($)", "0", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField("output_name", "Output name", "hybrid_telemetry_tensor_v1"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_HYBRID_META_LABELER,
+            label="Train hybrid meta-labeler",
+            description=(
+                "Train the Phase128 LightGBM/CatBoost/XGBoost meta-labeler on the "
+                "causal telemetry flat matrix to filter hybrid trade candidates."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("model_id", "Meta model id", ""),
+                CommandField(
+                    "task",
+                    "Task",
+                    "classifier",
+                    kind="select",
+                    options=("classifier", "regressor"),
+                ),
+                CommandField("target", "Target column", ""),
+                CommandField(
+                    "booster", "Booster", "lightgbm", kind="select", options=BOOSTER_CHOICES
+                ),
+                CommandField(
+                    "candidate_only",
+                    "Candidate rows only",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("min_samples", "Min samples", "200", kind="number"),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("n_estimators", "Trees/iterations", "500", kind="number"),
+                CommandField("booster_lr", "Booster LR", "0.03", kind="number"),
+                CommandField("max_depth", "Max depth", "3", kind="number"),
+                CommandField("num_leaves", "LightGBM leaves", "31", kind="number"),
+                CommandField("meta_threshold", "Meta threshold", "0.55", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("save_record", "Save model", "1", kind="select", options=("1", "0")),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.BACKTEST_HYBRID_META_LABELER,
+            label="Backtest hybrid meta-labeler",
+            description=(
+                "Apply the trained Phase128 meta-filter to telemetry candidates and "
+                "produce chronological HTML/JSON/CSV trading reports."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("meta_model_id", "Meta model id", "gold_hybrid_meta_lightgbm_5m"),
+                CommandField("meta_model_version", "Meta version", "0", kind="number"),
+                CommandField("meta_threshold", "Meta threshold", "-1", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField(
+                    "report_title", "Report title", "Meta-filtered hybrid chronological backtest"
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_HYBRID_TELEMETRY_WAVENET,
+            label="Train telemetry WaveNet/TCN",
+            description=(
+                "Train the Phase129 causal WaveNet/TCN on the 3D telemetry tensor "
+                "to predict candidate win probability and expected R-score."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_wavenet_5m"),
+                CommandField(
+                    "task",
+                    "Task",
+                    "multihead",
+                    kind="select",
+                    options=("multihead", "classifier", "regressor"),
+                ),
+                CommandField(
+                    "candidate_only",
+                    "Candidate samples only",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap", "336", kind="number"),
+                CommandField("max_samples", "Max samples", "0", kind="number"),
+                CommandField("batch_size", "Batch size", "64", kind="number"),
+                CommandField("epochs", "Epochs", "30", kind="number"),
+                CommandField("learning_rate", "Learning rate", "0.001", kind="number"),
+                CommandField("filters", "Conv filters", "48", kind="number"),
+                CommandField("kernel_size", "Kernel size", "3", kind="number"),
+                CommandField("n_layers", "Dilation layers", "5", kind="number"),
+                CommandField("n_blocks", "Residual blocks", "2", kind="number"),
+                CommandField("dense_units", "Dense units", "64", kind="number"),
+                CommandField("dropout", "Dropout", "0.20", kind="number"),
+                CommandField("score_loss_weight", "Score loss weight", "0.50", kind="number"),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("meta_threshold", "Meta threshold", "0.55", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=(
+                        "auto",
+                        "val_loss",
+                        "val_meta_win_ap",
+                        "val_meta_win_precision",
+                        "val_score_r_mae",
+                    ),
+                ),
+                CommandField("early_stopping_patience", "Early stop patience", "8", kind="number"),
+                CommandField("save_record", "Save model", "1", kind="select", options=("1", "0")),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.BACKTEST_HYBRID_TELEMETRY_WAVENET,
+            label="Backtest telemetry WaveNet/TCN",
+            description=(
+                "Apply the trained Phase129 WaveNet/TCN as a meta-filter and write "
+                "chronological HTML/JSON/CSV trading reports."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_wavenet_5m"),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField(
+                    "decision_mode",
+                    "Decision mode",
+                    "meta",
+                    kind="select",
+                    options=("meta", "score", "both"),
+                ),
+                CommandField("meta_threshold", "Meta threshold", "-1", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField(
+                    "report_title", "Report title", "Telemetry WaveNet filtered hybrid replay"
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_HYBRID_TELEMETRY_TSMIXER,
+            label="Train telemetry TSMixer",
+            description=(
+                "Train the Phase130 TSMixer benchmark on the 3D telemetry tensor with "
+                "time-mixing and feature-mixing MLP blocks."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_tsmixer_5m"),
+                CommandField(
+                    "task",
+                    "Task",
+                    "multihead",
+                    kind="select",
+                    options=("multihead", "classifier", "regressor"),
+                ),
+                CommandField(
+                    "candidate_only",
+                    "Candidate samples only",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap", "336", kind="number"),
+                CommandField("max_samples", "Max samples", "0", kind="number"),
+                CommandField("batch_size", "Batch size", "64", kind="number"),
+                CommandField("epochs", "Epochs", "30", kind="number"),
+                CommandField("learning_rate", "Learning rate", "0.001", kind="number"),
+                CommandField("mixer_layers", "Mixer layers", "4", kind="number"),
+                CommandField("time_hidden_units", "Time hidden units", "64", kind="number"),
+                CommandField("feature_hidden_units", "Feature hidden units", "128", kind="number"),
+                CommandField("dense_units", "Dense units", "64", kind="number"),
+                CommandField("dropout", "Dropout", "0.20", kind="number"),
+                CommandField("score_loss_weight", "Score loss weight", "0.50", kind="number"),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("meta_threshold", "Meta threshold", "0.55", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=(
+                        "auto",
+                        "val_loss",
+                        "val_meta_win_ap",
+                        "val_meta_win_precision",
+                        "val_score_r_mae",
+                    ),
+                ),
+                CommandField("early_stopping_patience", "Early stop patience", "8", kind="number"),
+                CommandField("save_record", "Save model", "1", kind="select", options=("1", "0")),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.BACKTEST_HYBRID_TELEMETRY_TSMIXER,
+            label="Backtest telemetry TSMixer",
+            description=(
+                "Apply the trained Phase130 TSMixer as a meta-filter and write "
+                "chronological HTML/JSON/CSV trading reports."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_tsmixer_5m"),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField(
+                    "decision_mode",
+                    "Decision mode",
+                    "meta",
+                    kind="select",
+                    options=("meta", "score", "both"),
+                ),
+                CommandField("meta_threshold", "Meta threshold", "-1", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField(
+                    "report_title", "Report title", "Telemetry TSMixer filtered hybrid replay"
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_HYBRID_TELEMETRY_PATCHTST,
+            label="Train telemetry PatchTST",
+            description=(
+                "Train the Phase131 PatchTST benchmark on the 3D telemetry tensor with "
+                "temporal patches and Transformer encoder blocks."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_patchtst_5m"),
+                CommandField(
+                    "task",
+                    "Task",
+                    "multihead",
+                    kind="select",
+                    options=("multihead", "classifier", "regressor"),
+                ),
+                CommandField(
+                    "candidate_only",
+                    "Candidate samples only",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap", "336", kind="number"),
+                CommandField("max_samples", "Max samples", "0", kind="number"),
+                CommandField("batch_size", "Batch size", "64", kind="number"),
+                CommandField("epochs", "Epochs", "30", kind="number"),
+                CommandField("learning_rate", "Learning rate", "0.001", kind="number"),
+                CommandField("patch_len", "Patch length", "16", kind="number"),
+                CommandField("stride", "Patch stride", "8", kind="number"),
+                CommandField("d_model", "Model width", "64", kind="number"),
+                CommandField("layers", "Transformer layers", "3", kind="number"),
+                CommandField("heads", "Attention heads", "4", kind="number"),
+                CommandField("ff_units", "Feed-forward units", "128", kind="number"),
+                CommandField("dense_units", "Dense units", "64", kind="number"),
+                CommandField("dropout", "Dropout", "0.20", kind="number"),
+                CommandField("score_loss_weight", "Score loss weight", "0.50", kind="number"),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("meta_threshold", "Meta threshold", "0.55", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField(
+                    "monitor_metric",
+                    "Monitor metric",
+                    "auto",
+                    kind="select",
+                    options=(
+                        "auto",
+                        "val_loss",
+                        "val_meta_win_ap",
+                        "val_meta_win_precision",
+                        "val_score_r_mae",
+                    ),
+                ),
+                CommandField("early_stopping_patience", "Early stop patience", "8", kind="number"),
+                CommandField("save_record", "Save model", "1", kind="select", options=("1", "0")),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.BACKTEST_HYBRID_TELEMETRY_PATCHTST,
+            label="Backtest telemetry PatchTST",
+            description=(
+                "Apply the trained Phase131 PatchTST as a meta-filter and write "
+                "chronological HTML/JSON/CSV trading reports."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_telemetry_patchtst_5m"),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField(
+                    "decision_mode",
+                    "Decision mode",
+                    "meta",
+                    kind="select",
+                    options=("meta", "score", "both"),
+                ),
+                CommandField("meta_threshold", "Meta threshold", "-1", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField(
+                    "report_title", "Report title", "Telemetry PatchTST filtered hybrid replay"
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.BACKTEST_META_FILTERED_HYBRID,
+            label="Backtest meta-filtered hybrid",
+            description=(
+                "Compare base hybrid candidates against every trained telemetry meta-filter "
+                "on the same chronological single-position replay."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("tensor_path", "Telemetry tensor path", ""),
+                CommandField(
+                    "candidates",
+                    "Candidates",
+                    "base,gold_hybrid_meta_lightgbm_5m,gold_hybrid_telemetry_wavenet_5m,gold_hybrid_telemetry_tsmixer_5m,gold_hybrid_telemetry_patchtst_5m",
+                ),
+                CommandField("candidate_versions", "Candidate versions", "0"),
+                CommandField("decision_modes", "Decision modes", "meta"),
+                CommandField("meta_thresholds", "Meta thresholds", "record"),
+                CommandField("score_thresholds", "Score thresholds", "0"),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField("min_trades", "Min trades", "10", kind="number"),
+                CommandField(
+                    "score_metric",
+                    "Score metric",
+                    "total_pnl",
+                    kind="select",
+                    options=("total_pnl", "profit_factor", "final_balance", "drawdown_adjusted"),
+                ),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField(
+                    "skip_missing", "Skip missing models", "1", kind="select", options=("1", "0")
+                ),
+                CommandField("report_title", "Report title", "Hybrid meta-filter comparison"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.RUN_HYBRID_WALK_FORWARD_VALIDATION,
+            label="Run hybrid walk-forward validation",
+            description=(
+                "Train a flat telemetry meta-labeler only on past months, calibrate on "
+                "past validation months, and test the next unseen month without leakage."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("model_id", "Model id", "gold_hybrid_meta_walkforward_5m"),
+                CommandField(
+                    "task",
+                    "Task",
+                    "classifier",
+                    kind="select",
+                    options=("classifier", "regressor"),
+                ),
+                CommandField("target", "Target column", ""),
+                CommandField(
+                    "booster", "Booster", "lightgbm", kind="select", options=BOOSTER_CHOICES
+                ),
+                CommandField(
+                    "candidate_only",
+                    "Candidate rows only",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("start_month", "Start month", ""),
+                CommandField("end_month", "End month", ""),
+                CommandField("train_months_min", "Min train months", "3", kind="number"),
+                CommandField("validation_months", "Validation months", "1", kind="number"),
+                CommandField("purge_gap_bars", "Purge gap bars", "336", kind="number"),
+                CommandField(
+                    "meta_thresholds", "Meta threshold grid", "0.45,0.50,0.55,0.60,0.65,0.70"
+                ),
+                CommandField("score_thresholds", "Score threshold grid", "0,0.05,0.10,0.20"),
+                CommandField("min_trades", "Min trades/fold", "10", kind="number"),
+                CommandField(
+                    "score_metric",
+                    "Score metric",
+                    "total_pnl",
+                    kind="select",
+                    options=("total_pnl", "profit_factor", "final_balance", "drawdown_adjusted"),
+                ),
+                CommandField(
+                    "class_weight",
+                    "Class weights",
+                    "auto",
+                    kind="select",
+                    options=CLASS_WEIGHT_CHOICES,
+                ),
+                CommandField("n_estimators", "Trees/iterations", "400", kind="number"),
+                CommandField("booster_lr", "Booster LR", "0.03", kind="number"),
+                CommandField("max_depth", "Max depth", "3", kind="number"),
+                CommandField("num_leaves", "LightGBM leaves", "31", kind="number"),
+                CommandField("initial_capital", "Initial capital ($)", "100", kind="number"),
+                CommandField("units", "PnL units", "0.1", kind="number"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
+            label="Validate production hybrid stack",
+            description=(
+                "Freeze and validate the Phase134 selected hybrid stack, telemetry schema, "
+                "risk settings and live-safety gates before paper/live use."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("config_path", "Config path", "configs/hybrid_production_stack.json"),
+                CommandField(
+                    "mode", "Mode", "paper_shadow", kind="select", options=("paper_shadow", "live")
+                ),
+                CommandField("base_model_id", "Base model id", "gold_hybrid_lightgbm_head_5m"),
+                CommandField("base_model_version", "Base version", "0", kind="number"),
+                CommandField("meta_model_id", "Meta model id", ""),
+                CommandField("meta_model_version", "Meta version", "0", kind="number"),
+                CommandField(
+                    "meta_model_type",
+                    "Meta model type",
+                    "none",
+                    kind="select",
+                    options=("none", "flat", "tensor"),
+                ),
+                CommandField(
+                    "decision_mode",
+                    "Decision mode",
+                    "meta",
+                    kind="select",
+                    options=("meta", "score", "both"),
+                ),
+                CommandField("meta_threshold", "Meta threshold", "0.55", kind="number"),
+                CommandField("score_threshold", "Score threshold", "0", kind="number"),
+                CommandField("range_1d_model_id", "1D range model", "gold_range_1d"),
+                CommandField("range_1d_version", "1D range version", "0", kind="number"),
+                CommandField("range_4h_model_id", "4H range model", "gold_range_4h"),
+                CommandField("range_4h_version", "4H range version", "0", kind="number"),
+                CommandField("telemetry_flat_path", "Telemetry flat path", ""),
+                CommandField("telemetry_tensor_path", "Telemetry tensor path", ""),
+                CommandField("telemetry_schema_hash", "Expected schema hash", ""),
+                CommandField("max_daily_loss_percent", "Max daily loss %", "5", kind="number"),
+                CommandField("max_open_positions", "Max open positions", "1", kind="number"),
+                CommandField("position_size_units", "Position size units", "0.1", kind="number"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField(
+                    "paper_shadow_passed",
+                    "Paper shadow passed",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField(
+                    "account_profile_confirmed",
+                    "Account confirmed",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField(
+                    "symbol_mapping_confirmed",
+                    "Symbol mapping confirmed",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField(
+                    "kill_switch_enabled",
+                    "Kill switch enabled",
+                    "1",
+                    kind="select",
+                    options=("1", "0"),
+                ),
+                CommandField("explicit_live_confirm", "Live confirm phrase", ""),
+                CommandField(
+                    "write_config", "Write config", "1", kind="select", options=("1", "0")
+                ),
+                CommandField(
+                    "require_models", "Require models exist", "0", kind="select", options=("0", "1")
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=False,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.RUN_HYBRID_PAPER_SHADOW,
+            label="Run hybrid paper shadow",
+            description=(
+                "Run the frozen Phase134 hybrid stack over stored telemetry as paper/shadow "
+                "decisions only; no real broker orders are sent."
+            ),
+            fields=[
+                CommandField("config_path", "Config path", "configs/hybrid_production_stack.json"),
+                CommandField("flat_path", "Telemetry flat path", ""),
+                CommandField("eval_frac", "Eval fraction", "1.00", kind="number"),
+                CommandField("max_windows", "Max windows", "0", kind="number"),
+                CommandField(
+                    "allow_validation_fail",
+                    "Allow validation fail",
+                    "0",
+                    kind="select",
+                    options=("0", "1"),
+                ),
+                CommandField("report_title", "Report title", "Hybrid production paper shadow"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.INSPECT_DATASET,
             label="Inspect a dataset",
             description=(
@@ -2702,6 +3759,35 @@ class CommandHandlers:
                 CommandKind.REPLAY_HYBRID_CHRONOLOGICAL_BACKTEST: (
                     accounts.replay_hybrid_chronological_backtest
                 ),
+                CommandKind.BUILD_HYBRID_TELEMETRY_TENSOR: (accounts.build_hybrid_telemetry_tensor),
+                CommandKind.TRAIN_HYBRID_META_LABELER: accounts.train_hybrid_meta_labeler,
+                CommandKind.BACKTEST_HYBRID_META_LABELER: accounts.backtest_hybrid_meta_labeler,
+                CommandKind.TRAIN_HYBRID_TELEMETRY_WAVENET: (
+                    accounts.train_hybrid_telemetry_wavenet
+                ),
+                CommandKind.BACKTEST_HYBRID_TELEMETRY_WAVENET: (
+                    accounts.backtest_hybrid_telemetry_wavenet
+                ),
+                CommandKind.TRAIN_HYBRID_TELEMETRY_TSMIXER: (
+                    accounts.train_hybrid_telemetry_tsmixer
+                ),
+                CommandKind.BACKTEST_HYBRID_TELEMETRY_TSMIXER: (
+                    accounts.backtest_hybrid_telemetry_tsmixer
+                ),
+                CommandKind.TRAIN_HYBRID_TELEMETRY_PATCHTST: (
+                    accounts.train_hybrid_telemetry_patchtst
+                ),
+                CommandKind.BACKTEST_HYBRID_TELEMETRY_PATCHTST: (
+                    accounts.backtest_hybrid_telemetry_patchtst
+                ),
+                CommandKind.BACKTEST_META_FILTERED_HYBRID: (accounts.backtest_meta_filtered_hybrid),
+                CommandKind.RUN_HYBRID_WALK_FORWARD_VALIDATION: (
+                    accounts.run_hybrid_walk_forward_validation
+                ),
+                CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
+                    accounts.validate_production_hybrid_stack
+                ),
+                CommandKind.RUN_HYBRID_PAPER_SHADOW: accounts.run_hybrid_paper_shadow,
                 CommandKind.INSPECT_DATASET: accounts.inspect_dataset,
                 CommandKind.TRAIN_DUAL_MODELS: accounts.train_dual_models,
                 CommandKind.OPTIMISE_LEARNING_RATE: accounts.optimise_learning_rate,
@@ -5290,6 +6376,904 @@ class AccountCommandHandlers(CommandHandlers):
             f"Generated chronological hybrid replay on {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def build_hybrid_telemetry_tensor(self, command: Command) -> CommandResult:
+        """Build the Phase127 causal telemetry tensor from GUI/Dashboard."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        matrix_path = command.text("matrix_path", "").strip()
+        matrix_args = ["--matrix-path", matrix_path] if matrix_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/build_hybrid_telemetry_tensor.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--source-mode",
+                command.text("source_mode", "matrix").strip().lower() or "matrix",
+                "--stream-scope",
+                command.text("stream_scope", "all").strip().lower() or "all",
+                "--stream-chunk-size",
+                str(max(command.integer("stream_chunk_size", 500), 50)),
+                "--stream-wavenet",
+                command.text("stream_wavenet", "neutral").strip().lower() or "neutral",
+                "--model-id",
+                command.text("model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--window",
+                str(max(command.integer("window", 288), 2)),
+                "--label-horizon",
+                str(max(command.integer("label_horizon", 288), 1)),
+                "--atr-mult",
+                str(max(command.number("atr_mult", 0.5), 0.05)),
+                "--train-ratio",
+                str(command.number("train_ratio", 80.0)),
+                "--tensor-window",
+                str(max(command.integer("tensor_window", 150), 2)),
+                "--safe-lag-bars",
+                str(max(command.integer("safe_lag_bars", 48), 1)),
+                "--telemetry-lag-mode",
+                command.text("telemetry_lag_mode", "fixed").strip().lower() or "fixed",
+                "--sample-stride",
+                str(max(command.integer("sample_stride", 1), 1)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--candidate-samples-only",
+                "1" if command.text("candidate_samples_only", "0").strip() == "1" else "0",
+                "--dtype",
+                command.text("dtype", "float16").strip().lower() or "float16",
+                "--max-tensor-mb",
+                str(max(command.number("max_tensor_mb", 512.0), 1.0)),
+                "--include-htf-context",
+                "1" if command.text("include_htf_context", "1").strip() != "0" else "0",
+                "--buy-threshold",
+                str(command.number("buy_threshold", -1.0)),
+                "--sell-threshold",
+                str(command.number("sell_threshold", -1.0)),
+                "--min-margin",
+                str(command.number("min_margin", -1.0)),
+                "--max-hold-bars",
+                str(max(command.integer("max_hold_bars", 48), 1)),
+                "--min-4h-room",
+                str(max(command.number("min_4h_room", 2.0), 0.0)),
+                "--min-1d-room",
+                str(max(command.number("min_1d_room", 5.0), 0.0)),
+                "--min-tp-distance",
+                str(max(command.number("min_tp_distance", 2.0), 0.0)),
+                "--min-sl-distance",
+                str(max(command.number("min_sl_distance", 2.0), 0.0)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--slippage",
+                str(max(command.number("slippage", 0.0), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--output-name",
+                command.text("output_name", "hybrid_telemetry_tensor_v1").strip()
+                or "hybrid_telemetry_tensor_v1",
+                "--storage-root",
+                str(self._storage_root),
+                *matrix_args,
+            ],
+            f"Built Phase127 hybrid telemetry tensor on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def train_hybrid_meta_labeler(self, command: Command) -> CommandResult:
+        """Train the Phase128 flat telemetry meta-labeler."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        flat_path = command.text("flat_path", "").strip()
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/train_hybrid_meta_labeler.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "").strip(),
+                "--task",
+                command.text("task", "classifier").strip().lower() or "classifier",
+                "--target",
+                command.text("target", "").strip(),
+                "--booster",
+                command.text("booster", "lightgbm").strip().lower() or "lightgbm",
+                "--candidate-only",
+                "1" if command.text("candidate_only", "1").strip() != "0" else "0",
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--min-samples",
+                str(max(command.integer("min_samples", 200), 1)),
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--n-estimators",
+                str(max(command.integer("n_estimators", 500), 1)),
+                "--learning-rate",
+                str(max(command.number("booster_lr", 0.03), 1e-6)),
+                "--max-depth",
+                str(max(command.integer("max_depth", 3), 1)),
+                "--num-leaves",
+                str(max(command.integer("num_leaves", 31), 2)),
+                "--meta-threshold",
+                str(max(command.number("meta_threshold", 0.55), 0.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *flat_args,
+            ],
+            f"Trained Phase128 hybrid meta-labeler on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def backtest_hybrid_meta_labeler(self, command: Command) -> CommandResult:
+        """Backtest the Phase128 meta-filtered hybrid candidates."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        flat_path = command.text("flat_path", "").strip()
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_hybrid_meta_labeler.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--meta-model-id",
+                command.text("meta_model_id", "gold_hybrid_meta_lightgbm_5m").strip()
+                or "gold_hybrid_meta_lightgbm_5m",
+                "--meta-model-version",
+                str(max(command.integer("meta_model_version", 0), 0)),
+                "--meta-threshold",
+                str(command.number("meta_threshold", -1.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--report-title",
+                command.text("report_title", "Meta-filtered hybrid chronological backtest").strip()
+                or "Meta-filtered hybrid chronological backtest",
+                "--storage-root",
+                str(self._storage_root),
+                *flat_args,
+            ],
+            f"Backtested Phase128 hybrid meta-labeler on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def train_hybrid_telemetry_wavenet(self, command: Command) -> CommandResult:
+        """Train the Phase129 WaveNet/TCN on the telemetry tensor."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/train_hybrid_telemetry_wavenet.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_wavenet_5m").strip()
+                or "gold_hybrid_telemetry_wavenet_5m",
+                "--task",
+                command.text("task", "multihead").strip().lower() or "multihead",
+                "--candidate-only",
+                "1" if command.text("candidate_only", "1").strip() != "0" else "0",
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--purge-gap",
+                str(max(command.integer("purge_gap", 336), 0)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--batch-size",
+                str(max(command.integer("batch_size", 64), 1)),
+                "--epochs",
+                str(max(command.integer("epochs", 30), 1)),
+                "--learning-rate",
+                str(max(command.number("learning_rate", 0.001), 1e-8)),
+                "--filters",
+                str(max(command.integer("filters", 48), 1)),
+                "--kernel-size",
+                str(max(command.integer("kernel_size", 3), 1)),
+                "--n-layers",
+                str(max(command.integer("n_layers", 5), 1)),
+                "--n-blocks",
+                str(max(command.integer("n_blocks", 2), 1)),
+                "--dense-units",
+                str(max(command.integer("dense_units", 64), 1)),
+                "--dropout",
+                str(max(command.number("dropout", 0.20), 0.0)),
+                "--score-loss-weight",
+                str(max(command.number("score_loss_weight", 0.50), 0.0)),
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--meta-threshold",
+                str(max(command.number("meta_threshold", 0.55), 0.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--monitor-metric",
+                command.text("monitor_metric", "auto").strip() or "auto",
+                "--early-stopping-patience",
+                str(max(command.integer("early_stopping_patience", 8), 0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+            ],
+            f"Trained Phase129 telemetry WaveNet/TCN on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def backtest_hybrid_telemetry_wavenet(self, command: Command) -> CommandResult:
+        """Backtest the Phase129 WaveNet/TCN meta-filter."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        flat_path = command.text("flat_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_hybrid_telemetry_wavenet.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_wavenet_5m").strip()
+                or "gold_hybrid_telemetry_wavenet_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--decision-mode",
+                command.text("decision_mode", "meta").strip().lower() or "meta",
+                "--meta-threshold",
+                str(command.number("meta_threshold", -1.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--report-title",
+                command.text("report_title", "Telemetry WaveNet filtered hybrid replay").strip()
+                or "Telemetry WaveNet filtered hybrid replay",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+                *flat_args,
+            ],
+            f"Backtested Phase129 telemetry WaveNet/TCN on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def train_hybrid_telemetry_tsmixer(self, command: Command) -> CommandResult:
+        """Train the Phase130 TSMixer on the telemetry tensor."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/train_hybrid_telemetry_tsmixer.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_tsmixer_5m").strip()
+                or "gold_hybrid_telemetry_tsmixer_5m",
+                "--task",
+                command.text("task", "multihead").strip().lower() or "multihead",
+                "--candidate-only",
+                "1" if command.text("candidate_only", "1").strip() != "0" else "0",
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--purge-gap",
+                str(max(command.integer("purge_gap", 336), 0)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--batch-size",
+                str(max(command.integer("batch_size", 64), 1)),
+                "--epochs",
+                str(max(command.integer("epochs", 30), 1)),
+                "--learning-rate",
+                str(max(command.number("learning_rate", 0.001), 1e-8)),
+                "--mixer-layers",
+                str(max(command.integer("mixer_layers", 4), 1)),
+                "--time-hidden-units",
+                str(max(command.integer("time_hidden_units", 64), 1)),
+                "--feature-hidden-units",
+                str(max(command.integer("feature_hidden_units", 128), 1)),
+                "--dense-units",
+                str(max(command.integer("dense_units", 64), 1)),
+                "--dropout",
+                str(max(command.number("dropout", 0.20), 0.0)),
+                "--score-loss-weight",
+                str(max(command.number("score_loss_weight", 0.50), 0.0)),
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--meta-threshold",
+                str(max(command.number("meta_threshold", 0.55), 0.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--monitor-metric",
+                command.text("monitor_metric", "auto").strip() or "auto",
+                "--early-stopping-patience",
+                str(max(command.integer("early_stopping_patience", 8), 0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+            ],
+            f"Trained Phase130 telemetry TSMixer on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def backtest_hybrid_telemetry_tsmixer(self, command: Command) -> CommandResult:
+        """Backtest the Phase130 TSMixer meta-filter."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        flat_path = command.text("flat_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_hybrid_telemetry_tsmixer.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_tsmixer_5m").strip()
+                or "gold_hybrid_telemetry_tsmixer_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--decision-mode",
+                command.text("decision_mode", "meta").strip().lower() or "meta",
+                "--meta-threshold",
+                str(command.number("meta_threshold", -1.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--report-title",
+                command.text("report_title", "Telemetry TSMixer filtered hybrid replay").strip()
+                or "Telemetry TSMixer filtered hybrid replay",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+                *flat_args,
+            ],
+            f"Backtested Phase130 telemetry TSMixer on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def train_hybrid_telemetry_patchtst(self, command: Command) -> CommandResult:
+        """Train the Phase131 PatchTST on the telemetry tensor."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/train_hybrid_telemetry_patchtst.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_patchtst_5m").strip()
+                or "gold_hybrid_telemetry_patchtst_5m",
+                "--task",
+                command.text("task", "multihead").strip().lower() or "multihead",
+                "--candidate-only",
+                "1" if command.text("candidate_only", "1").strip() != "0" else "0",
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--purge-gap",
+                str(max(command.integer("purge_gap", 336), 0)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--batch-size",
+                str(max(command.integer("batch_size", 64), 1)),
+                "--epochs",
+                str(max(command.integer("epochs", 30), 1)),
+                "--learning-rate",
+                str(max(command.number("learning_rate", 0.001), 1e-8)),
+                "--patch-len",
+                str(max(command.integer("patch_len", 16), 1)),
+                "--stride",
+                str(max(command.integer("stride", 8), 1)),
+                "--d-model",
+                str(max(command.integer("d_model", 64), 1)),
+                "--layers",
+                str(max(command.integer("layers", 3), 1)),
+                "--heads",
+                str(max(command.integer("heads", 4), 1)),
+                "--ff-units",
+                str(max(command.integer("ff_units", 128), 1)),
+                "--dense-units",
+                str(max(command.integer("dense_units", 64), 1)),
+                "--dropout",
+                str(max(command.number("dropout", 0.20), 0.0)),
+                "--score-loss-weight",
+                str(max(command.number("score_loss_weight", 0.50), 0.0)),
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--meta-threshold",
+                str(max(command.number("meta_threshold", 0.55), 0.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--monitor-metric",
+                command.text("monitor_metric", "auto").strip() or "auto",
+                "--early-stopping-patience",
+                str(max(command.integer("early_stopping_patience", 8), 0)),
+                "--save-record",
+                "1" if command.text("save_record", "1").strip() != "0" else "0",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+            ],
+            f"Trained Phase131 telemetry PatchTST on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def backtest_hybrid_telemetry_patchtst(self, command: Command) -> CommandResult:
+        """Backtest the Phase131 PatchTST meta-filter."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        tensor_path = command.text("tensor_path", "").strip()
+        flat_path = command.text("flat_path", "").strip()
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_hybrid_telemetry_patchtst.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_telemetry_patchtst_5m").strip()
+                or "gold_hybrid_telemetry_patchtst_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--decision-mode",
+                command.text("decision_mode", "meta").strip().lower() or "meta",
+                "--meta-threshold",
+                str(command.number("meta_threshold", -1.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--report-title",
+                command.text("report_title", "Telemetry PatchTST filtered hybrid replay").strip()
+                or "Telemetry PatchTST filtered hybrid replay",
+                "--storage-root",
+                str(self._storage_root),
+                *tensor_args,
+                *flat_args,
+            ],
+            f"Backtested Phase131 telemetry PatchTST on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def backtest_meta_filtered_hybrid(self, command: Command) -> CommandResult:
+        """Run the Phase132 candidate comparison backtest."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        flat_path = command.text("flat_path", "").strip()
+        tensor_path = command.text("tensor_path", "").strip()
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        tensor_args = ["--tensor-path", tensor_path] if tensor_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_meta_filtered_hybrid.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--candidates",
+                command.text(
+                    "candidates",
+                    "base,gold_hybrid_meta_lightgbm_5m,gold_hybrid_telemetry_wavenet_5m,gold_hybrid_telemetry_tsmixer_5m,gold_hybrid_telemetry_patchtst_5m",
+                ).strip(),
+                "--candidate-versions",
+                command.text("candidate_versions", "0").strip() or "0",
+                "--decision-modes",
+                command.text("decision_modes", "meta").strip() or "meta",
+                "--meta-thresholds",
+                command.text("meta_thresholds", "record").strip() or "record",
+                "--score-thresholds",
+                command.text("score_thresholds", "0").strip() or "0",
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--min-trades",
+                str(max(command.integer("min_trades", 10), 0)),
+                "--score-metric",
+                command.text("score_metric", "total_pnl").strip() or "total_pnl",
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--skip-missing",
+                "1" if command.text("skip_missing", "1").strip() != "0" else "0",
+                "--report-title",
+                command.text("report_title", "Hybrid meta-filter comparison").strip()
+                or "Hybrid meta-filter comparison",
+                "--storage-root",
+                str(self._storage_root),
+                *flat_args,
+                *tensor_args,
+            ],
+            f"Compared meta-filtered hybrid candidates on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def run_hybrid_walk_forward_validation(self, command: Command) -> CommandResult:
+        """Run the Phase133 walk-forward validation from GUI/Dashboard."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        flat_path = command.text("flat_path", "").strip()
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/run_hybrid_walk_forward_validation.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_hybrid_meta_walkforward_5m").strip()
+                or "gold_hybrid_meta_walkforward_5m",
+                "--task",
+                command.text("task", "classifier").strip().lower() or "classifier",
+                "--target",
+                command.text("target", "").strip(),
+                "--booster",
+                command.text("booster", "lightgbm").strip().lower() or "lightgbm",
+                "--candidate-only",
+                "1" if command.text("candidate_only", "1").strip() != "0" else "0",
+                "--start-month",
+                command.text("start_month", "").strip(),
+                "--end-month",
+                command.text("end_month", "").strip(),
+                "--train-months-min",
+                str(max(command.integer("train_months_min", 3), 1)),
+                "--validation-months",
+                str(max(command.integer("validation_months", 1), 1)),
+                "--purge-gap-bars",
+                str(max(command.integer("purge_gap_bars", 336), 0)),
+                "--meta-thresholds",
+                command.text("meta_thresholds", "0.45,0.50,0.55,0.60,0.65,0.70").strip()
+                or "0.45,0.50,0.55,0.60,0.65,0.70",
+                "--score-thresholds",
+                command.text("score_thresholds", "0,0.05,0.10,0.20").strip() or "0,0.05,0.10,0.20",
+                "--min-trades",
+                str(max(command.integer("min_trades", 10), 0)),
+                "--score-metric",
+                command.text("score_metric", "total_pnl").strip() or "total_pnl",
+                "--class-weight",
+                command.text("class_weight", "auto").strip().lower() or "auto",
+                "--n-estimators",
+                str(max(command.integer("n_estimators", 400), 1)),
+                "--learning-rate",
+                str(max(command.number("booster_lr", 0.03), 1e-8)),
+                "--max-depth",
+                str(max(command.integer("max_depth", 3), 1)),
+                "--num-leaves",
+                str(max(command.integer("num_leaves", 31), 2)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--units",
+                str(max(command.number("units", 0.1), 0.0)),
+                "--storage-root",
+                str(self._storage_root),
+                *flat_args,
+            ],
+            f"Ran Phase133 walk-forward validation on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def validate_production_hybrid_stack(self, command: Command) -> CommandResult:
+        """Validate/freeze the Phase134 production hybrid stack."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper()
+        dataset = command.text("dataset", "").strip().upper()
+        available = stored_dataset_choices(self._storage_root)
+        if not dataset:
+            dataset = "5M" if "5M" in available else (available[0] if available else "5M")
+        if dataset not in available:
+            return CommandResult.rejected(
+                command.kind,
+                f"No stored {dataset} dataset. Available: {', '.join(available) or 'none'}",
+            )
+
+        return self._run_script(
+            command,
+            [
+                "scripts/validate_production_hybrid_stack.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--config-path",
+                command.text("config_path", "configs/hybrid_production_stack.json").strip()
+                or "configs/hybrid_production_stack.json",
+                "--mode",
+                command.text("mode", "paper_shadow").strip().lower() or "paper_shadow",
+                "--base-model-id",
+                command.text("base_model_id", "gold_hybrid_lightgbm_head_5m").strip()
+                or "gold_hybrid_lightgbm_head_5m",
+                "--base-model-version",
+                str(max(command.integer("base_model_version", 0), 0)),
+                "--meta-model-id",
+                command.text("meta_model_id", "").strip(),
+                "--meta-model-version",
+                str(max(command.integer("meta_model_version", 0), 0)),
+                "--meta-model-type",
+                command.text("meta_model_type", "none").strip().lower() or "none",
+                "--decision-mode",
+                command.text("decision_mode", "meta").strip().lower() or "meta",
+                "--meta-threshold",
+                str(max(command.number("meta_threshold", 0.55), 0.0)),
+                "--score-threshold",
+                str(command.number("score_threshold", 0.0)),
+                "--range-1d-model-id",
+                command.text("range_1d_model_id", "gold_range_1d").strip() or "gold_range_1d",
+                "--range-1d-version",
+                str(max(command.integer("range_1d_version", 0), 0)),
+                "--range-4h-model-id",
+                command.text("range_4h_model_id", "gold_range_4h").strip() or "gold_range_4h",
+                "--range-4h-version",
+                str(max(command.integer("range_4h_version", 0), 0)),
+                "--telemetry-flat-path",
+                command.text("telemetry_flat_path", "").strip(),
+                "--telemetry-tensor-path",
+                command.text("telemetry_tensor_path", "").strip(),
+                "--telemetry-schema-hash",
+                command.text("telemetry_schema_hash", "").strip(),
+                "--max-daily-loss-percent",
+                str(max(command.number("max_daily_loss_percent", 5.0), 0.0)),
+                "--max-open-positions",
+                str(max(command.integer("max_open_positions", 1), 0)),
+                "--position-size-units",
+                str(max(command.number("position_size_units", 0.1), 0.0)),
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.0)),
+                "--paper-shadow-passed",
+                "1" if command.text("paper_shadow_passed", "0").strip() == "1" else "0",
+                "--account-profile-confirmed",
+                "1" if command.text("account_profile_confirmed", "0").strip() == "1" else "0",
+                "--symbol-mapping-confirmed",
+                "1" if command.text("symbol_mapping_confirmed", "0").strip() == "1" else "0",
+                "--kill-switch-enabled",
+                "1" if command.text("kill_switch_enabled", "1").strip() != "0" else "0",
+                "--explicit-live-confirm",
+                command.text("explicit_live_confirm", "").strip(),
+                "--write-config",
+                "1" if command.text("write_config", "1").strip() != "0" else "0",
+                "--require-models",
+                "1" if command.text("require_models", "0").strip() == "1" else "0",
+                "--storage-root",
+                str(self._storage_root),
+            ],
+            f"Validated Phase134 production hybrid stack on {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def run_hybrid_paper_shadow(self, command: Command) -> CommandResult:
+        """Run Phase134 paper/shadow decisions with real orders disabled."""
+        started = time.monotonic()
+        flat_path = command.text("flat_path", "").strip()
+        flat_args = ["--flat-path", flat_path] if flat_path else []
+        return self._run_script(
+            command,
+            [
+                "scripts/run_hybrid_paper_shadow.py",
+                "--config-path",
+                command.text("config_path", "configs/hybrid_production_stack.json").strip()
+                or "configs/hybrid_production_stack.json",
+                "--eval-frac",
+                str(command.number("eval_frac", 1.0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--allow-validation-fail",
+                "1" if command.text("allow_validation_fail", "0").strip() == "1" else "0",
+                "--report-title",
+                command.text("report_title", "Hybrid production paper shadow").strip()
+                or "Hybrid production paper shadow",
+                "--storage-root",
+                str(self._storage_root),
+                *flat_args,
+            ],
+            "Ran Phase134 hybrid paper shadow (real orders disabled)",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
         )
 
     def inspect_dataset(self, command: Command) -> CommandResult:

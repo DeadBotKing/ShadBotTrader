@@ -6,15 +6,15 @@
 - Project name: ShadBotTrader
 - Architecture version: 1.0
 - Python version: 3.13.14
-- Snapshot generated at: 2026-09-09T12:27:33.072843+00:00
+- Snapshot generated at: 2026-09-10T17:28:27.258358+00:00
 
 ## Current Architecture
 
 - Clean Architecture + Domain-Driven Design
 - Dependency direction: infrastructure -> application -> domain
 - Event-driven + plugin-based core
-- Source modules: 322
-- Test modules: 161
+- Source modules: 323
+- Test modules: 170
 
 ## Current Phase
 
@@ -27,19 +27,19 @@ Phase 28 - Implementation Foundation + Phases 29-31 (dual models, 100k dataset, 
 ## Git Commit
 
 - Branch: main
-- Commit: a27b8bf6dfbae6ca35fd7de20519aef2cc24bae4
-- Dirty: yes (19 files)
+- Commit: 478348373f8f3b21b95fca7e7493dfd846f7f983
+- Dirty: yes (11 files)
 - Recent commits:
-  - a27b8bf docs: record full streamed hybrid failure
-  - 7f7d793 Phase 116: stream full hybrid replay report
-  - ab36196 docs: record hybrid replay sizing result
-  - 94ddf4d Phase 116: add hybrid candle replay report
-  - 6037a28 Phase 116: add full hybrid 5M report
-  - 5ce471a Phase 113: add hybrid significance check
-  - 22f9a5b docs: record Phase 125 hybrid backtest results
-  - ffe5a4f Phase 125: backtest hybrid head with range brackets
-  - c53263d docs: record Phase 124 hybrid head result
-  - 00b6695 docs: update operational phase status after hybrid matrix
+  - 4783483 docs: record Phase 128A meta backtest result
+  - 8b86cea docs: record Phase 128A meta training result
+  - 3d3eab5 docs: record Phase 127A tensor result
+  - cb272cb Phase 127A: fix telemetry timestamp alignment
+  - 586e9ea Phase 134A: add production stack validation
+  - ffe5dec Phase 133A: add walk forward validation
+  - 4ae26ae Phase 132A: compare meta filtered hybrids
+  - 06037f7 Phase 131A: train telemetry PatchTST
+  - 96f0523 Phase 130A: train telemetry TSMixer
+  - 248eaf6 Phase 129A: train telemetry WaveNet TCN
 
 ## Quality Gate
 
@@ -61,13 +61,13 @@ Decide how a simulated trade opens and closes. Phase 49 fixed the signal thresho
 
 ## Statistics
 
-- Total files: 898
-- Source files: 322
-- Test files: 161
-- Documentation files: 183
+- Total files: 938
+- Source files: 323
+- Test files: 170
+- Documentation files: 200
 - Legacy files: 176
-- Total Python lines: 134752
-- Modules: 483
-- Classes: 814
-- Functions: 4755
+- Total Python lines: 144096
+- Modules: 493
+- Classes: 817
+- Functions: 4852
 - External dependencies: 14

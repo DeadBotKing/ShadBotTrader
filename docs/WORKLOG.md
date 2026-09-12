@@ -5866,3 +5866,1679 @@ python -m black --check .
 python -m mypy src
 # FAIL: 28 pre-existing errors in 10 files.
 ```
+
+## 2026-09-09 — Phase127-134 telemetry/model/production roadmap documented
+
+کاربر ایدهٔ جدید را مطرح کرد: ساخت ماتریس/تنسور جدید از خروجی‌های backtest و مدل‌های فعلی، با Target C و امکان استفادهٔ online. همچنین نگرانی دربارهٔ پیچیده‌شدن code و نیاز به جمع‌کردن مسیر robot online مطرح شد.
+
+مدل‌های کاربردی که باید محور بمانند:
+
+```text
+gold_range_1d
+gold_range_4h
+gold_buy_lightgbm_basic_5m
+gold_sell_lightgbm_basic_5m
+gold_trend_signal_lightgbm_basic_5m
+gold_hybrid_lightgbm_head_5m
+```
+
+تصمیم‌های ثبت‌شده:
+
+```text
+safe_lag = 48 bars  # چون range_4h افق 4 ساعته دارد و 48 کندل 5M است
+Target C:
+  target_trade_win
+  target_trade_score_r
+  target_trade_pnl
+3D tensor shape:
+  X = [samples, tensor_window, channels]
+4H/1D context:
+  به‌عنوان aligned feature channels وارد بعد سوم شود، فقط از آخرین کندل بسته‌شده
+```
+
+فازهای جداگانه ثبت‌شده:
+
+```text
+Phase127 — Causal 3D Hybrid Telemetry Tensor
+Phase128 — LightGBM/CatBoost Meta-Labeler Baseline
+Phase129 — WaveNet/TCN on 3D Hybrid Telemetry Tensor
+Phase130 — TSMixer Benchmark
+Phase131 — PatchTST Benchmark
+Phase132 — Meta-Filtered Hybrid Chronological Backtest
+Phase133 — Walk-Forward Out-of-Time Hybrid Validation
+Phase134 — Production Consolidation / Online Bot Assembly
+```
+
+نکته درباره WaveNet:
+
+```text
+WaveNet قدیمی `gold_trend_signal_5m` collapse/no-edge بود، اما Phase129 یک WaveNet/TCN جدید روی telemetry tensor و Target C است، نه تکرار همان مدل قبلی.
+```
+
+نکته درباره پیچیدگی:
+
+```text
+Phase134 مخصوص جمع‌کردن complexity است. اگر validation پاس شود، production path باید فقط یک stack منتخب، یک config، یک online feature builder، یک decision service و یک MT5 execution path guarded داشته باشد. Research scripts نباید وارد live order submission شوند.
+```
+
+فایل‌های مستند جدید:
+
+```text
+docs/Phases/Phase127.md
+docs/Phases/Phase128.md
+docs/Phases/Phase129.md
+docs/Phases/Phase130.md
+docs/Phases/Phase131.md
+docs/Phases/Phase132.md
+docs/Phases/Phase133.md
+docs/Phases/Phase134.md
+docs/Report/PHASE127_134_TELEMETRY_AND_PRODUCTION_ROADMAP.md
+```
+
+## 2026-09-09 — GUI execution rule added to future phases
+
+کاربر تأکید کرد از این به بعد هر چیزی که ساخته می‌شود و نیاز به اجرای اپراتور دارد باید در GUI/Dashboard هم command داشته باشد؛ CLI تنها کافی نیست.
+
+این قانون در فازهای زیر ثبت شد:
+
+```text
+Phase115
+Phase126
+Phase127
+Phase128
+Phase129
+Phase130
+Phase131
+Phase132
+Phase133
+Phase134
+```
+
+قاعدهٔ اجرایی:
+
+```text
+هر script/train/backtest/replay/audit که اپراتور باید اجرا کند، باید همزمان داشته باشد:
+  CommandKind
+  CommandDescriptor
+  Handler
+  فیلدهای GUI، با advanced برای knobهای تخصصی
+  تست descriptor و arg pass-through
+  dashboard coverage
+```
+
+هدف:
+
+```text
+اپراتور هیچ دستور بلند و شکننده‌ای را دستی نسازد؛ هر مرحلهٔ قابل اجرا از Dashboard قابل اجرا باشد.
+```
+
+## 2026-09-09 — Phase127A implementation: causal 3D telemetry tensor builder
+
+ساخت Phase127A انجام شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/build_hybrid_telemetry_tensor.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_telemetry_tensor.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase127.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+GUI command:
+
+```text
+Build hybrid telemetry tensor
+```
+
+قابلیت‌های پیاده‌سازی‌شده:
+
+```text
+- ساخت flat telemetry parquet
+- ساخت 3D tensor NPZ: X=[samples, tensor_window, channels]
+- Target C:
+  target_trade_win
+  target_trade_score_r
+  target_trade_pnl
+- safe_lag_bars default=48
+- telemetry_lag_mode=fixed|exit_closed
+- 5M compact candle features
+- hybrid/booster/range model-output features
+- candidate bracket features
+- lagged virtual-backtest telemetry
+- optional aligned 4H/1D closed-candle context
+- source-mode=matrix برای اجرای امن اول
+- source-mode=stream برای ساخت chunked بدون matrix عظیم
+- max_tensor_mb guard برای جلوگیری از RAM spike
+```
+
+دستور امن اول برای کاربر:
+
+```powershell
+python -u scripts/build_hybrid_telemetry_tensor.py `
+  --source-mode matrix `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --tensor-window 150 `
+  --safe-lag-bars 48 `
+  --telemetry-lag-mode fixed `
+  --sample-stride 1 `
+  --max-samples 0 `
+  --candidate-samples-only 0 `
+  --dtype float16 `
+  --max-tensor-mb 512 `
+  --include-htf-context 1 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --storage-root datasets
+```
+
+دستور full stream بعد از تأیید run اول:
+
+```powershell
+python -u scripts/build_hybrid_telemetry_tensor.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 500 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --tensor-window 150 `
+  --safe-lag-bars 48 `
+  --telemetry-lag-mode fixed `
+  --sample-stride 5 `
+  --max-samples 12000 `
+  --candidate-samples-only 0 `
+  --dtype float16 `
+  --max-tensor-mb 512 `
+  --include-htf-context 1 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --storage-root datasets
+```
+
+خروجی‌هایی که کاربر باید بفرستد:
+
+```text
+run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+Quality gate بعد از Phase127A:
+
+```text
+python -m ruff check scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 67 passed
+
+python -m pytest
+# 1700 passed, 54 skipped in 249.15s
+```
+
+Full gate هنوز به‌علت بدهی‌های قدیمی repo قرمز است:
+
+```text
+python -m ruff check .
+# FAIL: 219 errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 499 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase128A implementation: LightGBM/CatBoost meta-labeler train/backtest
+
+Phase128A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/train_hybrid_meta_labeler.py
+scripts/backtest_hybrid_meta_labeler.py
+scripts/build_hybrid_telemetry_tensor.py  # اضافه شدن target_exit_index/target_outcome_code برای backtest متا
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_meta_labeler.py
+tests/unit/ai/test_hybrid_telemetry_tensor.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase128.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+GUI commands:
+
+```text
+Train hybrid meta-labeler
+Backtest hybrid meta-labeler
+```
+
+قابلیت train:
+
+```text
+- task=classifier روی target_trade_win
+- task=regressor روی target_trade_score_r
+- candidate_only=1 پیش‌فرض
+- chronological train/val/test split
+- booster: lightgbm/xgboost/catboost/auto
+- ذخیره model artifact و ModelRecord
+```
+
+قابلیت backtest:
+
+```text
+- بارگذاری meta model
+- اعمال meta_threshold یا score_threshold
+- chronological single-position replay روی candidateهای telemetry
+- استفاده از target_exit_index برای skip کردن سیگنال‌های while-open
+- HTML/JSON/CSV report
+```
+
+دستور اجرای Phase128 بعد از Phase127:
+
+```powershell
+python -u scripts/train_hybrid_meta_labeler.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --task classifier `
+  --target target_trade_win `
+  --booster lightgbm `
+  --candidate-only 1 `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --class-weight auto `
+  --n-estimators 500 `
+  --learning-rate 0.03 `
+  --max-depth 3 `
+  --num-leaves 31 `
+  --meta-threshold 0.55 `
+  --save-record 1 `
+  --storage-root datasets
+
+python -u scripts/backtest_hybrid_meta_labeler.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --meta-model-id gold_hybrid_meta_lightgbm_5m `
+  --meta-model-version 0 `
+  --meta-threshold -1 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality check:
+
+```text
+python -m ruff check scripts/train_hybrid_meta_labeler.py scripts/backtest_hybrid_meta_labeler.py scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_meta_labeler.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/train_hybrid_meta_labeler.py scripts/backtest_hybrid_meta_labeler.py scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_meta_labeler.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_meta_labeler.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 75 passed
+```
+
+گزارش Phase128A اضافه شد:
+
+```text
+docs/Report/PHASE128A_HYBRID_META_LABELER_REPORT.md
+```
+
+Full quality gate بعد از Phase128A:
+
+```text
+python -m pytest
+# 1708 passed, 54 skipped in 247.68s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 502 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase129A implementation: telemetry WaveNet/TCN train/backtest
+
+Phase129A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/train_hybrid_telemetry_wavenet.py
+scripts/backtest_hybrid_telemetry_wavenet.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_telemetry_wavenet.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase129.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE129A_TELEMETRY_WAVENET_REPORT.md
+```
+
+GUI commands:
+
+```text
+Train telemetry WaveNet/TCN
+Backtest telemetry WaveNet/TCN
+```
+
+قابلیت train:
+
+```text
+- ورودی: hybrid_telemetry_tensor_latest.npz از Phase127A
+- task=classifier|regressor|multihead
+- causal dilated Conv1D / TCN blocks
+- gated tanh/sigmoid activations
+- residual + skip connections
+- train-only normalization
+- chronological train/val/test split
+- purge_gap default=336 = tensor_window 288 + safe_lag 48
+- anti-collapse metrics: prediction stdev, selected/positive rates
+- ذخیره artifact به format pickle_keras همراه scaler_mean/scaler_std/channel_names
+```
+
+قابلیت backtest:
+
+```text
+- بارگذاری WaveNet/TCN artifact
+- اعمال scaler ذخیره‌شده
+- decision_mode=meta|score|both
+- meta_threshold/score_threshold
+- chronological one-position replay با flat telemetry targets
+- خروجی HTML/JSON/CSV
+```
+
+پیش‌نیاز کاربر:
+
+```powershell
+python -m pip install -r requirements-ai.txt
+```
+
+دستور train پیشنهادی:
+
+```powershell
+python -u scripts/train_hybrid_telemetry_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --model-id gold_hybrid_telemetry_wavenet_5m `
+  --task multihead `
+  --candidate-only 1 `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --batch-size 64 `
+  --epochs 30 `
+  --learning-rate 0.001 `
+  --filters 48 `
+  --kernel-size 3 `
+  --n-layers 5 `
+  --n-blocks 2 `
+  --dense-units 64 `
+  --dropout 0.20 `
+  --score-loss-weight 0.50 `
+  --class-weight auto `
+  --meta-threshold 0.55 `
+  --score-threshold 0 `
+  --monitor-metric auto `
+  --early-stopping-patience 8 `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+دستور backtest پیشنهادی:
+
+```powershell
+python -u scripts/backtest_hybrid_telemetry_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --model-id gold_hybrid_telemetry_wavenet_5m `
+  --model-version 0 `
+  --decision-mode meta `
+  --meta-threshold -1 `
+  --score-threshold 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality check اجراشده:
+
+```text
+python -m ruff check scripts/train_hybrid_telemetry_wavenet.py scripts/backtest_hybrid_telemetry_wavenet.py tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/train_hybrid_telemetry_wavenet.py scripts/backtest_hybrid_telemetry_wavenet.py tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 77 passed
+```
+
+Full quality gate بعد از Phase129A:
+
+```text
+python -m pytest
+# 1717 passed, 54 skipped in 233.53s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 505 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase130A implementation: telemetry TSMixer train/backtest
+
+Phase130A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/train_hybrid_telemetry_tsmixer.py
+scripts/backtest_hybrid_telemetry_tsmixer.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_telemetry_tsmixer.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase130.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE130A_TELEMETRY_TSMIXER_REPORT.md
+```
+
+GUI commands:
+
+```text
+Train telemetry TSMixer
+Backtest telemetry TSMixer
+```
+
+قابلیت train:
+
+```text
+- ورودی: hybrid_telemetry_tensor_latest.npz از Phase127A
+- task=classifier|regressor|multihead
+- TSMixer residual blocks: time mixing + feature mixing
+- train-only normalization
+- chronological train/val/test split
+- purge_gap default=336
+- artifact format=pickle_keras با scaler/channel metadata
+```
+
+قابلیت backtest:
+
+```text
+- load saved TSMixer artifact
+- decision_mode=meta|score|both
+- chronological single-position replay با flat telemetry targets
+- HTML/JSON/CSV report
+```
+
+دستور train پیشنهادی:
+
+```powershell
+python -u scripts/train_hybrid_telemetry_tsmixer.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --model-id gold_hybrid_telemetry_tsmixer_5m `
+  --task multihead `
+  --candidate-only 1 `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --batch-size 64 `
+  --epochs 30 `
+  --learning-rate 0.001 `
+  --mixer-layers 4 `
+  --time-hidden-units 64 `
+  --feature-hidden-units 128 `
+  --dense-units 64 `
+  --dropout 0.20 `
+  --score-loss-weight 0.50 `
+  --class-weight auto `
+  --meta-threshold 0.55 `
+  --score-threshold 0 `
+  --monitor-metric auto `
+  --early-stopping-patience 8 `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+دستور backtest پیشنهادی:
+
+```powershell
+python -u scripts/backtest_hybrid_telemetry_tsmixer.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --model-id gold_hybrid_telemetry_tsmixer_5m `
+  --model-version 0 `
+  --decision-mode meta `
+  --meta-threshold -1 `
+  --score-threshold 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality check اجراشده:
+
+```text
+python -m ruff check scripts/train_hybrid_telemetry_tsmixer.py scripts/backtest_hybrid_telemetry_tsmixer.py tests/unit/ai/test_hybrid_telemetry_tsmixer.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/train_hybrid_telemetry_tsmixer.py scripts/backtest_hybrid_telemetry_tsmixer.py tests/unit/ai/test_hybrid_telemetry_tsmixer.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_tsmixer.py tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 86 passed
+```
+
+Full quality gate بعد از Phase130A:
+
+```text
+python -m pytest
+# 1726 passed, 54 skipped in 226.02s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 508 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase131A implementation: telemetry PatchTST train/backtest
+
+Phase131A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/train_hybrid_telemetry_patchtst.py
+scripts/backtest_hybrid_telemetry_patchtst.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_telemetry_patchtst.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase131.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE131A_TELEMETRY_PATCHTST_REPORT.md
+```
+
+GUI commands:
+
+```text
+Train telemetry PatchTST
+Backtest telemetry PatchTST
+```
+
+قابلیت train:
+
+```text
+- ورودی: hybrid_telemetry_tensor_latest.npz از Phase127A
+- task=classifier|regressor|multihead
+- Conv1D patch projection با patch_len/stride
+- trainable positional embedding
+- Transformer encoder blocks با MultiHeadAttention
+- train-only normalization
+- chronological train/val/test split
+- purge_gap default=336
+- artifact format=pickle_keras با scaler/channel metadata
+```
+
+قابلیت backtest:
+
+```text
+- load saved PatchTST artifact
+- decision_mode=meta|score|both
+- chronological single-position replay با flat telemetry targets
+- HTML/JSON/CSV report
+```
+
+دستور train پیشنهادی:
+
+```powershell
+python -u scripts/train_hybrid_telemetry_patchtst.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --model-id gold_hybrid_telemetry_patchtst_5m `
+  --task multihead `
+  --candidate-only 1 `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --batch-size 64 `
+  --epochs 30 `
+  --learning-rate 0.001 `
+  --patch-len 16 `
+  --stride 8 `
+  --d-model 64 `
+  --layers 3 `
+  --heads 4 `
+  --ff-units 128 `
+  --dense-units 64 `
+  --dropout 0.20 `
+  --score-loss-weight 0.50 `
+  --class-weight auto `
+  --meta-threshold 0.55 `
+  --score-threshold 0 `
+  --monitor-metric auto `
+  --early-stopping-patience 8 `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+دستور backtest پیشنهادی:
+
+```powershell
+python -u scripts/backtest_hybrid_telemetry_patchtst.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --model-id gold_hybrid_telemetry_patchtst_5m `
+  --model-version 0 `
+  --decision-mode meta `
+  --meta-threshold -1 `
+  --score-threshold 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Quality check اجراشده:
+
+```text
+python -m ruff check scripts/train_hybrid_telemetry_patchtst.py scripts/backtest_hybrid_telemetry_patchtst.py tests/unit/ai/test_hybrid_telemetry_patchtst.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/train_hybrid_telemetry_patchtst.py scripts/backtest_hybrid_telemetry_patchtst.py tests/unit/ai/test_hybrid_telemetry_patchtst.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_patchtst.py tests/unit/ai/test_hybrid_telemetry_tsmixer.py tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 95 passed
+```
+
+Full quality gate بعد از Phase131A:
+
+```text
+python -m pytest
+# 1735 passed, 54 skipped in 204.64s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 511 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase132A implementation: meta-filtered hybrid comparison
+
+Phase132A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/backtest_meta_filtered_hybrid.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_meta_filtered_hybrid_comparison.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+docs/Phases/Phase132.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE132A_META_FILTERED_COMPARISON_REPORT.md
+```
+
+GUI command:
+
+```text
+Backtest meta-filtered hybrid
+```
+
+قابلیت‌ها:
+
+```text
+- مقایسه base hybrid candidates با meta-filterهای train شده
+- پشتیبانی flat modelهای Phase128 با payload['model']
+- پشتیبانی tensor modelهای Phase129/130/131 با payload['model_bytes']
+- candidate list comma-separated
+- threshold grid: record و thresholdهای explicit
+- decision_mode=meta|score|both برای tensor models
+- skip_missing=1 پیش‌فرض برای اجرا حتی وقتی بعضی مدل‌ها هنوز train نشده‌اند
+- خروجی comparison CSV/JSON/HTML
+- خروجی best_replay.html برای بهترین candidate انتخاب‌شده
+```
+
+دستور پیشنهادی:
+
+```powershell
+python -u scripts/backtest_meta_filtered_hybrid.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --candidates base,gold_hybrid_meta_lightgbm_5m,gold_hybrid_telemetry_wavenet_5m,gold_hybrid_telemetry_tsmixer_5m,gold_hybrid_telemetry_patchtst_5m `
+  --candidate-versions 0 `
+  --decision-modes meta,both `
+  --meta-thresholds record,0.55,0.60,0.65 `
+  --score-thresholds 0,0.05,0.10 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --min-trades 10 `
+  --score-metric total_pnl `
+  --initial-capital 100 `
+  --units 0.1 `
+  --skip-missing 1 `
+  --storage-root datasets
+```
+
+Quality check:
+
+```text
+python -m ruff check scripts/backtest_meta_filtered_hybrid.py tests/unit/ai/test_meta_filtered_hybrid_comparison.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/backtest_meta_filtered_hybrid.py tests/unit/ai/test_meta_filtered_hybrid_comparison.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_meta_filtered_hybrid_comparison.py tests/unit/ai/test_hybrid_telemetry_patchtst.py tests/unit/ai/test_hybrid_telemetry_tsmixer.py tests/unit/ai/test_hybrid_telemetry_wavenet.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 101 passed
+```
+
+Full quality gate بعد از Phase132A:
+
+```text
+python -m pytest
+# 1741 passed, 54 skipped in 196.75s
+
+python -m ruff check .
+# FAIL: 219 pre-existing lint errors
+
+python -m black --check .
+# FAIL: 21 old files would be reformatted; 513 files unchanged
+
+python -m mypy src
+# FAIL: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase133A implementation: walk-forward validation
+
+Phase133A ساخته شد.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+scripts/run_hybrid_walk_forward_validation.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_walk_forward_validation.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+tests/integration/test_gui_coverage.py
+docs/Phases/Phase133.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE133A_WALK_FORWARD_VALIDATION_REPORT.md
+```
+
+GUI command:
+
+```text
+Run hybrid walk-forward validation
+```
+
+Scope پیاده‌سازی‌شده:
+
+```text
+Phase133A فعلاً flat Phase128 booster meta-labeler را walk-forward می‌کند.
+برای هر test month، مدل جدید فقط روی ماه‌های گذشته train می‌شود، threshold فقط روی validation گذشته انتخاب می‌شود، و سپس ماه آینده تست می‌شود.
+```
+
+پروتکل:
+
+```text
+train_months      = all months before validation block
+validation_months = immediate previous month(s)
+test_month        = next unseen month
+purge_gap_bars    = 336 default
+threshold_grid    = meta_thresholds or score_thresholds
+```
+
+دستور پیشنهادی:
+
+```powershell
+python -u scripts/run_hybrid_walk_forward_validation.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --task classifier `
+  --target target_trade_win `
+  --booster lightgbm `
+  --candidate-only 1 `
+  --train-months-min 3 `
+  --validation-months 1 `
+  --purge-gap-bars 336 `
+  --meta-thresholds 0.45,0.50,0.55,0.60,0.65,0.70 `
+  --min-trades 10 `
+  --score-metric total_pnl `
+  --class-weight auto `
+  --n-estimators 400 `
+  --learning-rate 0.03 `
+  --max-depth 3 `
+  --num-leaves 31 `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+خروجی‌ها:
+
+```text
+run_logs/hybrid_walk_forward_validation/latest.json
+run_logs/hybrid_walk_forward_validation/latest.csv
+run_logs/hybrid_walk_forward_validation/latest.html
+```
+
+Quality check اجراشده:
+
+```text
+python -m ruff check scripts/run_hybrid_walk_forward_validation.py tests/unit/ai/test_hybrid_walk_forward_validation.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/run_hybrid_walk_forward_validation.py tests/unit/ai/test_hybrid_walk_forward_validation.py tests/unit/presentation/test_architecture_knobs_gui.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_walk_forward_validation.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 88 passed
+
+python -m pytest
+# 1747 passed, 54 skipped in 196.60s
+```
+
+Full gate همچنان به‌علت بدهی‌های قدیمی repo قرمز است:
+
+```text
+ruff full: 219 errors
+black full: 21 old files would be reformatted; 513 files unchanged
+mypy full: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-09 — Phase134A implementation: production validation + paper shadow scaffold
+
+Phase134A ساخته شد تا research complexity به یک production-style config و paper/shadow مسیر محدود جمع شود، بدون فعال‌کردن order واقعی.
+
+فایل‌های جدید/تغییرکرده:
+
+```text
+src/ShadBotTrader/application/services/hybrid_production_service.py
+scripts/validate_production_hybrid_stack.py
+scripts/run_hybrid_paper_shadow.py
+src/ShadBotTrader/presentation/commands/commands.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/services/test_hybrid_production_service.py
+tests/unit/ai/test_hybrid_production_scripts.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+tests/integration/test_gui_coverage.py
+docs/Phases/Phase134.md
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+docs/Report/PHASE134A_PRODUCTION_CONSOLIDATION_REPORT.md
+```
+
+GUI commands:
+
+```text
+Validate production hybrid stack
+Run hybrid paper shadow
+```
+
+Safety gates پیاده‌سازی‌شده:
+
+```text
+mode_supported
+base_model_selected
+range_models_selected
+position_size_positive
+initial_capital_positive
+risk_limits_present
+kill_switch_enabled
+schema_hash_known
+schema_hash_matches_config اگر hash مورد انتظار داده شده باشد
+```
+
+Live mode additionally requires:
+
+```text
+paper_shadow_passed
+account_profile_confirmed
+symbol_mapping_confirmed
+explicit_live_confirm == ENABLE_REAL_HYBRID_TRADING
+```
+
+نکتهٔ ایمنی:
+
+```text
+scripts/run_hybrid_paper_shadow.py هرگز live mode اجرا نمی‌کند و هیچ order واقعی ارسال نمی‌کند.
+```
+
+دستور validation:
+
+```powershell
+python -u scripts/validate_production_hybrid_stack.py `
+  --mode paper_shadow `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --base-model-id gold_hybrid_lightgbm_head_5m `
+  --base-model-version 0 `
+  --meta-model-type none `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --position-size-units 0.1 `
+  --initial-capital 100 `
+  --kill-switch-enabled 1 `
+  --write-config 1 `
+  --require-models 0 `
+  --storage-root datasets
+```
+
+دستور paper shadow:
+
+```powershell
+python -u scripts/run_hybrid_paper_shadow.py `
+  --config-path configs\hybrid_production_stack.json `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --allow-validation-fail 0 `
+  --storage-root datasets
+```
+
+Quality check:
+
+```text
+python -m ruff check scripts/validate_production_hybrid_stack.py scripts/run_hybrid_paper_shadow.py src/ShadBotTrader/application/services/hybrid_production_service.py tests/unit/services/test_hybrid_production_service.py tests/unit/ai/test_hybrid_production_scripts.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m black --check scripts/validate_production_hybrid_stack.py scripts/run_hybrid_paper_shadow.py src/ShadBotTrader/application/services/hybrid_production_service.py tests/unit/services/test_hybrid_production_service.py tests/unit/ai/test_hybrid_production_scripts.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+# PASS
+
+python -m pytest tests/unit/services/test_hybrid_production_service.py tests/unit/ai/test_hybrid_production_scripts.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 96 passed
+
+python -m pytest
+# 1759 passed, 54 skipped in 194.31s
+```
+
+Full gate همچنان به‌خاطر بدهی‌های قدیمی repo قرمز است:
+
+```text
+ruff full: 219 errors
+black full: 21 old files would be reformatted; 520 files unchanged
+mypy full: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-10 — Phase126A full chronological result and Phase127 timestamp fix
+
+کاربر Phase126A chronological single-position replay را روی کل 5M اجرا کرد:
+
+```text
+source_mode       : stream
+stream_scope      : all
+stream_chunk_size : 500
+stream_wavenet    : neutral
+source_rows       : 52832
+evaluated_rows    : 52832
+threshold         : buy=0.80 sell=0.65 margin=0.05
+initial_capital   : 100
+units             : 0.1
+```
+
+نتیجه:
+
+```text
+trades          : 1693
+buy/sell        : 1118 / 575
+wins/losses     : 512 / 1181
+timeouts        : 77
+win_rate        : 30.2422%
+label_precision : 47.6669%
+total_pnl       : -4590.797210656048
+avg_pnl         : -2.7116345012735077
+profit_factor   : 0.5787103197097719
+max_drawdown    : 4590.797210656047
+coverage        : 3.2045%
+```
+
+Chronological counters:
+
+```text
+no_trade_probability: 21949
+skipped_while_open  : 17299
+invalid_range       : 5357
+invalid_bracket     : 6534
+```
+
+Account view با `units=0.1`:
+
+```text
+final_balance     : -359.0797210656049
+net_profit        : -459.0797210656049
+max_drawdown_cash : 459.07972106560476
+would_breach_zero : true
+```
+
+برداشت:
+
+```text
+حتی با فقط یک پوزیشن هم‌زمان، base hybrid fixed-threshold روی کل تاریخ شکست خورد. بنابراین Phase128/132/133 meta-filter و walk-forward validation ضروری هستند و live/paper جدی هنوز مجاز نیست.
+```
+
+سپس کاربر Phase127A matrix-mode را اجرا کرد و خطا گرفت:
+
+```text
+[X] TypeError: '<' not supported between instances of 'str' and 'datetime.datetime'
+```
+
+علت:
+
+```text
+در scripts/build_hybrid_telemetry_tensor.py، timestampهای matrix به صورت string بودند ولی latest_closed برای 4H/1D context آن‌ها را با datetime end_times مقایسه می‌کرد.
+```
+
+رفع انجام‌شده:
+
+```text
+build_htf_lookup اکنون end_times را به pandas Timestamp UTC تبدیل می‌کند.
+latest_closed اکنون timestamp ورودی را با comparable_timestamp به pandas Timestamp UTC تبدیل می‌کند.
+اگر timestamp نامعتبر باشد None برمی‌گردد، نه crash.
+```
+
+تست اضافه‌شده:
+
+```text
+tests/unit/ai/test_hybrid_telemetry_tensor.py::test_latest_closed_accepts_iso_timestamp_strings
+```
+
+Quality check بعد از fix:
+
+```text
+python -m ruff check scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_telemetry_tensor.py
+# PASS
+
+python -m black --check scripts/build_hybrid_telemetry_tensor.py tests/unit/ai/test_hybrid_telemetry_tensor.py
+# PASS
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_tensor.py
+# 4 passed
+
+python -m pytest
+# 1760 passed, 54 skipped in 257.05s
+```
+
+Full gate همچنان به‌خاطر بدهی‌های قدیمی repo قرمز است:
+
+```text
+ruff full: 219 errors
+black full: 21 old files would be reformatted; 520 files unchanged
+mypy full: 28 pre-existing errors in 10 files
+```
+
+## 2026-09-10 — Phase127A matrix-mode execution result: telemetry tensor built successfully
+
+کاربر Phase127A را بعد از timestamp fix با `source_mode=matrix` اجرا کرد و tensor با موفقیت ساخته شد.
+
+تنظیمات مهم:
+
+```text
+source_mode       : matrix
+matrix_path       : default = datasets\processed\XAUUSD\5M\hybrid_xgboost_matrix_latest.parquet
+model             : gold_hybrid_lightgbm_head_5m v1
+threshold         : buy=0.80 sell=0.65 margin=0.05
+tensor_window     : 150
+safe_lag_bars     : 48
+telemetry_lag_mode: fixed
+sample_stride     : 1
+dtype             : float16
+include_htf_context: 1
+max_tensor_mb     : 512
+```
+
+نتیجه:
+
+```text
+rows              : 8000
+tensor_samples    : 7851
+tensor_shape      : [7851, 150, 94]
+channels          : 94
+candidate_rows    : 2307
+candidate_rate    : 28.8375%
+target_win_rate   : 57.2605%
+target_score_r_mean: +0.07910706847906113
+target_pnl_sum    : +3714.10546875
+safe_lag_bars     : 48
+warnings          : []
+```
+
+خروجی‌ها:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_v1.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+برداشت:
+
+```text
+- Phase127A از نظر ساختار PASS شد: tensor سه‌بعدی، Target C، safe_lag=48، 4H/1D aligned context و lagged telemetry بدون warning ساخته شدند.
+- این اجرا فقط روی matrix موجود 8000-row است، نه کل تاریخ 52832-row.
+- target_pnl_sum مثبت اینجا validation معاملاتی نیست؛ چون این dataset برای آموزش/feature engineering است و شامل کل matrix 8000-row می‌شود. معیار معتبر بعدی Phase128/132/133 است.
+```
+
+گام بعدی:
+
+```text
+Phase128A train hybrid meta-labeler روی:
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+```
+
+## 2026-09-10 — Phase128A train result: LightGBM meta-labeler v1
+
+کاربر Phase128A train را روی خروجی Phase127A matrix-mode اجرا کرد.
+
+تنظیمات:
+
+```text
+flat_path      : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+task           : classifier
+target         : target_trade_win
+booster        : lightgbm
+candidate_only : 1
+rows           : 2307
+features       : 94
+train/val/test : 1614 / 346 / 347
+meta_threshold : 0.55
+record_path    : datasets\models\gold_hybrid_meta_lightgbm_5m\v1_training.json
+```
+
+Validation:
+
+```text
+val_accuracy      : 0.6445086705202312
+val_base_rate     : 0.6445086705202312
+val_precision     : 0.6572327044025157
+val_recall        : 0.9372197309417041
+val_f1            : 0.7726432532347505
+val_ap            : 0.7864284978741574
+val_positive_rate : 0.9190751445086706
+val_tp/fp/tn/fn   : 209 / 109 / 14 / 14
+```
+
+Test:
+
+```text
+test_accuracy      : 0.5072046109510087
+test_base_rate     : 0.484149855907781
+test_precision     : 0.49554896142433236
+test_recall        : 0.9940476190476191
+test_f1            : 0.6613861386138613
+test_ap            : 0.619043571505885
+test_positive_rate : 0.9711815561959655
+test_tp/fp/tn/fn   : 167 / 170 / 9 / 1
+```
+
+برداشت:
+
+```text
+- مدل کاملاً collapse نکرده چون AP از base_rate بهتر است، مخصوصاً validation AP=0.786 و test AP=0.619.
+- اما threshold ذخیره‌شدهٔ 0.55 بیش از حد permissive است:
+  validation positive_rate=91.91%
+  test positive_rate=97.12%
+- در test تقریباً همهٔ candidateها را approve می‌کند؛ بنابراین به‌عنوان trade filter در threshold=0.55 هنوز مناسب نیست.
+- اول باید backtest با threshold ذخیره‌شده دیده شود، سپس Phase132 threshold grid با 0.60/0.65/0.70/0.75/0.80 اجرا شود.
+```
+
+گام بعدی پیشنهادی:
+
+```text
+1) Phase128A backtest با meta_threshold=-1 برای baseline ذخیره‌شده.
+2) Phase132A comparison با meta_thresholds=record,0.60,0.65,0.70,0.75,0.80 و فعلاً فقط base + gold_hybrid_meta_lightgbm_5m.
+3) اگر هیچ threshold بهتر نشد، مستقیم Phase133A walk-forward برای رد/تأیید out-of-time.
+```
+
+## 2026-09-10 — Phase128A meta-filter backtest result: positive on 8000-row telemetry matrix
+
+کاربر Phase128A backtest را با مدل `gold_hybrid_meta_lightgbm_5m v1` و threshold ذخیره‌شده اجرا کرد.
+
+تنظیمات:
+
+```text
+flat_path          : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+meta_model_id      : gold_hybrid_meta_lightgbm_5m
+meta_model_version : 1
+meta_task          : classifier
+meta_threshold     : 0.55
+threshold_source   : model_record:gold_hybrid_meta_lightgbm_5m:v1
+rows/evaluated     : 8000 / 8000
+initial_capital    : 100
+units              : 0.1
+```
+
+نتیجهٔ معاملاتی:
+
+```text
+samples        : 8000
+trades         : 143
+buy/sell       : 74 / 69
+wins/losses    : 94 / 49
+timeouts       : 7
+win_rate       : 65.7343%
+label_precision: 65.7343%
+total_pnl      : +509.5359231829643
+avg_pnl        : +3.5631882740067433
+profit_factor  : 2.608242691826868
+max_drawdown   : 91.44515466690063
+coverage       : 1.7875%
+```
+
+Meta counters:
+
+```text
+skipped_by_meta    : 619
+skipped_no_candidate: 5199
+skipped_while_open : 2039
+missing_outcome    : 0
+```
+
+Account view با `initial_capital=100`, `units=0.1`:
+
+```text
+final_balance     : 150.95359231829644
+net_profit        : +50.953592318296444
+return_percent    : +50.95359231829645%
+max_drawdown_cash : 9.144515466690065
+would_breach_zero : false
+```
+
+Monthly:
+
+```text
+2026-07: trades=60 wins=60 losses=0 total_pnl=+526.1065428555012 PF=999.0
+2026-08: trades=83 wins=34 losses=49 total_pnl=-16.57061967253685 PF=0.9477
+```
+
+برداشت:
+
+```text
+- Meta-filter نسبت به base hybrid روی همین 8000-row telemetry matrix یک جهش جدی نشان داد: trades کم‌تر، PF=2.61، DD cash فقط $9.14 با units=0.1.
+- اما profit تقریباً کامل از 2026-07 آمده و 2026-08 کمی منفی است؛ بنابراین هنوز نباید نتیجه را robust فرض کرد.
+- این اجرا full history یا walk-forward نیست؛ فقط روی همان 8000-row matrix انجام شده است.
+- گام بعدی باید Phase132A threshold grid باشد تا بفهمیم 0.55 بهترین است یا thresholdهای سخت‌تر پایدارترند.
+- بعد از آن Phase133A walk-forward اجباری است.
+```
+
+گام بعدی پیشنهادی:
+
+```text
+Run Phase132A with candidates=base,gold_hybrid_meta_lightgbm_5m and thresholds record,0.55,0.60,0.65,0.70,0.75,0.80.
+```
+
+## 2026-09-10 — Phase132A comparison bugfix: best replay summary
+
+کاربر Phase132A comparison را اجرا کرد و بعد از شروع report با خطای زیر شکست خورد:
+
+```text
+[X] AttributeError: 'ComparisonRow' object has no attribute 'label_correct'
+```
+
+علت:
+
+```text
+scripts/backtest_meta_filtered_hybrid.py برای ساخت best_replay.html سعی می‌کرد FixedBacktestSummary را از ComparisonRow بازسازی کند، اما ComparisonRow همهٔ فیلدهای summary مثل label_correct/gross_profit/gross_loss/no_trade را ندارد.
+```
+
+رفع:
+
+```text
+BestReplay اکنون summary اصلی FixedBacktestSummary را همراه row/trades/source_indices/threshold نگه می‌دارد.
+best_replay.html اکنون از replay.summary استفاده می‌کند، نه از بازسازی ناقص از ComparisonRow.
+```
+
+تست اضافه/به‌روزرسانی:
+
+```text
+tests/unit/ai/test_meta_filtered_hybrid_comparison.py::test_best_replay_keeps_original_summary_for_html_rendering
+```
+
+Quality check:
+
+```text
+python -m ruff check scripts/backtest_meta_filtered_hybrid.py tests/unit/ai/test_meta_filtered_hybrid_comparison.py
+# PASS
+
+python -m black --check scripts/backtest_meta_filtered_hybrid.py tests/unit/ai/test_meta_filtered_hybrid_comparison.py
+# PASS
+
+python -m pytest tests/unit/ai/test_meta_filtered_hybrid_comparison.py tests/unit/presentation/test_architecture_knobs_gui.py tests/integration/test_gui_coverage.py
+# 93 passed
+
+python -m pytest
+# 1761 passed, 54 skipped in 258.58s
+```
+
+Full gate همچنان به‌علت بدهی‌های قدیمی repo قرمز است:
+
+```text
+ruff full: 219 errors
+black full: 21 old files would be reformatted; 520 files unchanged
+mypy full: 28 pre-existing errors in 10 files
+```
+
+گام بعدی کاربر:
+
+```text
+همان دستور Phase132A comparison را دوباره اجرا کند و run_logs\hybrid_meta_comparison\latest.json را ارسال کند.
+```
+
+## 2026-09-10 — Phase132A threshold-grid result: LightGBM meta-filter beats base on 8000-row matrix
+
+کاربر Phase132A comparison را با candidates زیر اجرا کرد:
+
+```text
+base
+gold_hybrid_meta_lightgbm_5m
+```
+
+تنظیمات:
+
+```text
+flat_path       : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+tensor_path     : datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+samples         : 7851
+meta_thresholds : record,0.55,0.60,0.65,0.70,0.75,0.80
+score_metric    : total_pnl
+initial_capital : 100
+units           : 0.1
+```
+
+Base result:
+
+```text
+trades        : 219
+buy/sell      : 116 / 103
+wins/losses   : 93 / 126
+win_rate      : 42.4658%
+total_pnl     : +55.14647939801216
+profit_factor : 1.0677528759144055
+max_drawdown  : 98.2512731552124
+coverage      : 2.7895%
+final_balance : 105.51464793980122
+```
+
+Best meta-filter result:
+
+```text
+candidate      : gold_hybrid_meta_lightgbm_5m:meta:meta=record:score=0.0
+version        : 1
+meta_threshold : 0.55
+trades         : 142
+buy/sell       : 74 / 68
+wins/losses    : 93 / 49
+win_rate       : 65.49295774647887%
+total_pnl      : +502.82915729284286
+avg_pnl        : +3.541050403470724
+profit_factor  : 2.5870741996012305
+max_drawdown   : 91.44515466690063
+coverage       : 1.8087%
+final_balance  : 150.2829157292843
+would_breach_zero: false
+```
+
+Threshold grid:
+
+```text
+0.55/record : +502.8292 PF=2.5871 trades=142 DD=91.4452
+0.60        : +488.5258 PF=2.5521 trades=140 DD=91.4452
+0.65        : +481.7925 PF=2.5413 trades=138 DD=89.2924
+0.70        : +467.5121 PF=2.5073 trades=136 DD=89.2924
+0.75        : +446.6142 PF=2.4499 trades=131 DD=89.2924
+0.80        : +420.5321 PF=2.3652 trades=130 DD=89.2924
+```
+
+برداشت:
+
+```text
+- روی همین 8000-row telemetry matrix، meta-filter نسبت به base بسیار بهتر است:
+  +502.83 در برابر +55.15 و PF=2.59 در برابر 1.07.
+- threshold ذخیره‌شدهٔ 0.55 در این grid با score_metric=total_pnl بهترین بود.
+- thresholdهای سخت‌تر drawdown را کمی پایین‌تر می‌آورند اما total_pnl را کم می‌کنند.
+- این هنوز validation نهایی نیست، چون این comparison روی همان 8000-row dataset انجام شده و شامل بخش‌هایی از training/validation خود meta-model است.
+- برای اعتبار واقعی باید Phase127A را در stream/full mode بسازیم و بعد Phase133A walk-forward را اجرا کنیم.
+```
+
+گام بعدی لازم:
+
+```text
+1) Build Phase127A full telemetry with source_mode=stream so flat_latest covers ~52832 rows / all months.
+2) Retrain Phase128A on full flat.
+3) Run Phase132A again.
+4) Run Phase133A walk-forward as final research gate before production/paper.
+```
+
+## 2026-09-12 — Phase127A stream telemetry same-bar-policy fix
+
+**Operator run result:** full stream telemetry build stopped after the first 500 streamed rows with:
+
+```text
+[X] AttributeError: 'Namespace' object has no attribute 'same_bar_policy'
+```
+
+**Root cause:** `scripts/build_hybrid_telemetry_tensor.py` reuses `simulate_trade()` from
+`backtest_hybrid_xgboost_head.py`; that simulator expects `args.same_bar_policy`, but the
+Phase127 telemetry tensor CLI did not expose or default this argument.
+
+**Implementation:**
+- Added `--same-bar-policy {stop_first,tp_first}` to `scripts/build_hybrid_telemetry_tensor.py` with default `stop_first`.
+- Added the same field to the Dashboard command `Build hybrid telemetry tensor`.
+- Updated GUI command argument forwarding so Dashboard runs pass `--same-bar-policy` to the script.
+- Fixed stream-mode lagged telemetry consistency: after all chunks are concatenated, lagged trade telemetry is recomputed globally across the full streamed frame instead of being reset at every `--stream-chunk-size` boundary.
+
+**Files changed:**
+```text
+scripts/build_hybrid_telemetry_tensor.py
+src/ShadBotTrader/presentation/commands/handlers.py
+tests/unit/ai/test_hybrid_telemetry_tensor.py
+tests/unit/presentation/test_architecture_knobs_gui.py
+```
+
+**Verification:**
+```text
+python -m ruff check scripts/build_hybrid_telemetry_tensor.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py
+→ passed
+
+python -m black --check scripts/build_hybrid_telemetry_tensor.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py
+→ passed
+
+python -m pytest tests/unit/ai/test_hybrid_telemetry_tensor.py tests/unit/presentation/test_architecture_knobs_gui.py -q
+→ 65 passed
+
+python -m pytest -q
+→ 1760 passed, 54 skipped
+```
+
+**Full quality gate status:**
+```text
+python -m ruff check .
+→ still fails with pre-existing repository debt: 219 errors
+
+python -m black --check .
+→ still fails with pre-existing formatting debt: 21 files would be reformatted
+
+python -m mypy src
+→ still fails with pre-existing type debt: 28 errors in 10 files
+```
+
+**Next operator action:** rerun Phase127A full stream telemetry using the same command. The explicit default is now equivalent to adding:
+
+```powershell
+--same-bar-policy stop_first
+```
+
+## 2026-09-12 — Full stream Phase127A, Phase128A v2, and Phase133A walk-forward result recorded
+
+**Phase127A full stream telemetry:**
+
+```text
+rows                : 52832
+tensor_samples      : 10537
+tensor_window       : 150
+channels            : 94
+tensor_shape        : [10537, 150, 94]
+candidate_rows      : 13757
+candidate_rate      : 26.0391429436705%
+target_win_rate     : 41.266265511512756%
+target_score_r_mean : -0.23007889091968536
+target_pnl_sum      : -43309.8125
+safe_lag_bars       : 48
+source_mode         : stream
+sample_stride       : 5
+warnings            : []
+```
+
+Interpretation:
+
+```text
+Phase127A now passes as a full-history data-build step. The full candidate universe confirms the base hybrid is weak: 13,757 candidate rows with 41.27% target win rate and -43,309.81 raw PnL.
+```
+
+**Phase128A full-stream LightGBM training:**
+
+```text
+model_id          : gold_hybrid_meta_lightgbm_5m
+version           : 2
+rows              : 13757
+feature_columns   : 94
+train_rows        : 9629
+val_rows          : 2064
+test_rows         : 2064
+candidate_only    : 1
+booster           : lightgbm
+record_path       : datasets\models\gold_hybrid_meta_lightgbm_5m\v2_training.json
+```
+
+Validation/test summary:
+
+```text
+val_ap/base       : 0.6117950637217242 / 0.4806201550387597
+val_precision     : 0.5464733025708636
+val_recall        : 0.8356854838709677
+test_ap/base      : 0.7147311817866087 / 0.5184108527131783
+test_precision    : 0.6214614878209348
+test_recall       : 0.8822429906542056
+```
+
+Interpretation:
+
+```text
+The full-stream classifier has ranking signal, but acceptance depends on walk-forward trading validation, not classification metrics.
+```
+
+**Phase133A walk-forward validation:**
+
+```text
+folds                  : 6
+positive_months        : 1
+negative_months        : 4
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : -387.9482191801071
+meta_gross_profit      : 1258.938264489174
+meta_gross_loss        : 1646.886483669281
+meta_profit_factor     : 0.764435361497561
+meta_max_drawdown      : 460.49957263469696
+meta_trades            : 288
+meta_avg_pnl           : -1.3470424277087052
+meta_final_balance     : 61.20517808198929
+meta_return_percent    : -38.79482191801071%
+meta_would_breach_zero : false
+```
+
+Fold detail:
+
+```text
+2026-04: threshold=0.70, meta= +25.1883, PF=1.1654, trades=24,  base=-228.3295
+2026-05: threshold=0.60, meta=-122.8658, PF=0.4854, trades=35,  base=-465.0026
+2026-06: threshold=0.70, meta=-210.3758, PF=0.6922, trades=100, base=-381.2333
+2026-07: threshold=0.70, meta= -59.0373, PF=0.8710, trades=100, base=  +3.7473
+2026-08: threshold=0.70, meta= -20.8577, PF=0.8181, trades=29,  base=-202.4170
+2026-09: threshold=0.70, meta=  +0.0000, PF=0.0000, trades=0,   base= -15.6105
+```
+
+Decision:
+
+```text
+FAIL — Phase133A did not pass the production/paper gate.
+The meta-filter reduces damage compared with the base hybrid, but it remains negative out-of-time and unstable by month.
+No Phase134 paper shadow or live trading should be run with this candidate.
+```
+
+Recommended next actions:
+
+```text
+1) Run full-stream Phase132A comparison for gold_hybrid_meta_lightgbm_5m v2.
+2) Run stricter Phase133A variants: thresholds 0.70-0.95, class_weight=off, and score_metric=drawdown_adjusted.
+3) If flat meta remains negative, evaluate Phase129/130/131 tensor models only through walk-forward validation.
+```

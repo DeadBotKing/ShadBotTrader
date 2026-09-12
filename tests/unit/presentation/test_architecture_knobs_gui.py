@@ -556,3 +556,481 @@ def test_replay_hybrid_chronological_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--stream-wavenet") + 1] == "neutral"
     assert args[args.index("--initial-capital") + 1] == "100.0"
     assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_build_hybrid_telemetry_tensor_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BUILD_HYBRID_TELEMETRY_TENSOR).fields
+    }
+    assert {
+        "source_mode",
+        "tensor_window",
+        "safe_lag_bars",
+        "telemetry_lag_mode",
+        "sample_stride",
+        "include_htf_context",
+        "same_bar_policy",
+    } <= fields
+
+
+def test_build_hybrid_telemetry_tensor_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.build_hybrid_telemetry_tensor(
+        Command(
+            CommandKind.BUILD_HYBRID_TELEMETRY_TENSOR,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "source_mode": "matrix",
+                "model_id": "gold_hybrid_lightgbm_head_5m",
+                "tensor_window": "150",
+                "safe_lag_bars": "48",
+                "telemetry_lag_mode": "fixed",
+                "sample_stride": "2",
+                "max_tensor_mb": "256",
+                "include_htf_context": "1",
+                "same_bar_policy": "tp_first",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/build_hybrid_telemetry_tensor.py"
+    assert args[args.index("--source-mode") + 1] == "matrix"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--tensor-window") + 1] == "150"
+    assert args[args.index("--safe-lag-bars") + 1] == "48"
+    assert args[args.index("--telemetry-lag-mode") + 1] == "fixed"
+    assert args[args.index("--sample-stride") + 1] == "2"
+    assert args[args.index("--max-tensor-mb") + 1] == "256.0"
+    assert args[args.index("--include-htf-context") + 1] == "1"
+    assert args[args.index("--same-bar-policy") + 1] == "tp_first"
+
+
+def test_train_hybrid_meta_labeler_descriptor_exists():
+    fields = {field.name for field in descriptor_for(CommandKind.TRAIN_HYBRID_META_LABELER).fields}
+    assert {"flat_path", "task", "booster", "candidate_only", "meta_threshold"} <= fields
+
+
+def test_train_hybrid_meta_labeler_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_hybrid_meta_labeler(
+        Command(
+            CommandKind.TRAIN_HYBRID_META_LABELER,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "task": "classifier",
+                "booster": "lightgbm",
+                "flat_path": "telemetry.parquet",
+                "meta_threshold": "0.60",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_hybrid_meta_labeler.py"
+    assert args[args.index("--flat-path") + 1] == "telemetry.parquet"
+    assert args[args.index("--task") + 1] == "classifier"
+    assert args[args.index("--booster") + 1] == "lightgbm"
+    assert args[args.index("--meta-threshold") + 1] == "0.6"
+
+
+def test_backtest_hybrid_meta_labeler_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_HYBRID_META_LABELER).fields
+    }
+    assert {"flat_path", "meta_model_id", "meta_threshold", "initial_capital", "units"} <= fields
+
+
+def test_backtest_hybrid_meta_labeler_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_hybrid_meta_labeler(
+        Command(
+            CommandKind.BACKTEST_HYBRID_META_LABELER,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "telemetry.parquet",
+                "meta_model_id": "gold_hybrid_meta_lightgbm_5m",
+                "meta_threshold": "0.61",
+                "initial_capital": "100",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_hybrid_meta_labeler.py"
+    assert args[args.index("--flat-path") + 1] == "telemetry.parquet"
+    assert args[args.index("--meta-model-id") + 1] == "gold_hybrid_meta_lightgbm_5m"
+    assert args[args.index("--meta-threshold") + 1] == "0.61"
+    assert args[args.index("--initial-capital") + 1] == "100.0"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_train_hybrid_telemetry_wavenet_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.TRAIN_HYBRID_TELEMETRY_WAVENET).fields
+    }
+    assert {"tensor_path", "task", "purge_gap", "n_layers", "n_blocks"} <= fields
+
+
+def test_train_hybrid_telemetry_wavenet_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_hybrid_telemetry_wavenet(
+        Command(
+            CommandKind.TRAIN_HYBRID_TELEMETRY_WAVENET,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "task": "multihead",
+                "purge_gap": "336",
+                "n_layers": "5",
+                "n_blocks": "2",
+                "epochs": "7",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_hybrid_telemetry_wavenet.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--task") + 1] == "multihead"
+    assert args[args.index("--purge-gap") + 1] == "336"
+    assert args[args.index("--n-layers") + 1] == "5"
+    assert args[args.index("--n-blocks") + 1] == "2"
+    assert args[args.index("--epochs") + 1] == "7"
+
+
+def test_backtest_hybrid_telemetry_wavenet_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_HYBRID_TELEMETRY_WAVENET).fields
+    }
+    assert {"tensor_path", "flat_path", "decision_mode", "meta_threshold"} <= fields
+
+
+def test_backtest_hybrid_telemetry_wavenet_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_hybrid_telemetry_wavenet(
+        Command(
+            CommandKind.BACKTEST_HYBRID_TELEMETRY_WAVENET,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "flat_path": "flat.parquet",
+                "model_id": "gold_hybrid_telemetry_wavenet_5m",
+                "decision_mode": "both",
+                "meta_threshold": "0.60",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_hybrid_telemetry_wavenet.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_telemetry_wavenet_5m"
+    assert args[args.index("--decision-mode") + 1] == "both"
+    assert args[args.index("--meta-threshold") + 1] == "0.6"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_train_hybrid_telemetry_tsmixer_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.TRAIN_HYBRID_TELEMETRY_TSMIXER).fields
+    }
+    assert {"tensor_path", "task", "mixer_layers", "time_hidden_units", "purge_gap"} <= fields
+
+
+def test_train_hybrid_telemetry_tsmixer_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_hybrid_telemetry_tsmixer(
+        Command(
+            CommandKind.TRAIN_HYBRID_TELEMETRY_TSMIXER,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "task": "multihead",
+                "mixer_layers": "3",
+                "time_hidden_units": "32",
+                "feature_hidden_units": "64",
+                "epochs": "5",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_hybrid_telemetry_tsmixer.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--task") + 1] == "multihead"
+    assert args[args.index("--mixer-layers") + 1] == "3"
+    assert args[args.index("--time-hidden-units") + 1] == "32"
+    assert args[args.index("--feature-hidden-units") + 1] == "64"
+    assert args[args.index("--epochs") + 1] == "5"
+
+
+def test_backtest_hybrid_telemetry_tsmixer_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_HYBRID_TELEMETRY_TSMIXER).fields
+    }
+    assert {"tensor_path", "flat_path", "decision_mode", "meta_threshold"} <= fields
+
+
+def test_backtest_hybrid_telemetry_tsmixer_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_hybrid_telemetry_tsmixer(
+        Command(
+            CommandKind.BACKTEST_HYBRID_TELEMETRY_TSMIXER,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "flat_path": "flat.parquet",
+                "model_id": "gold_hybrid_telemetry_tsmixer_5m",
+                "decision_mode": "both",
+                "meta_threshold": "0.60",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_hybrid_telemetry_tsmixer.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_telemetry_tsmixer_5m"
+    assert args[args.index("--decision-mode") + 1] == "both"
+    assert args[args.index("--meta-threshold") + 1] == "0.6"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_train_hybrid_telemetry_patchtst_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.TRAIN_HYBRID_TELEMETRY_PATCHTST).fields
+    }
+    assert {"tensor_path", "patch_len", "stride", "d_model", "layers", "heads"} <= fields
+
+
+def test_train_hybrid_telemetry_patchtst_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_hybrid_telemetry_patchtst(
+        Command(
+            CommandKind.TRAIN_HYBRID_TELEMETRY_PATCHTST,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "task": "multihead",
+                "patch_len": "16",
+                "stride": "8",
+                "d_model": "64",
+                "layers": "3",
+                "heads": "4",
+                "epochs": "5",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_hybrid_telemetry_patchtst.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--task") + 1] == "multihead"
+    assert args[args.index("--patch-len") + 1] == "16"
+    assert args[args.index("--stride") + 1] == "8"
+    assert args[args.index("--d-model") + 1] == "64"
+    assert args[args.index("--layers") + 1] == "3"
+    assert args[args.index("--heads") + 1] == "4"
+    assert args[args.index("--epochs") + 1] == "5"
+
+
+def test_backtest_hybrid_telemetry_patchtst_descriptor_exists():
+    fields = {
+        field.name
+        for field in descriptor_for(CommandKind.BACKTEST_HYBRID_TELEMETRY_PATCHTST).fields
+    }
+    assert {"tensor_path", "flat_path", "decision_mode", "meta_threshold"} <= fields
+
+
+def test_backtest_hybrid_telemetry_patchtst_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_hybrid_telemetry_patchtst(
+        Command(
+            CommandKind.BACKTEST_HYBRID_TELEMETRY_PATCHTST,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "flat_path": "flat.parquet",
+                "model_id": "gold_hybrid_telemetry_patchtst_5m",
+                "decision_mode": "both",
+                "meta_threshold": "0.60",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_hybrid_telemetry_patchtst.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--model-id") + 1] == "gold_hybrid_telemetry_patchtst_5m"
+    assert args[args.index("--decision-mode") + 1] == "both"
+    assert args[args.index("--meta-threshold") + 1] == "0.6"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_backtest_meta_filtered_hybrid_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_META_FILTERED_HYBRID).fields
+    }
+    assert {"candidates", "decision_modes", "meta_thresholds", "score_metric"} <= fields
+
+
+def test_backtest_meta_filtered_hybrid_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_meta_filtered_hybrid(
+        Command(
+            CommandKind.BACKTEST_META_FILTERED_HYBRID,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "tensor_path": "tensor.npz",
+                "candidates": "base,gold_hybrid_meta_lightgbm_5m",
+                "decision_modes": "meta,both",
+                "meta_thresholds": "record,0.60",
+                "score_metric": "drawdown_adjusted",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_meta_filtered_hybrid.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--candidates") + 1] == "base,gold_hybrid_meta_lightgbm_5m"
+    assert args[args.index("--decision-modes") + 1] == "meta,both"
+    assert args[args.index("--meta-thresholds") + 1] == "record,0.60"
+    assert args[args.index("--score-metric") + 1] == "drawdown_adjusted"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_run_hybrid_walk_forward_validation_descriptor_exists():
+    fields = {
+        field.name
+        for field in descriptor_for(CommandKind.RUN_HYBRID_WALK_FORWARD_VALIDATION).fields
+    }
+    assert {"flat_path", "train_months_min", "validation_months", "purge_gap_bars"} <= fields
+
+
+def test_run_hybrid_walk_forward_validation_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.run_hybrid_walk_forward_validation(
+        Command(
+            CommandKind.RUN_HYBRID_WALK_FORWARD_VALIDATION,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "booster": "lightgbm",
+                "start_month": "2026-01",
+                "train_months_min": "3",
+                "validation_months": "1",
+                "purge_gap_bars": "336",
+                "meta_thresholds": "0.50,0.60",
+                "units": "0.1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_hybrid_walk_forward_validation.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--booster") + 1] == "lightgbm"
+    assert args[args.index("--start-month") + 1] == "2026-01"
+    assert args[args.index("--train-months-min") + 1] == "3"
+    assert args[args.index("--validation-months") + 1] == "1"
+    assert args[args.index("--purge-gap-bars") + 1] == "336"
+    assert args[args.index("--meta-thresholds") + 1] == "0.50,0.60"
+    assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_validate_production_hybrid_stack_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK).fields
+    }
+    assert {"config_path", "mode", "position_size_units", "kill_switch_enabled"} <= fields
+
+
+def test_validate_production_hybrid_stack_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.validate_production_hybrid_stack(
+        Command(
+            CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "config_path": "configs/hybrid_production_stack.json",
+                "mode": "paper_shadow",
+                "base_model_id": "gold_hybrid_lightgbm_head_5m",
+                "position_size_units": "0.1",
+                "write_config": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/validate_production_hybrid_stack.py"
+    assert args[args.index("--config-path") + 1] == "configs/hybrid_production_stack.json"
+    assert args[args.index("--mode") + 1] == "paper_shadow"
+    assert args[args.index("--base-model-id") + 1] == "gold_hybrid_lightgbm_head_5m"
+    assert args[args.index("--position-size-units") + 1] == "0.1"
+    assert args[args.index("--write-config") + 1] == "1"
+
+
+def test_run_hybrid_paper_shadow_descriptor_exists():
+    fields = {field.name for field in descriptor_for(CommandKind.RUN_HYBRID_PAPER_SHADOW).fields}
+    assert {"config_path", "flat_path", "allow_validation_fail", "max_windows"} <= fields
+
+
+def test_run_hybrid_paper_shadow_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.run_hybrid_paper_shadow(
+        Command(
+            CommandKind.RUN_HYBRID_PAPER_SHADOW,
+            {
+                "config_path": "configs/hybrid_production_stack.json",
+                "flat_path": "flat.parquet",
+                "eval_frac": "0.5",
+                "max_windows": "100",
+                "allow_validation_fail": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_hybrid_paper_shadow.py"
+    assert args[args.index("--config-path") + 1] == "configs/hybrid_production_stack.json"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--eval-frac") + 1] == "0.5"
+    assert args[args.index("--max-windows") + 1] == "100"
+    assert args[args.index("--allow-validation-fail") + 1] == "1"
