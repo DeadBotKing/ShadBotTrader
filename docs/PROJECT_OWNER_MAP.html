@@ -290,6 +290,15 @@
         <span class="badge"><span class="dot red"></span>Phase141A pivot pattern recognition: FAILED first WF</span>
         <span class="badge"><span class="dot green"></span>Phase141A storage-mode dataset read: FIXED</span>
         <span class="badge"><span class="dot blue"></span>Phase142A 3D Pivot Tensor + Keras WaveNet: BUILT</span>
+        <span class="badge"><span class="dot blue"></span>Phase143A 4D Pivot Image Tensor: BUILT</span>
+        <span class="badge"><span class="dot red"></span>Phase143A Conv2D sanity: selected_rate=0</span>
+        <span class="badge"><span class="dot red"></span>Phase143A v1 rejected: scaler Inf/NaN</span>
+        <span class="badge"><span class="dot green"></span>Phase143A sanitizer + architecture artifacts: FIXED</span>
+        <span class="badge"><span class="dot green"></span>Phase143A tensor health audit: ADDED / operator PASS</span>
+        <span class="badge"><span class="dot green"></span>Phase143A image CNN epoch checkpoints: ADDED</span>
+        <span class="badge"><span class="dot blue"></span>Phase144A advanced image WaveNet: BUILT</span>
+        <span class="badge"><span class="dot green"></span>4D trainers RAM-safe stream loader: ADDED</span>
+        <span class="badge"><span class="dot green"></span>4D trainers batch-level logs: ADDED</span>
       </div>
     </header>
 
@@ -302,14 +311,13 @@
         </div>
         <p>
           آخرین نتیجه اجرایی، شکست Phase139A در gridهای global و side-specific TP/SL بود.
-          آخرین تغییر فنی، Phase142A/142B است: نسخه واقعی 3D Tensor + TensorFlow/Keras WaveNet برای Pattern Recognition ساخته شد.
-          شکل ذخیره‌شده <code>[samples, 288, channels]</code> است و هنگام آموزش Keras به
-          <code>[batch, 288, channels]</code> تبدیل می‌شود. اجرای واقعی باید روی سیستم مالک با TensorFlow و دیتاست کامل پروژه انجام شود.
+          آخرین تغییر فنی، batch-level training visibility است: trainerهای 4D حالا با --batch-log-every می‌توانند قبل از پایان epoch خروجی هر batch را روی console و JSONL نشان دهند.
+          شکل ذخیره‌شده <code>[samples, WindowSize, Features_5M, Features_4H_1D]</code> است؛ پیش‌فرض <code>WindowSize=100</code> و <code>Stride=1</code>. برای Conv2D batch همان 4D است و برای Conv3D یک channel axis اضافه می‌شود.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">Phase142 stored X</span><span class="value info">[samples,288,ch]</span></div>
-          <div class="card span-3 metric"><span class="label">Keras batch X</span><span class="value info">[batch,288,ch]</span></div>
-          <div class="card span-3 metric"><span class="label">WaveNet scripts</span><span class="value info">4</span></div>
+          <div class="card span-3 metric"><span class="label">Phase143 stored X</span><span class="value info">[samples,100,25,17]</span></div>
+          <div class="card span-3 metric"><span class="label">Conv2D batch</span><span class="value info">[batch,100,25,17]</span></div>
+          <div class="card span-3 metric"><span class="label">Conv2D selected rate</span><span class="value bad">0.0%</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>
@@ -713,9 +721,15 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
             </tr>
             <tr>
               <td>Phase142A/B 3D Pivot Tensor + Keras WaveNet</td>
+              <td><span class="pill hold">IMPLEMENTED / SUPERSEDED BY 4D REQUEST</span></td>
+              <td>Sequence tensor [samples,288,channels] built for Conv1D/WaveNet.</td>
+              <td>بعداً مشخص شد مالک Conv2D/Conv3D 4D tensor می‌خواهد، نه فقط Conv1D sequence tensor.</td>
+            </tr>
+            <tr>
+              <td>Phase143A 4D Pivot Image Tensor + Conv2D/Conv3D</td>
               <td><span class="pill info">IMPLEMENTED / AWAITING OPERATOR RUN</span></td>
-              <td>Build tensor [samples,288,channels], train Keras WaveNet, backtest, and fold-by-fold walk-forward. GUI commands added for all four actions.</td>
-              <td>این همان مسیر خواسته‌شده است: TensorFlow/Keras WaveNet واقعی. نتیجه معاملاتی فقط بعد از اجرای واقعی روی سیستم مالک معتبر است.</td>
+              <td>Stored X=[samples,WindowSize,Features_5M,Features_4H_1D], default WindowSize=100, stride=1. Conv2D sanity run on [12000,100,32,23] produced selected_rate=0.</td>
+              <td>Tensor درست ساخته و مدل train شد، اما gate فعلی هیچ سیگنالی انتخاب نکرد. قبل از full training باید probability/threshold diagnostic انجام شود.</td>
             </tr>
           </tbody>
         </table>
@@ -771,7 +785,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
               <li><span class="node hold">Telemetry WaveNet/TCN v1 diagnostic only<span class="mini">full replay +1914.66 raw PF=2.604; last-15% grid best +42.79 PF=1.648; not deployable after Phase133B</span></span></li>
               <li><span class="node fail">Telemetry WaveNet/TCN: <code>gold_hybrid_telemetry_wavenet_5m v2</code><span class="mini">last-15% replay rejected: -178.49 raw, PF=0.5543, 89 trades, August -168.39</span></span></li>
               <li><span class="node fail">Pivot flat baseline: <code>gold_pivot_pattern_recognition_5m v1</code><span class="mini">Phase141A operator GC=F WF failed: final=$79.01, PF=0.534; research-only</span></span></li>
-              <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A true 3D tensor/Keras WaveNet; awaiting owner-machine training</span></span></li>
+              <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A 3D Conv1D/WaveNet path</span></span></li>
+              <li><span class="node info">Advanced 4D Image WaveNet: <code>gold_pivot_pattern_image_wavenet_5m</code><span class="mini">Phase144A main advanced architecture; awaiting owner-machine training</span></span></li>
             </ul>
           </li>
         </ul>
@@ -803,6 +818,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
             <tr><td>Phase142A pivot tensor</td><td><code>datasets\processed\XAUUSD\5M\pivot_pattern_tensor_latest.npz</code></td></tr>
             <tr><td>Phase142A WaveNet model</td><td><code>datasets\models\gold_pivot_pattern_wavenet_5m\v*_model.keras</code></td></tr>
             <tr><td>Phase142B walk-forward</td><td><code>run_logs\pivot_pattern_wavenet_walk_forward\latest.json</code></td></tr>
+            <tr><td>Phase143A image tensor health</td><td><code>run_logs\pivot_pattern_image_tensor_health\latest.json</code></td></tr>
+            <tr><td>Phase144A advanced image WaveNet</td><td><code>run_logs\pivot_pattern_image_wavenet\latest.json</code></td></tr>
             <tr><td>Current owner map</td><td><code>docs\PROJECT_OWNER_MAP.html</code></td></tr>
           </tbody>
         </table>
@@ -985,7 +1002,15 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase140A:</strong> candidate direction/entry audit executed. Best chronological scenario was original:delay=3 with -3123.78 raw PnL and PF=0.651, so it failed as strategy. Diagnostics: BUY flip reduces damage massively (-39003.71 → -15831.00) but remains negative; SELL flip is destructive (-4306.10 → -21911.83); delay=3 helps but does not create edge.</div>
           <div class="event"><strong>Phase141A:</strong> Pivot Pattern Recognition model implemented, trained and walk-forward tested on real public GC=F data. Operator rerun: Features=57, selected=38, targets SELL/HOLD/BUY=1385/10782/1387. Result failed: $100→$79.01, return=-20.99%, PF=0.534, 0 positive folds / 6 negative.</div>
           <div class="event"><strong>Phase141A storage fix:</strong> owner correctly objected that project datasets should be read from the existing storage, not <code>datasets\external</code>. Added <code>--source-mode storage</code>; GUI default now uses storage; project parquet schema <code>open_time</code> is supported.</div>
-          <div class="event"><strong>Phase142A/B:</strong> true 3D Pivot Tensor + Keras WaveNet implementation added. Scripts: build tensor, train WaveNet, backtest WaveNet, walk-forward WaveNet. Stored X shape is [samples,288,channels]; Keras runtime batches are [batch,288,channels]. Awaiting owner-machine execution on full XAUUSD storage data.</div>
+          <div class="event"><strong>Phase142A/B:</strong> 3D sequence tensor + Keras WaveNet implementation added for Conv1D/WaveNet. Later superseded by owner's explicit 4D Conv2D/Conv3D tensor requirement.</div>
+          <div class="event"><strong>Phase143A:</strong> 4D Pivot Image Tensor + Conv2D/Conv3D trainer implemented. Stored X shape is [samples,WindowSize,Features_5M,Features_4H_1D], default WindowSize=100 and stride=1. Smoke confirmed [160,20,5,4] on TESTSYM.</div>
+          <div class="event"><strong>Phase143A Conv2D sanity:</strong> operator trained on X=[12000,100,32,23]. Training completed, but selected_rate=0 on validation and test; test_action_accuracy=0.3743, test_top_ap=0.1217, test_bottom_ap=0.1012. Later inspection found scaler_mean=Infinity and scaler_std=NaN, so v1 is rejected.</div>
+          <div class="event"><strong>Phase143A sanitizer fix:</strong> image tensor builder now applies axis normalization, feature clipping, and interaction clipping before float16 cast. Image CNN trainer sanitizes old nonfinite input and saves architecture JSON + summary TXT.</div>
+          <div class="event"><strong>Phase143A tensor health audit:</strong> official script/GUI command added: <code>Audit pivot image tensor health</code>. Operator stated the rebuilt dataset passed health checks. Next step is sanitized Conv2D v2 training; v1 remains rejected.</div>
+          <div class="event"><strong>Phase143A image CNN checkpointing:</strong> trainer now creates model directory before training and writes <code>vN_epoch_checkpoint.keras</code> after each epoch, plus architecture JSON and summary TXT before final completion.</div>
+          <div class="event"><strong>Phase144A:</strong> advanced 4D Pivot Image WaveNet implemented. It includes separate pure 5M/HTF branches, TimeDistributed spatial multi-scale Conv2D, gated tanh-sigmoid dilated temporal residual WaveNet blocks, SE channel attention, temporal self-attention, and multi-head outputs.</div>
+          <div class="event"><strong>RAM-safe loader:</strong> 4D image CNN/WaveNet trainers now support <code>--loader-mode stream</code>. Tensor stays on disk as memmap; scaler is computed in chunks; only current batch is loaded/normalized.</div>
+          <div class="event"><strong>Batch-level logs:</strong> 4D image CNN/WaveNet trainers now support <code>--batch-log-every</code>. Use <code>--batch-log-every 1</code> to print every batch and write <code>latest_batch_log.jsonl</code>.</div>
         </div>
       </div>
     </section>

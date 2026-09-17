@@ -9906,3 +9906,421 @@ python -m black --check .
 python -m mypy src
 → 28 pre-existing errors in 10 files
 ```
+
+## 2026-09-16 — Phase143A 4D Pivot Image Tensor + Conv2D/Conv3D implemented
+
+**Owner correction:** intended dataset is 4D for Conv2D/Conv3D:
+
+```text
+[samples, WindowSize, Features_5M, Features_4H_1D]
+```
+
+**Implemented:**
+
+```text
+scripts/build_pivot_pattern_image_tensor.py
+scripts/train_pivot_pattern_image_cnn.py
+GUI: Build pivot image tensor
+GUI: Train pivot image CNN
+```
+
+**Shape semantics:**
+
+```text
+Stored X      : [samples, WindowSize, Features_5M, Features_4H_1D]
+Conv2D batch  : [batch, WindowSize, Features_5M, Features_4H_1D]
+Conv3D batch  : [batch, WindowSize, Features_5M, Features_4H_1D, 1]
+```
+
+**Cell semantics:**
+
+```text
+X[t, f5, htf] = feature_5M[t, f5] * feature_4H_1D[t, htf]
+```
+
+Bias terms preserve pure 5M and pure HTF features.
+
+**Smoke:**
+
+```text
+TESTSYM X shape     : [160, 20, 5, 4]
+Conv2D batch shape  : [batch, 20, 5, 4]
+Conv3D batch shape  : [batch, 20, 5, 4, 1]
+```
+
+**Verification:**
+
+```text
+Phase143 targeted ruff/black/tests
+→ passed
+```
+
+**Full gate after Phase143A:**
+
+```text
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1898 tests collected
+```
+
+Known full-repository debt remains:
+
+```text
+python -m ruff check .
+→ 219 pre-existing errors
+
+python -m black --check .
+→ 21 pre-existing files would be reformatted
+
+python -m mypy src
+→ 28 pre-existing errors in 10 files
+```
+
+## 2026-09-17 — Phase143A feature-axis defaults increased after owner feedback
+
+**Owner feedback:** `13 × 9` feature axes are too small for the intended Conv2D/Conv3D Pattern Recognition model.
+
+**Fix:** increased defaults in `scripts/build_pivot_pattern_image_tensor.py` and GUI:
+
+```text
+max_5m_features  : 12 -> 24
+max_htf_features : 8  -> 16
+max_tensor_mb    : 4096 -> 8192
+```
+
+Effective axis sizes after bias:
+
+```text
+5M axis  : 25
+HTF axis : 17
+```
+
+Estimated full XAUUSD tensor:
+
+```text
+[53,099, 100, 25, 17] float16 ≈ 4.3 GB
+```
+
+**Feature-axis correction verification:**
+
+```text
+Targeted ruff/black/tests
+→ passed
+
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1898 tests collected
+
+Full ruff/black/mypy
+→ still red from known pre-existing debt: 219 ruff, 21 black files, 28 mypy errors
+```
+
+## 2026-09-17 — Phase143A Conv2D sanity training result recorded
+
+**Operator result:** trained Phase143A Conv2D image CNN on 12,000 samples.
+
+Configuration:
+
+```text
+X shape         : [12,000, 100, 32, 23]
+keras batch     : [batch, 100, 32, 23]
+train/val/test  : 8,400 / 1,464 / 1,464
+epochs          : 10
+model_kind      : conv2d
+```
+
+Metrics:
+
+```text
+val_action_accuracy  : 0.1441
+test_action_accuracy : 0.3743
+val_top_ap           : 0.1158
+test_top_ap          : 0.1217
+val_bottom_ap        : 0.0777
+test_bottom_ap       : 0.1012
+val_selected_rate    : 0.0000
+test_selected_rate   : 0.0000
+```
+
+Assessment:
+
+```text
+Training executed successfully, but the model is not actionable. selected_rate=0 means the current threshold gate opens no trades. This is a failed sanity model, not a strategy.
+```
+
+Next recommended diagnostic:
+
+```text
+Run lower-threshold/probability-spread diagnostics before full 120-epoch training.
+```
+
+## 2026-09-17 — Phase143A overflow/NaN scaler and architecture artifact fix
+
+**Operator finding:** `v1_training.json` had `Infinity` in `scaler_mean` and `NaN` in `scaler_std`. The saved model architecture was also not separately visible.
+
+**Root cause:** raw feature interaction products were cast to `float16` before normalization. Some 5M × HTF products exceeded float16 range and became Infinity. The trainer then computed scaler statistics on poisoned input.
+
+**Decision:** reject `gold_pivot_pattern_image_cnn_5m v1`. It is not a valid model artifact.
+
+**Fix:**
+
+```text
+scripts/build_pivot_pattern_image_tensor.py
+  added --axis-normalization robust|standard|none
+  added --feature-clip
+  added --interaction-clip
+  sanitizes NaN/Inf before interaction
+  clips before float16 cast
+  records nonfinite_feature_values and nonfinite_interaction_values
+
+scripts/train_pivot_pattern_image_cnn.py
+  sanitizes nonfinite tensor values before scaler fitting
+  forces scaler_mean/scaler_std finite
+  saves architecture JSON and model summary TXT
+```
+
+**New architecture artifact paths:**
+
+```text
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_architecture.json
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_summary.txt
+run_logs\pivot_pattern_image_cnn\latest_architecture.json
+run_logs\pivot_pattern_image_cnn\latest_summary.txt
+```
+
+**Sanitization/architecture fix verification:**
+
+```text
+Targeted ruff/black/tests
+→ passed
+
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1899 tests collected
+
+Full ruff/black/mypy
+→ still red from known pre-existing debt: 219 ruff, 21 black files, 28 mypy errors
+```
+
+## 2026-09-17 — Phase143A official tensor-health audit added
+
+**Owner request:** add the dataset-health check as project code.
+
+**Implemented:**
+
+```text
+scripts/audit_pivot_pattern_image_tensor.py
+GUI: Audit pivot image tensor health
+```
+
+**Checks:**
+
+```text
+4D tensor rank/shape
+metadata alignment
+sample index monotonicity
+timestamp monotonicity
+target finite checks
+axis scaler finite checks
+full tensor finite scan
+max_abs vs interaction_clip
+builder nonfinite diagnostics
+```
+
+**Operator note:** the dataset health test was run and reported healthy.
+
+**Next:** train a new sanitized Conv2D model version; v1 remains rejected due to Infinity/NaN scaler values.
+
+## 2026-09-17 — Phase143A image CNN epoch checkpointing added
+
+**Operator issue:** one epoch completed but no model directory/model file appeared.
+
+**Root cause:** final model save happened only after all epochs/early-stopping completed.
+
+**Fix:** added epoch checkpointing to `scripts/train_pivot_pattern_image_cnn.py`:
+
+```text
+--checkpoint-each-epoch 1
+```
+
+Now the trainer creates these before/during training:
+
+```text
+vN_architecture.json
+vN_summary.txt
+vN_epoch_checkpoint.keras
+latest_training_log.csv
+```
+
+Final successful completion still creates:
+
+```text
+vN_model.keras
+vN_training.json
+```
+
+GUI `Train pivot image CNN` now passes `--checkpoint-each-epoch`.
+
+**Epoch-checkpoint verification:**
+
+```text
+Targeted ruff/black/tests
+→ passed
+
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1904 tests collected
+
+Full ruff/black/mypy
+→ still red from known pre-existing debt: 219 ruff, 21 black files, 28 mypy errors
+```
+
+## 2026-09-17 — Phase144A advanced 4D Pivot Image WaveNet implemented
+
+**Owner request:** do not use simple Conv2D baseline; implement professional architecture with residual, SE/attention, temporal dilations, separate branches, temporal attention, multi-scale kernels, and tanh activation.
+
+**Implemented:**
+
+```text
+scripts/train_pivot_pattern_image_wavenet.py
+GUI: Train advanced pivot image WaveNet
+```
+
+**Architecture components:**
+
+```text
+separate pure 5M branch
+separate pure HTF branch
+TimeDistributed spatial multi-scale Conv2D interaction branch
+gated tanh-sigmoid dilated temporal Conv1D WaveNet blocks
+residual connections
+skip connections
+squeeze-excitation channel attention
+temporal MultiHeadAttention
+multi-head outputs
+```
+
+**Activation decision:** implemented WaveNet-style `tanh(filter) * sigmoid(gate)`, with configurable `--activation tanh|swish|gelu` and default `tanh`.
+
+**Verification:** targeted ruff/black/tests passed.
+
+**Phase144A verification:**
+
+```text
+Targeted ruff/black/tests
+→ passed
+
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1908 tests collected
+
+Full ruff/black/mypy
+→ still red from known pre-existing debt: 219 ruff, 21 black files, 28 mypy errors
+```
+
+## 2026-09-17 — RAM-safe stream loader added for 4D image trainers
+
+**Operator issue:** training used about 27GB RAM on a 32GB machine.
+
+**Root cause:** trainer loaded the selected 4D tensor into RAM and then created a normalized copy.
+
+**Fix:** added streaming loader:
+
+```text
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+Affected scripts:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+```
+
+This keeps model and dataset size unchanged while reducing RAM pressure by reading/normalizing batches on demand from the `.npy` memmap.
+
+## 2026-09-17 — Stream loader verification completed
+
+**Implemented:** stream-mode training for both 4D image trainers:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+```
+
+**Default:**
+
+```text
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+**Verification:**
+
+```text
+Targeted ruff/black/tests
+→ passed
+
+python -m pytest -q
+→ passed
+
+python -m pytest --collect-only
+→ 1909 tests collected
+```
+
+Known full-repository debt remains unchanged:
+
+```text
+ruff=219 old errors
+black=21 old files
+mypy=28 old errors
+```
+
+## 2026-09-17 — batch-level training logger added for long 4D training
+
+**Operator request:** show batch output during training because waiting for an epoch is too long.
+
+**Implemented:**
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+--batch-log-every N
+--batch-log-file PATH
+```
+
+Default logs:
+
+```text
+run_logs\pivot_pattern_image_cnn\latest_batch_log.jsonl
+run_logs\pivot_pattern_image_wavenet\latest_batch_log.jsonl
+```
+
+Set `--batch-log-every 1` to print and store every batch. Larger values reduce console/log noise.
+
+**Verification:**
+
+```text
+Targeted ruff/black/tests → passed
+python -m pytest -q → passed
+python -m pytest --collect-only → 1909 tests collected
+```
+
+Known full-repository debt remains:
+
+```text
+ruff=219 old errors
+black=21 old files
+mypy=28 old errors
+```

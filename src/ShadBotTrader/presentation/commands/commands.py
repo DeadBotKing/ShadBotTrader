@@ -90,6 +90,10 @@ class CommandKind(str, Enum):
     TRAIN_PIVOT_PATTERN_WAVENET = "train_pivot_pattern_wavenet"
     BACKTEST_PIVOT_PATTERN_WAVENET = "backtest_pivot_pattern_wavenet"
     RUN_PIVOT_PATTERN_WAVENET_WALK_FORWARD = "run_pivot_pattern_wavenet_walk_forward"
+    BUILD_PIVOT_PATTERN_IMAGE_TENSOR = "build_pivot_pattern_image_tensor"
+    AUDIT_PIVOT_PATTERN_IMAGE_TENSOR = "audit_pivot_pattern_image_tensor"
+    TRAIN_PIVOT_PATTERN_IMAGE_CNN = "train_pivot_pattern_image_cnn"
+    TRAIN_PIVOT_PATTERN_IMAGE_WAVENET = "train_pivot_pattern_image_wavenet"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 

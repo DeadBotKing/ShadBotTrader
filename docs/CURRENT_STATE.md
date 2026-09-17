@@ -3705,3 +3705,374 @@ No Phase134.
 No paper shadow.
 No live trading.
 ```
+
+## Latest correction — Phase143A 4D Pivot Image Tensor for Conv2D/Conv3D — 2026-09-16
+
+The owner clarified that the intended dataset should be 4D for Conv2D/Conv3D, not the previous 3D sequence tensor.
+
+Implemented:
+
+```text
+scripts/build_pivot_pattern_image_tensor.py
+scripts/train_pivot_pattern_image_cnn.py
+```
+
+GUI commands:
+
+```text
+Build pivot image tensor
+Train pivot image CNN
+```
+
+Correct layout:
+
+```text
+Stored X      : [samples, WindowSize, Features_5M, Features_4H_1D]
+Conv2D batch  : [batch, WindowSize, Features_5M, Features_4H_1D]
+Conv3D batch  : [batch, WindowSize, Features_5M, Features_4H_1D, 1]
+```
+
+Default rolling setup:
+
+```text
+WindowSize = 100
+sample_stride = 1
+```
+
+Tensor cell semantics:
+
+```text
+X[t, f5, htf] = feature_5M[t, f5] * feature_4H_1D[t, htf]
+```
+
+Bias features preserve pure 5M and pure HTF information.
+
+Smoke result:
+
+```text
+TESTSYM stored X      : [160, 20, 5, 4]
+TESTSYM Conv2D batch  : [batch, 20, 5, 4]
+TESTSYM Conv3D batch  : [batch, 20, 5, 4, 1]
+```
+
+Production remains blocked until real training/backtest/walk-forward proves edge.
+
+## Latest correction — Phase143A feature-axis budget increased — 2026-09-17
+
+The owner correctly objected that the first 4D image tensor defaults were too small:
+
+```text
+13 5M-axis entries including bias
+9 HTF-axis entries including bias
+```
+
+Defaults were increased for serious pattern-recognition training:
+
+```text
+max_5m_features  : 24 + bias = 25
+max_htf_features : 16 + bias = 17
+max_tensor_mb    : 8192
+```
+
+Approximate full-size tensor if XAUUSD 5M has ~53,198 rows and `WindowSize=100`:
+
+```text
+samples ≈ 53,099
+shape   ≈ [53,099, 100, 25, 17]
+size    ≈ 4.3 GB float16
+```
+
+The operator can still increase the feature axes manually if hardware allows.
+
+## Latest operator result — Phase143A Conv2D sanity training selected no trades — 2026-09-17
+
+The operator trained the Phase143A Conv2D image CNN on a 12,000-sample subset of the 4D tensor.
+
+```text
+stored_x_shape  : [12,000, 100, 32, 23]
+keras_batch     : [batch, 100, 32, 23]
+train/val/test  : 8,400 / 1,464 / 1,464
+epochs          : 10
+```
+
+Metrics:
+
+```text
+val_action_accuracy  : 0.1441
+test_action_accuracy : 0.3743
+val_top_ap           : 0.1158
+test_top_ap          : 0.1217
+val_bottom_ap        : 0.0777
+test_bottom_ap       : 0.1012
+val_selected_rate    : 0.0000
+test_selected_rate   : 0.0000
+```
+
+Decision:
+
+```text
+Phase143A Conv2D sanity training ran, but failed as an actionable model.
+The default gate selected zero trades. No paper/live permission.
+```
+
+Next action:
+
+```text
+Do not run full training blindly yet. First run a lower-threshold diagnostic / probability-distribution diagnostic to see whether the model has usable probability spread or is collapsing to HOLD/low-confidence outputs.
+```
+
+## Latest correction — Phase143A tensor overflow/scaler NaN fixed — 2026-09-17
+
+The operator inspected `gold_pivot_pattern_image_cnn_5m v1_training.json` and found:
+
+```text
+scaler_mean contains Infinity
+scaler_std contains NaN
+```
+
+Root cause:
+
+```text
+Raw 5M × 4H/1D interaction products overflowed when cast to float16.
+The trainer then fitted scaler statistics on an already poisoned tensor.
+```
+
+Decision:
+
+```text
+gold_pivot_pattern_image_cnn_5m v1 is invalid/rejected.
+Do not backtest or continue training v1.
+```
+
+Fix implemented:
+
+```text
+build_pivot_pattern_image_tensor.py:
+  --axis-normalization robust
+  --feature-clip 8
+  --interaction-clip 32
+  stores nonfinite diagnostics in latest.json/meta
+
+train_pivot_pattern_image_cnn.py:
+  sanitizes old tensor nonfinite values before scaler fitting
+  saves finite scaler_mean/scaler_std
+  saves model architecture and summary files
+```
+
+Architecture output paths:
+
+```text
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_architecture.json
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_summary.txt
+run_logs\pivot_pattern_image_cnn\latest_architecture.json
+run_logs\pivot_pattern_image_cnn\latest_summary.txt
+```
+
+Next required action:
+
+```text
+Rebuild the 4D image tensor with sanitization, then retrain Conv2D v2+.
+```
+
+## Latest implementation update — Phase143A official tensor-health audit added — 2026-09-17
+
+The manual dataset-health test was promoted into project code:
+
+```text
+scripts/audit_pivot_pattern_image_tensor.py
+GUI: Audit pivot image tensor health
+```
+
+The audit validates the 4D tensor before training:
+
+```text
+shape/rank
+metadata alignment
+sample_indices/timestamps
+target arrays
+axis scaler arrays
+full finite scan
+interaction clip bounds
+builder diagnostics
+```
+
+Output:
+
+```text
+run_logs\pivot_pattern_image_tensor_health\latest.json
+run_logs\pivot_pattern_image_tensor_health\latest.html
+```
+
+Operator statement:
+
+```text
+The dataset health test was run and the dataset was healthy.
+```
+
+Next action:
+
+```text
+Train a new sanitized Conv2D model version. Do not use v1 because v1 had Infinity/NaN scaler values.
+```
+
+## Latest implementation correction — Phase143A image CNN epoch checkpoints — 2026-09-17
+
+The operator reported that one epoch completed but no model appeared in `datasets\models`.
+
+Explanation:
+
+```text
+The old trainer saved final model artifacts only after all epochs completed.
+```
+
+Fix:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+--checkpoint-each-epoch 1
+```
+
+Now training creates the model directory before the first epoch and saves:
+
+```text
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_architecture.json
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_summary.txt
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_epoch_checkpoint.keras
+```
+
+Final artifacts still appear only when training finishes:
+
+```text
+vN_model.keras
+vN_training.json
+```
+
+## Latest implementation update — Phase144A advanced 4D Pivot Image WaveNet — 2026-09-17
+
+The owner rejected the simple Conv2D baseline as insufficient and requested the real architecture with:
+
+```text
+Residual connections
+SE/Attention blocks
+dilated conv over time
+separate 5M/HTF branches
+temporal attention
+multi-scale kernels
+activation=tanh
+```
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_image_wavenet.py
+GUI: Train advanced pivot image WaveNet
+```
+
+Architecture:
+
+```text
+Input [WindowSize, Features_5M, Features_4H_1D]
+→ separate pure 5M branch
+→ separate pure 4H/1D branch
+→ TimeDistributed spatial multi-scale Conv2D over feature interaction image
+→ branch fusion
+→ gated tanh-sigmoid causal dilated WaveNet residual blocks
+→ squeeze-excitation channel attention
+→ temporal MultiHeadAttention
+→ avg/max/last-state pooling
+→ action/top/bottom/buy_r/sell_r heads
+```
+
+Tanh decision:
+
+```text
+Uses WaveNet-style tanh(filter) * sigmoid(gate).
+Default --activation tanh.
+```
+
+Output paths:
+
+```text
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_model.keras
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_training.json
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_architecture.json
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_summary.txt
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_epoch_checkpoint.keras
+run_logs\pivot_pattern_image_wavenet\latest.json
+run_logs\pivot_pattern_image_wavenet\latest_summary.txt
+```
+
+Production remains blocked until real train/backtest/walk-forward proves edge.
+
+## Latest implementation correction — RAM-safe stream loader for 4D image trainers — 2026-09-17
+
+The operator reported RAM usage around 27GB on a 32GB system. The issue was caused by loading the selected 4D tensor subset into RAM and creating a second normalized copy.
+
+Fix:
+
+```text
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+Applies to:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+```
+
+Effect:
+
+```text
+Dataset stays on disk as .npy memmap.
+Scaler is computed chunk-by-chunk.
+Only the current batch is loaded and normalized.
+The dataset/model are not made smaller.
+```
+
+## Latest implementation update — Stream loader prevents full tensor RAM copy — 2026-09-17
+
+Both 4D image trainers now default to RAM-safe streaming:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+This keeps the `.npy` tensor memory-mapped on disk and only loads/normalizes the current batch. It does not reduce dataset size or model architecture.
+
+Full pytest remains passing:
+
+```text
+python -m pytest -q → passed
+python -m pytest --collect-only → 1909 tests collected
+```
+
+## Latest implementation update — batch-level training logs for long 4D training — 2026-09-17
+
+The operator requested visibility during long epochs. Both 4D image trainers now support per-batch logging:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+--batch-log-every N
+--batch-log-file PATH
+```
+
+Default JSONL outputs:
+
+```text
+run_logs\pivot_pattern_image_cnn\latest_batch_log.jsonl
+run_logs\pivot_pattern_image_wavenet\latest_batch_log.jsonl
+```
+
+Use:
+
+```text
+--batch-log-every 1
+```
+
+to print every batch to console and write every batch metric to the JSONL file.

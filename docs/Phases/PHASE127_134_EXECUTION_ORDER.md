@@ -1169,3 +1169,85 @@ run_logs\pivot_pattern_wavenet_walk_forward\latest.json
 ```
 
 Production remains blocked until walk-forward proves a robust edge.
+
+---
+
+## Phase143A — 4D Pivot Image Tensor + Conv2D/Conv3D
+
+Status: implemented on 2026-09-16 after owner clarified the intended tensor should be 4D for Conv2D/Conv3D.
+
+Shape:
+
+```text
+Stored X      : [samples, WindowSize, Features_5M, Features_4H_1D]
+Conv2D batch  : [batch, WindowSize, Features_5M, Features_4H_1D]
+Conv3D batch  : [batch, WindowSize, Features_5M, Features_4H_1D, 1]
+```
+
+Default rolling geometry:
+
+```text
+WindowSize = 100
+sample_stride = 1
+```
+
+GUI:
+
+```text
+Build pivot image tensor
+Train pivot image CNN
+```
+
+Scripts:
+
+```text
+scripts/build_pivot_pattern_image_tensor.py
+scripts/train_pivot_pattern_image_cnn.py
+```
+
+Primary outputs:
+
+```text
+datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest.npy
+datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest_meta.npz
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_model.keras
+```
+
+Production remains blocked.
+
+---
+
+## Phase144A — Advanced 4D Pivot Image WaveNet
+
+Status: implemented on 2026-09-17 after owner rejected the simple Conv2D baseline.
+
+GUI:
+
+```text
+Train advanced pivot image WaveNet
+```
+
+Script:
+
+```text
+scripts/train_pivot_pattern_image_wavenet.py
+```
+
+Input:
+
+```text
+[samples, WindowSize, Features_5M, Features_4H_1D]
+```
+
+Architecture includes:
+
+```text
+separate 5M/HTF branches
+TimeDistributed spatial multi-scale Conv2D
+gated tanh-sigmoid dilated temporal WaveNet residual blocks
+SE channel attention
+temporal self-attention
+multi-scale kernels
+```
+
+Production remains blocked until validated.
