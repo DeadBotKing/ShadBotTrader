@@ -52,6 +52,7 @@
 *.json
 *.bin
 *.npz
+*.npy
 *~
 .AppleDouble
 .DS_Store
