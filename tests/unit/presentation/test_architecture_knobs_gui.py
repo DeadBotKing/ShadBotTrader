@@ -608,6 +608,40 @@ def test_build_hybrid_telemetry_tensor_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--same-bar-policy") + 1] == "tp_first"
 
 
+def test_inspect_hybrid_telemetry_tensor_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.INSPECT_HYBRID_TELEMETRY_TENSOR).fields
+    }
+    assert {"tensor_path", "flat_path", "sample_indices", "time_buckets", "max_samples"} <= fields
+
+
+def test_inspect_hybrid_telemetry_tensor_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.inspect_hybrid_telemetry_tensor(
+        Command(
+            CommandKind.INSPECT_HYBRID_TELEMETRY_TENSOR,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "flat_path": "flat.parquet",
+                "sample_indices": "first,10,last",
+                "time_buckets": "60",
+                "max_samples": "3",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/inspect_hybrid_telemetry_tensor.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--sample-indices") + 1] == "first,10,last"
+    assert args[args.index("--time-buckets") + 1] == "60"
+    assert args[args.index("--max-samples") + 1] == "3"
+
+
 def test_train_hybrid_meta_labeler_descriptor_exists():
     fields = {field.name for field in descriptor_for(CommandKind.TRAIN_HYBRID_META_LABELER).fields}
     assert {"flat_path", "task", "booster", "candidate_only", "meta_threshold"} <= fields
@@ -970,6 +1004,369 @@ def test_run_hybrid_walk_forward_validation_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--purge-gap-bars") + 1] == "336"
     assert args[args.index("--meta-thresholds") + 1] == "0.50,0.60"
     assert args[args.index("--units") + 1] == "0.1"
+
+
+def test_run_hybrid_tensor_walk_forward_validation_descriptor_exists():
+    fields = {
+        field.name
+        for field in descriptor_for(CommandKind.RUN_HYBRID_TENSOR_WALK_FORWARD_VALIDATION).fields
+    }
+    assert {
+        "tensor_path",
+        "flat_path",
+        "decision_modes",
+        "score_thresholds",
+        "allow_no_trade",
+        "min_validation_score",
+        "min_validation_profit_factor",
+        "max_validation_drawdown",
+        "train_months_min",
+        "validation_months",
+        "epochs",
+    } <= fields
+
+
+def test_run_hybrid_tensor_walk_forward_validation_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.run_hybrid_tensor_walk_forward_validation(
+        Command(
+            CommandKind.RUN_HYBRID_TENSOR_WALK_FORWARD_VALIDATION,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "tensor_path": "tensor.npz",
+                "flat_path": "flat.parquet",
+                "task": "multihead",
+                "decision_modes": "score,both",
+                "score_thresholds": "0,0.05,0.10",
+                "allow_no_trade": "1",
+                "min_validation_score": "0",
+                "min_validation_profit_factor": "1.10",
+                "max_validation_drawdown": "120",
+                "train_months_min": "3",
+                "validation_months": "1",
+                "epochs": "12",
+                "max_folds": "1",
+                "verbose": "0",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_hybrid_tensor_walk_forward_validation.py"
+    assert args[args.index("--tensor-path") + 1] == "tensor.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--task") + 1] == "multihead"
+    assert args[args.index("--decision-modes") + 1] == "score,both"
+    assert args[args.index("--score-thresholds") + 1] == "0,0.05,0.10"
+    assert args[args.index("--allow-no-trade") + 1] == "1"
+    assert args[args.index("--min-validation-score") + 1] == "0.0"
+    assert args[args.index("--min-validation-profit-factor") + 1] == "1.1"
+    assert args[args.index("--max-validation-drawdown") + 1] == "120.0"
+    assert args[args.index("--epochs") + 1] == "12"
+    assert args[args.index("--max-folds") + 1] == "1"
+    assert args[args.index("--verbose") + 1] == "0"
+
+
+def test_analyze_tensor_failure_regimes_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.ANALYZE_TENSOR_FAILURE_REGIMES).fields
+    }
+    assert {
+        "flat_path",
+        "walk_forward_json",
+        "candidate_only",
+        "min_group_rows",
+        "top_n",
+        "quantile_bins",
+    } <= fields
+
+
+def test_analyze_tensor_failure_regimes_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.analyze_tensor_failure_regimes(
+        Command(
+            CommandKind.ANALYZE_TENSOR_FAILURE_REGIMES,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "walk_forward_json": "wf.json",
+                "candidate_only": "1",
+                "min_group_rows": "12",
+                "top_n": "7",
+                "quantile_bins": "4",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/analyze_tensor_failure_regimes.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--walk-forward-json") + 1] == "wf.json"
+    assert args[args.index("--candidate-only") + 1] == "1"
+    assert args[args.index("--min-group-rows") + 1] == "12"
+    assert args[args.index("--top-n") + 1] == "7"
+    assert args[args.index("--quantile-bins") + 1] == "4"
+
+
+def test_backtest_regime_filtered_hybrid_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_REGIME_FILTERED_HYBRID).fields
+    }
+    assert {
+        "flat_path",
+        "allowed_sides",
+        "buy_min_confidence",
+        "sell_min_confidence",
+        "buy_min_side_4h_room",
+        "sell_min_side_4h_room",
+        "max_range_4h_width",
+    } <= fields
+
+
+def test_backtest_regime_filtered_hybrid_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_regime_filtered_hybrid(
+        Command(
+            CommandKind.BACKTEST_REGIME_FILTERED_HYBRID,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "allowed_sides": "SELL",
+                "sell_allowed_hours": "8,9",
+                "buy_min_confidence": "0.98",
+                "sell_min_confidence": "0.70",
+                "max_range_4h_width": "30",
+                "block_specialist_conflict": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_regime_filtered_hybrid.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--allowed-sides") + 1] == "SELL"
+    assert args[args.index("--sell-allowed-hours") + 1] == "8,9"
+    assert args[args.index("--buy-min-confidence") + 1] == "0.98"
+    assert args[args.index("--sell-min-confidence") + 1] == "0.7"
+    assert args[args.index("--max-range-4h-width") + 1] == "30.0"
+    assert args[args.index("--block-specialist-conflict") + 1] == "1"
+
+
+def test_analyze_trade_anatomy_descriptor_exists():
+    fields = {field.name for field in descriptor_for(CommandKind.ANALYZE_TRADE_ANATOMY).fields}
+    assert {
+        "flat_path",
+        "candidate_only",
+        "start_month",
+        "end_month",
+        "allowed_sides",
+        "min_group_rows",
+        "quantile_bins",
+        "top_n",
+    } <= fields
+
+
+def test_analyze_trade_anatomy_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.analyze_trade_anatomy(
+        Command(
+            CommandKind.ANALYZE_TRADE_ANATOMY,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "candidate_only": "1",
+                "start_month": "2026-01",
+                "end_month": "2026-08",
+                "allowed_sides": "BUY,SELL",
+                "min_group_rows": "11",
+                "quantile_bins": "4",
+                "top_n": "9",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/analyze_trade_anatomy.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--candidate-only") + 1] == "1"
+    assert args[args.index("--start-month") + 1] == "2026-01"
+    assert args[args.index("--end-month") + 1] == "2026-08"
+    assert args[args.index("--allowed-sides") + 1] == "BUY,SELL"
+    assert args[args.index("--min-group-rows") + 1] == "11"
+    assert args[args.index("--quantile-bins") + 1] == "4"
+    assert args[args.index("--top-n") + 1] == "9"
+
+
+def test_backtest_bracket_recalibration_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.BACKTEST_BRACKET_RECALIBRATION).fields
+    }
+    assert {
+        "flat_path",
+        "max_tp_distances",
+        "max_sl_distances",
+        "max_reward_risks",
+        "buy_max_tp_distance",
+        "sell_max_tp_distance",
+        "same_bar_policy",
+    } <= fields
+
+
+def test_backtest_bracket_recalibration_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.backtest_bracket_recalibration(
+        Command(
+            CommandKind.BACKTEST_BRACKET_RECALIBRATION,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "allowed_sides": "BUY,SELL",
+                "max_tp_distances": "original,12",
+                "max_sl_distances": "original,20",
+                "max_reward_risks": "original,1.0",
+                "buy_max_tp_distance": "14",
+                "sell_max_sl_distance": "23.56",
+                "same_bar_policy": "tp_first",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_bracket_recalibration.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--max-tp-distances") + 1] == "original,12"
+    assert args[args.index("--max-sl-distances") + 1] == "original,20"
+    assert args[args.index("--max-reward-risks") + 1] == "original,1.0"
+    assert args[args.index("--buy-max-tp-distance") + 1] == "14.0"
+    assert args[args.index("--sell-max-sl-distance") + 1] == "23.56"
+    assert args[args.index("--same-bar-policy") + 1] == "tp_first"
+
+
+def test_audit_candidate_direction_entry_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.AUDIT_CANDIDATE_DIRECTION_ENTRY).fields
+    }
+    assert {
+        "flat_path",
+        "candidate_only",
+        "allowed_sides",
+        "entry_delays",
+        "side_modes",
+        "execution_modes",
+        "same_bar_policy",
+        "min_group_trades",
+    } <= fields
+
+
+def test_audit_candidate_direction_entry_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.audit_candidate_direction_entry(
+        Command(
+            CommandKind.AUDIT_CANDIDATE_DIRECTION_ENTRY,
+            {
+                "symbol": "XAUUSD",
+                "dataset": "5M",
+                "flat_path": "flat.parquet",
+                "candidate_only": "1",
+                "allowed_sides": "BUY,SELL",
+                "entry_delays": "0,1,2,3",
+                "side_modes": "original,flipped",
+                "execution_modes": "independent,chronological",
+                "same_bar_policy": "tp_first",
+                "min_group_trades": "3",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_candidate_direction_entry.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--candidate-only") + 1] == "1"
+    assert args[args.index("--allowed-sides") + 1] == "BUY,SELL"
+    assert args[args.index("--entry-delays") + 1] == "0,1,2,3"
+    assert args[args.index("--side-modes") + 1] == "original,flipped"
+    assert args[args.index("--execution-modes") + 1] == "independent,chronological"
+    assert args[args.index("--same-bar-policy") + 1] == "tp_first"
+    assert args[args.index("--min-group-trades") + 1] == "3"
+
+
+def test_train_pivot_pattern_recognition_descriptor_exists():
+    fields = {
+        field.name for field in descriptor_for(CommandKind.TRAIN_PIVOT_PATTERN_RECOGNITION).fields
+    }
+    assert {
+        "source_mode",
+        "yahoo_symbol",
+        "five_timeframe",
+        "hourly_timeframe",
+        "h4_timeframe",
+        "daily_timeframe",
+        "daily_path",
+        "five_path",
+        "model_kind",
+        "lookahead_bars",
+        "pivot_move_atr",
+        "max_features",
+        "risk_per_trade",
+    } <= fields
+
+
+def test_train_pivot_pattern_recognition_passes_gui_args(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_pivot_pattern_recognition(
+        Command(
+            CommandKind.TRAIN_PIVOT_PATTERN_RECOGNITION,
+            {
+                "symbol": "XAUUSD",
+                "source_mode": "yahoo",
+                "yahoo_symbol": "GC=F",
+                "model_kind": "centroid",
+                "lookahead_bars": "36",
+                "pivot_move_atr": "0.8",
+                "max_features": "12",
+                "risk_per_trade": "0.005",
+                "save_model": "0",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_pivot_pattern_recognition.py"
+    assert args[args.index("--source-mode") + 1] == "yahoo"
+    assert args[args.index("--yahoo-symbol") + 1] == "GC=F"
+    assert args[args.index("--model-kind") + 1] == "centroid"
+    assert args[args.index("--lookahead-bars") + 1] == "36"
+    assert args[args.index("--pivot-move-atr") + 1] == "0.8"
+    assert args[args.index("--max-features") + 1] == "12"
+    assert args[args.index("--risk-per-trade") + 1] == "0.005"
+    assert args[args.index("--save-model") + 1] == "0"
+
+
+def test_train_pivot_pattern_recognition_defaults_to_storage(gui, monkeypatch):
+    captured = _capture(monkeypatch, gui)
+
+    gui.train_pivot_pattern_recognition(
+        Command(CommandKind.TRAIN_PIVOT_PATTERN_RECOGNITION, {"symbol": "XAUUSD"})
+    )
+
+    args = captured["args"]
+    assert args[args.index("--source-mode") + 1] == "storage"
+    assert args[args.index("--five-timeframe") + 1] == "5M"
+    assert args[args.index("--hourly-timeframe") + 1] == "1H"
+    assert args[args.index("--h4-timeframe") + 1] == "4H"
+    assert args[args.index("--daily-timeframe") + 1] == "1D"
 
 
 def test_validate_production_hybrid_stack_descriptor_exists():

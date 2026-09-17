@@ -175,3 +175,59 @@ Important nuance:
 The meta-filter is not useless: it reduced full walk-forward loss from -1288.85 to -387.95 raw PnL.
 But the acceptance target is profitability and month-to-month stability, not merely loss reduction. No paper/live deployment is allowed from this result.
 ```
+
+## Operator result — regressor on `target_trade_score_r` — 2026-09-12
+
+Configuration:
+
+```text
+task             : regressor
+target           : target_trade_score_r
+booster          : lightgbm
+candidate_only   : 1
+score_thresholds : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+score_metric     : total_pnl
+```
+
+Aggregate result:
+
+```text
+folds                  : 6
+test_months            : 6
+positive_months        : 2
+negative_months        : 3
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : 8.10892242193222
+meta_gross_profit      : 643.8489658236504
+meta_gross_loss        : 635.7400434017181
+meta_profit_factor     : 1.0127550914970576
+meta_max_drawdown      : 183.82112050056458
+meta_trades            : 120
+meta_avg_pnl           : 0.06757435351610183
+meta_final_balance     : 100.81089224219322
+meta_return_percent    : 0.008108922421932221
+meta_would_breach_zero : false
+best_month             : 2026-04
+worst_month            : 2026-06
+```
+
+Decision:
+
+```text
+NEAR BREAK-EVEN BUT FAILS PRODUCTION/PAPER GATE.
+```
+
+Comparison against classifier Phase133A:
+
+```text
+classifier meta_total_pnl : -387.9482
+classifier PF             : 0.7644
+regressor meta_total_pnl  : +8.1089
+regressor PF              : 1.0128
+```
+
+Conclusion:
+
+```text
+Target C R-score is a better direction than win/loss classification, but the current LightGBM regressor is not yet robust enough. It cannot be accepted for Phase134/paper/live.
+```

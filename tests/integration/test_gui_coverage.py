@@ -103,6 +103,8 @@ class TestEveryRunHasAButton:
             "run_training_dataset.py",
             "run_weekly_update.py",
             "run_hybrid_walk_forward_validation.py",
+            "run_hybrid_tensor_walk_forward_validation.py",
+            "run_pivot_pattern_wavenet_walk_forward.py",
             "run_hybrid_paper_shadow.py",
         }
 

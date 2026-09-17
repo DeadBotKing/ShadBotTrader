@@ -34,6 +34,19 @@ def test_parse_threshold_options_support_record_token():
     assert values == [None, 0.55, 0.65]
 
 
+def test_parse_args_accepts_negative_score_threshold_list_as_separate_token():
+    module = load_script()
+
+    args = module.parse_args(["--score-thresholds", "-0.25,-0.10,0"])
+
+    assert args.score_thresholds == "-0.25,-0.10,0"
+    assert module.parse_float_options(args.score_thresholds, allow_record=False) == [
+        -0.25,
+        -0.10,
+        0.0,
+    ]
+
+
 def test_score_value_supports_drawdown_adjusted():
     module = load_script()
     summary = module.FixedBacktestSummary(

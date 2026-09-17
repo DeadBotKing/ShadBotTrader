@@ -156,3 +156,56 @@ Interpretation:
 ```text
 The flat meta-filter is promising and beats the base replay on this dataset. It is still not robust proof because the comparison uses the same 8000-row telemetry set that includes model training periods. The next mandatory step is full stream telemetry plus Phase133 walk-forward validation.
 ```
+
+## Operator result — WaveNet v1 threshold grid on last-15% — 2026-09-13
+
+Configuration:
+
+```text
+candidates         : base,gold_hybrid_telemetry_wavenet_5m
+candidate_versions : 0,1
+decision_modes     : score,both
+score_thresholds   : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50,0.75,1.00
+eval_frac          : 0.15
+min_trades         : 10
+score_metric       : total_pnl
+```
+
+Base:
+
+```text
+samples       : 7902
+trades        : 195
+wins/losses   : 67 / 128
+win_rate      : 34.3590%
+total_pnl     : -247.1424761712551
+profit_factor : 0.70282875694799
+max_drawdown  : 272.11317190527916
+final_balance : 75.28575238287449
+```
+
+Best:
+
+```text
+candidate       : gold_hybrid_telemetry_wavenet_5m:score:meta=record:score=0.05
+version         : 1
+model_type      : tensor
+decision_mode   : score
+score_threshold : 0.05
+trades          : 22
+buy/sell        : 5 / 17
+wins/losses     : 14 / 8
+win_rate        : 63.6364%
+total_pnl       : +42.78727626800537
+avg_pnl         : +1.9448761940002441
+profit_factor   : 1.6478747062665267
+max_drawdown    : 32.968711853027344
+coverage        : 0.2784%
+final_balance   : 104.27872762680053
+```
+
+Conclusion:
+
+```text
+WaveNet v1 clearly beats base on this diagnostic holdout slice. It is still not sufficient for production because the best threshold was selected on the same evaluation slice. Use this result to justify implementing/running tensor walk-forward validation, not live trading.
+```

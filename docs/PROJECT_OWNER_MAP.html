@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShadBotTrader — Project Owner Map</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --panel: #0f172a;
+      --panel-2: #111827;
+      --ink: #e5e7eb;
+      --muted: #94a3b8;
+      --line: #334155;
+      --blue: #38bdf8;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --violet: #a78bfa;
+      --cyan: #06b6d4;
+      --pink: #fb7185;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 28rem),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.10), transparent 24rem),
+        var(--bg);
+      color: var(--ink);
+      font-family: Tahoma, Vazirmatn, Segoe UI, Arial, sans-serif;
+      line-height: 1.75;
+    }
+    a { color: #7dd3fc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { max-width: 1480px; margin: 0 auto; padding: 28px; }
+    .hero {
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.88));
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: 0 22px 60px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.18), transparent, rgba(245, 158, 11, 0.16));
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    .hero > * { position: relative; }
+    h1, h2, h3 { margin: 0 0 10px; line-height: 1.35; }
+    h1 { font-size: clamp(28px, 4vw, 48px); }
+    h2 { font-size: 26px; color: #f8fafc; }
+    h3 { font-size: 18px; color: #e0f2fe; }
+    .subtitle { color: var(--muted); max-width: 950px; font-size: 16px; }
+    .ltr { direction: ltr; text-align: left; font-family: Consolas, Monaco, monospace; }
+    code, pre {
+      direction: ltr;
+      text-align: left;
+      font-family: Consolas, Monaco, SFMono-Regular, monospace;
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 10px;
+      color: #dbeafe;
+    }
+    code { padding: 2px 7px; font-size: 0.92em; }
+    pre { padding: 14px; overflow-x: auto; line-height: 1.5; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot.green { background: var(--green); box-shadow: 0 0 14px rgba(34, 197, 94, 0.8); }
+    .dot.amber { background: var(--amber); box-shadow: 0 0 14px rgba(245, 158, 11, 0.8); }
+    .dot.red { background: var(--red); box-shadow: 0 0 14px rgba(239, 68, 68, 0.8); }
+    .dot.blue { background: var(--blue); box-shadow: 0 0 14px rgba(56, 189, 248, 0.8); }
+    .section { margin-top: 26px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .card {
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(15, 23, 42, 0.88);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+    }
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+    @media (max-width: 1050px) {
+      .span-8, .span-6, .span-4, .span-3 { grid-column: span 12; }
+      .page { padding: 16px; }
+    }
+    .metric { display: grid; gap: 6px; }
+    .metric .label { color: var(--muted); font-size: 13px; }
+    .metric .value { font-size: 24px; font-weight: 800; direction: ltr; text-align: left; }
+    .value.good { color: #86efac; }
+    .value.bad { color: #fca5a5; }
+    .value.warn { color: #fcd34d; }
+    .value.info { color: #7dd3fc; }
+    .note {
+      border-right: 4px solid var(--blue);
+      background: rgba(14, 165, 233, 0.08);
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #dbeafe;
+    }
+    .danger {
+      border-right: 4px solid var(--red);
+      background: rgba(239, 68, 68, 0.09);
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #fee2e2;
+    }
+    .success {
+      border-right: 4px solid var(--green);
+      background: rgba(34, 197, 94, 0.08);
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #dcfce7;
+    }
+    .warning {
+      border-right: 4px solid var(--amber);
+      background: rgba(245, 158, 11, 0.09);
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: #fef3c7;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      direction: ltr;
+      align-items: stretch;
+    }
+    .flow-node {
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.92));
+      padding: 14px;
+      min-height: 130px;
+      position: relative;
+    }
+    .flow-node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      top: 50%;
+      right: -16px;
+      transform: translateY(-50%);
+      color: var(--blue);
+      font-size: 28px;
+      font-weight: 800;
+      z-index: 2;
+    }
+    @media (max-width: 1050px) {
+      .flow { grid-template-columns: 1fr; }
+      .flow-node:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -26px; transform: translateX(50%); }
+    }
+    .flow-title { font-weight: 800; color: #f8fafc; margin-bottom: 8px; }
+    .flow-small { color: var(--muted); font-size: 13px; direction: rtl; text-align: right; }
+    .tree {
+      --indent: 28px;
+      direction: rtl;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    .tree ul { list-style: none; margin: 8px 0 0; padding-right: var(--indent); position: relative; }
+    .tree ul::before {
+      content: "";
+      position: absolute;
+      right: 11px;
+      top: 0;
+      bottom: 10px;
+      border-right: 1px solid var(--line);
+    }
+    .tree li { position: relative; margin: 8px 0; }
+    .tree li::before {
+      content: "";
+      position: absolute;
+      right: -17px;
+      top: 18px;
+      width: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .tree > li::before { display: none; }
+    .node {
+      display: inline-block;
+      width: min(100%, 720px);
+      border: 1px solid rgba(148, 163, 184, 0.23);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(30, 41, 59, 0.76);
+    }
+    .node strong { color: #f8fafc; }
+    .node .mini { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; direction: ltr; text-align: left; }
+    .node.pass { border-color: rgba(34, 197, 94, 0.55); }
+    .node.fail { border-color: rgba(239, 68, 68, 0.55); }
+    .node.hold { border-color: rgba(245, 158, 11, 0.55); }
+    .node.info { border-color: rgba(56, 189, 248, 0.55); }
+    table { width: 100%; border-collapse: collapse; direction: ltr; text-align: left; font-size: 13px; }
+    th, td { border-bottom: 1px solid rgba(148, 163, 184, 0.18); padding: 9px; vertical-align: top; }
+    th { color: #bae6fd; font-weight: 800; background: rgba(2, 6, 23, 0.38); }
+    tbody tr:hover { background: rgba(30, 41, 59, 0.38); }
+    .rtl-table { direction: rtl; text-align: right; }
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(15, 23, 42, 0.9);
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+    .pill.pass { border-color: rgba(34, 197, 94, 0.6); color: #bbf7d0; }
+    .pill.fail { border-color: rgba(239, 68, 68, 0.65); color: #fecaca; }
+    .pill.hold { border-color: rgba(245, 158, 11, 0.6); color: #fde68a; }
+    .pill.info { border-color: rgba(56, 189, 248, 0.65); color: #bae6fd; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    details {
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(2, 6, 23, 0.25);
+      margin: 10px 0;
+    }
+    summary { cursor: pointer; color: #e0f2fe; font-weight: 800; }
+    .timeline { position: relative; margin: 12px 0 0; padding-right: 22px; }
+    .timeline::before { content: ""; position: absolute; right: 7px; top: 2px; bottom: 2px; border-right: 2px solid var(--line); }
+    .event { position: relative; margin: 0 0 14px; padding: 12px; background: rgba(30, 41, 59, 0.65); border-radius: 14px; border: 1px solid rgba(148, 163, 184, 0.2); }
+    .event::before { content: ""; position: absolute; right: -21px; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 12px rgba(56, 189, 248, 0.7); }
+    .footer { color: var(--muted); font-size: 12px; margin: 30px 0 8px; text-align: center; }
+    .small { color: var(--muted); font-size: 13px; }
+    .owner-rule {
+      border: 1px dashed rgba(251, 191, 36, 0.6);
+      background: rgba(245, 158, 11, 0.08);
+      border-radius: 18px;
+      padding: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <h1>ShadBotTrader — نقشه مالک پروژه</h1>
+      <p class="subtitle">
+        این صفحه یک نمای گرافیکی و درختچه‌ای از معماری، اسناد، مدل‌ها، pipeline تحقیقاتی،
+        decision gates و وضعیت فعلی پروژه است. هدفش این است که کنترل پروژه دست مالک پروژه بماند،
+        نه اینکه فقط command اجرا شود.
+      </p>
+      <div class="badge-row">
+        <span class="badge"><span class="dot blue"></span>Last updated: 2026-09-16</span>
+        <span class="badge"><span class="dot amber"></span>Current stage: Research / Validation</span>
+        <span class="badge"><span class="dot red"></span>Production: BLOCKED</span>
+        <span class="badge"><span class="dot green"></span>Full stream telemetry: BUILT</span>
+        <span class="badge"><span class="dot red"></span>Phase133 classifier: FAILED</span>
+        <span class="badge"><span class="dot amber"></span>Phase133 regressor: Near break-even, not accepted</span>
+        <span class="badge"><span class="dot green"></span>Negative score-threshold parser fix: DONE</span>
+        <span class="badge"><span class="dot blue"></span>Tensor visual inspector: ADDED</span>
+        <span class="badge"><span class="dot amber"></span>WaveNet v1: holdout positive but fragile</span>
+        <span class="badge"><span class="dot red"></span>WaveNet v2 backtest: rejected</span>
+        <span class="badge"><span class="dot amber"></span>WaveNet v1 grid best: score≥0.05, PF=1.648</span>
+        <span class="badge"><span class="dot red"></span>Phase133B tensor walk-forward: FAILED</span>
+        <span class="badge"><span class="dot red"></span>Phase133C no-trade gate: FAILED, loss reduced</span>
+        <span class="badge"><span class="dot blue"></span>Phase136A failure diagnostics: DONE</span>
+        <span class="badge"><span class="dot red"></span>Root finding: BUY side is the main damage source</span>
+        <span class="badge"><span class="dot red"></span>Phase137A SELL-only/mixed replay: FAILED</span>
+        <span class="badge"><span class="dot amber"></span>Phase137A SELL h8/9 + SL≤23.56: current best weak positive</span>
+        <span class="badge"><span class="dot red"></span>Phase137A + 4H width cap: worsened</span>
+        <span class="badge"><span class="dot red"></span>Phase137A manual filters: recent holdout failed</span>
+        <span class="badge"><span class="dot red"></span>Phase138A anatomy: stop-loss/BUY bracket failure</span>
+        <span class="badge"><span class="dot red"></span>Phase139A global/side bracket grids: FAILED</span>
+        <span class="badge"><span class="dot red"></span>Phase140A direction/entry audit: FAILED as strategy</span>
+        <span class="badge"><span class="dot red"></span>Phase141A pivot pattern recognition: FAILED first WF</span>
+        <span class="badge"><span class="dot green"></span>Phase141A storage-mode dataset read: FIXED</span>
+        <span class="badge"><span class="dot blue"></span>Phase142A 3D Pivot Tensor + Keras WaveNet: BUILT</span>
+      </div>
+    </header>
+
+    <section class="section grid">
+      <div class="card span-8">
+        <h2>وضعیت فعلی در یک نگاه</h2>
+        <div class="danger">
+          <strong>حکم فعلی:</strong>
+          هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
+        </div>
+        <p>
+          آخرین نتیجه اجرایی، شکست Phase139A در gridهای global و side-specific TP/SL بود.
+          آخرین تغییر فنی، Phase142A/142B است: نسخه واقعی 3D Tensor + TensorFlow/Keras WaveNet برای Pattern Recognition ساخته شد.
+          شکل ذخیره‌شده <code>[samples, 288, channels]</code> است و هنگام آموزش Keras به
+          <code>[batch, 288, channels]</code> تبدیل می‌شود. اجرای واقعی باید روی سیستم مالک با TensorFlow و دیتاست کامل پروژه انجام شود.
+        </p>
+        <div class="grid">
+          <div class="card span-3 metric"><span class="label">Phase142 stored X</span><span class="value info">[samples,288,ch]</span></div>
+          <div class="card span-3 metric"><span class="label">Keras batch X</span><span class="value info">[batch,288,ch]</span></div>
+          <div class="card span-3 metric"><span class="label">WaveNet scripts</span><span class="value info">4</span></div>
+          <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
+        </div>
+      </div>
+      <div class="card span-4">
+        <h2>قانون مالک پروژه</h2>
+        <div class="owner-rule">
+          <strong>از این به بعد:</strong>
+          هر تغییر معنی‌دار در code، phase، نتیجه تست، معماری، مدل، یا مسیر تصمیم‌گیری باید همین فایل را هم آپدیت کند:
+          <pre>docs/PROJECT_OWNER_MAP.html</pre>
+        </div>
+        <p class="small">
+          Source of truth همچنان code و git است؛ این صفحه نقشه‌ی فهم و کنترل پروژه است.
+        </p>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Pipeline گرافیکی از دیتا تا تصمیم معامله</h2>
+      <div class="flow">
+        <div class="flow-node">
+          <div class="flow-title">1. Market Data</div>
+          <div class="flow-small">دیتای XAUUSD از MT5 / Alpari و storage در parquet.</div>
+          <code>datasets/raw + processed</code>
+        </div>
+        <div class="flow-node">
+          <div class="flow-title">2. Base Models</div>
+          <div class="flow-small">range 1D/4H + buy/sell specialists + trend booster.</div>
+          <code>gold_range_1d<br>gold_range_4h<br>gold_*_5m</code>
+        </div>
+        <div class="flow-node">
+          <div class="flow-title">3. Hybrid Head</div>
+          <div class="flow-small">candidate BUY/SELL را با TP/SL رنج‌محور می‌سازد.</div>
+          <code>gold_hybrid_lightgbm_head_5m</code>
+        </div>
+        <div class="flow-node">
+          <div class="flow-title">4. Telemetry Matrix/Tensor</div>
+          <div class="flow-small">برای هر کندل فیچرهای causal و Target C ساخته می‌شود.</div>
+          <code>Phase127A<br>safe_lag=48<br>Inspector GUI added</code>
+        </div>
+        <div class="flow-node">
+          <div class="flow-title">5. Meta Validation</div>
+          <div class="flow-small">meta-filter فقط اگر walk-forward را پاس کند قابل قبول است.</div>
+          <code>Phase128 → Phase132 → Phase133</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-12">
+        <h2>جایگاه دقیق ماتریس سه‌بعدی ترکیبی</h2>
+        <div class="success">
+          <strong>بله، ساخته شده است.</strong> اسم فنی آن در پروژه
+          <code>hybrid_telemetry_tensor_latest.npz</code> است و در Phase127A تولید می‌شود.
+          این همان ماتریس سه‌بعدی مدنظر است: <code>[samples, 150 candles, 94 channels]</code>.
+        </div>
+        <div class="flow" style="grid-template-columns: repeat(4, minmax(180px, 1fr)); margin-top: 14px;">
+          <div class="flow-node">
+            <div class="flow-title">Flat telemetry source</div>
+            <div class="flow-small">اول یک جدول دوبعدی ساخته می‌شود؛ هر row یعنی یک کندل 5M و همه فیچرهای online-safe همان لحظه.</div>
+            <code>hybrid_telemetry_flat_latest.parquet<br>rows=52,832</code>
+          </div>
+          <div class="flow-node">
+            <div class="flow-title">Rolling window</div>
+            <div class="flow-small">برای هر sample، 150 کندل گذشته تا همان کندل کنار هم گذاشته می‌شود.</div>
+            <code>tensor_window=150<br>sample_stride=5</code>
+          </div>
+          <div class="flow-node">
+            <div class="flow-title">Feature channels</div>
+            <div class="flow-small">بعد سوم tensor همان کانال‌های فیچر است: کندل، زمان، مدل‌ها، range context، candidate و lagged telemetry.</div>
+            <code>channels=94</code>
+          </div>
+          <div class="flow-node">
+            <div class="flow-title">3D tensor artifact</div>
+            <div class="flow-small">خروجی برای مدل‌های sequence مثل WaveNet/TCN، TSMixer و PatchTST.</div>
+            <code>shape=[10,537,150,94]</code>
+          </div>
+        </div>
+        <table style="margin-top: 14px;">
+          <thead><tr><th>Axis / Artifact</th><th>Meaning</th><th>Current value / path</th></tr></thead>
+          <tbody>
+            <tr><td>Axis 0 = samples</td><td>پنجره‌های زمانی انتخاب‌شده از full 5M stream</td><td>10,537 samples because rows=52,832, window=150, stride=5</td></tr>
+            <tr><td>Axis 1 = time</td><td>توالی کندل‌های گذشته برای هر sample</td><td>150 closed 5M rows</td></tr>
+            <tr><td>Axis 2 = channels</td><td>فیچرهای ترکیبی online-safe</td><td>94 channels</td></tr>
+            <tr><td>2D flat matrix</td><td>منبع اصلی row-by-row؛ LightGBM meta از این استفاده کرد</td><td><code>datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet</code></td></tr>
+            <tr><td>3D tensor</td><td>نسخه پنجره‌ای برای neural/sequence models</td><td><code>datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz</code></td></tr>
+          </tbody>
+        </table>
+        <div class="warning" style="margin-top: 14px;">
+          نکته مهم: تست‌های اخیر Phase128/Phase133 که classifier و regressor LightGBM بودند،
+          عمدتاً از <strong>flat 2D telemetry</strong> استفاده کردند. خود tensor سه‌بعدی ساخته شده،
+          اما هنوز full walk-forward neural validation روی WaveNet/TCN، TSMixer یا PatchTST نتیجه نهایی نداده است.
+        </div>
+        <details open>
+          <summary>چطور tensor را ملموس ببینیم؟</summary>
+          <p>برای دیدن چند برش واقعی از tensor، command زیر یک HTML heatmap می‌سازد:</p>
+          <pre>python -u scripts/inspect_hybrid_telemetry_tensor.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --sample-indices first,middle,last `
+  --time-buckets 50 `
+  --max-samples 3 `
+  --storage-root datasets</pre>
+          <p>خروجی:</p>
+          <pre>run_logs\hybrid_tensor_inspector\latest.html
+run_logs\hybrid_tensor_inspector\latest.json</pre>
+        </details>
+        <details open>
+          <summary>چطور tensor کامل بدون sampling بسازیم؟</summary>
+          <p>اجرای قبلی کل 52,832 row را پوشش داد، ولی فقط هر پنجره پنجم را sample کرد. برای تمام پنجره‌های ممکن، باید <code>sample_stride=1</code> و <code>max_samples=0</code> باشد.</p>
+          <pre>Expected full tensor shape ≈ [52683, 150, 94]
+Estimated float16 X size ≈ 1417 MB before compression</pre>
+        </details>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-12">
+        <h2>مدل WaveNet آینده‌نگر کجاست و چه Targetی دارد؟</h2>
+        <div class="note">
+          مدل WaveNet/TCN جدید در پروژه <strong>Phase129A</strong> است، نه WaveNet قدیمی
+          <code>gold_trend_signal_5m</code>. ورودی آن همین tensor کامل
+          <code>[52683, 150, 94]</code> است و نقش آن <strong>فیلتر/اسکورر کیفیت معامله</strong>
+          روی candidateهای ساخته‌شده توسط hybrid head است.
+        </div>
+        <table style="margin-top: 14px;">
+          <thead><tr><th>Item</th><th>Current project location</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>Trainer</td><td><code>scripts/train_hybrid_telemetry_wavenet.py</code></td><td>آموزش WaveNet/TCN روی 3D tensor</td></tr>
+            <tr><td>Backtester</td><td><code>scripts/backtest_hybrid_telemetry_wavenet.py</code></td><td>اعمال فیلتر WaveNet روی candidateها و replay معاملاتی</td></tr>
+            <tr><td>GUI train</td><td><code>Train telemetry WaveNet/TCN</code></td><td>اجرای آموزش از Dashboard</td></tr>
+            <tr><td>GUI backtest</td><td><code>Backtest telemetry WaveNet/TCN</code></td><td>اجرای backtest از Dashboard</td></tr>
+            <tr><td>Default model id</td><td><code>gold_hybrid_telemetry_wavenet_5m</code></td><td>artifact ذخیره‌شده بعد از train</td></tr>
+            <tr><td>Input</td><td><code>hybrid_telemetry_tensor_latest.npz</code></td><td><code>X=[samples,150,94]</code></td></tr>
+          </tbody>
+        </table>
+        <div class="flow" style="grid-template-columns: repeat(3, minmax(220px, 1fr)); margin-top: 14px;">
+          <div class="flow-node">
+            <div class="flow-title">Input</div>
+            <div class="flow-small">150 کندل گذشته × 94 کانال telemetry برای هر sample.</div>
+            <code>X[sample, time, channel]</code>
+          </div>
+          <div class="flow-node">
+            <div class="flow-title">Recommended task</div>
+            <div class="flow-small">multihead: هم احتمال برد را بگوید، هم expected R-score را.</div>
+            <code>--task multihead</code>
+          </div>
+          <div class="flow-node">
+            <div class="flow-title">Outputs</div>
+            <div class="flow-small">دو head خروجی برای فیلتر کردن candidateهای معامله.</div>
+            <code>meta_win → target_trade_win<br>score_r → target_trade_score_r</code>
+          </div>
+        </div>
+        <div class="warning" style="margin-top: 14px;">
+          Target اصلی پیشنهادی برای trading، <code>target_trade_score_r</code> است، چون classifier روی
+          <code>target_trade_win</code> در walk-forward شکست خورد و regressor score_r بهتر شد.
+          با این حال برای WaveNet بهتر است فعلاً <code>multihead</code> train شود تا هر دو سیگنال را داشته باشیم.
+        </div>
+        <div class="danger" style="margin-top: 14px;">
+          <strong>Clarification:</strong> command فعلی
+          <code>scripts/train_hybrid_telemetry_wavenet.py</code> رول‌فوروارد ماه‌به‌ماه نیست.
+          این فقط یک <strong>chronological train/validation/test split</strong> با <code>purge_gap=336</code> است.
+          برای validation نهایی WaveNet باید بعداً یک tensor walk-forward بسازیم/اجرا کنیم.
+        </div>
+        <div class="success" style="margin-top: 14px;">
+          <strong>Latest Phase129A v1 result:</strong> training did not collapse
+          (<code>test_meta_collapse=0</code>, <code>test_score_collapse=0</code>).
+          The score head selected 27.65% of test candidate windows and their average target R-score was positive
+          (<code>test_score_selected_target_mean=+0.1913</code>). Initial full replay with
+          <code>decision-mode=score</code> produced <code>+1914.66</code> raw PnL and <code>PF=2.604</code>.
+          Last-15% replay stayed positive: <code>+29.59</code> raw PnL, <code>PF=1.3165</code>,
+          <code>29</code> trades. This is promising but fragile; not production proof.
+        </div>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-6">
+        <h2>Clean Architecture Tree</h2>
+        <ul class="tree">
+          <li><span class="node info"><strong>ShadBotTrader</strong><span class="mini">Enterprise AI Trading Platform</span></span>
+            <ul>
+              <li><span class="node"><strong>Domain</strong> — قوانین خالص بازار و معامله<span class="mini">src/ShadBotTrader/domain</span></span>
+                <ul>
+                  <li><span class="node">Candle, Money, Symbol, Timeframe</span></li>
+                  <li><span class="node">Simulation session, bracket, same_bar_policy</span></li>
+                  <li><span class="node">Trade outcome بدون وابستگی به LightGBM/MT5/file</span></li>
+                </ul>
+              </li>
+              <li><span class="node"><strong>Application</strong> — use-case/service layer<span class="mini">src/ShadBotTrader/application</span></span>
+                <ul>
+                  <li><span class="node">training, evaluation, production validation services</span></li>
+                  <li><span class="node">قوانین orchestration بدون جزئیات storage/model backend</span></li>
+                </ul>
+              </li>
+              <li><span class="node"><strong>Infrastructure</strong> — ابزارهای واقعی<span class="mini">src/ShadBotTrader/infrastructure</span></span>
+                <ul>
+                  <li><span class="node">Parquet, MT5, artifact store, model catalogue</span></li>
+                  <li><span class="node">LightGBM / XGBoost / CatBoost / TensorFlow</span></li>
+                  <li><span class="node">feature calculators and prediction sources</span></li>
+                </ul>
+              </li>
+              <li><span class="node"><strong>Presentation</strong> — CLI/GUI/Dashboard<span class="mini">src/ShadBotTrader/presentation</span></span>
+                <ul>
+                  <li><span class="node">CommandKind + descriptors + handlers</span></li>
+                  <li><span class="node pass">هر action اجرایی باید GUI command داشته باشد</span></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card span-6">
+        <h2>Research Decision Tree</h2>
+        <ul class="tree">
+          <li><span class="node info"><strong>Start: آیا edge قابل معامله داریم؟</strong></span>
+            <ul>
+              <li><span class="node pass"><strong>Phase127A full stream telemetry</strong><span class="mini">PASS: 52,832 rows / 13,757 candidates / warnings=[]</span></span></li>
+              <li><span class="node fail"><strong>Base hybrid full-history</strong><span class="mini">FAIL: full stream target_pnl_sum=-43,309.81 raw</span></span></li>
+              <li><span class="node fail"><strong>Phase133 classifier target_trade_win</strong><span class="mini">FAIL: meta_total_pnl=-387.95, PF=0.7644</span></span></li>
+              <li><span class="node hold"><strong>Phase133 regressor target_trade_score_r</strong><span class="mini">Near break-even: +8.11 raw, PF=1.0128; NOT production pass</span></span>
+                <ul>
+                  <li><span class="node hold">Allowed next: research diagnostics only</span></li>
+                  <li><span class="node fail">Blocked: Phase134 paper/live</span></li>
+                </ul>
+              </li>
+              <li><span class="node info"><strong>Possible next research branches</strong>
+                <span class="mini">score_metric=drawdown_adjusted | threshold robustness | target_trade_pnl | tensor models WF</span></span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-12">
+        <h2>Latest Results Dashboard</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th><th>Status</th><th>Key numbers</th><th>Owner interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Phase127A full stream telemetry</td>
+              <td><span class="pill pass">PASS data build</span></td>
+              <td>rows=52,832; tensor=[10,537,150,94]; candidates=13,757; warnings=[]</td>
+              <td>دیتاست کامل causal ساخته شد؛ برای validation قابل استفاده است.</td>
+            </tr>
+            <tr>
+              <td>Base hybrid candidate universe</td>
+              <td><span class="pill fail">FAIL edge</span></td>
+              <td>target_win_rate=41.2663%; target_score_r_mean=-0.2301; target_pnl_sum=-43,309.81</td>
+              <td>مدل پایه روی کل تاریخ edge ندارد؛ مستقیم قابل معامله نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase128A LightGBM classifier v2</td>
+              <td><span class="pill info">ranking signal only</span></td>
+              <td>val AP=0.6118 vs base=0.4806; test AP=0.7147 vs base=0.5184</td>
+              <td>سیگنال آماری دارد، ولی classification metric برای trading کافی نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase133A classifier walk-forward</td>
+              <td><span class="pill fail">FAIL</span></td>
+              <td>meta_total_pnl=-387.95; PF=0.7644; positive/negative=1/4; trades=288</td>
+              <td>ضرر base را کم کرد ولی profitable نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase133A regressor score_r walk-forward</td>
+              <td><span class="pill hold">NEAR BREAK-EVEN / FAIL GATE</span></td>
+              <td>meta_total_pnl=+8.1089; PF=1.0128; DD=183.82; positive/negative=2/3; trades=120</td>
+              <td>بهتر از classifier است، اما هنوز پایدار و کافی برای paper/live نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase129A WaveNet/TCN v1 full replay</td>
+              <td><span class="pill hold">PROMISING / IN-SAMPLE MIXED</span></td>
+              <td>trades=384; total_pnl=+1914.66; PF=2.604; maxDD=192.19; positive/negative months=6/3</td>
+              <td>خیلی قوی، اما eval_frac=1.0 شامل train-era windows است؛ proof نهایی نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase129A WaveNet/TCN v1 last-15% replay</td>
+              <td><span class="pill hold">POSITIVE / FRAGILE</span></td>
+              <td>evaluated=7,902; trades=29; total_pnl=+29.5908; PF=1.3165; maxDD=52.07; July +64.13 / Aug -34.54</td>
+              <td>Out-of-time proxy مثبت است، ولی فقط 29 trade و یک ماه منفی دارد؛ long train/threshold grid باید research-only بماند.</td>
+            </tr>
+            <tr>
+              <td>Phase132A WaveNet v1 threshold grid on last-15%</td>
+              <td><span class="pill hold">BEST DIAGNOSTIC</span></td>
+              <td>best=score mode, score_threshold=0.05; trades=22; total_pnl=+42.7873; PF=1.6479; maxDD=32.97</td>
+              <td>بهتر از threshold صفر است، اما چون threshold روی همان holdout انتخاب شده، هنوز walk-forward proof نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase129A WaveNet/TCN v2 last-15% replay</td>
+              <td><span class="pill fail">REJECTED</span></td>
+              <td>trades=89; win_rate=32.58%; total_pnl=-178.49; PF=0.5543; maxDD=212.63; final=$82.15</td>
+              <td>Backtest تأیید کرد v2 بدتر از v1 است؛ overtrade می‌کند و مخصوصاً در 2026-08 شکست شدید دارد.</td>
+            </tr>
+            <tr>
+              <td>Phase133B tensor WaveNet walk-forward</td>
+              <td><span class="pill fail">FAILED FINAL TENSOR GATE</span></td>
+              <td>folds=6; tensor_total_pnl=-409.52; PF=0.5979; trades=200; positive/negative=2/3; final=$59.05</td>
+              <td>3D tensor/WaveNet signal در replay ثابت نماند؛ threshold انتخاب‌شده از validation به ماه بعد منتقل نشد.</td>
+            </tr>
+            <tr>
+              <td>Phase133C validation no-trade/risk gate</td>
+              <td><span class="pill fail">FAILED AS STRATEGY / GOOD DAMAGE CONTROL</span></td>
+              <td>tensor_total_pnl=-32.8330; PF=0.7655; trades=35; no_trade_selected=3; final=$96.72</td>
+              <td>ضرر Phase133B را از -409.52 به -32.83 کم کرد، اما سودده و deployable نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase136A tensor failure/regime diagnostics</td>
+              <td><span class="pill info">ROOT-CAUSE DIAGNOSTIC DONE</span></td>
+              <td>candidate PnL=-43,309.81; BUY=-39,003.71; SELL=-4,306.10; worst month=2026-02; best=2026-07</td>
+              <td>خرابی اصلی از BUY side و stop-loss concentration است؛ SELL pocketهای مثبت وجود دارند اما هنوز replay/walk-forward نشده‌اند.</td>
+            </tr>
+            <tr>
+              <td>Phase137A SELL-only replay</td>
+              <td><span class="pill fail">FAILED / DAMAGE REDUCED</span></td>
+              <td>trades=581; total_pnl=-848.84; PF=0.7291; maxDD=1040.84; final=$15.12</td>
+              <td>SELL-only از base بهتر است ولی هنوز سودده نیست؛ ماه‌های 2026-02 و 2026-05 شدیداً خراب‌اند.</td>
+            </tr>
+            <tr>
+              <td>Phase137A mixed strict-BUY replay</td>
+              <td><span class="pill fail">FAILED</span></td>
+              <td>trades=883; total_pnl=-2018.20; PF=0.5850; maxDD=2100.64; final=-$101.82</td>
+              <td>BUY سخت‌گیرانهٔ اولیه کافی نبود و حتی از SELL-only بدتر شد؛ BUY حذف نشده اما باید جداگانه بازطراحی/گیت شود.</td>
+            </tr>
+            <tr>
+              <td>Phase137A SELL hours 8,9 replay</td>
+              <td><span class="pill hold">WEAK POSITIVE / FAIL GATE</span></td>
+              <td>kept=583; trades=77; total_pnl=+16.9204; PF=1.0373; maxDD=89.35; final=$101.69</td>
+              <td>اولین replay دستی مثبت شد، اما PF زیر 1.10 است و 2026-02/05 هنوز ضرر بزرگ می‌دهند.</td>
+            </tr>
+            <tr>
+              <td>Phase137A SELL h8/9 + SL≤23.56</td>
+              <td><span class="pill hold">CURRENT BEST WEAK POSITIVE</span></td>
+              <td>kept=503; trades=73; total_pnl=+23.1475; PF=1.0609; maxDD=89.65; final=$102.31</td>
+              <td>SL filter کمی بهتر کرد، اما PF هنوز زیر 1.10 است و 2026-02/05 همچنان منفی‌اند.</td>
+            </tr>
+            <tr>
+              <td>Phase137A SELL h8/9 + SL≤23.56 + 4H width≤33.305</td>
+              <td><span class="pill fail">WORSE / REJECT FILTER</span></td>
+              <td>kept=428; trades=50; total_pnl=-26.3309; PF=0.8915; maxDD=89.88; final=$97.37</td>
+              <td>4H width cap حذف بدی داشت: ماه‌های مثبت Jan/Mar حذف شدند ولی ضرر May باقی ماند؛ این cap را کنار می‌گذاریم.</td>
+            </tr>
+            <tr>
+              <td>Phase137A exact 4H pocket 21.741–26.928 full-history</td>
+              <td><span class="pill hold">PF PASS / TOO FEW TRADES</span></td>
+              <td>kept=166; trades=14; total_pnl=+11.3762; PF=1.1829; maxDD=19.28; final=$101.14</td>
+              <td>کیفیت بهتر شد و May مثبت شد، اما فقط 14 trade دارد و July منفی است؛ هنوز deployable نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase137A exact 4H pocket recent 15%</td>
+              <td><span class="pill fail">FAILED RECENT HOLDOUT</span></td>
+              <td>kept=70; trades=4; total_pnl=-17.2752; PF=0.1199; maxDD=19.28; final=$98.27</td>
+              <td>micro-regime روی بخش اخیر شکست خورد؛ exact 4H pocket را reject می‌کنیم.</td>
+            </tr>
+            <tr>
+              <td>Phase137A current-best SELL h8/9 + SL≤23.56 recent 15%</td>
+              <td><span class="pill fail">FAILED RECENT HOLDOUT</span></td>
+              <td>kept=104; trades=8; total_pnl=-22.4050; PF=0.4098; maxDD=37.62; final=$97.76</td>
+              <td>فیلتر دستی فعلی هم روی بخش اخیر شکست خورد؛ manual filtering فعلاً robust نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase138A trade anatomy / TP-SL diagnostics</td>
+              <td><span class="pill fail">DIAGNOSIS: TP/SL-BRACKET FAILURE</span></td>
+              <td>SL rate=52.74%; BUY=-39,003.71 PF=0.511; SELL=-4,306.10 PF=0.876; 2026-02 worst</td>
+              <td>مشکل فقط مدل نیست؛ ساختار bracket/TP/SL مخصوصاً در BUY و stop-loss concentration خراب است.</td>
+            </tr>
+            <tr>
+              <td>Phase139A global TP/SL bracket grid</td>
+              <td><span class="pill fail">FAILED / ORIGINAL LEAST BAD</span></td>
+              <td>best=original bracket; total_pnl=-4590.80; PF=0.5787; all tested global TP/SL/RR caps were worse</td>
+              <td>کپ‌های کلی TP/SL/RR مشکل را حل نکردند؛ candidate direction/entry و side-specific geometry باید جدا بررسی شود.</td>
+            </tr>
+            <tr>
+              <td>Phase139A SELL-only bracket grid</td>
+              <td><span class="pill fail">FAILED / LOSS REDUCED</span></td>
+              <td>best=tp=14:sl=original:rr=original; total_pnl=-664.05; PF=0.7940; trades=633</td>
+              <td>SELL بهتر شد ولی هنوز ضررده است؛ 2026-02 و 2026-05 همچنان شکست اصلی‌اند.</td>
+            </tr>
+            <tr>
+              <td>Phase139A BUY-only bracket grid</td>
+              <td><span class="pill fail">FAILED / BUY NOT FIXED</span></td>
+              <td>best=tp=original:sl=16:rr=original; total_pnl=-3667.84; PF=0.5476; trades=1253; every month negative</td>
+              <td>BUY با TP/SL cap نجات پیدا نکرد؛ BUY حذف نمی‌شود اما candidate/entry direction باید rework شود.</td>
+            </tr>
+            <tr>
+              <td>Phase140A candidate direction / entry audit</td>
+              <td><span class="pill fail">FAILED AS STRATEGY / DIAGNOSTIC USEFUL</span></td>
+              <td>best chronological=original:delay=3; total_pnl=-3123.78; PF=0.6512. BUY flip improved BUY damage from -39003.71 to -15831.00 but still negative. SELL flip was destructive.</td>
+              <td>Global flip نیست. BUY contrarian symptom دارد اما deployable نیست. SELL direction inverted نیست.</td>
+            </tr>
+            <tr>
+              <td>Phase141A pivot pattern recognition</td>
+              <td><span class="pill fail">FLAT BASELINE FAILED</span></td>
+              <td>GC=F public data; final=$79.01; return=-20.99%; PF=0.534; folds=0 positive / 6 negative</td>
+              <td>این baseline flat بود و همان چیزی نبود که مالک خواسته بود؛ فقط sanity check فیچر/لیبل بود.</td>
+            </tr>
+            <tr>
+              <td>Phase142A/B 3D Pivot Tensor + Keras WaveNet</td>
+              <td><span class="pill info">IMPLEMENTED / AWAITING OPERATOR RUN</span></td>
+              <td>Build tensor [samples,288,channels], train Keras WaveNet, backtest, and fold-by-fold walk-forward. GUI commands added for all four actions.</td>
+              <td>این همان مسیر خواسته‌شده است: TensorFlow/Keras WaveNet واقعی. نتیجه معاملاتی فقط بعد از اجرای واقعی روی سیستم مالک معتبر است.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-6">
+        <h2>Phase133A Regressor Fold Tree</h2>
+        <ul class="tree">
+          <li><span class="node hold"><strong>Regressor WF aggregate</strong><span class="mini">target_trade_score_r → total_pnl=+8.1089, PF=1.0128</span></span>
+            <ul>
+              <li><span class="node pass">2026-04: +81.4463, PF=1.8400, trades=20, threshold=0.10</span></li>
+              <li><span class="node fail">2026-05: -37.0843, PF=0.5225, trades=11, threshold=0.10</span></li>
+              <li><span class="node fail">2026-06: -43.2650, PF=0.8105, trades=29, threshold=0.50</span></li>
+              <li><span class="node pass">2026-07: +27.1263, PF=1.1854, trades=39, threshold=0.50</span></li>
+              <li><span class="node fail">2026-08: -20.1143, PF=0.7675, trades=21, threshold=0.05</span></li>
+              <li><span class="node hold">2026-09: 0.0000, trades=0, threshold=0.50, only 7 candidates</span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="card span-6">
+        <h2>Pass / Fail Gates</h2>
+        <table class="rtl-table">
+          <thead><tr><th>Gate</th><th>قبولی</th><th>وضعیت فعلی</th></tr></thead>
+          <tbody>
+            <tr><td>Data build</td><td>warnings=[] و rows کافی</td><td><span class="pill pass">PASS</span></td></tr>
+            <tr><td>Classification ranking</td><td>AP بالاتر از base_rate</td><td><span class="pill pass">PASS آماری</span></td></tr>
+            <tr><td>Trading profitability</td><td>total_pnl مثبت و معنی‌دار</td><td><span class="pill hold">+8.11 فقط near-zero</span></td></tr>
+            <tr><td>Profit factor</td><td>تقریباً PF &gt; 1.10</td><td><span class="pill fail">1.0128</span></td></tr>
+            <tr><td>Month stability</td><td>ماه مثبت بیشتر از منفی</td><td><span class="pill fail">2 مثبت / 3 منفی</span></td></tr>
+            <tr><td>Production readiness</td><td>همه موارد بالا + audit</td><td><span class="pill fail">BLOCKED</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-6">
+        <h2>Model Responsibility Map</h2>
+        <ul class="tree">
+          <li><span class="node info"><strong>Active XAUUSD / Gold model stack</strong></span>
+            <ul>
+              <li><span class="node">Range context: <code>gold_range_1d</code>, <code>gold_range_4h</code></span></li>
+              <li><span class="node">Specialists: <code>gold_buy_lightgbm_basic_5m</code>, <code>gold_sell_lightgbm_basic_5m</code></span></li>
+              <li><span class="node">Trend booster: <code>gold_trend_signal_lightgbm_basic_5m</code></span></li>
+              <li><span class="node fail">Old WaveNet trend: no-edge / not trusted as decision model</span></li>
+              <li><span class="node fail">Hybrid head: <code>gold_hybrid_lightgbm_head_5m</code><span class="mini">thresholds: buy=0.80, sell=0.65, margin=0.05; full-history failed; BUY side is the main damage source</span></span></li>
+              <li><span class="node hold">Meta classifier: <code>gold_hybrid_meta_lightgbm_5m v2</code><span class="mini">ranking signal but Phase133 classifier failed</span></span></li>
+              <li><span class="node hold">Meta regressor: walk-forward training per fold<span class="mini">near break-even, not production artifact</span></span></li>
+              <li><span class="node fail">Telemetry WaveNet/TCN walk-forward: <code>Phase133B</code><span class="mini">failed: -409.52 raw, PF=0.5979; v1 diagnostic did not generalize fold-by-fold</span></span></li>
+              <li><span class="node hold">Telemetry WaveNet/TCN v1 diagnostic only<span class="mini">full replay +1914.66 raw PF=2.604; last-15% grid best +42.79 PF=1.648; not deployable after Phase133B</span></span></li>
+              <li><span class="node fail">Telemetry WaveNet/TCN: <code>gold_hybrid_telemetry_wavenet_5m v2</code><span class="mini">last-15% replay rejected: -178.49 raw, PF=0.5543, 89 trades, August -168.39</span></span></li>
+              <li><span class="node fail">Pivot flat baseline: <code>gold_pivot_pattern_recognition_5m v1</code><span class="mini">Phase141A operator GC=F WF failed: final=$79.01, PF=0.534; research-only</span></span></li>
+              <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A true 3D tensor/Keras WaveNet; awaiting owner-machine training</span></span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card span-6">
+        <h2>Artifacts and Logs</h2>
+        <table>
+          <thead><tr><th>Purpose</th><th>Path</th></tr></thead>
+          <tbody>
+            <tr><td>Telemetry flat</td><td><code>datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet</code></td></tr>
+            <tr><td>Telemetry tensor</td><td><code>datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz</code></td></tr>
+            <tr><td>Phase127 log</td><td><code>run_logs\hybrid_telemetry_tensor\latest.json</code></td></tr>
+            <tr><td>Tensor visual inspector</td><td><code>run_logs\hybrid_tensor_inspector\latest.html</code></td></tr>
+            <tr><td>Phase128 train log</td><td><code>run_logs\hybrid_meta_labeler\latest.json</code></td></tr>
+            <tr><td>Phase132 comparison log</td><td><code>run_logs\hybrid_meta_comparison\latest.json</code></td></tr>
+            <tr><td>Phase133A flat WF log</td><td><code>run_logs\hybrid_walk_forward_validation\latest.json</code></td></tr>
+            <tr><td>Phase133B tensor WF log</td><td><code>run_logs\hybrid_tensor_walk_forward_validation\latest.json</code></td></tr>
+            <tr><td>Phase129 WaveNet train log</td><td><code>run_logs\hybrid_telemetry_wavenet\latest.json</code></td></tr>
+            <tr><td>Phase129 WaveNet backtest log</td><td><code>run_logs\hybrid_telemetry_wavenet_backtest\latest.json</code></td></tr>
+            <tr><td>Phase136A diagnostics</td><td><code>run_logs\tensor_failure_regimes\latest.html</code></td></tr>
+            <tr><td>Phase137A regime replay</td><td><code>run_logs\regime_filtered_hybrid\latest.html</code></td></tr>
+            <tr><td>Phase138A trade anatomy</td><td><code>run_logs\trade_anatomy\latest.html</code></td></tr>
+            <tr><td>Phase139A bracket recalibration</td><td><code>run_logs\bracket_recalibration\latest.html</code></td></tr>
+            <tr><td>Phase140A direction/entry audit</td><td><code>run_logs\candidate_direction_entry_audit\latest.html</code></td></tr>
+            <tr><td>Phase141A pivot pattern recognition</td><td><code>run_logs\pivot_pattern_recognition\latest.html</code></td></tr>
+            <tr><td>Phase141A project storage input</td><td><code>datasets\processed\XAUUSD\5M\v*.parquet</code> + <code>1D</code> + <code>4H/1H</code></td></tr>
+            <tr><td>Phase141A model artifact</td><td><code>datasets\models\gold_pivot_pattern_recognition_5m\v1_model.pkl</code></td></tr>
+            <tr><td>Phase142A pivot tensor</td><td><code>datasets\processed\XAUUSD\5M\pivot_pattern_tensor_latest.npz</code></td></tr>
+            <tr><td>Phase142A WaveNet model</td><td><code>datasets\models\gold_pivot_pattern_wavenet_5m\v*_model.keras</code></td></tr>
+            <tr><td>Phase142B walk-forward</td><td><code>run_logs\pivot_pattern_wavenet_walk_forward\latest.json</code></td></tr>
+            <tr><td>Current owner map</td><td><code>docs\PROJECT_OWNER_MAP.html</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Executable Phase / GUI Command Tree</h2>
+      <ul class="tree">
+        <li><span class="node info"><strong>GUI rule</strong>: هیچ action اجرایی نباید CLI-only باشد.</span>
+          <ul>
+            <li><span class="node">Phase126A: <strong>Chronological hybrid replay</strong><span class="mini">scripts/replay_hybrid_chronological_backtest.py</span></span></li>
+            <li><span class="node pass">Phase127A: <strong>Build hybrid telemetry tensor</strong><span class="mini">scripts/build_hybrid_telemetry_tensor.py</span></span></li>
+            <li><span class="node pass">Phase127A viewer: <strong>Inspect hybrid telemetry tensor</strong><span class="mini">scripts/inspect_hybrid_telemetry_tensor.py</span></span></li>
+            <li><span class="node">Phase128A: <strong>Train hybrid meta-labeler</strong> / <strong>Backtest hybrid meta-labeler</strong><span class="mini">scripts/train_hybrid_meta_labeler.py | scripts/backtest_hybrid_meta_labeler.py</span></span></li>
+            <li><span class="node">Phase129A: <strong>Train/Backtest telemetry WaveNet/TCN</strong></span></li>
+            <li><span class="node">Phase130A: <strong>Train/Backtest telemetry TSMixer</strong></span></li>
+            <li><span class="node">Phase131A: <strong>Train/Backtest telemetry PatchTST</strong></span></li>
+            <li><span class="node">Phase132A: <strong>Backtest meta-filtered hybrid</strong><span class="mini">scripts/backtest_meta_filtered_hybrid.py</span></span></li>
+            <li><span class="node fail">Phase133A: <strong>Run hybrid walk-forward validation</strong><span class="mini">flat LightGBM gate failed / near-break-even only</span></span></li>
+            <li><span class="node fail">Phase133B: <strong>Run tensor walk-forward validation</strong><span class="mini">WaveNet/TCN result failed: tensor_total_pnl=-409.52, PF=0.5979</span></span></li>
+            <li><span class="node info">Phase133C: <strong>Run tensor walk-forward validation</strong><span class="mini">same script with allow_no_trade/risk-gate flags; failed as strategy</span></span></li>
+            <li><span class="node fail">Phase136A: <strong>Analyze tensor failure regimes</strong><span class="mini">root-cause diagnostics completed: BUY damage / SELL pockets</span></span></li>
+            <li><span class="node fail">Phase137A: <strong>Backtest regime-filtered hybrid</strong><span class="mini">manual filters failed recent holdout</span></span></li>
+            <li><span class="node fail">Phase138A: <strong>Analyze trade anatomy</strong><span class="mini">stop-loss and BUY bracket failure diagnosed</span></span></li>
+            <li><span class="node fail">Phase139A: <strong>Backtest bracket recalibration</strong><span class="mini">global/side TP-SL cap grids failed</span></span></li>
+            <li><span class="node fail">Phase140A: <strong>Audit candidate direction/entry</strong><span class="mini">failed as strategy: best chronological original:delay=3 → -3123.78 raw, PF=0.651; diagnosis useful</span></span></li>
+            <li><span class="node fail">Phase134A: <strong>Validate production hybrid stack</strong> / <strong>Run hybrid paper shadow</strong><span class="mini">blocked until a true validation gate passes</span></span></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-6">
+        <h2>Documentation Tree</h2>
+        <ul class="tree">
+          <li><span class="node info"><strong>Owner Control</strong></span>
+            <ul>
+              <li><span class="node pass"><code>docs/PROJECT_OWNER_MAP.html</code><span class="mini">این صفحه؛ باید همیشه آپدیت شود</span></span></li>
+              <li><span class="node"><code>docs/CURRENT_STATE.md</code><span class="mini">وضعیت متنی فعلی</span></span></li>
+              <li><span class="node"><code>docs/WORKLOG.md</code><span class="mini">دفترچه chronological تغییرات و نتایج</span></span></li>
+              <li><span class="node"><code>docs/AGENTOPERATINGRULE.md</code><span class="mini">قوانین agent: code=reality, docs=intent</span></span></li>
+            </ul>
+          </li>
+          <li><span class="node info"><strong>Phase Docs</strong></span>
+            <ul>
+              <li><span class="node"><code>docs/Phases/Phase127.md</code> تا <code>Phase141.md</code></span></li>
+              <li><span class="node"><code>docs/Phases/PHASE127_134_EXECUTION_ORDER.md</code></span></li>
+            </ul>
+          </li>
+          <li><span class="node info"><strong>Reports</strong></span>
+            <ul>
+              <li><span class="node"><code>docs/Report/PHASE128A_HYBRID_META_LABELER_REPORT.md</code></span></li>
+              <li><span class="node"><code>docs/Report/PHASE133A_WALK_FORWARD_VALIDATION_REPORT.md</code></span></li>
+              <li><span class="node"><code>docs/Report/PHASE136A_TENSOR_FAILURE_REGIME_DIAGNOSTICS_REPORT.md</code></span></li>
+              <li><span class="node"><code>docs/Report/PHASE140A_CANDIDATE_DIRECTION_ENTRY_AUDIT_REPORT.md</code></span></li>
+              <li><span class="node"><code>docs/Report/PHASE141A_PIVOT_PATTERN_RECOGNITION_REPORT.md</code></span></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card span-6">
+        <h2>What each current phase means</h2>
+        <details open>
+          <summary>Phase127A — Telemetry Builder</summary>
+          <p>خروجی backtest و context مدل‌ها را به یک matrix/tensor causal تبدیل می‌کند. خروجی اصلی: <code>hybrid_telemetry_flat_latest.parquet</code> و <code>hybrid_telemetry_tensor_latest.npz</code>.</p>
+        </details>
+        <details open>
+          <summary>Phase128A — Meta-labeler Training</summary>
+          <p>روی candidate rows مدل meta می‌سازد. classifier یعنی پیش‌بینی win/loss؛ regressor یعنی پیش‌بینی expected R-score.</p>
+        </details>
+        <details open>
+          <summary>Phase132A — Comparison Grid</summary>
+          <p>چند candidate یا threshold را روی یک universe مشترک مقایسه می‌کند. این تست به‌تنهایی production proof نیست.</p>
+        </details>
+        <details open>
+          <summary>Phase133A — Walk-forward Validation</summary>
+          <p>مهم‌ترین gate فعلی. train فقط روی گذشته، threshold فقط روی validation گذشته، test روی ماه دیده‌نشده. اگر این fail شود، paper/live ممنوع است.</p>
+        </details>
+        <details open>
+          <summary>Phase136A — Failure / Regime Diagnostics</summary>
+          <p>مدل train نمی‌کند؛ خروجی Phase133C و telemetry flat را تحلیل می‌کند تا بفهمیم شکست از ماه، جهت، session، range context یا candidate quality می‌آید.</p>
+        </details>
+        <details open>
+          <summary>Phase138A — Trade Anatomy / TP-SL Failure Analysis</summary>
+          <p>مدل train نمی‌کند؛ بررسی می‌کند شکست از TP/SL، SL distance، reward/risk، hold bars، range context یا BUY/SELL bracket design آمده یا نه.</p>
+        </details>
+        <details open>
+          <summary>Phase140A — Candidate Direction / Entry Audit</summary>
+          <p>اجرا شد. بهترین chronological هنوز منفی بود: <code>-3123.78</code> و <code>PF=0.651</code>. نتیجه: BUY علامت contrarian دارد ولی flip هم سودده نیست؛ SELL flip مخرب است؛ delay=3 ضرر را کم می‌کند.</p>
+        </details>
+        <details open>
+          <summary>Phase141A — Pivot Pattern Recognition</summary>
+          <p>مدل جدید برای تشخیص ناحیه قله/کف ساخته و روی دیتای عمومی GC=F اجرا شد. فیچرهای مفید عمدتاً 5M local-structure بودند، اما walk-forward شکست خورد: <code>$100 → $79.01</code> و <code>PF=0.534</code>.</p>
+        </details>
+        <details open>
+          <summary>Phase142A/B — 3D Tensor + Keras WaveNet</summary>
+          <p>نسخه درست مدل سه‌بعدی ساخته شد: tensor ذخیره‌شده <code>[samples,288,channels]</code> و batch آموزشی <code>[batch,288,channels]</code>. شامل tensor builder، trainer، backtest و walk-forward با GUI command است.</p>
+        </details>
+        <details>
+          <summary>Phase134A — Production/Paper Scaffold</summary>
+          <p>فقط وقتی مجاز است که یک validation gate واقعی pass شود. فعلاً blocked است.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Current Allowed Next Steps — بدون اجرای کورکورانه</h2>
+      <div class="warning">
+        قبل از هر command جدید، باید برای مالک پروژه این پنج بخش مشخص باشد:
+        <strong>Why / Input / Output / Risk / Pass-Fail</strong>.
+      </div>
+      <table class="rtl-table">
+        <thead><tr><th>مسیر</th><th>چرا</th><th>مجاز؟</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Phase140A — <code>Audit candidate direction/entry</code></td>
+            <td>اجرا شد و به عنوان strategy شکست خورد؛ فقط diagnosis داد: BUY partially contrarian، SELL not inverted، delay helps.</td>
+            <td><span class="pill fail">Failed gate</span></td>
+          </tr>
+          <tr>
+            <td>Phase141A — <code>Train pivot pattern recognition</code></td>
+            <td>اجرا شد: مدل قله/کف train شد اما walk-forward روی GC=F منفی بود: $100→$79.01، PF=0.534.</td>
+            <td><span class="pill fail">Failed first WF</span></td>
+          </tr>
+          <tr>
+            <td>Phase142A — <code>Build pivot pattern tensor</code></td>
+            <td>اول باید دیتاست سه‌بعدی واقعی ساخته شود: <code>[samples,288,channels]</code>.</td>
+            <td><span class="pill info">Next command</span></td>
+          </tr>
+          <tr>
+            <td>Phase142A/B WaveNet train/backtest/walk-forward</td>
+            <td>بعد از tensor، مدل Keras WaveNet آموزش می‌بیند، backtest می‌شود، و در نهایت fold-by-fold walk-forward می‌گیرد.</td>
+            <td><span class="pill hold">After tensor build</span></td>
+          </tr>
+          <tr>
+            <td>BUY handling</td>
+            <td>BUY حذف نمی‌شود؛ Phase140A فقط BUY original را با BUY→SELL counterfactual مقایسه می‌کند.</td>
+            <td><span class="pill hold">Research diagnostic</span></td>
+          </tr>
+          <tr>
+            <td>Phase129/130/131 tensor alternatives</td>
+            <td>هر مدل sequence جدید فقط با walk-forward واقعی ارزش دارد؛ فعلاً مشکل direction/entry مقدم است.</td>
+            <td><span class="pill hold">Later, only with validation</span></td>
+          </tr>
+          <tr>
+            <td>Phase134 paper shadow / live</td>
+            <td>هیچ validation gate قابل قبول پاس نشده است.</td>
+            <td><span class="pill fail">BLOCKED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section grid">
+      <div class="card span-12">
+        <h2>Recent Timeline</h2>
+        <div class="timeline">
+          <div class="event"><strong>Phase125:</strong> holdout کوچک خوب بود و thresholds ذخیره شد: buy=0.80, sell=0.65, margin=0.05.</div>
+          <div class="event"><strong>Full stream base:</strong> base hybrid روی 52,832 row شکست خورد؛ PnL منفی شدید.</div>
+          <div class="event"><strong>Phase127A:</strong> telemetry matrix/tensor causal ساخته شد؛ timestamp و same_bar_policy bugs fix شدند.</div>
+          <div class="event"><strong>Phase128A v2:</strong> LightGBM meta classifier روی full-stream train شد؛ AP بهتر از base rate بود.</div>
+          <div class="event"><strong>Phase133A classifier:</strong> ضرر را کم کرد اما fail شد: PF=0.7644.</div>
+          <div class="event"><strong>Negative threshold parser:</strong> برای <code>--score-thresholds -0.25,...</code> fix شد؛ فرم safe همچنان <code>--score-thresholds=-0.25,...</code> است.</div>
+          <div class="event"><strong>Phase133A regressor:</strong> به near break-even رسید: total_pnl=+8.1089, PF=1.0128، اما هنوز fail gate است.</div>
+          <div class="event"><strong>Owner map:</strong> این صفحه ساخته شد تا مالک پروژه مسیر را گرافیکی و قابل کنترل ببیند.</div>
+          <div class="event"><strong>Tensor inspector:</strong> command/script جدید اضافه شد تا tensor واقعی به صورت heatmap HTML دیده شود.</div>
+          <div class="event"><strong>Phase129A WaveNet v1:</strong> train multihead completed without collapse; score-mode full replay: +1914.66 raw PnL, PF=2.604; last-15% replay: +29.59 raw PnL, PF=1.3165. Still not final validation.</div>
+          <div class="event"><strong>Phase129A WaveNet v2:</strong> long score-focused training improved validation metrics but backtest confirmed failure: last-15% -178.49 raw PnL, PF=0.5543. v2 rejected; v1 remains preferred.</div>
+          <div class="event"><strong>Phase132A WaveNet v1 threshold grid:</strong> last-15% best is score-mode threshold 0.05: +42.79 raw PnL, PF=1.648, 22 trades. Good diagnostic, not final proof.</div>
+          <div class="event"><strong>Phase133B:</strong> tensor-model walk-forward validation command built and executed. Result failed: tensor_total_pnl=-409.52 raw, PF=0.5979. Phase134 remains blocked.</div>
+          <div class="event"><strong>Phase133C:</strong> validation no-trade/risk gate executed. It reduced loss from -409.52 to -32.83 raw but still failed: PF=0.7655 and no positive trading month.</div>
+          <div class="event"><strong>Phase136A:</strong> failure/regime diagnostics executed. Main finding: BUY side is deeply negative (-39,003.71 raw), SELL is much less negative with positive pockets in 2026-03/04/06/07/08 and hours 8/9.</div>
+          <div class="event"><strong>Phase137A:</strong> regime-filtered replay command built and first diagnostics executed. SELL-only: -848.84 raw PF=0.729; mixed strict-BUY: -2018.20 raw PF=0.585. BUY remains in project but current BUY gates are not enough.</div>
+          <div class="event"><strong>Phase137A SELL h8/9:</strong> focused SELL hours 8 and 9 replay became weakly positive on full history, but both recent-holdout checks failed. Exact 4H pocket: -17.28/PF=0.120. Current-best SELL h8/9 + SL≤23.56: -22.41/PF=0.410. Manual regime filters are not robust.</div>
+          <div class="event"><strong>Phase138A:</strong> trade anatomy executed. Diagnosis: stop-loss rate 52.74%, BUY PnL -39,003.71, BUY stop-loss rate 59.07%, worst month 2026-02. High nominal reward/risk/far-TP candidates are failing fast.</div>
+          <div class="event"><strong>Phase139A:</strong> TP/SL bracket recalibration grids executed. Global grid failed with original least-bad at -4590.80/PF=0.579. SELL-only best improved to -664.05/PF=0.794 but still failed. BUY-only best improved slightly to -3667.84/PF=0.548 and every month stayed negative. TP/SL caps do not fix candidate direction/entry quality.</div>
+          <div class="event"><strong>Phase140A:</strong> candidate direction/entry audit executed. Best chronological scenario was original:delay=3 with -3123.78 raw PnL and PF=0.651, so it failed as strategy. Diagnostics: BUY flip reduces damage massively (-39003.71 → -15831.00) but remains negative; SELL flip is destructive (-4306.10 → -21911.83); delay=3 helps but does not create edge.</div>
+          <div class="event"><strong>Phase141A:</strong> Pivot Pattern Recognition model implemented, trained and walk-forward tested on real public GC=F data. Operator rerun: Features=57, selected=38, targets SELL/HOLD/BUY=1385/10782/1387. Result failed: $100→$79.01, return=-20.99%, PF=0.534, 0 positive folds / 6 negative.</div>
+          <div class="event"><strong>Phase141A storage fix:</strong> owner correctly objected that project datasets should be read from the existing storage, not <code>datasets\external</code>. Added <code>--source-mode storage</code>; GUI default now uses storage; project parquet schema <code>open_time</code> is supported.</div>
+          <div class="event"><strong>Phase142A/B:</strong> true 3D Pivot Tensor + Keras WaveNet implementation added. Scripts: build tensor, train WaveNet, backtest WaveNet, walk-forward WaveNet. Stored X shape is [samples,288,channels]; Keras runtime batches are [batch,288,channels]. Awaiting owner-machine execution on full XAUUSD storage data.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Maintenance Checklist for Future Agents</h2>
+      <pre>Every meaningful change must update:
+1) code/tests if implementation changed
+2) docs/WORKLOG.md
+3) docs/CURRENT_STATE.md
+4) relevant docs/Phases/Phase*.md and docs/Report/*.md
+5) docs/PROJECT_OWNER_MAP.html  ← mandatory owner-facing graphical map
+6) git commit
+7) zip package after major change</pre>
+    </section>
+
+    <footer class="footer">
+      ShadBotTrader Project Owner Map — code is reality, docs are intent — no paper/live until walk-forward gate passes.
+    </footer>
+  </main>
+</body>
+</html>

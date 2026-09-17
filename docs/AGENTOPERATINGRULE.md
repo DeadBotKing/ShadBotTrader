@@ -230,6 +230,20 @@ update the appropriate project-state documentation.
 
 
 
+OWNER MAP RULE:
+
+
+
+&#x20;   docs/PROJECT_OWNER_MAP.html is the owner-facing graphical control map.
+
+&#x20;   Every meaningful code change, phase result, validation result,
+
+&#x20;   architecture update, model-status change, or decision-gate change
+
+&#x20;   MUST update this HTML page in the same commit.
+
+
+
 The project must always be recoverable from:
 
 

@@ -1586,3 +1586,2122 @@ Recommended next research direction:
 2) Run Phase133A diagnostic variants with stricter meta_thresholds, class_weight=off, and drawdown_adjusted scoring.
 3) If flat model still fails, evaluate Phase129/130/131 telemetry tensor models only in walk-forward mode before any deployment discussion.
 ```
+
+## Latest implementation fix — negative score-threshold argv parsing — 2026-09-12
+
+The first Phase133A regressor command failed before execution because the score-threshold grid started with a negative value:
+
+```text
+--score-thresholds -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+error: argument --score-thresholds: expected one argument
+```
+
+Fix implemented:
+
+```text
+scripts/run_hybrid_walk_forward_validation.py
+scripts/backtest_meta_filtered_hybrid.py
+```
+
+Both scripts now normalize `--score-thresholds` / `--meta-thresholds` before argparse, so negative comma-separated threshold grids work in both CLI and Dashboard execution.
+
+Immediate workaround for any checkout without this patch:
+
+```powershell
+--score-thresholds=-0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+```
+
+## Latest execution result — Phase133A regressor walk-forward — 2026-09-12
+
+The operator ran the next diagnostic Phase133A variant:
+
+```text
+task             : regressor
+target           : target_trade_score_r
+score_thresholds : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+score_metric     : total_pnl
+```
+
+Aggregate result:
+
+```text
+folds                  : 6
+positive_months        : 2
+negative_months        : 3
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : +8.10892242193222
+meta_profit_factor     : 1.0127550914970576
+meta_max_drawdown      : 183.82112050056458
+meta_trades            : 120
+meta_avg_pnl           : +0.06757435351610183
+meta_final_balance     : 100.81089224219322
+meta_return_percent    : +0.8108922421932221%
+meta_would_breach_zero : false
+```
+
+Decision:
+
+```text
+Phase133A regressor is materially better than the classifier and base hybrid, but it is still NOT accepted. It is near break-even, PF is only 1.0128, and month stability is weak.
+No Phase134 paper shadow/live trading is allowed.
+```
+
+Owner-control documentation added:
+
+```text
+docs/PROJECT_OWNER_MAP.html
+```
+
+This is now the mandatory graphical owner-facing project map and must be updated after every meaningful code/result/phase/decision change.
+
+## Latest implementation update — tensor visual inspector and full-window build command — 2026-09-12
+
+A visual inspector was added so the owner can understand the Phase127A 3D telemetry tensor without reading raw `.npz` arrays:
+
+```text
+scripts/inspect_hybrid_telemetry_tensor.py
+GUI: Inspect hybrid telemetry tensor
+Output: run_logs\hybrid_tensor_inspector\latest.html
+```
+
+The inspector shows:
+
+```text
+- tensor shape / dtype / estimated uncompressed size
+- axis meanings: samples × 150-candle time window × 94 channels
+- channel groups
+- selected samples as heatmap slices
+- target values for each selected sample
+```
+
+Important tensor status clarification:
+
+```text
+The current tensor with shape [10537, 150, 94] spans all 52,832 5M rows, but it samples every fifth possible window because sample_stride=5.
+A complete every-window tensor requires sample_stride=1 and max_samples=0, producing approximately [52683, 150, 94].
+```
+
+## Current tensor-to-WaveNet clarification — 2026-09-12
+
+The full 3D telemetry tensor has now been built and inspected:
+
+```text
+X shape                  : [52683, 150, 94]
+dtype                    : float16
+estimated X size          : 1416.8363571166992 MiB
+source rows               : 52832
+sample_stride             : 1
+max_samples               : 0
+warnings                  : []
+visual inspector output   : run_logs\hybrid_tensor_inspector\latest.html
+```
+
+The WaveNet model intended to consume this tensor is Phase129A:
+
+```text
+trainer      : scripts/train_hybrid_telemetry_wavenet.py
+backtester   : scripts/backtest_hybrid_telemetry_wavenet.py
+GUI train    : Train telemetry WaveNet/TCN
+GUI backtest : Backtest telemetry WaveNet/TCN
+model id     : gold_hybrid_telemetry_wavenet_5m
+```
+
+Target design:
+
+```text
+Recommended first task: multihead
+head meta_win -> predicts target_trade_win
+head score_r  -> predicts target_trade_score_r
+```
+
+Trading interpretation:
+
+```text
+target_trade_score_r is the more important target for execution quality because win-only classification failed Phase133A, while score_r regression reached near break-even. WaveNet should be trained multihead first, then backtested with decision_mode=score and decision_mode=both.
+```
+
+## Current WaveNet training status clarification — 2026-09-12
+
+The operator started Phase129A WaveNet/TCN training on the full tensor with:
+
+```text
+tensor shape before candidate filter : [52683, 150, 94]
+task                                 : multihead
+candidate_only                        : 1
+epochs                                : 500
+early_stopping_patience               : 8
+monitor                               : val_loss
+observed model input shape             : [13692, 150, 94]
+split                                 : 9584 / 1718 / 1718
+```
+
+Interpretation:
+
+```text
+The observed [13692, 150, 94] input shape is expected because candidate_only=1 keeps only trade-candidate windows from the full tensor.
+The script is not monthly roll-forward. It is a chronological train/validation/test split with purge_gap=336.
+This is acceptable for first artifact training, but not sufficient for production acceptance.
+```
+
+Required validation if initial WaveNet looks promising:
+
+```text
+Run backtest_hybrid_telemetry_wavenet.py first, then build/run tensor-model walk-forward validation before any Phase134/paper/live discussion.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v1 — 2026-09-12
+
+The operator trained the Phase129A telemetry WaveNet/TCN on the full 3D tensor:
+
+```text
+model_id       : gold_hybrid_telemetry_wavenet_5m
+version        : 1
+task           : multihead
+tensor_path    : datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+selected rows  : 13692 candidate tensor windows
+tensor_window  : 150
+channels       : 94
+train/val/test : 9584 / 1718 / 1718
+purge_gap      : 336
+epochs arg     : 500
+early stopping : 8
+```
+
+Key training metrics:
+
+```text
+val_meta_ap              : 0.5189458439202039
+test_meta_ap             : 0.5377916962550442
+val_meta_prob_stdev      : 0.2892801567904343
+test_meta_prob_stdev     : 0.2399177476745701
+val_meta_collapse        : 0.0
+test_meta_collapse       : 0.0
+val_score_mae            : 0.8421052456884921
+test_score_mae           : 0.8726781023827808
+val_score_pred_stdev     : 0.47359669000282073
+test_score_pred_stdev    : 0.37248512880185
+val_score_collapse       : 0.0
+test_score_collapse      : 0.0
+test_score_selected_rate : 0.27648428405122233
+test_score_selected_target_mean : +0.1913444548845291
+```
+
+Initial score-mode full replay:
+
+```text
+script        : scripts/backtest_hybrid_telemetry_wavenet.py
+decision_mode : score
+score_threshold : 0
+eval_frac     : 1.0
+rows          : 52683 / 52683
+trades        : 384
+coverage      : 0.73%
+skipped_nn    : 9520
+total_pnl     : +1914.66
+profit_factor : 2.604
+final_balance : 291.47 with initial=100 and units=0.1
+```
+
+Interpretation:
+
+```text
+This is the first strong result from the 3D tensor path. The WaveNet did not collapse and the score head appears useful.
+However, this is not final production proof because the replay used eval_frac=1.0 and therefore includes in-sample training-era windows. The next validation must isolate out-of-time windows and then implement tensor-model walk-forward validation if still promising.
+```
+
+## Latest execution result — WaveNet v1 full and last-15% replays — 2026-09-12
+
+The operator sent the full JSON for Phase129A WaveNet/TCN v1 score-mode replay and a last-15% replay.
+
+Full replay (`eval_frac=1.0`):
+
+```text
+rows/evaluated  : 52683 / 52683
+trades          : 384
+buy/sell        : 215 / 169
+wins/losses     : 242 / 142
+win_rate        : 63.0208%
+total_pnl       : +1914.6646151691675
+avg_pnl         : +4.986105768669707
+profit_factor   : 2.603926956615171
+max_drawdown    : 192.19346404075623
+coverage        : 0.7289%
+final_balance   : 291.46646151691675 at initial=100, units=0.1
+```
+
+Full replay monthly distribution:
+
+```text
+2025-12: +205.6134 PF=4.4145 trades=51
+2026-01: +257.9868 PF=3.5067 trades=44
+2026-02: +463.7281 PF=2.5933 trades=46
+2026-03: +668.7947 PF=7.0685 trades=49
+2026-04: +328.4646 PF=9.8534 trades=36
+2026-05:   -4.2993 PF=0.9819 trades=63
+2026-06:  -49.7058 PF=0.6996 trades=38
+2026-07:  +78.6255 PF=1.5753 trades=48
+2026-08:  -34.5435 PF=0.3365 trades=9
+```
+
+Last-15% replay (`eval_frac=0.15`):
+
+```text
+rows/evaluated  : 52683 / 7902
+trades          : 29
+buy/sell        : 6 / 23
+wins/losses     : 16 / 13
+win_rate        : 55.1724%
+total_pnl       : +29.590763092041016
+avg_pnl         : +1.0203711411048626
+profit_factor   : 1.316544651614474
+max_drawdown    : 52.06632328033447
+coverage        : 0.3670%
+final_balance   : 102.95907630920411 at initial=100, units=0.1
+```
+
+Last-15% monthly distribution:
+
+```text
+2026-07: +64.1343 PF=2.5486 trades=20
+2026-08: -34.5435 PF=0.3365 trades=9
+```
+
+Interpretation:
+
+```text
+WaveNet v1 is promising: it did not collapse and the last-15% proxy remains positive with PF=1.3165. But it is fragile: only 29 trades, August is negative, and the full replay profit is heavily concentrated in the earlier train-era months. Production/paper remains blocked until threshold robustness and tensor walk-forward validation pass.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v2 long train — 2026-09-13
+
+The operator ran a longer score-focused WaveNet/TCN configuration:
+
+```text
+model_id             : gold_hybrid_telemetry_wavenet_5m
+version              : 2
+task                 : multihead
+rows                 : 13692 candidate tensor windows
+train/val/test        : 9584 / 1718 / 1718
+filters              : 64
+n_layers             : 6
+n_blocks             : 2
+dense_units          : 96
+dropout              : 0.25
+learning_rate        : 0.0005
+score_loss_weight    : 1.0
+monitor_metric       : val_score_r_mae
+early_stopping       : 25
+```
+
+Comparison against v1 key metrics:
+
+```text
+v1 test_meta_ap                      : 0.5377916962550442
+v2 test_meta_ap                      : 0.4581884952337111
+
+v1 test_score_mae                    : 0.8726781023827808
+v2 test_score_mae                    : 0.9537305706318867
+
+v1 test_score_selected_rate          : 0.27648428405122233
+v2 test_score_selected_rate          : 0.459837019790454
+
+v1 test_score_selected_target_mean   : +0.1913444548845291
+v2 test_score_selected_target_mean   : -0.13298217952251434
+```
+
+Decision:
+
+```text
+v2 is worse than v1 on the test split. It did not collapse, but the score-selected test subset became negative and selected too many candidates. Treat as overfit/regime-mismatch until a threshold backtest proves otherwise. Do not replace v1 as the preferred WaveNet candidate.
+```
+
+Operator command error:
+
+```text
+backtest_hybrid_telemetry_wavenet.py: error: unrecognized arguments: -u scripts/backtest_hybrid_telemetry_wavenet.py
+```
+
+Cause:
+
+```text
+The second `python -u scripts/backtest_hybrid_telemetry_wavenet.py` command was accidentally pasted directly after `--storage-root datasets`, so argparse received it as extra arguments to the first script.
+```
+
+Correct action:
+
+```text
+Run one command at a time. To backtest v2 explicitly, use --model-version 2. To preserve the stronger v1 baseline, use --model-version 1 instead of --model-version 0, because 0 now resolves to latest=v2.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v2 last-15% backtest — 2026-09-13
+
+The operator explicitly backtested `gold_hybrid_telemetry_wavenet_5m v2` on the last 15% of the tensor with score-mode:
+
+```text
+model_version  : 2
+decision_mode  : score
+score_threshold: 0.0
+eval_frac      : 0.15
+rows/evaluated : 52683 / 7902
+```
+
+Result:
+
+```text
+trades          : 89
+buy/sell        : 58 / 31
+wins/losses     : 29 / 60
+timeouts        : 2
+win_rate        : 32.5843%
+total_pnl       : -178.49363827705383
+avg_pnl         : -2.005546497494987
+profit_factor   : 0.5542918793438448
+max_drawdown    : 212.62753653526306
+coverage        : 1.1263%
+final_balance   : 82.15063617229461 at initial=100, units=0.1
+```
+
+Monthly:
+
+```text
+2026-07:   -3.3839 PF=0.9646 trades=31
+2026-08: -168.3904 PF=0.4355 trades=56
+2026-09:   -6.7193 PF=0.0000 trades=2
+```
+
+Comparison to v1 last-15%:
+
+```text
+v1 last-15%: +29.5908 raw PnL, PF=1.3165, trades=29, maxDD=52.0663
+v2 last-15%: -178.4936 raw PnL, PF=0.5543, trades=89, maxDD=212.6275
+```
+
+Decision:
+
+```text
+REJECT v2 as the active WaveNet candidate. v2 overtrades and fails the out-of-time proxy. v1 remains the better WaveNet candidate, but still needs threshold robustness and tensor walk-forward validation before any production/paper step.
+```
+
+## Latest execution result — Phase132A WaveNet v1 threshold grid on last-15% — 2026-09-13
+
+The operator ran Phase132A comparison on the last 15% tensor universe with:
+
+```text
+candidates          : base,gold_hybrid_telemetry_wavenet_5m
+candidate_versions  : 0,1
+decision_modes      : score,both
+meta_thresholds     : record,0.55,0.60,0.65,0.70
+score_thresholds    : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50,0.75,1.00
+eval_frac           : 0.15
+samples             : 7902
+score_metric        : total_pnl
+```
+
+Base result on the same last-15% universe:
+
+```text
+trades          : 195
+buy/sell        : 127 / 68
+wins/losses     : 67 / 128
+win_rate        : 34.35897435897436%
+total_pnl       : -247.1424761712551
+profit_factor   : 0.70282875694799
+max_drawdown    : 272.11317190527916
+coverage        : 2.4677296886864084%
+final_balance   : 75.28575238287449
+```
+
+Best WaveNet v1 threshold-grid result:
+
+```text
+candidate        : gold_hybrid_telemetry_wavenet_5m:score:meta=record:score=0.05
+version          : 1
+model_type       : tensor
+decision_mode    : score
+score_threshold  : 0.05
+trades           : 22
+buy/sell         : 5 / 17
+wins/losses      : 14 / 8
+win_rate         : 63.63636363636364%
+total_pnl        : +42.78727626800537
+avg_pnl          : +1.9448761940002441
+profit_factor    : 1.6478747062665267
+max_drawdown     : 32.968711853027344
+coverage         : 0.27841052898000505%
+final_balance    : 104.27872762680053
+```
+
+Threshold shape:
+
+```text
+score=-0.25 -> -117.3837, PF=0.6991, trades=91
+score=-0.10 ->  -55.0679, PF=0.7756, trades=56
+score= 0.00 ->  +29.5908, PF=1.3165, trades=29
+score= 0.05 ->  +42.7873, PF=1.6479, trades=22  BEST
+score= 0.10 ->  +35.4562, PF=1.7217, trades=18
+score= 0.20 ->   +8.3745, PF=2.2427, trades=5   below min_trades
+score>=0.35 -> too few trades / negative or zero
+```
+
+Interpretation:
+
+```text
+WaveNet v1 score filtering materially improves the base hybrid on the last-15% diagnostic window. The useful threshold region is narrow but intuitive: score_threshold around 0.00-0.10, with 0.05 best by total PnL and 0.10 lower drawdown.
+```
+
+Important caveats:
+
+```text
+- In decision_mode=score, meta_threshold is ignored by design; repeated score-mode rows across meta thresholds are expected duplicates.
+- The best threshold was selected on the last-15% evaluation window, so this is a diagnostic threshold grid, not production validation.
+- Only 22 trades at the best threshold; sample size is still small.
+- Phase134 paper/live remains blocked until tensor walk-forward validation selects thresholds only from past validation data and passes out-of-time test months.
+```
+
+## Latest implementation update — Phase133B tensor walk-forward validation — 2026-09-13
+
+Implemented the missing tensor-model walk-forward validation phase:
+
+```text
+scripts/run_hybrid_tensor_walk_forward_validation.py
+GUI: Run tensor walk-forward validation
+```
+
+Why:
+
+```text
+WaveNet v1 on the 3D telemetry tensor produced a strong diagnostic last-15% threshold-grid result, but the threshold was selected on the same evaluation slice. A true production gate needs threshold selection on past validation only and testing on unseen future months.
+```
+
+Current model family implemented:
+
+```text
+model_family=wavenet
+```
+
+Protocol:
+
+```text
+train fresh WaveNet/TCN per test month
+train rows = only months before validation block
+validation rows = immediate month(s) before test month
+test rows = next unseen month
+purge_gap_bars = 336
+threshold grid selected only on validation replay
+selected threshold evaluated on test replay
+```
+
+Outputs:
+
+```text
+run_logs\hybrid_tensor_walk_forward_validation\latest.json
+run_logs\hybrid_tensor_walk_forward_validation\latest.csv
+run_logs\hybrid_tensor_walk_forward_validation\latest.html
+```
+
+Phase134 remains blocked until this passes.
+
+## Latest execution result — Phase133B tensor WaveNet walk-forward FAILED — 2026-09-13
+
+The operator ran the new tensor-model walk-forward validation:
+
+```text
+script             : scripts/run_hybrid_tensor_walk_forward_validation.py
+model_family       : wavenet
+task               : multihead
+candidate_only     : 1
+train_months_min   : 3
+validation_months  : 1
+purge_gap_bars     : 336
+decision_modes     : score,both
+score_thresholds   : -0.10,0,0.05,0.10,0.20
+score_metric       : total_pnl
+```
+
+Aggregate result:
+
+```text
+folds                  : 6
+test_months            : 6
+positive_months        : 2
+negative_months        : 3
+base_total_pnl         : -1288.8456037938595
+tensor_total_pnl       : -409.51990616321564
+tensor_gross_profit    : 608.841717839241
+tensor_gross_loss      : 1018.3616240024567
+tensor_profit_factor   : 0.5978639645181408
+tensor_max_drawdown    : 464.1122056245804
+tensor_trades          : 200
+tensor_avg_pnl         : -2.047599530816078
+tensor_final_balance   : 59.04800938367843
+tensor_return_percent  : -40.951990616321565%
+tensor_would_breach_zero : false
+best_month             : 2026-08
+worst_month            : 2026-05
+```
+
+Fold results:
+
+```text
+2026-04: selected score 0.05, val=-102.5548, tensor=-144.8683, PF=0.3253, trades=35
+2026-05: selected score -0.10, val= -42.2108, tensor=-270.3103, PF=0.5553, trades=115
+2026-06: selected both meta=0.70 score=0.20, val=-107.0676, tensor= +7.8459, PF=1.0769, trades=25
+2026-07: selected both meta=0.65 score=0.05, val= +26.0419, tensor=-23.4140, PF=0.4207, trades=8
+2026-08: selected both meta=0.65 score=-0.10, val= +44.9376, tensor=+21.2268, PF=1.3981, trades=17
+2026-09: selected score 0.20, val= +44.3921, tensor= +0.0000, PF=0.0000, trades=0
+```
+
+Decision:
+
+```text
+FAIL. The 3D tensor WaveNet v1 diagnostic signal did not generalize under true walk-forward retraining and validation-selected thresholds.
+```
+
+Interpretation:
+
+```text
+- The tensor model reduced base loss (-409.52 vs -1288.85), but remained strongly negative.
+- It is worse than the flat LightGBM score_r walk-forward result (+8.11 raw, PF=1.0128).
+- Several folds selected the least-bad threshold even when validation score was negative, then lost out-of-time.
+- Fold 5 (2026-08) is the only meaningful positive transfer; fold 6 has only 7 candidates and zero trades.
+- Phase134 paper/live remains blocked.
+```
+
+Immediate research implication:
+
+```text
+Do not train larger WaveNet blindly. The next possible research change is a validation no-trade/risk gate: if best validation score/PF is not good enough, the fold should select NO TRADE rather than forcing a threshold.
+```
+
+## Latest implementation update — Phase133C validation no-trade/risk gate — 2026-09-13
+
+Implemented Phase133C as an extension of the tensor walk-forward validator:
+
+```text
+scripts/run_hybrid_tensor_walk_forward_validation.py
+GUI: Run tensor walk-forward validation
+```
+
+New flags:
+
+```text
+--allow-no-trade {0,1}
+--min-validation-score FLOAT
+--min-validation-profit-factor FLOAT
+--max-validation-drawdown FLOAT
+```
+
+Purpose:
+
+```text
+If the best validation threshold is still weak, the fold can select NO_TRADE instead of forcing the least-bad trading threshold into the next test month.
+```
+
+Recommended Phase133C risk-gate settings:
+
+```text
+allow_no_trade                 : 1
+min_validation_score           : 0
+min_validation_profit_factor   : 1.10
+max_validation_drawdown        : 120
+```
+
+Result schema now includes:
+
+```text
+selected_validation_profit_factor
+selected_validation_max_drawdown
+no_trade_selected
+aggregate.no_trade_months
+```
+
+Phase134 remains blocked until a Phase133C run passes the out-of-time gates.
+
+## Latest execution result — Phase133C validation no-trade gate FAILED as strategy — 2026-09-13
+
+The operator ran Phase133C with the validation no-trade/risk gates enabled:
+
+```text
+allow_no_trade                 : 1
+min_validation_score           : 0.0
+min_validation_profit_factor   : 1.10
+max_validation_drawdown        : 120.0
+decision_modes                 : score,both
+score_thresholds               : -0.10,0,0.05,0.10,0.20
+```
+
+Aggregate result:
+
+```text
+folds                    : 6
+test_months              : 6
+positive_months          : 0
+negative_months          : 1
+no_trade_months          : 3
+base_total_pnl           : -1288.8456037938595
+tensor_total_pnl         : -32.83297738432884
+tensor_gross_profit      : 107.19759202003479
+tensor_gross_loss        : 140.03056940436363
+tensor_profit_factor     : 0.7655299301860462
+tensor_max_drawdown      : 86.88896641135216
+tensor_trades            : 35
+tensor_avg_pnl           : -0.9380850681236812
+tensor_final_balance     : 96.71670226156712
+tensor_return_percent    : -3.283297738432878%
+tensor_would_breach_zero : false
+```
+
+Fold decisions:
+
+```text
+2026-04: validation OK, selected both meta=0.55 score=0.05, test trades=0, tensor_pnl=0
+2026-05: NO_TRADE because validation_score=-36.3806 < 0, tensor_pnl=0
+2026-06: NO_TRADE because validation_score=-107.9652 < 0, tensor_pnl=0
+2026-07: NO_TRADE because validation PF=1.0427 < 1.10, tensor_pnl=0
+2026-08: validation OK, selected both meta=0.70 score=-0.10, test=-32.8330, PF=0.7655, trades=35
+2026-09: validation OK, selected score=-0.10, test trades=0, tensor_pnl=0
+```
+
+Comparison:
+
+```text
+Phase133B tensor WF without no-trade gate : -409.5199 raw, PF=0.5979, trades=200
+Phase133C tensor WF with no-trade gate    :  -32.8330 raw, PF=0.7655, trades=35
+Base over same WF months                  : -1288.8456 raw
+```
+
+Decision:
+
+```text
+FAIL as a deployable strategy. The no-trade gate is useful damage control, but it did not create a profitable or stable walk-forward edge.
+```
+
+Important interpretation:
+
+```text
+Phase133C reduced losses by about 92% versus Phase133B and about 97% versus the base hybrid, but it still has negative total PnL, PF below 1, zero positive trading months, and only one month with trades. No Phase134 paper/live is allowed.
+```
+
+Recommended next research:
+
+```text
+Stop bigger WaveNet training. Build failure/regime diagnostics to identify why validation-positive folds fail in the next month and which side/session/range contexts drive losses.
+```
+
+## Latest implementation update — Phase136A tensor failure/regime diagnostics — 2026-09-14
+
+Implemented Phase136A:
+
+```text
+scripts/analyze_tensor_failure_regimes.py
+GUI: Analyze tensor failure regimes
+```
+
+Purpose:
+
+```text
+Analyze why Phase133B/C tensor WaveNet validation failed instead of training bigger models blindly.
+```
+
+Inputs:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+run_logs\hybrid_tensor_walk_forward_validation\latest.json
+```
+
+Outputs:
+
+```text
+run_logs\tensor_failure_regimes\latest.json
+run_logs\tensor_failure_regimes\latest.html
+run_logs\tensor_failure_regimes\latest_regimes.csv
+run_logs\tensor_failure_regimes\latest_transfer.csv
+```
+
+Diagnostics:
+
+```text
+validation-to-test transfer table
+per-month candidate outcomes
+per-side BUY/SELL outcomes
+month × side outcomes
+session/hour outcomes
+range room bins
+candidate confidence bins
+candidate reward/risk bins
+specialist conflict buckets
+booster entropy/margin bins
+worst/best candidate regimes
+```
+
+Current production status remains:
+
+```text
+No paper shadow
+No live trading
+No production acceptance
+```
+
+## Latest execution result — Phase136A tensor failure/regime diagnostics — 2026-09-14
+
+The operator ran Phase136A:
+
+```text
+script            : scripts/analyze_tensor_failure_regimes.py
+flat_path         : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+walk_forward_json : run_logs\hybrid_tensor_walk_forward_validation\latest.json
+candidate_only    : 1
+candidate_rows    : 13757
+```
+
+Top-level candidate distribution:
+
+```text
+candidate_rows : 13757
+months         : 10
+total_pnl      : -43309.811259036884
+win_rate       : 41.26626444719052%
+profit_factor  : 0.6215092452270718
+worst_month    : 2026-02
+best_month     : 2026-07
+```
+
+Validation-to-test transfer from Phase133C:
+
+```text
+transfer_rows         : 6
+transfer_total_pnl    : -32.83297738432884
+transfer_profit_factor: 0.7655299301860462
+no_trade_months       : 3
+```
+
+Risk flags:
+
+```text
+1 fold had positive validation quality but negative test PnL.
+3 folds were blocked by validation no-trade gates.
+1 active trading fold still lost money after gates.
+Side BUY is negative in candidate distribution: -39003.71 raw PnL.
+Side SELL is negative in candidate distribution: -4306.10 raw PnL.
+```
+
+Most important regime finding:
+
+```text
+BUY side is the main damage source:
+BUY  rows=8583, win_rate=35.7917%, total_pnl=-39003.7073, PF=0.5106
+SELL rows=5174, total_pnl=-4306.10
+```
+
+Worst candidate regimes:
+
+```text
+stop_loss outcome: rows=7256, share=52.7441%, total_pnl=-106988.0392
+2026-02 month: rows=1945, win_rate=25.1414%, total_pnl=-21573.3665, PF=0.3872
+wide/large SL-distance bin (23.56,124.647]: total_pnl=-22248.0623
+range_1d_width (126.848,168.247]: total_pnl=-19492.4818
+range_4h_width (33.305,46.57]: total_pnl=-18473.0694
+range_4h_width (46.57,136.906]: total_pnl=-16979.6279
+high candidate_confidence (0.938,0.973]: total_pnl=-14063.6031
+```
+
+Positive pockets found in candidate diagnostics:
+
+```text
+2026-04 / SELL: rows=568, win_rate=66.3732%, total_pnl=+2682.8371, PF=2.1863
+2026-03 / SELL: rows=398, win_rate=53.0151%, total_pnl=+2308.4453, PF=1.8384
+2026-07 / SELL: rows=1185, win_rate=59.5781%, total_pnl=+1963.2321, PF=1.4834
+2026-06 / SELL: rows=571, win_rate=62.3468%, total_pnl=+669.4895, PF=1.2756
+2026-08 / SELL: rows=256, win_rate=57.4219%, total_pnl=+469.5280, PF=1.6627
+SELL / hour=9: rows=235, win_rate=54.0426%, total_pnl=+901.0482, PF=1.8986
+SELL / hour=8: rows=348, win_rate=56.0345%, total_pnl=+640.0451, PF=1.3392
+```
+
+Interpretation:
+
+```text
+Phase136A does not approve a strategy. It shows that the current hybrid candidate generator is structurally bad on BUYs and stop-loss-heavy regimes. SELL has positive pockets, especially in certain months/hours, but these are candidate-outcome diagnostics, not chronological replay. The next valid research step is to build a regime-filtered replay/walk-forward phase that tests SELL-only and live-safe filters under chronological rules.
+```
+
+Production decision remains:
+
+```text
+No paper shadow.
+No live trading.
+No Phase134 acceptance.
+```
+
+## Latest implementation update — Phase137A regime-filtered hybrid replay — 2026-09-14
+
+Implemented Phase137A:
+
+```text
+scripts/backtest_regime_filtered_hybrid.py
+GUI: Backtest regime-filtered hybrid
+```
+
+Purpose:
+
+```text
+Test Phase136A hypotheses through chronological replay, including SELL-only, BUY-only, mixed, and stricter-BUY filters.
+```
+
+Important project decision:
+
+```text
+BUY is not removed from the project. Phase137A default is allowed_sides=BUY,SELL. SELL-only is only a diagnostic hypothesis, and BUY can be kept with stricter side-specific gates.
+```
+
+Outputs:
+
+```text
+run_logs\regime_filtered_hybrid\latest.json
+run_logs\regime_filtered_hybrid\latest.html
+run_logs\regime_filtered_hybrid\latest.csv
+```
+
+Recommended first diagnostic commands:
+
+```text
+1) SELL-only replay.
+2) BUY,SELL replay with strict BUY gates.
+```
+
+No Phase134/paper/live permission is implied.
+
+## Latest execution result — Phase137A regime-filtered replay diagnostics — 2026-09-14
+
+The operator ran two Phase137A diagnostic replays.
+
+### 1) SELL-only diagnostic replay
+
+Configuration:
+
+```text
+allowed_sides : SELL
+eval_frac     : 1.0
+```
+
+Result:
+
+```text
+source_candidates    : 13757
+kept_candidates      : 5174
+removed_candidates   : 8583
+base_total_pnl       : -4590.797205492854
+filtered_total_pnl   : -848.8386568725109
+filtered_profit_factor : 0.7290926647116155
+filtered_max_drawdown  : 1040.8391872644424
+filtered_trades        : 581
+filtered_win_rate      : 35.28399311531842%
+filtered_final_balance : 15.116134312748898
+would_breach_zero      : true
+```
+
+Monthly:
+
+```text
+2026-01:   -0.8822 PF=0.9943 trades=20
+2026-02: -430.7218 PF=0.3631 trades=62
+2026-03:  -53.4108 PF=0.8580 trades=61
+2026-04:  +40.9952 PF=1.1149 trades=83
+2026-05: -423.1884 PF=0.5078 trades=162
+2026-06:  -16.2552 PF=0.9340 trades=61
+2026-07:  +87.4448 PF=1.2510 trades=103
+2026-08:  -52.8203 PF=0.5398 trades=29
+```
+
+Interpretation:
+
+```text
+SELL-only greatly reduces damage versus base, but is still a failed strategy. The main damage remains concentrated in 2026-02 and 2026-05. It is not enough to simply block BUY.
+```
+
+### 2) Mixed BUY,SELL with initial strict BUY gates
+
+Configuration:
+
+```text
+allowed_sides          : BUY,SELL
+buy_min_confidence     : 0.98
+buy_min_side_4h_room   : 5.0
+buy_min_side_1d_room   : 10.0
+buy_max_sl_distance    : 20.0
+```
+
+Result:
+
+```text
+source_candidates      : 13757
+kept_candidates        : 6360
+removed_candidates     : 7397
+base_total_pnl         : -4590.797205492854
+filtered_total_pnl     : -2018.1994965970516
+filtered_profit_factor : 0.585046282276268
+filtered_max_drawdown  : 2100.639673948288
+filtered_trades        : 883
+filtered_win_rate      : 27.18006795016987%
+filtered_final_balance : -101.81994965970517
+would_breach_zero      : true
+```
+
+Interpretation:
+
+```text
+The first strict-BUY configuration is not sufficient and is worse than SELL-only. BUY is not removed from the architecture, but current BUY gates are not robust. BUY needs separate analysis/rework, not blind inclusion.
+```
+
+Current decision:
+
+```text
+No Phase134/paper/live. Next diagnostic should test focused SELL pockets from Phase136A, especially SELL hours 8 and 9, and possibly month-range restrictions, through chronological replay.
+```
+
+## Latest execution result — Phase137A SELL hours 8/9 focused replay — 2026-09-14
+
+The operator ran the focused SELL-hours replay suggested by Phase136A:
+
+```text
+allowed_sides      : SELL
+sell_allowed_hours : 8,9
+eval_frac          : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 583
+removed_candidates      : 13174
+kept_rate               : 4.237842552882169%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : +16.920441061258316
+filtered_profit_factor  : 1.037288325923403
+filtered_max_drawdown   : 89.34972810745239
+filtered_trades         : 77
+filtered_win_rate       : 38.961038961038966%
+filtered_final_balance  : 101.69204410612583
+would_breach_zero       : false
+```
+
+Monthly:
+
+```text
+2026-01: +18.0882 PF=2.1592 trades=5
+2026-02: -44.2072 PF=0.5853 trades=7
+2026-03: +38.7940 PF=1.7817 trades=8
+2026-04: +52.3129 PF=2.5081 trades=9
+2026-05: -71.4458 PF=0.5502 trades=24
+2026-06: +21.1881 PF=1.5779 trades=11
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+This is the first manual regime-filtered replay that is positive on full history, but it is weak and not accepted. PF=1.037 is below the 1.10 guideline, total PnL is small, and losses remain concentrated in 2026-02 and 2026-05. It is a useful hypothesis, not a deployable strategy.
+```
+
+Next diagnostic:
+
+```text
+Keep SELL h8/9 and add live-safe loss-control filters, starting with max SL distance or range width filters. Do not use month exclusion as a production rule.
+```
+
+## Latest execution result — Phase137A SELL h8/9 + max SL distance — 2026-09-14
+
+The operator added a live-safe SL-distance cap to the weak-positive SELL h8/9 replay:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 503
+removed_candidates      : 13254
+kept_rate               : 3.656320418695937%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : +23.147499471902847
+filtered_profit_factor  : 1.0608648649692447
+filtered_max_drawdown   : 89.64815473556519
+filtered_trades         : 73
+filtered_win_rate       : 36.98630136986301%
+filtered_final_balance  : 102.31474994719028
+would_breach_zero       : false
+```
+
+Comparison against previous SELL h8/9:
+
+```text
+SELL h8/9 only       : +16.9204 raw, PF=1.0373, trades=77, maxDD=89.3497
+SELL h8/9 + SL<=23.56: +23.1475 raw, PF=1.0609, trades=73, maxDD=89.6482
+```
+
+Monthly:
+
+```text
+2026-01: +18.0882 PF=2.1592 trades=5
+2026-02: -51.4716 PF=0.0000 trades=5
+2026-03: +53.9956 PF=2.4144 trades=7
+2026-04: +46.0941 PF=2.4267 trades=8
+2026-05: -66.9372 PF=0.5663 trades=24
+2026-06: +21.1881 PF=1.5779 trades=11
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+The SL-distance cap improved total PnL and PF, but the result is still below the PF>1.10 acceptance guideline and remains too weak for any production/paper discussion. Losses still concentrate in 2026-02 and 2026-05. Next diagnostic should add a 4H range-width cap while keeping SELL h8/9 and SL<=23.56.
+```
+
+## Latest execution result — Phase137A SELL h8/9 + SL cap + 4H width cap worsened — 2026-09-14
+
+The operator tested the next live-safe filter combination:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+max_range_4h_width   : 33.305
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 428
+removed_candidates      : 13329
+kept_rate               : 3.1111434178963438%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : -26.330932468175888
+filtered_profit_factor  : 0.8915300951853891
+filtered_max_drawdown   : 89.88325047492981
+filtered_trades         : 50
+filtered_win_rate       : 42.0%
+filtered_final_balance  : 97.3669067531824
+would_breach_zero       : false
+```
+
+Comparison:
+
+```text
+SELL h8/9 only                  : +16.9204 raw, PF=1.0373, trades=77
+SELL h8/9 + SL<=23.56           : +23.1475 raw, PF=1.0609, trades=73
+SELL h8/9 + SL<=23.56 + 4H<=33.305: -26.3309 raw, PF=0.8915, trades=50
+```
+
+Monthly:
+
+```text
+2026-04: +34.4846 PF=999.0 trades=3
+2026-05: -66.9372 PF=0.5663 trades=24
+2026-06:  +3.9314 PF=1.1072 trades=10
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+The broad max_range_4h_width=33.305 cap is rejected. It removed profitable January/March exposure but did not remove the main May loss. The current best manual filter remains SELL h8/9 + SL<=23.56, although it is still below acceptance.
+```
+
+Next diagnostic:
+
+```text
+Do not use the broad 4H width cap. If testing 4H width, test the exact positive Phase136A pocket: min_range_4h_width=21.741 and max_range_4h_width=26.928, while keeping SELL h8/9 and SL<=23.56.
+```
+
+## Latest execution result — Phase137A exact 4H width pocket — 2026-09-14
+
+The operator tested the exact positive 4H width pocket from Phase136A while keeping the current SELL h8/9 + SL cap hypothesis:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+min_range_4h_width   : 21.741
+max_range_4h_width   : 26.928
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates      : 13757
+kept_candidates        : 166
+removed_candidates     : 13591
+kept_rate              : 1.2066584284364324%
+base_total_pnl         : -4590.797205492854
+filtered_total_pnl     : +11.376214891672134
+filtered_profit_factor : 1.1828907946231388
+filtered_max_drawdown  : 19.283453941345215
+filtered_trades        : 14
+filtered_win_rate      : 57.14285714285714%
+filtered_final_balance : 101.13762148916722
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-04:  +6.8169 PF=999.0 trades=1
+2026-05:  +6.6403 PF=1.3561 trades=3
+2026-06: +12.7187 PF=1.8103 trades=4
+2026-07: -16.8079 PF=0.3891 trades=4
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Comparison:
+
+```text
+SELL h8/9 + SL<=23.56                       : +23.1475 raw, PF=1.0609, trades=73, maxDD=89.6482
+SELL h8/9 + SL<=23.56 + exact 4H pocket     : +11.3762 raw, PF=1.1829, trades=14, maxDD=19.2835
+```
+
+Interpretation:
+
+```text
+The exact 4H pocket improves quality and drawdown, and PF finally exceeds 1.10. However, trade count is very small and total PnL is low. This is a promising micro-regime, not a deployable strategy. It needs recent-holdout and walk-forward validation.
+```
+
+Next diagnostic:
+
+```text
+Run the exact same filter with eval_frac=0.15. If the recent holdout fails, the micro-regime is not robust enough. If it remains positive, build a Phase137B/138 walk-forward filter-validation step.
+```
+
+## Latest execution result — Phase137A exact 4H pocket recent holdout FAILED — 2026-09-14
+
+The operator reran the exact 4H pocket filter on the recent 15% slice:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+min_range_4h_width   : 21.741
+max_range_4h_width   : 26.928
+eval_frac            : 0.15
+```
+
+Result:
+
+```text
+evaluated_rows         : 7924
+source_candidates      : 1445
+kept_candidates        : 70
+kept_rate              : 4.844290657439446%
+base_total_pnl         : -241.5674167573452
+filtered_total_pnl     : -17.275230020284653
+filtered_profit_factor : 0.11992036742639664
+filtered_max_drawdown  : 19.283453941345215
+filtered_trades        : 4
+filtered_win_rate      : 25.0%
+filtered_final_balance : 98.27247699797154
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-07: -19.2835 PF=0.0 trades=2
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Decision:
+
+```text
+Reject the exact 4H pocket as a robust filter. It looked acceptable on full history but failed the recent holdout with only 4 trades and negative PnL.
+```
+
+Current best manual regime remains:
+
+```text
+SELL h8/9 + sell_max_sl_distance=23.56
+full-history: +23.1475 raw, PF=1.0609, trades=73
+```
+
+Next final sanity check:
+
+```text
+Run the current best manual regime on eval_frac=0.15. If it also fails or is only near-zero, stop manual filtering and move to formal walk-forward filter validation / BUY-side rework.
+```
+
+## Latest execution result — Phase137A current-best SELL filter recent holdout FAILED — 2026-09-14
+
+The operator tested the current best less-restrictive manual filter on the recent 15% slice:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+eval_frac            : 0.15
+```
+
+Result:
+
+```text
+evaluated_rows         : 7924
+source_candidates      : 1445
+kept_candidates        : 104
+kept_rate              : 7.197231833910035%
+base_total_pnl         : -241.5674167573452
+filtered_total_pnl     : -22.4049571454525
+filtered_profit_factor : 0.40983705655862596
+filtered_max_drawdown  : 37.618305921554565
+filtered_trades        : 8
+filtered_win_rate      : 25.0%
+filtered_final_balance : 97.75950428545475
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-07: -24.41318106651306 PF=0.3510 trades=6
+2026-08:  +2.008223921060562 PF=6.8089 trades=2
+```
+
+Comparison with full-history current-best manual filter:
+
+```text
+Full history SELL h8/9 + SL<=23.56 : +23.1475 raw, PF=1.0609, trades=73
+Recent 15% same filter              : -22.4050 raw, PF=0.4098, trades=8
+```
+
+Decision:
+
+```text
+Reject the current-best manual SELL regime as robust. Manual SELL h8/9 filtering does not survive recent holdout.
+```
+
+Interpretation:
+
+```text
+Phase137A manual filters are useful diagnostics but not deployable. The apparent full-history SELL pocket does not persist in the recent slice. Do not continue blindly adding hand filters. The next work should shift to TP/SL and trade anatomy diagnostics, especially BUY-side damage and stop-loss concentration.
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase138A trade anatomy / TP-SL failure analysis — 2026-09-14
+
+Implemented Phase138A:
+
+```text
+scripts/analyze_trade_anatomy.py
+GUI: Analyze trade anatomy
+```
+
+Why:
+
+```text
+Phase137A manual regime filters failed recent holdout. The next issue to inspect is trade construction: TP/SL placement, bracket width, stop-loss concentration, BUY/SELL asymmetry and hold-time behavior.
+```
+
+Outputs:
+
+```text
+run_logs\trade_anatomy\latest.json
+run_logs\trade_anatomy\latest.html
+run_logs\trade_anatomy\latest_anatomy.csv
+```
+
+The report analyzes:
+
+```text
+side/outcome/month/hour buckets
+TP and SL distance bins
+reward/risk bins
+hold bars
+action-side 4H/1D room
+range width
+candidate confidence
+stop-loss and timeout rates
+```
+
+No production/paper permission is implied.
+
+## Latest execution result — Phase138A trade anatomy / TP-SL failure analysis — 2026-09-15
+
+The operator ran Phase138A on the full candidate telemetry matrix:
+
+```text
+candidate_rows : 13757
+months         : 10
+total_pnl      : -43309.811259036884
+win_rate       : 41.26626444719052%
+profit_factor  : 0.6215092452270718
+max_drawdown   : 45887.01167863794
+```
+
+Core outcome anatomy:
+
+```text
+take_profit_rate : 37.38460420149742%
+stop_loss_rate   : 52.74405757069128%
+timeout_rate     : 9.871338227811297%
+```
+
+Side anatomy:
+
+```text
+BUY rows              : 8583
+BUY total_pnl         : -39003.70734734554
+BUY profit_factor     : 0.5106436955011304
+BUY stop_loss_rate    : 59.07025515554002%
+BUY avg_sl_distance   : 17.62240083711894
+
+SELL rows             : 5174
+SELL total_pnl        : -4306.103911691345
+SELL profit_factor    : 0.8759889582324059
+SELL stop_loss_rate   : 42.24971008890607%
+SELL avg_sl_distance  : 17.539608476089555
+```
+
+Worst anatomy findings:
+
+```text
+stop_loss outcome       : rows=7256, total_pnl=-106988.03918242455, avg_hold_bars=12.2172
+BUY / stop_loss         : rows=5070, total_pnl=-75934.2055940628
+SELL / stop_loss        : rows=2186, total_pnl=-31053.83358836174
+SL distance high bin    : (23.56,124.647], rows=2752, total_pnl=-22248.062289144844, PF=0.5144
+Worst month             : 2026-02, total_pnl=-21573.36649065558, stop_loss_rate=66.4267%
+Worst month_side buckets: 2026-02 / BUY and 2026-03 / BUY
+```
+
+Important TP/SL insight:
+
+```text
+Stop-loss candidates have avg_tp_distance=22.5691 and avg_sl_distance=14.7448 with avg_reward_risk=2.8001.
+Take-profit candidates have avg_tp_distance=13.0167 and avg_sl_distance=20.5877 with avg_reward_risk=0.8209.
+```
+
+Interpretation:
+
+```text
+Higher nominal reward/risk is not helping; it is associated with stop-loss failures. The current bracket appears to often set TP too far relative to market path, while SL is hit quickly. Average stop-loss hold time is only ~12 bars. This points to TP/SL bracket construction and side-specific bracket policy, not just classifier/model quality.
+```
+
+Decision:
+
+```text
+No Phase134 / no paper / no live. Manual filters are not robust and Phase138A indicates the next engineering work should be TP/SL bracket recalibration replay, not another bigger model.
+```
+
+Recommended next phase:
+
+```text
+Phase139A — TP/SL Bracket Recalibration Replay
+```
+
+Scope:
+
+```text
+- simulate alternative TP/SL policies on the same candidate stream
+- cap TP distance / cap SL distance
+- side-specific BUY/SELL TP/SL caps
+- test lower reward/risk caps rather than only minimum reward/risk
+- compare same_bar_policy sensitivity
+- chronological replay and recent-holdout report
+```
+
+## Latest implementation update — Phase139A TP/SL bracket recalibration replay — 2026-09-15
+
+Implemented Phase139A:
+
+```text
+scripts/backtest_bracket_recalibration.py
+GUI: Backtest bracket recalibration
+```
+
+Purpose:
+
+```text
+Re-simulate alternative TP/SL geometry on the existing candidate stream without training a model.
+```
+
+Why:
+
+```text
+Phase138A showed high nominal reward/risk and far TP candidates are often stop-loss failures. Bracket geometry must be tested directly.
+```
+
+Supported caps:
+
+```text
+--max-tp-distances
+--max-sl-distances
+--max-reward-risks
+--buy-max-tp-distance / --sell-max-tp-distance
+--buy-max-sl-distance / --sell-max-sl-distance
+--buy-max-reward-risk / --sell-max-reward-risk
+```
+
+Outputs:
+
+```text
+run_logs\bracket_recalibration\latest.json
+run_logs\bracket_recalibration\latest.html
+run_logs\bracket_recalibration\latest.csv
+run_logs\bracket_recalibration\best_trades.csv
+```
+
+No Phase134/paper/live permission is implied.
+
+## Latest execution result — Phase139A global TP/SL bracket recalibration FAILED — 2026-09-15
+
+The operator ran Phase139A on the full candidate stream:
+
+```text
+allowed_sides      : BUY,SELL
+max_tp_distances   : original,12,14,16,18
+max_sl_distances   : original,20,23.56,30
+max_reward_risks   : original,1,1.5,2
+eval_frac          : 1.0
+same_bar_policy    : stop_first
+```
+
+Best selected policy:
+
+```text
+policy              : tp=original:sl=original:rr=original
+trades              : 1693
+buy/sell            : 1118 / 575
+wins/losses         : 512 / 1181
+win_rate            : 30.2422%
+total_pnl           : -4590.797210656048
+profit_factor       : 0.5787103197097719
+max_drawdown        : 4590.797210656047
+final_balance       : -359.0797210656049
+would_breach_zero   : true
+```
+
+Interpretation:
+
+```text
+All tested global TP/SL/RR caps were worse than the original bracket. Simple global bracket caps do not solve the edge problem. Capping TP or SL often shortened trade duration and allowed more low-quality candidates to enter, increasing total loss.
+```
+
+Important conclusion:
+
+```text
+The issue is not fixed by naive TP/SL cap recalibration. Candidate direction/entry quality and side-specific bracket geometry remain the likely problems, especially BUY-side behavior.
+```
+
+Next diagnostic if continuing:
+
+```text
+Run Phase139A side-specific grids separately:
+1) SELL-only bracket recalibration
+2) BUY-only bracket recalibration
+
+If both fail, stop bracket tweaking and move to candidate-generation / target-definition rework.
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest execution result — Phase139A side-specific bracket grids FAILED — 2026-09-15
+
+The operator ran side-specific Phase139A bracket recalibration grids after the global grid failed.
+
+### SELL-only bracket recalibration
+
+Configuration:
+
+```text
+allowed_sides    : SELL
+max_tp_distances : original,10,12,14,16
+max_sl_distances : original,16,20,23.56
+max_reward_risks : original,0.8,1,1.5
+eval_frac        : 1.0
+```
+
+Best SELL-only policy:
+
+```text
+policy            : tp=14:sl=original:rr=original
+trades            : 633
+buy/sell          : 0 / 633
+wins/losses       : 262 / 371
+win_rate          : 41.3902%
+total_pnl         : -664.0531247957406
+avg_pnl           : -1.0490570691875838
+profit_factor     : 0.7939690496760271
+max_drawdown      : 846.2230220278584
+final_balance     : 33.594687520425936
+would_breach_zero : false
+```
+
+Comparison to original SELL-only:
+
+```text
+original SELL-only : -848.8387 raw, PF=0.7291, trades=581
+best SELL policy   : -664.0531 raw, PF=0.7940, trades=633
+```
+
+SELL monthly under best policy:
+
+```text
+2026-01:   +2.3453 PF=1.0152 trades=24
+2026-02: -330.3915 PF=0.5612 trades=80
+2026-03:  +35.8600 PF=1.1081 trades=72
+2026-04:  +12.4742 PF=1.0345 trades=87
+2026-05: -414.8800 PF=0.5398 trades=172
+2026-06:   -6.3987 PF=0.9736 trades=61
+2026-07:  +89.8878 PF=1.2475 trades=108
+2026-08:  -52.9502 PF=0.5387 trades=29
+```
+
+Decision:
+
+```text
+SELL bracket caps reduce loss but do not create an edge. SELL remains below PF=1 and far below deployable quality.
+```
+
+### BUY-only bracket recalibration
+
+Configuration:
+
+```text
+allowed_sides    : BUY
+max_tp_distances : original,8,10,12,14
+max_sl_distances : original,12,16,20
+max_reward_risks : original,0.8,1,1.5
+eval_frac        : 1.0
+```
+
+Best BUY-only policy:
+
+```text
+policy            : tp=original:sl=16:rr=original
+trades            : 1253
+buy/sell          : 1253 / 0
+wins/losses       : 305 / 948
+win_rate          : 24.3416%
+total_pnl         : -3667.8429958516326
+avg_pnl           : -2.9272489990835058
+profit_factor     : 0.5476443218994678
+max_drawdown      : 3668.8183342898155
+final_balance     : -266.7842995851633
+would_breach_zero : true
+```
+
+Comparison to original BUY-only:
+
+```text
+original BUY-only : -3838.3925 raw, PF=0.5142, trades=1129
+best BUY policy   : -3667.8430 raw, PF=0.5476, trades=1253
+```
+
+BUY monthly under best policy:
+
+```text
+Every reported month is negative.
+Worst months include 2026-03 (-1016.33), 2026-02 (-669.01), 2025-12 (-584.76), 2026-01 (-448.75), 2026-06 (-338.13), 2026-04 (-261.77), 2026-08 (-170.76).
+```
+
+Decision:
+
+```text
+BUY is not fixed by the tested TP/SL caps. BUY should not be deleted from the architecture, but the current BUY candidate generation/entry direction is not tradeable.
+```
+
+Overall conclusion:
+
+```text
+Phase139A side-specific grids failed. Simple bracket caps cannot rescue the current candidate stream. The next diagnostic should test candidate direction/entry quality directly, including counterfactual side flip and entry-delay analysis.
+```
+
+Recommended next phase:
+
+```text
+Phase140A — Candidate Direction / Counterfactual Entry Audit
+```
+
+Production remains blocked.
+
+## Latest implementation update — Phase140A candidate direction / counterfactual entry audit — 2026-09-16
+
+Implemented Phase140A after Phase139A failed to rescue the candidate stream with TP/SL caps.
+
+```text
+scripts/audit_candidate_direction_entry.py
+GUI: Audit candidate direction/entry
+```
+
+Purpose:
+
+```text
+Audit whether current hybrid candidates are failing because direction is inverted/contrarian, because entry is too early, or because candidate generation has no stable edge.
+```
+
+The audit tests:
+
+```text
+side_mode        : original, flipped
+entry_delay_bars : 0,1,2,3
+execution_mode   : independent, chronological
+```
+
+Output files:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+run_logs\candidate_direction_entry_audit\latest.html
+run_logs\candidate_direction_entry_audit\latest.csv
+run_logs\candidate_direction_entry_audit\latest_groups.csv
+run_logs\candidate_direction_entry_audit\best_chronological_trades.csv
+```
+
+First command to run:
+
+```powershell
+python -u scripts/audit_candidate_direction_entry.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --candidate-only 1 `
+  --allowed-sides BUY,SELL `
+  --entry-delays 0,1,2,3 `
+  --side-modes original,flipped `
+  --execution-modes independent,chronological `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Send back:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+```
+
+Interpretation:
+
+```text
+If flipped side improves materially, direction/target sign may be contrarian or inverted.
+If entry delay improves materially, entry timing may be too early.
+If neither helps, current candidate generation is probably no-edge and target/candidate definitions need rework.
+```
+
+BUY is not removed. Phase140A explicitly compares BUY original vs BUY flipped-to-SELL as a diagnostic, not as a permanent deletion of BUY.
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest execution result — Phase140A candidate direction / entry audit FAILED as strategy — 2026-09-16
+
+The operator ran Phase140A and provided:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+```
+
+Configuration:
+
+```text
+evaluated_rows  : 52,832
+candidate_rows  : 13,757
+side_modes      : original,flipped
+entry_delays    : 0,1,2,3
+execution_modes : independent,chronological
+```
+
+Top-level result:
+
+```text
+best_independent_scenario        : independent:flipped:delay=0
+best_independent_total_pnl       : -37,742.8296
+best_independent_profit_factor   : 0.6561
+
+best_chronological_scenario      : chronological:original:delay=3
+best_chronological_total_pnl     : -3,123.7836
+best_chronological_profit_factor : 0.6512
+```
+
+Original vs flipped:
+
+```text
+independent original delay=0    : -43,309.8113
+independent flipped delay=0     : -37,742.8296
+chronological original delay=0  : -4,590.7972
+chronological flipped delay=0   : -4,113.8428
+```
+
+Entry delay effect in chronological original mode:
+
+```text
+delay=0  -4590.7972  PF=0.5787
+delay=1  -4245.3885  PF=0.5962
+delay=2  -3921.5867  PF=0.5985
+delay=3  -3123.7836  PF=0.6512
+```
+
+Side diagnosis:
+
+```text
+BUY original      : -39,003.7074  PF=0.5106
+BUY flipped→SELL  : -15,831.0041  PF=0.7545
+SELL original     : -4,306.1039   PF=0.8760
+SELL flipped→BUY  : -21,911.8255  PF=0.5157
+```
+
+Decision:
+
+```text
+Phase140A failed as a strategy. No scenario is profitable. However, it produced useful diagnosis:
+- global flip is not the solution
+- BUY candidates show strong contrarian/inversion symptoms but flipped BUY is still negative
+- SELL direction is not inverted and should not be flipped globally
+- entry delay helps materially but does not create edge
+```
+
+Recommended next diagnostic:
+
+```text
+Phase141A — Side-Transform / Delay Policy Grid
+```
+
+Purpose:
+
+```text
+Test side-specific actions chronologically:
+BUY action  = original, flipped_to_sell, skip
+SELL action = original, flipped_to_buy, skip
+BUY delay   = 0,1,2,3
+SELL delay  = 0,1,2,3
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation/result — Phase141A pivot pattern recognition built and failed first real walk-forward — 2026-09-16
+
+The owner requested a new model that performs Pattern Recognition for gold top/bottom reversal zones:
+
+```text
+Detect approximate tops before downside.
+Detect approximate bottoms before upside.
+Use 5M patterns with 4H/1D context.
+Train, select useful features, then backtest/walk-forward.
+```
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_recognition.py
+GUI: Train pivot pattern recognition
+```
+
+The model target is:
+
+```text
+SELL = top_zone reversal pattern
+HOLD = no actionable pivot zone
+BUY  = bottom_zone reversal pattern
+```
+
+Real-data run used public Yahoo data:
+
+```text
+market_symbol : GC=F
+note          : public COMEX gold futures proxy, not broker-perfect Alpari XAUUSD
+1D rows       : 1,258
+4H rows       : 3,721, resampled from 1H
+5M rows       : 13,509
+```
+
+Feature engineering/selection:
+
+```text
+feature_columns_total : 57
+selected_features     : 38 per fold
+target_counts         : SELL=1,368 / HOLD=10,764 / BUY=1,376
+model_kind_used       : sklearn_hgb
+```
+
+Top selected feature families were mostly 5M structure/pattern features:
+
+```text
+m5_pos_in_range_48
+m5_dist_high_48_atr
+m5_dist_low_48_atr
+m5_fast_mid_dist_atr
+m5_price_z_96
+m5_pos_in_range_24
+m5_ret48
+m5_close_mid_dist_atr
+m5_ret24
+m5_dist_high_24_atr
+```
+
+Walk-forward result:
+
+```text
+folds             : 6
+trades            : 102
+BUY / SELL trades : 40 / 62
+wins / losses     : 45 / 57
+win_rate          : 44.1176%
+initial_balance   : $100.00
+final_balance     : $86.7906
+net_profit        : -$13.2094
+return            : -13.2094%
+profit_factor     : 0.6738
+max_drawdown_cash : $15.0879
+positive_folds    : 0
+negative_folds    : 6
+```
+
+Decision:
+
+```text
+Phase141A built the requested model and produced a real walk-forward report, but it failed as a trading strategy.
+```
+
+Artifacts:
+
+```text
+run_logs\pivot_pattern_recognition\latest.json
+run_logs\pivot_pattern_recognition\latest.html
+run_logs\pivot_pattern_recognition\latest_folds.csv
+run_logs\pivot_pattern_recognition\latest_trades.csv
+run_logs\pivot_pattern_recognition\latest_features.csv
+
+datasets\models\gold_pivot_pattern_recognition_5m\v1_model.pkl
+datasets\models\gold_pivot_pattern_recognition_5m\v1_training.json
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+Next useful direction:
+
+```text
+Run Phase141A on broker-quality multi-year Alpari XAUUSD data, then test stricter pivot labels/no-trade gates before moving to heavier sequence/CNN pattern models.
+```
+
+## Latest operator rerun — Phase141A Yahoo GC=F confirms failure — 2026-09-16
+
+The operator reran Phase141A on Windows with `source_mode=yahoo` and `yahoo_symbol=GC=F`.
+
+Result:
+
+```text
+1D rows              : 1,258
+4H rows              : 3,722
+5M rows              : 13,555
+feature_rows         : 13,555
+target_counts        : SELL=1,385 / HOLD=10,782 / BUY=1,387
+model_kind_used      : sklearn_hgb
+folds                : 6
+trades               : 92
+BUY / SELL trades    : 39 / 53
+wins / losses        : 33 / 59
+win_rate             : 35.8696%
+initial_balance      : $100.00
+final_balance        : $79.0053
+net_profit           : -$20.9947
+return               : -20.9947%
+profit_factor        : 0.5344
+max_drawdown_cash    : $23.1522
+positive_folds       : 0
+negative_folds       : 6
+```
+
+Decision:
+
+```text
+The operator rerun confirms Phase141A fails as a strategy on public Yahoo/GC=F data.
+No production/paper/live permission.
+```
+
+The operator then tried broker-file mode:
+
+```powershell
+--source-mode files
+--daily-path datasets\external\XAUUSD_1D.csv
+--hourly-path datasets\external\XAUUSD_1H.csv
+--five-path datasets\external\XAUUSD_5M.csv
+```
+
+Error:
+
+```text
+[X] RuntimeError: Input file does not exist: datasets\external\XAUUSD_1D.csv
+```
+
+Interpretation:
+
+```text
+This is only a missing-file error. The Alpari/XAUUSD CSV files must be exported/copied into datasets\external before files mode can run.
+```
+
+## Latest implementation correction — Phase141A reads project storage directly — 2026-09-16
+
+The owner correctly pointed out that Phase141A should read the project's existing datasets instead of requiring files to be copied into `datasets\external`.
+
+Correction implemented:
+
+```text
+scripts/train_pivot_pattern_recognition.py
+--source-mode storage
+```
+
+Storage mode reads from the canonical project layout:
+
+```text
+datasets\processed\XAUUSD\5M\v*.parquet
+datasets\processed\XAUUSD\1D\v*.parquet
+```
+
+For 4H context:
+
+```text
+1. Use datasets\processed\XAUUSD\4H\v*.parquet if it exists.
+2. Otherwise use datasets\processed\XAUUSD\1H\v*.parquet and resample it to 4H.
+```
+
+Project parquet schema is now handled:
+
+```text
+open_time -> timestamp
+```
+
+GUI default changed:
+
+```text
+Train pivot pattern recognition
+source_mode default = storage
+```
+
+This fixes the earlier missing-file confusion:
+
+```text
+datasets\external\XAUUSD_1D.csv is no longer required for normal project runs.
+```
+
+Correct next command uses `--source-mode storage`, not `--source-mode files`.
+
+## Latest implementation update — Phase142A/142B 3D Pivot Tensor + Keras WaveNet — 2026-09-16
+
+The owner clarified that the intended pattern model must be a true 3D TensorFlow/Keras WaveNet model, not a flat sklearn baseline.
+
+Shape clarification:
+
+```text
+Stored tensor X shape       : [samples, 288, channels]
+Keras runtime batch X shape : [batch, 288, channels]
+```
+
+Implemented:
+
+```text
+scripts/build_pivot_pattern_tensor.py
+scripts/train_pivot_pattern_wavenet.py
+scripts/backtest_pivot_pattern_wavenet.py
+scripts/run_pivot_pattern_wavenet_walk_forward.py
+```
+
+GUI commands added:
+
+```text
+Build pivot pattern tensor
+Train pivot WaveNet pattern model
+Backtest pivot WaveNet pattern model
+Run pivot WaveNet walk-forward
+```
+
+Tensor outputs:
+
+```text
+datasets\processed\XAUUSD\5M\pivot_pattern_tensor_latest.npz
+datasets\processed\XAUUSD\5M\pivot_pattern_flat_latest.parquet
+run_logs\pivot_pattern_tensor\latest.json
+run_logs\pivot_pattern_tensor\latest.html
+```
+
+WaveNet training outputs:
+
+```text
+datasets\models\gold_pivot_pattern_wavenet_5m\v*_model.keras
+datasets\models\gold_pivot_pattern_wavenet_5m\v*_training.json
+run_logs\pivot_pattern_wavenet\latest.json
+run_logs\pivot_pattern_wavenet\latest.html
+```
+
+Backtest/walk-forward outputs:
+
+```text
+run_logs\pivot_pattern_wavenet_backtest\latest.json
+run_logs\pivot_pattern_wavenet_walk_forward\latest.json
+```
+
+Important execution note:
+
+```text
+TensorFlow/Keras is required for training/backtest/walk-forward.
+Install with: python -m pip install -r requirements-ai.txt
+```
+
+Implementation verification:
+
+```text
+targeted ruff  → passed
+targeted black → passed
+targeted tests → passed
+```
+
+Full real XAUUSD WaveNet training was not executed in this sandbox because the complete XAUUSD 5M/1H project-storage dataset and TensorFlow runtime are on the operator machine. The operator should run the commands in docs/Phases/Phase142.md.
+
+Production status remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```

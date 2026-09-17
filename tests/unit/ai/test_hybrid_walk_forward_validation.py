@@ -48,6 +48,15 @@ def test_parse_thresholds_ignores_empty_tokens():
     assert module.parse_thresholds("0.4, ,0.6") == [0.4, 0.6]
 
 
+def test_parse_args_accepts_negative_score_threshold_list_as_separate_token():
+    module = load_script()
+
+    args = module.parse_args(["--task", "regressor", "--score-thresholds", "-0.25,-0.10,0"])
+
+    assert args.score_thresholds == "-0.25,-0.10,0"
+    assert module.parse_thresholds(args.score_thresholds) == [-0.25, -0.10, 0.0]
+
+
 def test_select_threshold_picks_best_valid_score(monkeypatch):
     module = load_script()
     args = module.parse_args(["--min-trades", "2"])

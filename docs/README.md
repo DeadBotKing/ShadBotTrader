@@ -14,6 +14,16 @@
 
 ---
 
+
+> 🧭 **OWNER MAP — added 2026-09-12**
+>
+> For the owner-facing graphical architecture, phase tree, model map,
+> decision gates, latest validation status, and next allowed actions, open:
+>
+> - **`docs/PROJECT_OWNER_MAP.html`**
+>
+> This HTML page must be updated after every meaningful code/result/phase change.
+
 ====================================================================
 
 SHADBOTTRADER

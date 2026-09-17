@@ -103,6 +103,34 @@ class AggregateReport:
     worst_month: str
 
 
+def normalize_threshold_argv(argv: list[str] | None) -> list[str]:
+    """Allow comma-separated threshold values that begin with a negative number.
+
+    argparse treats a separate token such as ``-0.25,-0.10,0`` as another
+    option instead of a string value. Normalising to ``--score-thresholds=...``
+    preserves the ordinary CLI/GUI form while keeping missing-value errors for
+    real options such as ``--min-trades``.
+    """
+
+    raw = list(sys.argv[1:] if argv is None else argv)
+    output: list[str] = []
+    index = 0
+    threshold_options = {"--meta-thresholds", "--score-thresholds"}
+    while index < len(raw):
+        token = raw[index]
+        if (
+            token in threshold_options
+            and index + 1 < len(raw)
+            and not raw[index + 1].startswith("--")
+        ):
+            output.append(f"{token}={raw[index + 1]}")
+            index += 2
+            continue
+        output.append(token)
+        index += 1
+    return output
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run Phase133 walk-forward validation for the flat hybrid meta-labeler.",
@@ -134,7 +162,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--units", type=float, default=0.1)
     parser.add_argument("--storage-root", default=str(DEFAULT_STORAGE))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
-    return parser.parse_args(argv)
+    return parser.parse_args(normalize_threshold_argv(argv))
 
 
 def rule(title: str) -> None:

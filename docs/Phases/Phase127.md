@@ -538,3 +538,58 @@ The label distribution confirms the previously observed base-hybrid weakness on 
 13,757 candidates, only 41.27% winners, negative mean R-score, and -43,309.81 raw PnL before position-size scaling.
 This dataset is suitable for full-history Phase128 retraining and Phase133 walk-forward validation.
 ```
+
+---
+
+## Tensor visual inspector and full-window tensor command — 2026-09-12
+
+The 3D tensor is now explicitly viewable through a visual inspector:
+
+```text
+scripts/inspect_hybrid_telemetry_tensor.py
+GUI: Inspect hybrid telemetry tensor
+```
+
+Purpose:
+
+```text
+Show selected samples from X=[samples, time, channels] as HTML heatmaps.
+Each heatmap row is one feature channel and each column is a time bucket inside the 150-candle window.
+```
+
+Inspector command:
+
+```powershell
+python -u scripts/inspect_hybrid_telemetry_tensor.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz `
+  --sample-indices first,middle,last `
+  --time-buckets 50 `
+  --max-samples 3 `
+  --storage-root datasets
+```
+
+Outputs:
+
+```text
+run_logs\hybrid_tensor_inspector\latest.html
+run_logs\hybrid_tensor_inspector\latest.json
+```
+
+Full-window tensor build note:
+
+```text
+The previous full-stream run covered all 52,832 5M rows, but used sample_stride=5.
+That means it kept every 5th rolling tensor window, producing 10,537 tensor samples.
+To build every possible 150-candle rolling window, use sample_stride=1 and max_samples=0.
+```
+
+Expected full-window tensor:
+
+```text
+rows                  : 52832
+expected samples      : 52832 - 150 + 1 = 52683
+expected shape        : [52683, 150, 94]
+estimated X float16   : about 1417 MiB before compression
+```

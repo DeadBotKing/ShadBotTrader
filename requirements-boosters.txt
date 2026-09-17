@@ -10,3 +10,8 @@
 lightgbm>=4.0
 xgboost>=2.0
 catboost>=1.2
+
+# Phase141A pivot pattern-recognition default learner.
+# The script falls back to a dependency-free centroid model if unavailable,
+# but install this package to reproduce the recorded sklearn_hgb run.
+scikit-learn>=1.4

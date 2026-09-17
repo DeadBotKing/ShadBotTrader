@@ -308,3 +308,81 @@ Threshold grid:
 ```text
 PASS as an in-dataset comparison. The meta-filter materially improves the 8000-row replay, but Phase133 walk-forward remains mandatory.
 ```
+
+---
+
+## Negative score-threshold parsing fix — 2026-09-12
+
+Phase132 also supports score/regressor threshold grids through `--score-thresholds`. To avoid the same argparse issue seen in Phase133 when the first threshold is negative, threshold argv normalization was added.
+
+Both forms now parse correctly:
+
+```powershell
+--score-thresholds -0.25,-0.10,0
+--score-thresholds=-0.25,-0.10,0
+```
+
+For manual PowerShell commands, the safest style is the equals form.
+
+---
+
+## Operator WaveNet v1 threshold-grid result on last-15% — 2026-09-13
+
+Phase132A was run with:
+
+```text
+candidates         : base,gold_hybrid_telemetry_wavenet_5m
+candidate_versions : 0,1
+decision_modes     : score,both
+eval_frac          : 0.15
+score_metric       : total_pnl
+```
+
+Base result:
+
+```text
+samples       : 7902
+trades        : 195
+win_rate      : 34.3590%
+total_pnl     : -247.1424761712551
+profit_factor : 0.70282875694799
+max_drawdown  : 272.11317190527916
+coverage      : 2.4677%
+```
+
+Best WaveNet v1 row:
+
+```text
+candidate       : gold_hybrid_telemetry_wavenet_5m:score:meta=record:score=0.05
+version         : 1
+decision_mode   : score
+score_threshold : 0.05
+trades          : 22
+wins/losses     : 14 / 8
+win_rate        : 63.6364%
+total_pnl       : +42.78727626800537
+profit_factor   : 1.6478747062665267
+max_drawdown    : 32.968711853027344
+coverage        : 0.2784%
+final_balance   : 104.27872762680053
+```
+
+Threshold pattern:
+
+```text
+score_threshold 0.00 -> +29.5908 PF=1.3165 trades=29
+score_threshold 0.05 -> +42.7873 PF=1.6479 trades=22
+score_threshold 0.10 -> +35.4562 PF=1.7217 trades=18
+```
+
+Decision:
+
+```text
+Promising diagnostic result. Not a production/pass result because threshold selection happened on the evaluation window. Next required step is tensor-model walk-forward validation.
+```
+
+Note:
+
+```text
+For decision_mode=score, meta_threshold is not used, so identical rows across meta_threshold values are expected.
+```
