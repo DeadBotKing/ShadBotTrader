@@ -45,6 +45,10 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET).label
         == "Train pivot sequence WaveNet"
     )
+    assert (
+        descriptor_for(CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET).label
+        == "Backtest pivot sequence WaveNet PnL"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -121,3 +125,34 @@ def test_train_sequence_wavenet_passes_stream_and_architecture_args(gui, monkeyp
     assert args[args.index("--temporal-kernels") + 1] == "3,5,9"
     assert args[args.index("--dilations") + 1] == "1,2,4,8"
     assert args[args.index("--batch-log-every") + 1] == "1"
+
+
+def test_backtest_sequence_wavenet_passes_phase146_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.backtest_pivot_pattern_sequence_wavenet(
+        Command(
+            CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET,
+            {
+                "tensor_path": "seq.npy",
+                "meta_path": "seq_meta.npz",
+                "flat_path": "seq_flat.parquet",
+                "eval_split": "test",
+                "top_threshold": "0",
+                "bottom_threshold": "0",
+                "tp_multiplier": "0.75",
+                "sl_multiplier": "0.75",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_pivot_pattern_sequence_wavenet.py"
+    assert args[args.index("--tensor-path") + 1] == "seq.npy"
+    assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
+    assert args[args.index("--flat-path") + 1] == "seq_flat.parquet"
+    assert args[args.index("--eval-split") + 1] == "test"
+    assert args[args.index("--top-threshold") + 1] == "0.0"
+    assert args[args.index("--bottom-threshold") + 1] == "0.0"
+    assert args[args.index("--tp-multiplier") + 1] == "0.75"
+    assert args[args.index("--sl-multiplier") + 1] == "0.75"

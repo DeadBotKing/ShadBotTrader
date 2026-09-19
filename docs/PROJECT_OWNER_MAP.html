@@ -309,6 +309,10 @@
         <span class="badge"><span class="dot green"></span>Phase145A sequence tensor health audit: ADDED</span>
         <span class="badge"><span class="dot green"></span>Phase145A sequence tensor health: PASS full scan</span>
         <span class="badge"><span class="dot green"></span>Heavy artifacts gitignore: UPDATED</span>
+        <span class="badge"><span class="dot green"></span>Phase145A full-source WaveNet: test_acc=0.620</span>
+        <span class="badge"><span class="dot blue"></span>Phase146A sequence PnL audit: BUILT</span>
+        <span class="badge"><span class="dot green"></span>Phase146A Lambda load fix: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase146A Lambda shape fallback: ADDED</span>
       </div>
     </header>
 
@@ -320,13 +324,13 @@
           هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
         </div>
         <p>
-          آخرین نتیجه دیتاست Option A، Phase145A full-source sequence tensor health audit است: <code>PASS</code> روی <code>[53098,100,140]</code> با <code>743,372,000</code> scanned cells، <code>nonfinite_cells=0</code>، <code>max_abs=8.0</code> و <code>source_5m_feature_count=83</code> از <code>hybrid_telemetry_flat_latest.parquet</code>. آخرین نتیجه سلامت 4D، Phase143A PASS روی <code>[53098,100,32,23]</code> بود. آخرین نتیجه مدل اجرایی، Phase145A sequence WaveNet v1 روی underfed <code>[24000,100,57]</code> است: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
+          آخرین نتیجه مدل اجرایی، Phase145A full-source sequence WaveNet روی <code>[24000,100,140]</code> است: <code>val_action_accuracy=0.7240</code>، <code>test_action_accuracy=0.6201</code>، <code>test_top_ap=0.2709</code>، <code>test_bottom_ap=0.3336</code> و <code>test_selected_rate=0.3609</code>. این فعلاً قوی‌ترین pivot-pattern diagnostic model است، اما هنوز backtest/walk-forward/PnL ندارد. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
           آخرین تغییر فنی، Phase145A Option A است: دیتاست WaveNet-native با شکل <code>[samples,WindowSize,Features]</code> ساخته شد تا 5M/4H/1D features روی یک feature axis قرار بگیرند و RAM/ابعاد نسبت به 4D interaction tensor کمتر شود.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">Option A health</span><span class="value good">PASS</span></div>
-          <div class="card span-3 metric"><span class="label">Option A tensor</span><span class="value info">[53098,100,140]</span></div>
-          <div class="card span-3 metric"><span class="label">Nonfinite cells</span><span class="value good">0</span></div>
+          <div class="card span-3 metric"><span class="label">Seq WaveNet test acc</span><span class="value good">62.01%</span></div>
+          <div class="card span-3 metric"><span class="label">Seq bottom AP</span><span class="value good">0.3336</span></div>
+          <div class="card span-3 metric"><span class="label">Selected rate</span><span class="value info">36.09%</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>
@@ -796,7 +800,7 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
               <li><span class="node fail">Pivot flat baseline: <code>gold_pivot_pattern_recognition_5m v1</code><span class="mini">Phase141A operator GC=F WF failed: final=$79.01, PF=0.534; research-only</span></span></li>
               <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A 3D Conv1D/WaveNet path</span></span></li>
               <li><span class="node hold">Advanced 4D Image WaveNet: <code>gold_pivot_pattern_image_wavenet_5m</code><span class="mini">v1 research result: val_acc=0.5628, test_acc=0.5970, test_selected_rate=0.401; no trading backtest yet</span></span></li>
-              <li><span class="node hold">Advanced sequence WaveNet: <code>gold_pivot_pattern_sequence_wavenet_5m</code><span class="mini">full-source tensor health PASS: X=[53098,100,140], source_5m=83, nonfinite=0; old v1 used underfed [24000,100,57] and must be retrained</span></span></li>
+              <li><span class="node hold">Advanced sequence WaveNet: <code>gold_pivot_pattern_sequence_wavenet_5m</code><span class="mini">full-source run: X=[24000,100,140], val_acc=0.7240, test_acc=0.6201, test_top_ap=0.2709, test_bottom_ap=0.3336; needs backtest/PnL proof</span></span></li>
             </ul>
           </li>
         </ul>
@@ -1030,6 +1034,10 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase145A source-feature build finding:</strong> build report showed features=57, generated_feature_count=57, source_5m_feature_count=0. The first sequence run did not include the larger historical 5M feature set. Builder now auto-probes hybrid_telemetry_flat_latest/hybrid matrix files and has <code>--source-5m-feature-path</code> plus GUI field.</div>
           <div class="event"><strong>Phase145A full-source sequence tensor health PASS:</strong> official audit passed on X=[53098,100,140]. Full scan checked 743,372,000 cells in 104 chunks; nonfinite_cells=0, max_abs=8.0 equals feature_clip=8.0, warnings=[], errors=[]. Tensor is accepted as healthy for research training.</div>
           <div class="event"><strong>Gitignore heavy artifact guard:</strong> updated <code>.gitignore</code> so new heavy tensors/models/logs/snapshots stay out of git: <code>*.npy</code>, <code>*.keras</code>, <code>datasets/processed/</code>, <code>datasets/models/</code>, <code>run_logs/</code>, <code>*.zip</code>, and related ML/data artifact formats.</div>
+          <div class="event"><strong>Phase145A full-source sequence WaveNet result:</strong> trained on X=[24000,100,140]. Final restored best-val-loss metrics: val_action_accuracy=0.7240, test_action_accuracy=0.6201, val_top_ap=0.3655, test_top_ap=0.2709, val_bottom_ap=0.3325, test_bottom_ap=0.3336, test_selected_rate=0.3609. Strongest pivot diagnostic so far, but still no trading proof.</div>
+          <div class="event"><strong>Phase146A sequence WaveNet PnL audit built:</strong> added <code>scripts/backtest_pivot_pattern_sequence_wavenet.py</code> and GUI command <code>Backtest pivot sequence WaveNet PnL</code>. It evaluates the trained Phase145A model on chronological splits with ATR TP/SL, spread, same-bar policy, risk sizing, JSON/HTML/CSV outputs. Research-only; production remains blocked.</div>
+          <div class="event"><strong>Phase146A Lambda deserialization fix:</strong> Keras blocked loading project-owned Lambda layers by default. The Phase146A backtest loader now calls <code>load_model(..., safe_mode=False)</code> with an older-Keras fallback, only for local research artifacts.</div>
+          <div class="event"><strong>Phase146A Lambda shape-load fallback:</strong> Keras also failed Lambda output-shape inference on the existing v1 model. Future sequence WaveNet Lambdas now save explicit <code>output_shape</code>, and Phase146A can rebuild the architecture from <code>vN_training.json</code> + meta and load weights from the <code>.keras</code> archive.</div>
         </div>
       </div>
     </section>

@@ -309,9 +309,12 @@ def grouped_indices(meta: Mapping[str, Any]) -> tuple[np.ndarray, np.ndarray, np
 
 def gather_features(tf: Any, x: Any, indices: np.ndarray, name: str) -> Any:
     constants = tf.constant(indices.tolist(), dtype=tf.int32)
-    return tf.keras.layers.Lambda(lambda tensor: tf.gather(tensor, constants, axis=-1), name=name)(
-        x
-    )
+    time_dim = int(x.shape[1]) if x.shape[1] is not None else None
+    return tf.keras.layers.Lambda(
+        lambda tensor: tf.gather(tensor, constants, axis=-1),
+        output_shape=(time_dim, int(len(indices))),
+        name=name,
+    )(x)
 
 
 def multi_scale_temporal(
@@ -397,7 +400,9 @@ def build_sequence_wavenet_model(
     avg_pool = tf.keras.layers.GlobalAveragePooling1D(name="temporal_avg_pool")(x)
     max_pool = tf.keras.layers.GlobalMaxPooling1D(name="temporal_max_pool")(x)
     last_state = tf.keras.layers.Lambda(
-        lambda tensor: tensor[:, -1, :], name="last_temporal_state"
+        lambda tensor: tensor[:, -1, :],
+        output_shape=(int(x.shape[-1]) if x.shape[-1] is not None else None,),
+        name="last_temporal_state",
     )(x)
     x = tf.keras.layers.Concatenate(name="temporal_pool_concat")([avg_pool, max_pool, last_state])
     x = tf.keras.layers.Dense(max(int(args.dense_units), 8), activation="tanh", name="dense_tanh")(

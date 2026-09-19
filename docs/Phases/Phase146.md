@@ -1,0 +1,270 @@
+# Phase146 — Sequence WaveNet Backtest / PnL Audit
+
+**Status:** ✅ Phase146A implemented  
+**Type:** Research-only PnL replay for Phase145A full-source sequence WaveNet  
+**Production status:** BLOCKED — no paper/live approval
+
+---
+
+## Why this phase exists
+
+Phase145A full-source sequence WaveNet produced the strongest pivot-pattern diagnostic metrics so far:
+
+```text
+Input tensor        : [24000, 100, 140]
+val_action_accuracy : 0.7240
+test_action_accuracy: 0.6201
+test_top_ap         : 0.2709
+test_bottom_ap      : 0.3336
+test_selected_rate  : 0.3609
+```
+
+But those are classifier/ranking metrics, not a trading proof. Phase146A converts model predictions into BUY/SELL candidates and simulates a simple research-only TP/SL replay with spread/risk assumptions.
+
+---
+
+## Implemented file
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+GUI command:
+
+```text
+Backtest pivot sequence WaveNet PnL
+```
+
+Tests:
+
+```text
+tests/unit/ai/test_pivot_sequence_wavenet_backtest.py
+tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py
+tests/integration/test_gui_coverage.py
+```
+
+---
+
+## Input layout
+
+```text
+Stored X    : [samples, WindowSize, Features]
+Keras batch : [batch, WindowSize, Features]
+```
+
+Current healthy full-source tensor:
+
+```text
+[53098, 100, 140]
+```
+
+Training candidate evaluated first:
+
+```text
+[24000, 100, 140]
+```
+
+---
+
+## Backtest logic
+
+The script:
+
+```text
+1. Loads the trained Keras model and vN_training.json scaler payload.
+2. Selects the same chronological sample universe as training with --max-samples.
+3. Evaluates a split: test / validation / all / tail.
+4. Predicts action/top/bottom/buy_r/sell_r in streaming batches.
+5. Converts action probabilities into SELL/HOLD/BUY decisions.
+6. Optionally filters BUY with bottom threshold and min_buy_r.
+7. Optionally filters SELL with top threshold and min_sell_r.
+8. Simulates next-bar entry using ATR-based TP/SL.
+9. Applies spread, same-bar policy, max-hold, initial capital, and risk per trade.
+10. Writes JSON, HTML, and trades CSV.
+```
+
+This is not production-grade execution. It is a diagnostic PnL audit.
+
+---
+
+## Recommended first command
+
+Use loose gates first to match the training report's selected-rate logic:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --tp-multiplier 0.75 `
+  --sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_backtest `
+  --report-title "Phase146A sequence WaveNet PnL audit"
+```
+
+Outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.html
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest_trades.csv
+```
+
+---
+
+## Acceptance
+
+Phase implementation acceptance:
+
+```text
+script exists
+GUI command exists
+targeted tests pass
+owner map/docs updated
+```
+
+Trading acceptance requires:
+
+```text
+positive PnL
+profit_factor meaningfully above 1
+controlled drawdown
+stable BUY/SELL breakdown
+stable monthly performance
+then walk-forward validation
+```
+
+Until then:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase146A Lambda deserialization fix — 2026-09-19
+
+The owner's first Phase146A run failed while loading the trained Keras model:
+
+```text
+ValueError: Requested the deserialization of a `Lambda` layer whose `function` is a Python lambda.
+Keras disallowed it by default; use safe_mode=False or enable unsafe deserialization.
+```
+
+Root cause:
+
+```text
+The Phase145A sequence WaveNet architecture intentionally uses Keras Lambda layers for feature slicing:
+- gather_5m_features
+- gather_htf_features
+- gather_all_features
+- last_temporal_state
+```
+
+Fix implemented in:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+The Phase146A loader now explicitly trusts local project-generated research artifacts:
+
+```python
+tf.keras.models.load_model(model_path, safe_mode=False)
+```
+
+with a fallback for older tf.keras versions:
+
+```python
+tf.keras.config.enable_unsafe_deserialization()
+tf.keras.models.load_model(model_path)
+```
+
+Scope:
+
+```text
+Research-only local artifacts generated by this project.
+Do not use this loader for untrusted downloaded Keras models.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 50 passed
+```
+
+The same Phase146A PowerShell command can be rerun after replacing the project with the fixed zip.
+
+## Phase146A Lambda shape-load fallback — 2026-09-19
+
+The owner reran Phase146A after `safe_mode=False`. Keras then passed Lambda security but failed shape inference while deserializing the project-owned Lambda layers:
+
+```text
+NotImplementedError: We could not automatically infer the shape of the Lambda's output.
+Please specify the output_shape argument for this Lambda layer.
+```
+
+Fix implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/train_pivot_pattern_sequence_wavenet.py
+```
+
+Changes:
+
+```text
+1. Future Phase145A models now save Lambda layers with explicit output_shape for:
+   - gather_5m_features
+   - gather_htf_features
+   - gather_all_features
+   - last_temporal_state
+
+2. Phase146A backtest now has a fallback loader for existing saved models:
+   - first tries load_model(..., safe_mode=False, compile=False)
+   - if Lambda shape inference still fails, rebuilds the architecture from vN_training.json + meta
+   - extracts and loads weights from the .keras archive
+```
+
+This preserves the architecture while avoiding a retrain just to make the current v1 model loadable.
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+The same Phase146A PowerShell command should now load the existing v1 model through the fallback path and proceed to prediction/backtest.

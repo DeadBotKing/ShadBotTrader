@@ -1429,6 +1429,40 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "report_title",
         "timeout_minutes",
     },
+    CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET: {
+        "tensor_path",
+        "meta_path",
+        "flat_path",
+        "model_id",
+        "model_version",
+        "model_path",
+        "record_path",
+        "max_samples",
+        "eval_split",
+        "eval_frac",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_windows",
+        "batch_size",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "top_threshold",
+        "bottom_threshold",
+        "min_buy_r",
+        "min_sell_r",
+        "tp_multiplier",
+        "sl_multiplier",
+        "hold_bars",
+        "spread_mode",
+        "spread_value",
+        "same_bar_policy",
+        "initial_capital",
+        "risk_per_trade",
+        "report_title",
+        "timeout_minutes",
+    },
     CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: {
         "config_path",
         "mode",
@@ -4872,6 +4906,74 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET,
+            label="Backtest pivot sequence WaveNet PnL",
+            description=(
+                "Run Phase146A research PnL audit for the Phase145A full-source sequence "
+                "WaveNet using ATR TP/SL, spread, risk, and chronological evaluation splits."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Sequence tensor path", ""),
+                CommandField("meta_path", "Sequence tensor meta path", ""),
+                CommandField("flat_path", "Sequence flat parquet path", ""),
+                CommandField("model_id", "Model id", "gold_pivot_pattern_sequence_wavenet_5m"),
+                CommandField("model_version", "Model version, 0 latest", "0", kind="number"),
+                CommandField("model_path", "Explicit model path", ""),
+                CommandField("record_path", "Explicit record path", ""),
+                CommandField("max_samples", "Selected samples", "24000", kind="number"),
+                CommandField(
+                    "eval_split",
+                    "Evaluation split",
+                    "test",
+                    kind="select",
+                    options=("test", "validation", "all", "tail"),
+                ),
+                CommandField("eval_frac", "Tail eval fraction", "0.15", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("max_windows", "Max evaluated windows", "0", kind="number"),
+                CommandField("batch_size", "Prediction batch size", "128", kind="number"),
+                CommandField("buy_threshold", "BUY threshold", "0.34", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "0.34", kind="number"),
+                CommandField("min_margin", "Min margin", "0", kind="number"),
+                CommandField("top_threshold", "Top threshold for SELL", "0", kind="number"),
+                CommandField("bottom_threshold", "Bottom threshold for BUY", "0", kind="number"),
+                CommandField("min_buy_r", "Min BUY R", "-999", kind="number"),
+                CommandField("min_sell_r", "Min SELL R", "-999", kind="number"),
+                CommandField("tp_multiplier", "TP ATR multiplier", "0.75", kind="number"),
+                CommandField("sl_multiplier", "SL ATR multiplier", "0.75", kind="number"),
+                CommandField("hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField(
+                    "spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")
+                ),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField(
+                    "same_bar_policy",
+                    "Same-bar policy",
+                    "stop_first",
+                    kind="select",
+                    options=("stop_first", "tp_first"),
+                ),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField(
+                    "report_title", "Report title", "Phase146A sequence WaveNet PnL audit"
+                ),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
             label="Validate production hybrid stack",
             description=(
@@ -5650,6 +5752,9 @@ class CommandHandlers:
                 ),
                 CommandKind.TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET: (
                     accounts.train_pivot_pattern_sequence_wavenet
+                ),
+                CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET: (
+                    accounts.backtest_pivot_pattern_sequence_wavenet
                 ),
                 CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
                     accounts.validate_production_hybrid_stack
@@ -10575,6 +10680,95 @@ class AccountCommandHandlers(CommandHandlers):
             f"Trained Phase145A pivot sequence WaveNet for {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 720), 5) * 60,
+        )
+
+    def backtest_pivot_pattern_sequence_wavenet(self, command: Command) -> CommandResult:
+        """Run Phase146A sequence WaveNet PnL audit/backtest."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        for field, flag in (
+            ("tensor_path", "--tensor-path"),
+            ("meta_path", "--meta-path"),
+            ("flat_path", "--flat-path"),
+            ("model_path", "--model-path"),
+            ("record_path", "--record-path"),
+        ):
+            value = command.text(field, "").strip()
+            if value:
+                extra_args.extend([flag, value])
+        return self._run_script(
+            command,
+            [
+                "scripts/backtest_pivot_pattern_sequence_wavenet.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--model-id",
+                command.text("model_id", "gold_pivot_pattern_sequence_wavenet_5m").strip()
+                or "gold_pivot_pattern_sequence_wavenet_5m",
+                "--model-version",
+                str(max(command.integer("model_version", 0), 0)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 24000), 0)),
+                "--eval-split",
+                command.text("eval_split", "test").strip().lower() or "test",
+                "--eval-frac",
+                str(command.number("eval_frac", 0.15)),
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--purge-gap",
+                str(max(command.integer("purge_gap", 336), 0)),
+                "--max-windows",
+                str(max(command.integer("max_windows", 0), 0)),
+                "--batch-size",
+                str(max(command.integer("batch_size", 128), 1)),
+                "--buy-threshold",
+                str(command.number("buy_threshold", 0.34)),
+                "--sell-threshold",
+                str(command.number("sell_threshold", 0.34)),
+                "--min-margin",
+                str(max(command.number("min_margin", 0.0), 0.0)),
+                "--top-threshold",
+                str(max(command.number("top_threshold", 0.0), 0.0)),
+                "--bottom-threshold",
+                str(max(command.number("bottom_threshold", 0.0), 0.0)),
+                "--min-buy-r",
+                str(command.number("min_buy_r", -999.0)),
+                "--min-sell-r",
+                str(command.number("min_sell_r", -999.0)),
+                "--tp-multiplier",
+                str(max(command.number("tp_multiplier", 0.75), 0.01)),
+                "--sl-multiplier",
+                str(max(command.number("sl_multiplier", 0.75), 0.01)),
+                "--hold-bars",
+                str(max(command.integer("hold_bars", 48), 1)),
+                "--spread-mode",
+                command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value",
+                str(max(command.number("spread_value", 0.06), 0.0)),
+                "--same-bar-policy",
+                command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--initial-capital",
+                str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade",
+                str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--storage-root",
+                str(self._storage_root),
+                "--output-dir",
+                "run_logs\\pivot_pattern_sequence_wavenet_backtest",
+                "--report-title",
+                command.text("report_title", "Phase146A sequence WaveNet PnL audit").strip()
+                or "Phase146A sequence WaveNet PnL audit",
+                *extra_args,
+            ],
+            f"Backtested Phase146A pivot sequence WaveNet PnL for {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
         )
 
     def validate_production_hybrid_stack(self, command: Command) -> CommandResult:

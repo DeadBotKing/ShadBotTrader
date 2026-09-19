@@ -796,3 +796,225 @@ Already-tracked small legacy artifacts are not automatically removed by .gitigno
 New heavy tensors/models/run logs will stay out of git.
 ```
 
+## Phase145A full-source sequence WaveNet training result — 2026-09-19
+
+The owner supplied the completed `run_logs\pivot_pattern_sequence_wavenet\latest.json`, model summary, and batch/epoch logs for the first full-source Option A training run.
+
+Training input:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+stored_x_shape    : [24000, 100, 140]
+keras_batch_shape : [batch, 100, 140]
+feature_count     : 140
+m5_feature_count  : 118
+htf_feature_count : 22
+other_feature_count : 0
+loader_mode       : stream
+batch_size        : 16
+epochs requested  : 80
+early_stopping_patience : 8
+nonfinite_input_values  : 0
+```
+
+Final report metrics, after Keras restored the best `val_loss` weights:
+
+```text
+val_action_accuracy : 0.7239583333
+val_top_ap          : 0.3654971900
+val_bottom_ap       : 0.3324869559
+val_buy_r_mae       : 0.6672694683
+val_sell_r_mae      : 0.6664603949
+val_selected_rate   : 0.2821691176
+
+test_action_accuracy : 0.6200980392
+test_top_ap          : 0.2709324875
+test_bottom_ap       : 0.3336111266
+test_buy_r_mae       : 0.7359182239
+test_sell_r_mae      : 0.7348573208
+test_selected_rate   : 0.3609068627
+```
+
+Important epoch-end observations from `latest_batch_log.jsonl`:
+
+```text
+epoch 1 : val_loss=1.9548627, val_action_acc=0.4316789
+epoch 2 : val_loss=1.6995431, val_action_acc=0.5508578
+epoch 3 : val_loss=1.8116363, val_action_acc=0.5713848
+epoch 4 : val_loss=1.6853775, val_action_acc=0.6583946
+epoch 5 : val_loss=1.4642649, val_action_acc=0.7239583  ← best val_loss / restored final weights
+epoch 6 : val_loss=1.5603150, val_action_acc=0.7110907
+epoch 7 : val_loss=1.8318611, val_action_acc=0.6522672
+epoch 8 : val_loss=2.0280118, val_action_acc=0.6197917
+epoch 9 : val_loss=1.9110000, val_action_acc=0.6666667
+epoch 10: val_loss=1.8384161, val_action_acc=0.6727941
+epoch 11: val_loss=1.8083678, val_action_acc=0.7086397
+epoch 12: val_loss=1.7787350, val_action_acc=0.7037377
+epoch 13: val_loss=1.6534641, val_action_acc=0.7414216
+```
+
+Architecture confirmation from the model summary:
+
+```text
+Input                  : [batch, 100, 140]
+5M branch              : [batch, 100, 118]
+HTF branch             : [batch, 100, 22]
+All-feature branch     : [batch, 100, 140]
+Branch fusion          : [batch, 100, 432]
+WaveNet temporal core  : 2 residual blocks × dilations 1,2,4,8,16,32
+Attention              : temporal_self_attention
+Pooling                : avg + max + last
+Heads                  : action/top/bottom/buy_r/sell_r
+Trainable params       : 1,256,435
+Total params reported  : 3,769,307 including optimizer slots
+```
+
+Comparison to the underfed Sequence WaveNet v1 `[24000,100,57]`:
+
+```text
+Action accuracy:
+  underfed sequence : val=0.4605, test=0.4792
+  full-source seq   : val=0.7240, test=0.6201
+
+Top AP:
+  underfed sequence : val=0.2415, test=0.2453
+  full-source seq   : val=0.3655, test=0.2709
+
+Bottom AP:
+  underfed sequence : val=0.1344, test=0.1817
+  full-source seq   : val=0.3325, test=0.3336
+
+Selected rate:
+  underfed sequence : val=0.5836, test=0.5720
+  full-source seq   : val=0.2822, test=0.3609
+```
+
+Comparison to Phase144A 4D Image WaveNet v1 `[12000,100,32,23]`:
+
+```text
+Action accuracy:
+  4D image WaveNet  : val=0.5628, test=0.5970
+  full-source seq   : val=0.7240, test=0.6201
+
+Top AP:
+  4D image WaveNet  : val=0.2038, test=0.2328
+  full-source seq   : val=0.3655, test=0.2709
+
+Bottom AP:
+  4D image WaveNet  : val=0.1501, test=0.2357
+  full-source seq   : val=0.3325, test=0.3336
+```
+
+Interpretation:
+
+```text
+GOOD:
+- Full-source Option A is a material improvement over the underfed 57-feature sequence run.
+- It also beats the earlier 4D Image WaveNet classification/AP metrics in this non-identical comparison.
+- selected_rate is lower and more controlled than the underfed run.
+- No NaN/Inf was reported.
+- The architecture is the intended advanced Conv1D/WaveNet adaptation of the 4D model.
+
+LIMITS:
+- Training loss kept improving while validation loss bottomed at epoch 5; overfitting after epoch 5 is visible.
+- R-head test MAE is still weak: buy_r≈0.736, sell_r≈0.735.
+- This is still a classifier/pattern report, not a trading proof.
+- No PnL, profit factor, drawdown, spread/slippage, or walk-forward trading validation is present.
+- 4D and sequence runs used different sample counts and layouts, so comparison is directional, not final proof.
+```
+
+Decision:
+
+```text
+Phase145A full-source sequence WaveNet is the strongest pivot-pattern research model so far by classification/AP diagnostics.
+It is NOT production-approved.
+Next required phase: backtest/PnL audit on sequence WaveNet predictions, followed by walk-forward if backtest is promising.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase146A sequence WaveNet PnL audit implemented — 2026-09-19
+
+Implemented the first research-only PnL audit/backtest for the Phase145A full-source sequence WaveNet.
+
+Implemented files:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+docs/Phases/Phase146.md
+docs/Report/PHASE146A_SEQUENCE_WAVENET_BACKTEST_REPORT.md
+tests/unit/ai/test_pivot_sequence_wavenet_backtest.py
+```
+
+GUI command:
+
+```text
+Backtest pivot sequence WaveNet PnL
+```
+
+Purpose:
+
+```text
+Convert action/top/bottom/buy_r/sell_r predictions into BUY/SELL candidates and run a research-only ATR TP/SL replay with spread, same-bar policy, max-hold, initial capital, and risk-per-trade.
+```
+
+Recommended first audit command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --tp-multiplier 0.75 `
+  --sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_backtest `
+  --report-title "Phase146A sequence WaveNet PnL audit"
+```
+
+Outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.html
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest_trades.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 49 passed
+```
+
+Production remains blocked until PnL/walk-forward prove edge.
+
