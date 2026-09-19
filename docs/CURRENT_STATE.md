@@ -5745,3 +5745,142 @@ python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_
 
 Production remains blocked.
 
+## Phase147C Option B branch feature expansion to 180 — 2026-09-19
+
+The owner asked whether the small grouped raw input sizes could contribute to overfitting and requested each Option B branch input to support 180 useful features:
+
+```text
+m5_context_input  : [batch, 100, 180]
+source_5m_input   : [batch, 100, 180]
+htf_context_input : [batch, 100, 180]
+```
+
+Decision:
+
+```text
+We should not pad branches with arbitrary dummy columns or duplicate raw features.
+More raw columns do not automatically reduce overfitting; irrelevant columns can make it worse.
+```
+
+Implemented a controlled optional causal feature expansion for Option B:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+```
+
+New flags:
+
+```text
+--branch-target-features 180
+--feature-augmentation-mode causal
+--feature-augmentation-clip 8
+```
+
+When enabled, each branch is expanded with deterministic causal transforms of its own normalized feature stream:
+
+```text
+original values
+lag-1 delta
+lag-3 delta
+lag-6 delta
+causal rolling mean 3
+causal rolling mean 6
+causal rolling mean 12
+abs lag-1 delta
+abs lag-3 delta
+```
+
+Then the channel axis is clipped/truncated to the requested target count. For the current tensor:
+
+```text
+m5_context raw 35  → expanded 180
+source_5m raw 83   → expanded 180
+htf_context raw 22 → expanded 180
+```
+
+The expansion is causal within each 100-candle window and uses only data already inside the input window. It does not add future information beyond the endpoint.
+
+Backtest/prediction support updated:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+```
+
+The model record stores augmentation settings, and prediction loaders reproduce the same grouped 180-channel inputs.
+
+GUI update:
+
+```text
+Train pivot sequence WaveNet Option B
+  Expanded features per branch
+  Feature augmentation
+  Augmentation clip
+```
+
+Recommended command after the current full run finishes, only if owner wants the 180-channel experiment:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_180_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_180 `
+  --report-title "Option B Pivot Sequence WaveNet 180-channel training"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py -q
+→ 17 passed
+```
+
+Caution:
+
+```text
+This is an experiment. The existing overfit symptoms are not necessarily caused by too few input features. More channels may help representation, but may also overfit harder. Compare by validation/test PnL, not training accuracy.
+```
+

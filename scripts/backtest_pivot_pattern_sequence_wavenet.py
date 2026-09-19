@@ -43,6 +43,7 @@ from train_pivot_pattern_sequence_wavenet import (
 )
 from train_pivot_pattern_sequence_wavenet_option_b import (
     build_option_b_model,
+    grouped_normalized_batch,
     option_b_groups,
 )
 from train_pivot_pattern_wavenet import prediction_dict, require_tensorflow, selected_action
@@ -239,6 +240,9 @@ def model_args_from_record(record: Mapping[str, Any]) -> argparse.Namespace:
     architecture = payload.get("architecture", {}) if isinstance(payload, Mapping) else {}
     return argparse.Namespace(
         branch_filters=int(architecture.get("branch_filters", 48)),
+        branch_target_features=int(architecture.get("branch_target_features", 0)),
+        feature_augmentation_mode=str(architecture.get("feature_augmentation_mode", "off")),
+        feature_augmentation_clip=float(architecture.get("feature_augmentation_clip", 8.0)),
         temporal_filters=int(architecture.get("temporal_filters", 96)),
         temporal_kernels=",".join(str(v) for v in architecture.get("temporal_kernels", [3, 5, 9])),
         dilations=",".join(str(v) for v in architecture.get("dilations", [1, 2, 4, 8, 16, 32])),
@@ -371,11 +375,14 @@ def make_predict_sequence(
             if not option_b:
                 return normalized
             assert groups is not None
-            return {
-                "m5_context_input": normalized[:, :, groups.m5_context],
-                "source_5m_input": normalized[:, :, groups.source_5m],
-                "htf_context_input": normalized[:, :, groups.htf_context],
-            }
+            model_args = model_args_from_record(record)
+            return grouped_normalized_batch(
+                normalized,
+                groups,
+                int(model_args.branch_target_features),
+                str(model_args.feature_augmentation_mode),
+                float(model_args.feature_augmentation_clip),
+            )
 
     return PivotSequencePredict()
 

@@ -51,3 +51,30 @@ def test_grouped_batch_normalizes_and_splits():
     assert batch["source_5m_input"].shape == (2, 3, 1)
     assert batch["htf_context_input"].shape == (2, 3, 2)
     np.testing.assert_allclose(batch["source_5m_input"][:, :, 0], x[:, :, 2])
+
+
+def test_grouped_batch_can_expand_each_branch_to_target_features():
+    module = load_script()
+    x = np.arange(2 * 5 * 6, dtype=np.float32).reshape(2, 5, 6)
+    groups = module.OptionBGroups(
+        m5_context=np.asarray([0, 1], dtype=np.int32),
+        source_5m=np.asarray([2, 3], dtype=np.int32),
+        htf_context=np.asarray([4, 5], dtype=np.int32),
+    )
+    mean = np.zeros((1, 1, 6), dtype=np.float32)
+    std = np.ones((1, 1, 6), dtype=np.float32)
+
+    batch = module.grouped_batch(
+        x,
+        groups,
+        mean,
+        std,
+        branch_target_features=8,
+        feature_augmentation_mode="causal",
+        feature_augmentation_clip=8.0,
+    )
+
+    assert batch["m5_context_input"].shape == (2, 5, 8)
+    assert batch["source_5m_input"].shape == (2, 5, 8)
+    assert batch["htf_context_input"].shape == (2, 5, 8)
+    assert np.max(np.abs(batch["m5_context_input"])) <= 8.0

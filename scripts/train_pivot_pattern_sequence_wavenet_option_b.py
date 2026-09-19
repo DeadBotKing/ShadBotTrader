@@ -88,6 +88,9 @@ class OptionBReport:
     m5_context_feature_count: int
     source_5m_feature_count: int
     htf_feature_count: int
+    branch_target_features: int
+    feature_augmentation_mode: str
+    feature_augmentation_clip: float
     model_path: str
     record_path: str
     architecture_json_path: str
@@ -119,6 +122,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--learning-rate", type=float, default=0.0005)
     parser.add_argument("--branch-filters", type=int, default=48)
+    parser.add_argument("--branch-target-features", type=int, default=0, help="0 = raw group feature counts; e.g. 180 expands every Option B input to 180 causal channels")
+    parser.add_argument("--feature-augmentation-mode", choices=("off", "causal"), default="off")
+    parser.add_argument("--feature-augmentation-clip", type=float, default=8.0)
     parser.add_argument("--temporal-filters", type=int, default=96)
     parser.add_argument("--temporal-kernels", default="3,5,9")
     parser.add_argument("--dilations", default="1,2,4,8,16,32")
@@ -175,13 +181,107 @@ def option_b_groups(meta: Mapping[str, Any]) -> OptionBGroups:
     )
 
 
-def grouped_batch(x_batch: np.ndarray, groups: OptionBGroups, mean: np.ndarray, std: np.ndarray) -> dict[str, np.ndarray]:
-    normalized = normalize_batch_sequence(x_batch, mean, std)
+def lagged_values(values: np.ndarray, lag: int) -> np.ndarray:
+    shifted = np.zeros_like(values, dtype=np.float32)
+    if lag > 0 and values.shape[1] > lag:
+        shifted[:, lag:, :] = values[:, :-lag, :]
+    return shifted
+
+
+def rolling_mean(values: np.ndarray, window: int) -> np.ndarray:
+    window = max(int(window), 1)
+    if window <= 1:
+        return values.astype(np.float32)
+    result = np.zeros_like(values, dtype=np.float32)
+    for end in range(values.shape[1]):
+        start = max(0, end - window + 1)
+        result[:, end, :] = values[:, start : end + 1, :].mean(axis=1)
+    return result
+
+
+def expand_group_features(
+    values: np.ndarray, target_features: int, mode: str, clip_value: float
+) -> np.ndarray:
+    base = np.nan_to_num(values.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+    target = max(int(target_features), 0)
+    if target <= 0:
+        return base
+    if base.shape[-1] >= target:
+        return base[:, :, :target]
+    if mode != "causal":
+        pad_width = target - int(base.shape[-1])
+        padding = np.zeros((*base.shape[:2], pad_width), dtype=np.float32)
+        return np.concatenate([base, padding], axis=-1)
+    lag1 = lagged_values(base, 1)
+    lag3 = lagged_values(base, 3)
+    lag6 = lagged_values(base, 6)
+    derived = [
+        base,
+        base - lag1,
+        base - lag3,
+        base - lag6,
+        rolling_mean(base, 3),
+        rolling_mean(base, 6),
+        rolling_mean(base, 12),
+        np.abs(base - lag1),
+        np.abs(base - lag3),
+    ]
+    expanded = np.concatenate(derived, axis=-1)
+    if expanded.shape[-1] < target:
+        padding = np.zeros((*expanded.shape[:2], target - expanded.shape[-1]), dtype=np.float32)
+        expanded = np.concatenate([expanded, padding], axis=-1)
+    expanded = expanded[:, :, :target]
+    if clip_value > 0:
+        expanded = np.clip(expanded, -float(clip_value), float(clip_value))
+    return np.nan_to_num(expanded, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+
+
+def grouped_normalized_batch(
+    normalized: np.ndarray,
+    groups: OptionBGroups,
+    branch_target_features: int,
+    feature_augmentation_mode: str,
+    feature_augmentation_clip: float,
+) -> dict[str, np.ndarray]:
     return {
-        "m5_context_input": normalized[:, :, groups.m5_context],
-        "source_5m_input": normalized[:, :, groups.source_5m],
-        "htf_context_input": normalized[:, :, groups.htf_context],
+        "m5_context_input": expand_group_features(
+            normalized[:, :, groups.m5_context],
+            branch_target_features,
+            feature_augmentation_mode,
+            feature_augmentation_clip,
+        ),
+        "source_5m_input": expand_group_features(
+            normalized[:, :, groups.source_5m],
+            branch_target_features,
+            feature_augmentation_mode,
+            feature_augmentation_clip,
+        ),
+        "htf_context_input": expand_group_features(
+            normalized[:, :, groups.htf_context],
+            branch_target_features,
+            feature_augmentation_mode,
+            feature_augmentation_clip,
+        ),
     }
+
+
+def grouped_batch(
+    x_batch: np.ndarray,
+    groups: OptionBGroups,
+    mean: np.ndarray,
+    std: np.ndarray,
+    branch_target_features: int = 0,
+    feature_augmentation_mode: str = "off",
+    feature_augmentation_clip: float = 8.0,
+) -> dict[str, np.ndarray]:
+    normalized = normalize_batch_sequence(x_batch, mean, std)
+    return grouped_normalized_batch(
+        normalized,
+        groups,
+        branch_target_features,
+        feature_augmentation_mode,
+        feature_augmentation_clip,
+    )
 
 
 def make_grouped_sequence(
@@ -193,6 +293,9 @@ def make_grouped_sequence(
     mean: np.ndarray,
     std: np.ndarray,
     batch_size: int,
+    branch_target_features: int = 0,
+    feature_augmentation_mode: str = "off",
+    feature_augmentation_clip: float = 8.0,
     weights: Mapping[str, np.ndarray] | None = None,
     shuffle: bool = False,
 ) -> Any:
@@ -221,7 +324,15 @@ def make_grouped_sequence(
             end = min(len(self.order), start + max(int(batch_size), 1))
             local = self.order[start:end]
             rows = self.tensor_indices[local]
-            x_batch = grouped_batch(np.asarray(x_values[rows]), groups, mean, std)
+            x_batch = grouped_batch(
+                np.asarray(x_values[rows]),
+                groups,
+                mean,
+                std,
+                int(branch_target_features),
+                feature_augmentation_mode,
+                float(feature_augmentation_clip),
+            )
             y_batch = {key: value[local] for key, value in self.targets.items()}
             if self.weights is None:
                 return x_batch, y_batch
@@ -238,6 +349,9 @@ def make_grouped_predict_sequence(
     mean: np.ndarray,
     std: np.ndarray,
     batch_size: int,
+    branch_target_features: int = 0,
+    feature_augmentation_mode: str = "off",
+    feature_augmentation_clip: float = 8.0,
 ) -> Any:
     class OptionBPredictSequence(tf.keras.utils.Sequence):
         def __init__(self) -> None:
@@ -251,7 +365,15 @@ def make_grouped_predict_sequence(
             start = index * max(int(batch_size), 1)
             end = min(len(self.tensor_indices), start + max(int(batch_size), 1))
             rows = self.tensor_indices[start:end]
-            return grouped_batch(np.asarray(x_values[rows]), groups, mean, std)
+            return grouped_batch(
+                np.asarray(x_values[rows]),
+                groups,
+                mean,
+                std,
+                int(branch_target_features),
+                feature_augmentation_mode,
+                float(feature_augmentation_clip),
+            )
 
     return OptionBPredictSequence()
 
@@ -291,15 +413,13 @@ def build_option_b_model(
     branch_filters = max(int(args.branch_filters), 1)
     temporal_filters = max(int(args.temporal_filters), 1)
 
-    m5_input = tf.keras.Input(
-        shape=(window_size, int(len(groups.m5_context))), name="m5_context_input"
-    )
-    src_input = tf.keras.Input(
-        shape=(window_size, int(len(groups.source_5m))), name="source_5m_input"
-    )
-    htf_input = tf.keras.Input(
-        shape=(window_size, int(len(groups.htf_context))), name="htf_context_input"
-    )
+    branch_target = max(int(getattr(args, "branch_target_features", 0)), 0)
+    m5_features = branch_target if branch_target > 0 else int(len(groups.m5_context))
+    source_features = branch_target if branch_target > 0 else int(len(groups.source_5m))
+    htf_features = branch_target if branch_target > 0 else int(len(groups.htf_context))
+    m5_input = tf.keras.Input(shape=(window_size, m5_features), name="m5_context_input")
+    src_input = tf.keras.Input(shape=(window_size, source_features), name="source_5m_input")
+    htf_input = tf.keras.Input(shape=(window_size, htf_features), name="htf_context_input")
 
     m5 = temporal_branch(tf, m5_input, branch_filters, kernels, args.activation, "m5_context_branch")
     src = temporal_branch(tf, src_input, branch_filters, kernels, args.activation, "source_5m_branch")
@@ -526,6 +646,9 @@ def main(argv: list[str] | None = None) -> int:
             mean,
             std,
             int(args.batch_size),
+            int(args.branch_target_features),
+            args.feature_augmentation_mode,
+            float(args.feature_augmentation_clip),
             sample_weights(train_targets, args.class_weight),
             shuffle=True,
         )
@@ -538,6 +661,9 @@ def main(argv: list[str] | None = None) -> int:
             mean,
             std,
             int(args.batch_size),
+            int(args.branch_target_features),
+            args.feature_augmentation_mode,
+            float(args.feature_augmentation_clip),
             None,
             shuffle=False,
         )
@@ -551,7 +677,16 @@ def main(argv: list[str] | None = None) -> int:
         validation_pred = prediction_dict(
             model.predict(
                 make_grouped_predict_sequence(
-                    tf, x_all, indices[validation_idx], groups, mean, std, int(args.batch_size)
+                    tf,
+                    x_all,
+                    indices[validation_idx],
+                    groups,
+                    mean,
+                    std,
+                    int(args.batch_size),
+                    int(args.branch_target_features),
+                    args.feature_augmentation_mode,
+                    float(args.feature_augmentation_clip),
                 ),
                 verbose=0,
             )
@@ -559,7 +694,16 @@ def main(argv: list[str] | None = None) -> int:
         test_pred = prediction_dict(
             model.predict(
                 make_grouped_predict_sequence(
-                    tf, x_all, indices[test_idx], groups, mean, std, int(args.batch_size)
+                    tf,
+                    x_all,
+                    indices[test_idx],
+                    groups,
+                    mean,
+                    std,
+                    int(args.batch_size),
+                    int(args.branch_target_features),
+                    args.feature_augmentation_mode,
+                    float(args.feature_augmentation_clip),
                 ),
                 verbose=0,
             )
@@ -570,10 +714,14 @@ def main(argv: list[str] | None = None) -> int:
         feature_names = [str(value) for value in np.asarray(meta.get("feature_names", [])).tolist()]
         feature_groups = [str(value) for value in np.asarray(meta.get("feature_groups", [])).tolist()]
         selected_shape = [int(len(indices)), int(x_all.shape[1]), int(x_all.shape[2])]
+        branch_target = max(int(args.branch_target_features), 0)
+        m5_input_features = branch_target if branch_target > 0 else len(groups.m5_context)
+        source_input_features = branch_target if branch_target > 0 else len(groups.source_5m)
+        htf_input_features = branch_target if branch_target > 0 else len(groups.htf_context)
         keras_shapes = {
-            "m5_context_input": f"[batch, {window_size}, {len(groups.m5_context)}]",
-            "source_5m_input": f"[batch, {window_size}, {len(groups.source_5m)}]",
-            "htf_context_input": f"[batch, {window_size}, {len(groups.htf_context)}]",
+            "m5_context_input": f"[batch, {window_size}, {m5_input_features}]",
+            "source_5m_input": f"[batch, {window_size}, {source_input_features}]",
+            "htf_context_input": f"[batch, {window_size}, {htf_input_features}]",
         }
         report_stub = {
             "model_id": args.model_id,
@@ -606,6 +754,9 @@ def main(argv: list[str] | None = None) -> int:
             },
             "architecture": {
                 "branch_filters": args.branch_filters,
+                "branch_target_features": args.branch_target_features,
+                "feature_augmentation_mode": args.feature_augmentation_mode,
+                "feature_augmentation_clip": args.feature_augmentation_clip,
                 "temporal_filters": args.temporal_filters,
                 "temporal_kernels": parse_int_list(args.temporal_kernels, [3, 5, 9]),
                 "dilations": parse_int_list(args.dilations, [1, 2, 4, 8, 16, 32]),
@@ -650,6 +801,9 @@ def main(argv: list[str] | None = None) -> int:
             m5_context_feature_count=len(groups.m5_context),
             source_5m_feature_count=len(groups.source_5m),
             htf_feature_count=len(groups.htf_context),
+            branch_target_features=int(args.branch_target_features),
+            feature_augmentation_mode=str(args.feature_augmentation_mode),
+            feature_augmentation_clip=float(args.feature_augmentation_clip),
             model_path=model_path,
             record_path=record_path,
             architecture_json_path=architecture_path,

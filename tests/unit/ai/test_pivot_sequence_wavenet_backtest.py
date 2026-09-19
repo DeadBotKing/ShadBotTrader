@@ -176,6 +176,11 @@ def test_option_b_predict_sequence_returns_grouped_inputs():
         "payload": {
             "scaler_mean": np.zeros((1, 1, 5), dtype=np.float32).tolist(),
             "scaler_std": np.ones((1, 1, 5), dtype=np.float32).tolist(),
+            "architecture": {
+                "branch_target_features": 8,
+                "feature_augmentation_mode": "causal",
+                "feature_augmentation_clip": 8,
+            },
         }
     }
     meta = {
@@ -186,6 +191,6 @@ def test_option_b_predict_sequence_returns_grouped_inputs():
     seq = module.make_predict_sequence(FakeTF(), x, np.asarray([0, 1]), record, 2, meta, True)
     batch = seq[0]
 
-    assert batch["m5_context_input"].shape == (2, 3, 2)
-    assert batch["source_5m_input"].shape == (2, 3, 1)
-    assert batch["htf_context_input"].shape == (2, 3, 2)
+    assert batch["m5_context_input"].shape == (2, 3, 8)
+    assert batch["source_5m_input"].shape == (2, 3, 8)
+    assert batch["htf_context_input"].shape == (2, 3, 8)

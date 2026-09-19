@@ -177,6 +177,9 @@ def test_train_sequence_wavenet_option_b_passes_grouped_args(gui, monkeypatch):
                 "meta_path": "seq_meta.npz",
                 "model_id": "option_b",
                 "max_samples": "24000",
+                "branch_target_features": "180",
+                "feature_augmentation_mode": "causal",
+                "feature_augmentation_clip": "8",
                 "temporal_kernels": "3,5,9",
                 "dilations": "1,2,4,8",
             },
@@ -189,6 +192,9 @@ def test_train_sequence_wavenet_option_b_passes_grouped_args(gui, monkeypatch):
     assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
     assert args[args.index("--model-id") + 1] == "option_b"
     assert args[args.index("--max-samples") + 1] == "24000"
+    assert args[args.index("--branch-target-features") + 1] == "180"
+    assert args[args.index("--feature-augmentation-mode") + 1] == "causal"
+    assert args[args.index("--feature-augmentation-clip") + 1] == "8.0"
     assert args[args.index("--temporal-kernels") + 1] == "3,5,9"
     assert args[args.index("--dilations") + 1] == "1,2,4,8"
 
