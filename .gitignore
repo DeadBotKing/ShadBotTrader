@@ -52,7 +52,6 @@
 *.json
 *.bin
 *.npz
-*.npy
 *~
 .AppleDouble
 .DS_Store
@@ -82,7 +81,7 @@ ENV/
 Thumbs.db
 __pycache__/
 build/
-config.inirun_logs/
+config.ini
 credentials.json
 demo_state.db*
 dist/
@@ -99,3 +98,43 @@ temp/
 tmp/
 venv.bak/
 venv/
+
+# ============================================================
+# ShadBotTrader generated AI/data artifacts — keep out of git
+# These files are produced by local research runs and can be GBs.
+*.npy
+*.keras
+*.ckpt
+*.index
+*.data-*
+*.weights.h5
+*.pkl
+*.pickle
+*.joblib
+*.model
+*.onnx
+*.pb
+*.tflite
+*.feather
+*.arrow
+*.orc
+*.avro
+*.zarr/
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.xz
+
+# Generated market data, tensors, model artifacts, and run reports.
+datasets/raw/
+datasets/external/
+datasets/processed/
+datasets/models/
+run_logs/
+logs/
+
+# Keep the placeholder that preserves the datasets directory.
+!datasets/.gitkeep
