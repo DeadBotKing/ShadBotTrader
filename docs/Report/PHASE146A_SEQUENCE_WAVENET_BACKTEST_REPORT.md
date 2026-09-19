@@ -467,3 +467,7 @@ Next after owner runs Option B training:
 ```text
 Step 2 — A/B benchmark منصفانه
 ```
+
+## Phase147A Option B backtest support cross-reference — 2026-09-19
+
+After the owner supplied the Option B training result, `scripts/backtest_pivot_pattern_sequence_wavenet.py` was extended to detect Option B records and feed grouped prediction inputs automatically. This allows the existing GUI command `Backtest pivot sequence WaveNet PnL` to run the fair Step 2 PnL audit for `gold_pivot_pattern_sequence_wavenet_option_b_5m`.

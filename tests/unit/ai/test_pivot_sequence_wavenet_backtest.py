@@ -145,3 +145,47 @@ def test_load_model_rebuilds_when_lambda_shape_inference_fails(tmp_path, monkeyp
 
     assert result == "rebuilt-model"
     assert calls["rebuilt"] == 1
+
+
+def test_is_option_b_record_detects_grouped_model():
+    module = load_script()
+
+    assert module.is_option_b_record({"model_id": "gold_pivot_pattern_sequence_wavenet_option_b_5m"})
+    assert module.is_option_b_record({"role": "pivot_sequence_wavenet_option_b_grouped"})
+    assert not module.is_option_b_record({"model_id": "gold_pivot_pattern_sequence_wavenet_5m"})
+
+
+def test_option_b_predict_sequence_returns_grouped_inputs():
+    module = load_script()
+
+    class FakeSequence:
+        def __init__(self):
+            pass
+
+    class FakeUtils:
+        Sequence = FakeSequence
+
+    class FakeKeras:
+        utils = FakeUtils()
+
+    class FakeTF:
+        keras = FakeKeras()
+
+    x = np.arange(2 * 3 * 5, dtype=np.float32).reshape(2, 3, 5)
+    record = {
+        "payload": {
+            "scaler_mean": np.zeros((1, 1, 5), dtype=np.float32).tolist(),
+            "scaler_std": np.ones((1, 1, 5), dtype=np.float32).tolist(),
+        }
+    }
+    meta = {
+        "feature_names": np.asarray(["m5_a", "session_b", "src5m_c", "h4_d", "d1_e"], dtype=object),
+        "feature_groups": np.asarray(["generated_5m", "session", "source_5m", "closed_4h", "closed_1d"], dtype=object),
+    }
+
+    seq = module.make_predict_sequence(FakeTF(), x, np.asarray([0, 1]), record, 2, meta, True)
+    batch = seq[0]
+
+    assert batch["m5_context_input"].shape == (2, 3, 2)
+    assert batch["source_5m_input"].shape == (2, 3, 1)
+    assert batch["htf_context_input"].shape == (2, 3, 2)

@@ -41,6 +41,10 @@ from train_pivot_pattern_sequence_wavenet import (
     default_meta_path,
     default_tensor_path,
 )
+from train_pivot_pattern_sequence_wavenet_option_b import (
+    build_option_b_model,
+    option_b_groups,
+)
 from train_pivot_pattern_wavenet import prediction_dict, require_tensorflow, selected_action
 
 DEFAULT_STORAGE = Path("datasets")
@@ -219,6 +223,17 @@ def load_record(record_path: Path) -> dict[str, Any]:
     return json.loads(record_path.read_text(encoding="utf-8"))
 
 
+def is_option_b_record(record: Mapping[str, Any]) -> bool:
+    model_id = str(record.get("model_id", "")).lower()
+    role = str(record.get("role", "")).lower()
+    input_shapes = record.get("keras_input_shapes", {})
+    return (
+        "option_b" in model_id
+        or "option_b" in role
+        or (isinstance(input_shapes, Mapping) and "source_5m_input" in input_shapes)
+    )
+
+
 def model_args_from_record(record: Mapping[str, Any]) -> argparse.Namespace:
     payload = record.get("payload", {}) if isinstance(record, Mapping) else {}
     architecture = payload.get("architecture", {}) if isinstance(payload, Mapping) else {}
@@ -267,7 +282,11 @@ def rebuild_model_from_record(
     meta: Mapping[str, Any],
     input_shape: tuple[int, int],
 ) -> Any:
-    model = build_sequence_wavenet_model(tf, input_shape, meta, model_args_from_record(record))
+    if is_option_b_record(record):
+        groups = option_b_groups(meta)
+        model = build_option_b_model(tf, int(input_shape[0]), groups, model_args_from_record(record))
+    else:
+        model = build_sequence_wavenet_model(tf, input_shape, meta, model_args_from_record(record))
     load_weights_from_keras_archive(model, model_path)
     return model
 
@@ -331,7 +350,11 @@ def make_predict_sequence(
     tensor_indices: Sequence[int],
     record: Mapping[str, Any],
     batch_size: int,
+    meta: Mapping[str, Any] | None = None,
+    option_b: bool = False,
 ) -> Any:
+    groups = option_b_groups(meta or {}) if option_b else None
+
     class PivotSequencePredict(tf.keras.utils.Sequence):
         def __init__(self) -> None:
             super().__init__()
@@ -340,11 +363,19 @@ def make_predict_sequence(
         def __len__(self) -> int:
             return int(np.ceil(len(self.tensor_indices) / max(int(batch_size), 1)))
 
-        def __getitem__(self, index: int) -> np.ndarray:
+        def __getitem__(self, index: int):
             start = index * max(int(batch_size), 1)
             end = min(len(self.tensor_indices), start + max(int(batch_size), 1))
             rows = self.tensor_indices[start:end]
-            return normalize_batch(np.asarray(x_values[rows]), record)
+            normalized = normalize_batch(np.asarray(x_values[rows]), record)
+            if not option_b:
+                return normalized
+            assert groups is not None
+            return {
+                "m5_context_input": normalized[:, :, groups.m5_context],
+                "source_5m_input": normalized[:, :, groups.source_5m],
+                "htf_context_input": normalized[:, :, groups.htf_context],
+            }
 
     return PivotSequencePredict()
 
@@ -677,8 +708,9 @@ def main(argv: list[str] | None = None) -> int:
         if len(eval_rows) < 1:
             raise RuntimeError("No evaluation rows selected")
         sample_positions = sample_positions_all[eval_rows]
+        option_b = is_option_b_record(record)
         predict_sequence = make_predict_sequence(
-            tf, x_all, eval_rows, record, max(int(args.batch_size), 1)
+            tf, x_all, eval_rows, record, max(int(args.batch_size), 1), meta, option_b
         )
         predictions = prediction_dict(model.predict(predict_sequence, verbose=0))
         trades, thresholds, skips = run_backtest(flat, eval_rows, sample_positions, predictions, args, record)
