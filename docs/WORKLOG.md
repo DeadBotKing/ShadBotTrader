@@ -11353,3 +11353,224 @@ python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_
 
 The same Phase146A PowerShell command should now load the existing v1 model through the fallback path and proceed to prediction/backtest.
 
+## Phase146A sequence WaveNet PnL audit result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json` for the first Phase146A research PnL audit of the Phase145A full-source sequence WaveNet.
+
+Backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+model_version     : 1
+tensor_shape      : [53098, 100, 140]
+selected_samples  : 24000
+eval_split        : test
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy_threshold     : 0.34
+sell_threshold    : 0.34
+min_margin        : 0
+top_threshold     : 0
+bottom_threshold  : 0
+min_buy_r         : -999
+min_sell_r        : -999
+tp_multiplier     : 0.75
+sl_multiplier     : 0.75
+hold_bars         : 48
+spread_mode/value : pct / 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Aggregate result:
+
+```text
+trades             : 135
+BUY / SELL trades  : 44 / 91
+wins / losses      : 68 / 67
+win_rate           : 50.3704%
+final_balance      : 100.8955889685
+return_percent     : +0.8955889685%
+total_cash_pnl     : +0.8955889685
+gross_profit       : 49.4868161194
+gross_loss         : 48.5912271509
+profit_factor      : 1.0184310836
+max_drawdown_cash  : 7.2327237246
+take_profit        : 36
+stop_loss          : 43
+timeout            : 56
+```
+
+Side breakdown:
+
+```text
+BUY cash PnL  : +1.7578227452
+SELL cash PnL : -0.8622337767
+```
+
+Monthly result:
+
+```text
+2026-07 : +0.6597453995 / 110 trades
+2026-08 : +0.2358435690 / 25 trades
+positive_months : 2
+negative_months : 0
+```
+
+Operational counters:
+
+```text
+skipped_by_model   : 941
+skipped_while_open : 2188
+invalid_trade      : 0
+```
+
+Interpretation:
+
+```text
+GOOD:
+- First PnL audit is positive on the purged test split.
+- Both evaluated months are positive.
+- BUY side is positive, unlike older hybrid diagnostics where BUY was the main damage source.
+- No invalid trades were produced.
+
+LIMITS:
+- Edge is very thin: PF=1.018 and return is less than +1% on $100.
+- Max drawdown (~$7.23) is much larger than net profit (~$0.90).
+- SELL side is negative despite more trades than BUY.
+- 56/135 trades are timeouts, so TP/SL/hold calibration likely matters.
+- This is a single test split, not walk-forward.
+- Loose thresholds were used; no robustness/threshold grid has been performed.
+```
+
+Decision:
+
+```text
+Phase146A first PnL audit is a weak positive research result, not a production pass.
+It is the first pivot-lane result that is both classifier-strong and PnL-positive on the purged test split, but the edge is too small and fragile for paper/live.
+Next required step: Phase146B threshold / TP-SL / side-specific grid on validation, then test confirmation; later walk-forward if robust.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase147A Option B grouped sequence WaveNet implemented — 2026-09-19
+
+The owner reminded that the agreed roadmap must proceed in this order:
+
+```text
+Step 1 — Option B بسازیم
+Step 2 — A/B benchmark منصفانه
+Step 3 — آموزش بزرگ‌تر / full dataset
+Step 4 — ذخیره کامل prediction/backtest archive
+Step 5 — فیلترسازی، ولی با قانون ضد overfit
+```
+
+Phase147A implements Step 1.
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+GUI: Train pivot sequence WaveNet Option B
+```
+
+Option B uses the existing healthy Phase145A tensor:
+
+```text
+stored X = [53098, 100, 140]
+```
+
+but feeds the model as grouped Keras inputs:
+
+```text
+m5_context_input  = [batch, 100, 35]   # generated_5m + session
+source_5m_input   = [batch, 100, 83]   # source_5m telemetry
+htf_context_input = [batch, 100, 22]   # closed 4H + closed 1D
+```
+
+Architecture:
+
+```text
+separate grouped branches
+multi-scale causal Conv1D kernels 3,5,9
+late fusion
+gated tanh-sigmoid dilated WaveNet
+residual/skip connections
+SE/channel attention
+temporal self-attention
+avg/max/last pooling
+multi-task heads
+```
+
+Command for owner:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b `
+  --report-title "Option B Pivot Sequence WaveNet training"
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest.json
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_summary.txt
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_training_log.csv
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_batch_log.jsonl
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 54 passed
+```
+
+Next after owner runs Option B training:
+
+```text
+Step 2 — A/B benchmark منصفانه
+```
+

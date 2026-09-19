@@ -886,3 +886,124 @@ python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_
 
 Production remains blocked until PnL/walk-forward prove edge.
 
+## Phase147A Option B grouped sequence WaveNet implemented — 2026-09-19
+
+The owner reminded that the agreed roadmap must proceed in this order:
+
+```text
+Step 1 — Option B بسازیم
+Step 2 — A/B benchmark منصفانه
+Step 3 — آموزش بزرگ‌تر / full dataset
+Step 4 — ذخیره کامل prediction/backtest archive
+Step 5 — فیلترسازی، ولی با قانون ضد overfit
+```
+
+Phase147A implements Step 1.
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+GUI: Train pivot sequence WaveNet Option B
+```
+
+Option B uses the existing healthy Phase145A tensor:
+
+```text
+stored X = [53098, 100, 140]
+```
+
+but feeds the model as grouped Keras inputs:
+
+```text
+m5_context_input  = [batch, 100, 35]   # generated_5m + session
+source_5m_input   = [batch, 100, 83]   # source_5m telemetry
+htf_context_input = [batch, 100, 22]   # closed 4H + closed 1D
+```
+
+Architecture:
+
+```text
+separate grouped branches
+multi-scale causal Conv1D kernels 3,5,9
+late fusion
+gated tanh-sigmoid dilated WaveNet
+residual/skip connections
+SE/channel attention
+temporal self-attention
+avg/max/last pooling
+multi-task heads
+```
+
+Command for owner:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b `
+  --report-title "Option B Pivot Sequence WaveNet training"
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest.json
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_summary.txt
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_training_log.csv
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_batch_log.jsonl
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 54 passed
+```
+
+Next after owner runs Option B training:
+
+```text
+Step 2 — A/B benchmark منصفانه
+```
+
