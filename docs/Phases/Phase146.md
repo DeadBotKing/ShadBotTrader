@@ -493,3 +493,143 @@ Step 2 — A/B benchmark منصفانه
 ## Phase147A Option B backtest support cross-reference — 2026-09-19
 
 After the owner supplied the Option B training result, `scripts/backtest_pivot_pattern_sequence_wavenet.py` was extended to detect Option B records and feed grouped prediction inputs automatically. This allows the existing GUI command `Backtest pivot sequence WaveNet PnL` to run the fair Step 2 PnL audit for `gold_pivot_pattern_sequence_wavenet_option_b_5m`.
+
+## Phase147B Option B PnL benchmark cross-reference — 2026-09-19
+
+Option B was backtested with the same Phase146A replay settings. It improved net PnL and PF versus Option A:
+
+```text
+Option A: +0.8956, PF=1.0184, maxDD=7.2327, July/August both positive
+Option B: +1.8765, PF=1.0377, maxDD=7.7910, July positive and August negative
+```
+
+Decision: Option B is the preliminary PnL/PF winner but not stable enough for production. Step 3 should train Option B on the full sample universe with chronological split and early stopping.
+
+## Phase148A range-aware sequence archive implemented — 2026-09-19
+
+Implemented Step 4 requested by the owner while Step 3 full Option B training is running.
+
+Implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+GUI: Backtest sequence WaveNet range-aware archive
+```
+
+Purpose:
+
+```text
+Create a full prediction/backtest archive and calculate TP/SL from range forecasts rather than fixed ATR brackets.
+```
+
+Range source modes:
+
+```text
+--range-source auto    # use flat range columns when available, otherwise range models
+--range-source flat    # use range columns from sequence flat parquet
+--range-source models  # compute forecasts from gold_range_4h / gold_range_1d
+```
+
+Supported flat columns include both raw and source-prefixed names:
+
+```text
+range_4h_high_price / src5m_range_4h_high_price
+range_4h_low_price  / src5m_range_4h_low_price
+range_1d_high_price / src5m_range_1d_high_price
+range_1d_low_price  / src5m_range_1d_low_price
+```
+
+Bracket logic:
+
+```text
+BUY : TP from range high, SL from range low
+SELL: TP from range low,  SL from range high
+```
+
+with:
+
+```text
+--range-bracket-mode range|range_capped|atr
+--use-1d-tp-cap 1
+--max-tp-atr 2.0
+--max-sl-atr 1.25
+--min-tp-distance 0.5
+--min-sl-distance 0.5
+```
+
+Full archive outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.json
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.html
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_monthly.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_side.csv
+```
+
+Recommended command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet_range.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 0 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --range-source auto `
+  --range-bracket-mode range_capped `
+  --range-fallback skip `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --range-1d-version 0 `
+  --range-4h-version 0 `
+  --use-1d-tp-cap 1 `
+  --min-range-4h-room 0 `
+  --min-range-1d-room 0 `
+  --min-tp-distance 0.5 `
+  --min-sl-distance 0.5 `
+  --max-tp-atr 2.0 `
+  --max-sl-atr 1.25 `
+  --atr-tp-multiplier 0.75 `
+  --atr-sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_range_archive `
+  --report-title "Phase148A range-aware sequence WaveNet archive"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 60 passed
+```
+
+Production remains blocked.

@@ -53,6 +53,10 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET_OPTION_B).label
         == "Train pivot sequence WaveNet Option B"
     )
+    assert (
+        descriptor_for(CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE).label
+        == "Backtest sequence WaveNet range-aware archive"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -187,3 +191,32 @@ def test_train_sequence_wavenet_option_b_passes_grouped_args(gui, monkeypatch):
     assert args[args.index("--max-samples") + 1] == "24000"
     assert args[args.index("--temporal-kernels") + 1] == "3,5,9"
     assert args[args.index("--dilations") + 1] == "1,2,4,8"
+
+
+def test_range_archive_backtest_passes_step4_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.backtest_pivot_pattern_sequence_wavenet_range(
+        Command(
+            CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE,
+            {
+                "tensor_path": "seq.npy",
+                "meta_path": "seq_meta.npz",
+                "flat_path": "seq_flat.parquet",
+                "model_id": "option_b",
+                "range_source": "flat",
+                "range_bracket_mode": "range_capped",
+                "max_samples": "0",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/backtest_pivot_pattern_sequence_wavenet_range.py"
+    assert args[args.index("--tensor-path") + 1] == "seq.npy"
+    assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
+    assert args[args.index("--flat-path") + 1] == "seq_flat.parquet"
+    assert args[args.index("--model-id") + 1] == "option_b"
+    assert args[args.index("--range-source") + 1] == "flat"
+    assert args[args.index("--range-bracket-mode") + 1] == "range_capped"
+    assert args[args.index("--max-samples") + 1] == "0"

@@ -317,6 +317,8 @@
         <span class="badge"><span class="dot blue"></span>Phase147A Option B: BUILT</span>
         <span class="badge"><span class="dot green"></span>Phase147A Option B result: test_acc=0.654</span>
         <span class="badge"><span class="dot blue"></span>Step2 A/B backtest support: READY</span>
+        <span class="badge"><span class="dot amber"></span>Step2 A/B: Option B weak winner PF=1.038</span>
+        <span class="badge"><span class="dot blue"></span>Phase148A range-aware archive: BUILT</span>
       </div>
     </header>
 
@@ -328,13 +330,13 @@
           هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
         </div>
         <p>
-          آخرین نتیجه مدل Option B، Phase147A grouped sequence WaveNet است: test_action_accuracy=0.6544، test_selected_rate=0.3134، اما PnL آن هنوز باید با همان قوانین Option A audit شود. آخرین نتیجه معاملاتی موجود، Phase146A Option A sequence WaveNet PnL audit است: <code>trades=135</code>، <code>final_balance=100.8956</code>، <code>return=+0.8956%</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>، <code>BUY PnL=+1.7578</code>، <code>SELL PnL=-0.8622</code>. این weak-positive research result است، نه production pass. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
+          آخرین نتیجه Step2 A/B benchmark نشان داد Option B از نظر PnL/PF جلوتر است: Option B <code>final_balance=101.8765</code>، <code>PF=1.0377</code>، <code>maxDD=7.7910</code> در برابر Option A <code>final_balance=100.8956</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>. اما Option B ماه August را منفی داده، پس هنوز weak/fragile است. آخرین نتیجه معاملاتی موجود، Phase147B Option B sequence WaveNet PnL audit است: <code>trades=135</code>، <code>final_balance=100.8956</code>، <code>return=+0.8956%</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>، <code>BUY PnL=+1.7578</code>، <code>SELL PnL=-0.8622</code>. این weak-positive research result است، نه production pass. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
           آخرین تغییر فنی، Phase145A Option A است: دیتاست WaveNet-native با شکل <code>[samples,WindowSize,Features]</code> ساخته شد تا 5M/4H/1D features روی یک feature axis قرار بگیرند و RAM/ابعاد نسبت به 4D interaction tensor کمتر شود.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">Phase146 PnL</span><span class="value good">+$0.90</span></div>
-          <div class="card span-3 metric"><span class="label">Profit factor</span><span class="value warn">1.018</span></div>
-          <div class="card span-3 metric"><span class="label">Max DD</span><span class="value bad">$7.23</span></div>
+          <div class="card span-3 metric"><span class="label">Option B PnL</span><span class="value good">+$1.88</span></div>
+          <div class="card span-3 metric"><span class="label">Option B PF</span><span class="value warn">1.038</span></div>
+          <div class="card span-3 metric"><span class="label">Option B Max DD</span><span class="value bad">$7.79</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>
@@ -805,7 +807,7 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
               <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A 3D Conv1D/WaveNet path</span></span></li>
               <li><span class="node hold">Advanced 4D Image WaveNet: <code>gold_pivot_pattern_image_wavenet_5m</code><span class="mini">v1 research result: val_acc=0.5628, test_acc=0.5970, test_selected_rate=0.401; no trading backtest yet</span></span></li>
               <li><span class="node hold">Advanced sequence WaveNet A: <code>gold_pivot_pattern_sequence_wavenet_5m</code><span class="mini">Phase146A PnL audit weak-positive: +0.8956%, PF=1.018, maxDD=$7.23, BUY +1.76, SELL -0.86</span></span></li>
-              <li><span class="node hold">Advanced sequence WaveNet B: <code>gold_pivot_pattern_sequence_wavenet_option_b_5m</code><span class="mini">Option B trained: test_acc=0.6544, test_selected_rate=0.3134; Step2 PnL audit pending</span></span></li>
+              <li><span class="node hold">Advanced sequence WaveNet B: <code>gold_pivot_pattern_sequence_wavenet_option_b_5m</code><span class="mini">Step2 PnL weak winner: +1.8765%, PF=1.0377, maxDD=$7.79, July +4.12, August -2.24; Step3 full training next</span></span></li>
             </ul>
           </li>
         </ul>
@@ -1046,6 +1048,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase146A sequence WaveNet PnL audit result:</strong> first test-split replay is weak positive: trades=135, final_balance=100.8956, return=+0.8956%, PF=1.0184, maxDD=$7.2327, BUY PnL=+1.7578, SELL PnL=-0.8622, July/August both positive. Research-only; edge too thin for paper/live.</div>
           <div class="event"><strong>Phase147A Option B grouped sequence WaveNet built:</strong> added <code>scripts/train_pivot_pattern_sequence_wavenet_option_b.py</code> and GUI command <code>Train pivot sequence WaveNet Option B</code>. It feeds the same [53098,100,140] tensor as grouped inputs: generated/session [100,35], source 5M [100,83], and HTF [100,22], then late-fuses into an advanced WaveNet core.</div>
           <div class="event"><strong>Phase147A Option B training result:</strong> Option B trained on X=[24000,100,140] with grouped inputs. Metrics: val_action_accuracy=0.7273, test_action_accuracy=0.6544, val_top_ap=0.4792, test_top_ap=0.2637, val_bottom_ap=0.2816, test_bottom_ap=0.2550, test_selected_rate=0.3134. Next: fair PnL audit against Option A.</div>
+          <div class="event"><strong>Phase147B Option B PnL audit result:</strong> same replay rules as Option A. Option B: trades=134, final_balance=101.8765, return=+1.8765%, PF=1.0377, maxDD=$7.7910, BUY PnL=+1.9372, SELL PnL=-0.0608, July +4.1184, August -2.2419. Preliminary PnL/PF winner but still fragile and research-only.</div>
+          <div class="event"><strong>Phase148A range-aware prediction/backtest archive built:</strong> added <code>scripts/backtest_pivot_pattern_sequence_wavenet_range.py</code> and GUI command <code>Backtest sequence WaveNet range-aware archive</code>. It calculates TP/SL from range forecasts when available, writes full predictions/trades/monthly/side archives, and is the basis for Step 5 filtering with anti-overfit rules.</div>
         </div>
       </div>
     </section>

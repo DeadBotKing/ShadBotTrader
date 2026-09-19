@@ -99,6 +99,7 @@ class CommandKind(str, Enum):
     TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET = "train_pivot_pattern_sequence_wavenet"
     BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET = "backtest_pivot_pattern_sequence_wavenet"
     TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET_OPTION_B = "train_pivot_pattern_sequence_wavenet_option_b"
+    BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE = "backtest_pivot_pattern_sequence_wavenet_range"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 
