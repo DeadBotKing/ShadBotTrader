@@ -1251,3 +1251,34 @@ multi-scale kernels
 ```
 
 Production remains blocked until validated.
+
+---
+
+## Phase145A — Pivot Sequence Tensor + Advanced Conv1D WaveNet
+
+Status: implemented on 2026-09-17 as Option A after comparing the heavy 4D interaction tensor with a simpler WaveNet-native layout.
+
+Shape:
+
+```text
+Stored X    : [samples, WindowSize, Features]
+Keras batch : [batch, WindowSize, Features]
+```
+
+GUI:
+
+```text
+Build pivot sequence tensor
+Train pivot sequence WaveNet
+```
+
+Scripts:
+
+```text
+scripts/build_pivot_pattern_sequence_tensor.py
+scripts/train_pivot_pattern_sequence_wavenet.py
+```
+
+The model keeps the Phase143/144 pivot targets and uses concatenated 5M + closed 4H/1D features, including source 5M feature columns when present.
+
+Production remains blocked until validation/backtest/walk-forward results pass.

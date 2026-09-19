@@ -295,10 +295,20 @@
         <span class="badge"><span class="dot red"></span>Phase143A v1 rejected: scaler Inf/NaN</span>
         <span class="badge"><span class="dot green"></span>Phase143A sanitizer + architecture artifacts: FIXED</span>
         <span class="badge"><span class="dot green"></span>Phase143A tensor health audit: ADDED / operator PASS</span>
+        <span class="badge"><span class="dot green"></span>Phase143A image tensor health: PASS full scan</span>
         <span class="badge"><span class="dot green"></span>Phase143A image CNN epoch checkpoints: ADDED</span>
         <span class="badge"><span class="dot blue"></span>Phase144A advanced image WaveNet: BUILT</span>
+        <span class="badge"><span class="dot green"></span>Phase144A v1 result: test_acc=0.597 / select=40.10%</span>
         <span class="badge"><span class="dot green"></span>4D trainers RAM-safe stream loader: ADDED</span>
         <span class="badge"><span class="dot green"></span>4D trainers batch-level logs: ADDED</span>
+        <span class="badge"><span class="dot blue"></span>Phase145A sequence WaveNet Option A: BUILT</span>
+        <span class="badge"><span class="dot amber"></span>Phase145A v1 result: test_acc=0.479 / select=57.20%</span>
+        <span class="badge"><span class="dot green"></span>Phase145A source feature fix: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase145A PowerShell empty path fix: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase145A full-source tensor: [53098,100,140]</span>
+        <span class="badge"><span class="dot green"></span>Phase145A sequence tensor health audit: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase145A sequence tensor health: PASS full scan</span>
+        <span class="badge"><span class="dot green"></span>Heavy artifacts gitignore: UPDATED</span>
       </div>
     </header>
 
@@ -310,14 +320,13 @@
           هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
         </div>
         <p>
-          آخرین نتیجه اجرایی، شکست Phase139A در gridهای global و side-specific TP/SL بود.
-          آخرین تغییر فنی، batch-level training visibility است: trainerهای 4D حالا با --batch-log-every می‌توانند قبل از پایان epoch خروجی هر batch را روی console و JSONL نشان دهند.
-          شکل ذخیره‌شده <code>[samples, WindowSize, Features_5M, Features_4H_1D]</code> است؛ پیش‌فرض <code>WindowSize=100</code> و <code>Stride=1</code>. برای Conv2D batch همان 4D است و برای Conv3D یک channel axis اضافه می‌شود.
+          آخرین نتیجه دیتاست Option A، Phase145A full-source sequence tensor health audit است: <code>PASS</code> روی <code>[53098,100,140]</code> با <code>743,372,000</code> scanned cells، <code>nonfinite_cells=0</code>، <code>max_abs=8.0</code> و <code>source_5m_feature_count=83</code> از <code>hybrid_telemetry_flat_latest.parquet</code>. آخرین نتیجه سلامت 4D، Phase143A PASS روی <code>[53098,100,32,23]</code> بود. آخرین نتیجه مدل اجرایی، Phase145A sequence WaveNet v1 روی underfed <code>[24000,100,57]</code> است: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
+          آخرین تغییر فنی، Phase145A Option A است: دیتاست WaveNet-native با شکل <code>[samples,WindowSize,Features]</code> ساخته شد تا 5M/4H/1D features روی یک feature axis قرار بگیرند و RAM/ابعاد نسبت به 4D interaction tensor کمتر شود.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">Phase143 stored X</span><span class="value info">[samples,100,25,17]</span></div>
-          <div class="card span-3 metric"><span class="label">Conv2D batch</span><span class="value info">[batch,100,25,17]</span></div>
-          <div class="card span-3 metric"><span class="label">Conv2D selected rate</span><span class="value bad">0.0%</span></div>
+          <div class="card span-3 metric"><span class="label">Option A health</span><span class="value good">PASS</span></div>
+          <div class="card span-3 metric"><span class="label">Option A tensor</span><span class="value info">[53098,100,140]</span></div>
+          <div class="card span-3 metric"><span class="label">Nonfinite cells</span><span class="value good">0</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>
@@ -786,7 +795,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
               <li><span class="node fail">Telemetry WaveNet/TCN: <code>gold_hybrid_telemetry_wavenet_5m v2</code><span class="mini">last-15% replay rejected: -178.49 raw, PF=0.5543, 89 trades, August -168.39</span></span></li>
               <li><span class="node fail">Pivot flat baseline: <code>gold_pivot_pattern_recognition_5m v1</code><span class="mini">Phase141A operator GC=F WF failed: final=$79.01, PF=0.534; research-only</span></span></li>
               <li><span class="node info">Pivot WaveNet: <code>gold_pivot_pattern_wavenet_5m</code><span class="mini">Phase142A 3D Conv1D/WaveNet path</span></span></li>
-              <li><span class="node info">Advanced 4D Image WaveNet: <code>gold_pivot_pattern_image_wavenet_5m</code><span class="mini">Phase144A main advanced architecture; awaiting owner-machine training</span></span></li>
+              <li><span class="node hold">Advanced 4D Image WaveNet: <code>gold_pivot_pattern_image_wavenet_5m</code><span class="mini">v1 research result: val_acc=0.5628, test_acc=0.5970, test_selected_rate=0.401; no trading backtest yet</span></span></li>
+              <li><span class="node hold">Advanced sequence WaveNet: <code>gold_pivot_pattern_sequence_wavenet_5m</code><span class="mini">full-source tensor health PASS: X=[53098,100,140], source_5m=83, nonfinite=0; old v1 used underfed [24000,100,57] and must be retrained</span></span></li>
             </ul>
           </li>
         </ul>
@@ -820,6 +830,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
             <tr><td>Phase142B walk-forward</td><td><code>run_logs\pivot_pattern_wavenet_walk_forward\latest.json</code></td></tr>
             <tr><td>Phase143A image tensor health</td><td><code>run_logs\pivot_pattern_image_tensor_health\latest.json</code></td></tr>
             <tr><td>Phase144A advanced image WaveNet</td><td><code>run_logs\pivot_pattern_image_wavenet\latest.json</code></td></tr>
+            <tr><td>Phase145A sequence tensor</td><td><code>datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy</code></td></tr>
+            <tr><td>Phase145A sequence WaveNet</td><td><code>run_logs\pivot_pattern_sequence_wavenet\latest.json</code></td></tr>
             <tr><td>Current owner map</td><td><code>docs\PROJECT_OWNER_MAP.html</code></td></tr>
           </tbody>
         </table>
@@ -1007,10 +1019,17 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase143A Conv2D sanity:</strong> operator trained on X=[12000,100,32,23]. Training completed, but selected_rate=0 on validation and test; test_action_accuracy=0.3743, test_top_ap=0.1217, test_bottom_ap=0.1012. Later inspection found scaler_mean=Infinity and scaler_std=NaN, so v1 is rejected.</div>
           <div class="event"><strong>Phase143A sanitizer fix:</strong> image tensor builder now applies axis normalization, feature clipping, and interaction clipping before float16 cast. Image CNN trainer sanitizes old nonfinite input and saves architecture JSON + summary TXT.</div>
           <div class="event"><strong>Phase143A tensor health audit:</strong> official script/GUI command added: <code>Audit pivot image tensor health</code>. Operator stated the rebuilt dataset passed health checks. Next step is sanitized Conv2D v2 training; v1 remains rejected.</div>
+          <div class="event"><strong>Phase143A 4D tensor health PASS:</strong> official audit passed on X=[53098,100,32,23]. Full scan checked 3,908,012,800 cells in 208 chunks; nonfinite_cells=0, max_abs=32.0 equals interaction_clip=32.0, warnings=[], errors=[]. Tensor is accepted as healthy for research training.</div>
           <div class="event"><strong>Phase143A image CNN checkpointing:</strong> trainer now creates model directory before training and writes <code>vN_epoch_checkpoint.keras</code> after each epoch, plus architecture JSON and summary TXT before final completion.</div>
           <div class="event"><strong>Phase144A:</strong> advanced 4D Pivot Image WaveNet implemented. It includes separate pure 5M/HTF branches, TimeDistributed spatial multi-scale Conv2D, gated tanh-sigmoid dilated temporal residual WaveNet blocks, SE channel attention, temporal self-attention, and multi-head outputs.</div>
+          <div class="event"><strong>Phase144A v1 operator result:</strong> trained on X=[12000,100,32,23] with stream loader. Metrics: val_action_accuracy=0.5628, test_action_accuracy=0.5970, val_selected_rate=0.4187, test_selected_rate=0.4010, top/bottom AP improved versus simple Conv2D, nonfinite_input_values=0. Still research-only because no PnL/backtest/walk-forward proof exists.</div>
           <div class="event"><strong>RAM-safe loader:</strong> 4D image CNN/WaveNet trainers now support <code>--loader-mode stream</code>. Tensor stays on disk as memmap; scaler is computed in chunks; only current batch is loaded/normalized.</div>
           <div class="event"><strong>Batch-level logs:</strong> 4D image CNN/WaveNet trainers now support <code>--batch-log-every</code>. Use <code>--batch-log-every 1</code> to print every batch and write <code>latest_batch_log.jsonl</code>.</div>
+          <div class="event"><strong>Phase145A:</strong> Option A sequence tensor + advanced Conv1D/WaveNet implemented. Stored X=[samples,WindowSize,Features], default WindowSize=100. Features concatenate generated 5M, closed 4H/1D, session/time, and source 5M numeric columns when present.</div>
+          <div class="event"><strong>Phase145A v1 operator result:</strong> trained on X=[24000,100,57] with stream loader. Metrics: val_action_accuracy=0.4605, test_action_accuracy=0.4792, val_selected_rate=0.5836, test_selected_rate=0.5720, top AP slightly better than 4D but action accuracy/bottom AP worse. nonfinite_input_values=0. Still research-only because no PnL/backtest/walk-forward proof exists.</div>
+          <div class="event"><strong>Phase145A source-feature build finding:</strong> build report showed features=57, generated_feature_count=57, source_5m_feature_count=0. The first sequence run did not include the larger historical 5M feature set. Builder now auto-probes hybrid_telemetry_flat_latest/hybrid matrix files and has <code>--source-5m-feature-path</code> plus GUI field.</div>
+          <div class="event"><strong>Phase145A full-source sequence tensor health PASS:</strong> official audit passed on X=[53098,100,140]. Full scan checked 743,372,000 cells in 104 chunks; nonfinite_cells=0, max_abs=8.0 equals feature_clip=8.0, warnings=[], errors=[]. Tensor is accepted as healthy for research training.</div>
+          <div class="event"><strong>Gitignore heavy artifact guard:</strong> updated <code>.gitignore</code> so new heavy tensors/models/logs/snapshots stay out of git: <code>*.npy</code>, <code>*.keras</code>, <code>datasets/processed/</code>, <code>datasets/models/</code>, <code>run_logs/</code>, <code>*.zip</code>, and related ML/data artifact formats.</div>
         </div>
       </div>
     </section>

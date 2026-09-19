@@ -94,6 +94,9 @@ class CommandKind(str, Enum):
     AUDIT_PIVOT_PATTERN_IMAGE_TENSOR = "audit_pivot_pattern_image_tensor"
     TRAIN_PIVOT_PATTERN_IMAGE_CNN = "train_pivot_pattern_image_cnn"
     TRAIN_PIVOT_PATTERN_IMAGE_WAVENET = "train_pivot_pattern_image_wavenet"
+    BUILD_PIVOT_PATTERN_SEQUENCE_TENSOR = "build_pivot_pattern_sequence_tensor"
+    AUDIT_PIVOT_PATTERN_SEQUENCE_TENSOR = "audit_pivot_pattern_sequence_tensor"
+    TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET = "train_pivot_pattern_sequence_wavenet"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 

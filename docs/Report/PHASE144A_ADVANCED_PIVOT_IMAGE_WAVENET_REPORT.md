@@ -266,3 +266,147 @@ For per-batch console output:
 ```
 
 This is useful because one epoch can take a long time on the 4D tensor.
+
+## Phase144A operator result — advanced 4D Image WaveNet v1 — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_image_wavenet\latest.json` for the first full operator-machine run of the advanced 4D Image WaveNet.
+
+Run configuration summary:
+
+```text
+model_id          : gold_pivot_pattern_image_wavenet_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest_meta.npz
+stored_x_shape    : [12000, 100, 32, 23]
+keras_batch_shape : [batch, 100, 32, 23]
+loader_mode       : stream
+batch_size        : 8
+epochs requested  : 20
+learning_rate     : 0.0005
+nonfinite_input_values : 0
+```
+
+Validation metrics:
+
+```text
+val_action_accuracy : 0.5628415301
+val_top_ap          : 0.2038051024
+val_bottom_ap       : 0.1501470022
+val_buy_r_mae       : 0.6300964952
+val_sell_r_mae      : 0.6807333231
+val_selected_rate   : 0.4187158470
+```
+
+Test metrics:
+
+```text
+test_action_accuracy : 0.5969945355
+test_top_ap          : 0.2327647696
+test_bottom_ap       : 0.2356605000
+test_buy_r_mae       : 0.6400972009
+test_sell_r_mae      : 0.6506559253
+test_selected_rate   : 0.4009562842
+```
+
+Interpretation:
+
+```text
+GOOD:
+- The sanitized/streamed 4D pipeline is numerically healthy: nonfinite_input_values=0.
+- The advanced WaveNet is not a dead/no-trade model: selected_rate is ~41.87% validation and ~40.10% test.
+- Action/top/bottom heads materially improved versus the rejected simple Conv2D sanity run.
+
+LIMITS:
+- This is still a research classifier/pattern model, not a trading system.
+- No PnL, spread/slippage, TP/SL, max-hold, or walk-forward trading validation is present in this report.
+- The gate is intentionally loose: buy_threshold=0.34, sell_threshold=0.34, min_margin=0, min_buy_r=-999, min_sell_r=-999.
+- R-head MAE did not materially improve; buy_r/sell_r heads are not yet reliable as trading filters.
+- The run uses max_samples=12000, not the full tensor.
+```
+
+Decision:
+
+```text
+Phase144A v1 is a useful research improvement over the simple Conv2D baseline, but production remains BLOCKED.
+Next required evidence is backtest/walk-forward or comparison against Phase145A Option A sequence WaveNet.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase143A 4D image tensor health PASS — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_image_tensor_health\latest.json` after running the official tensor health audit for the rebuilt 4D pivot image tensor.
+
+Audit command inputs:
+
+```text
+tensor_path    : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest.npy
+meta_path      : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest_meta.npz
+flat_path      : datasets\processed\XAUUSD\5M\pivot_pattern_image_flat_latest.parquet
+builder_report : run_logs\pivot_pattern_image_tensor\latest.json
+full_scan      : 1
+chunk_size     : 256
+```
+
+Result:
+
+```text
+status       : PASS
+tensor_shape : [53098, 100, 32, 23]
+dtype        : float16
+flat_rows    : 53197
+sample index : min=99 max=53196 step=1
+first time   : 2025-11-28 17:05:00+00:00
+last time    : 2026-09-02 10:25:00+00:00
+```
+
+Full tensor scan:
+
+```text
+scanned_cells     : 3,908,012,800
+chunks            : 208
+nonfinite_cells   : 0
+min_value         : -32.0
+max_value         : 32.0
+max_abs           : 32.0
+interaction_clip  : 32.0
+warnings          : []
+errors            : []
+```
+
+Target counts on sampled windows:
+
+```text
+SELL : 5,384
+HOLD : 43,252
+BUY  : 4,462
+```
+
+Interpretation:
+
+```text
+- The 4D image tensor is structurally healthy.
+- The full tensor scan found no NaN/Inf cells.
+- max_abs equals interaction_clip, so clipping is active and within the configured bound.
+- sample_indices are strictly contiguous with stride=1 from 99 to 53196.
+- feature_5m_names length matches axis 2: 32.
+- feature_htf_names length matches axis 3: 23.
+```
+
+Note on target-count difference versus builder report:
+
+```text
+Builder target_counts were computed on the flat frame after target availability.
+Health-audit target_counts are computed on the sampled tensor windows.
+Because window_size=100, the first 99 flat rows are not tensor samples, so small count differences are expected and not an error.
+```
+
+Decision:
+
+```text
+Phase143A rebuilt 4D pivot image tensor is accepted as healthy for research training.
+It is safe to train Phase144A advanced 4D Image WaveNet on this tensor.
+Production remains BLOCKED until model backtest/walk-forward proves trading edge.
+No Phase134. No paper shadow. No live trading.
+```
+
