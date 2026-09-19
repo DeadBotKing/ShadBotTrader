@@ -54,6 +54,14 @@ def test_phase145_descriptors_exist():
         == "Train pivot sequence WaveNet Option B"
     )
     assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS).label
+        == "Audit pivot sequence Option B input health"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT).label
+        == "Audit pivot sequence feature impact"
+    )
+    assert (
         descriptor_for(CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE).label
         == "Backtest sequence WaveNet range-aware archive"
     )
@@ -226,3 +234,55 @@ def test_range_archive_backtest_passes_step4_args(gui, monkeypatch):
     assert args[args.index("--range-source") + 1] == "flat"
     assert args[args.index("--range-bracket-mode") + 1] == "range_capped"
     assert args[args.index("--max-samples") + 1] == "0"
+
+
+def test_audit_option_b_expanded_inputs_passes_health_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_pattern_sequence_option_b_inputs(
+        Command(
+            CommandKind.AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS,
+            {
+                "tensor_path": "seq.npy",
+                "meta_path": "seq_meta.npz",
+                "branch_target_features": "180",
+                "feature_augmentation_mode": "causal",
+                "full_scan": "1",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_pattern_sequence_option_b_inputs.py"
+    assert args[args.index("--tensor-path") + 1] == "seq.npy"
+    assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
+    assert args[args.index("--branch-target-features") + 1] == "180"
+    assert args[args.index("--feature-augmentation-mode") + 1] == "causal"
+    assert args[args.index("--full-scan") + 1] == "1"
+
+
+def test_feature_impact_audit_passes_validation_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_sequence_feature_impact(
+        Command(
+            CommandKind.AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT,
+            {
+                "tensor_path": "seq.npy",
+                "meta_path": "seq_meta.npz",
+                "model_id": "option_b",
+                "eval_split": "validation",
+                "max_windows": "100",
+                "feature_group_filter": "source_5m",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_sequence_feature_impact.py"
+    assert args[args.index("--tensor-path") + 1] == "seq.npy"
+    assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
+    assert args[args.index("--model-id") + 1] == "option_b"
+    assert args[args.index("--eval-split") + 1] == "validation"
+    assert args[args.index("--max-windows") + 1] == "100"
+    assert args[args.index("--feature-group-filter") + 1] == "source_5m"

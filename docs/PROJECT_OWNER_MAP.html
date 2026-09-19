@@ -319,6 +319,10 @@
         <span class="badge"><span class="dot blue"></span>Step2 A/B backtest support: READY</span>
         <span class="badge"><span class="dot amber"></span>Step2 A/B: Option B weak winner PF=1.038</span>
         <span class="badge"><span class="dot blue"></span>Phase147C Option B 180-channel expansion: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase147C 180 input health audit: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase147C 180 input health: PASS</span>
+        <span class="badge"><span class="dot amber"></span>Phase147C 180 full: weaker metrics</span>
+        <span class="badge"><span class="dot blue"></span>Phase149A feature impact audit: BUILT</span>
         <span class="badge"><span class="dot blue"></span>Phase148A range-aware archive: BUILT</span>
       </div>
     </header>
@@ -331,13 +335,13 @@
           هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
         </div>
         <p>
-          آخرین نتیجه Step2 A/B benchmark نشان داد Option B از نظر PnL/PF جلوتر است: Option B <code>final_balance=101.8765</code>، <code>PF=1.0377</code>، <code>maxDD=7.7910</code> در برابر Option A <code>final_balance=100.8956</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>. اما Option B ماه August را منفی داده، پس هنوز weak/fragile است. آخرین نتیجه معاملاتی موجود، Phase147B Option B sequence WaveNet PnL audit است: <code>trades=135</code>، <code>final_balance=100.8956</code>، <code>return=+0.8956%</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>، <code>BUY PnL=+1.7578</code>، <code>SELL PnL=-0.8622</code>. این weak-positive research result است، نه production pass. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
+          آخرین نتیجه 180-channel full-dataset Option B ضعیف‌تر از انتظار بود: test_action_accuracy=0.5168، test_top_ap=0.2486، test_bottom_ap=0.2121 و selected_rate=0.4856. بنابراین 180-channel فعلاً candidate بهتر نیست. آخرین نتیجه Step2 A/B benchmark همچنان نشان داد raw-branch Option B از نظر PnL/PF جلوتر است: Option B <code>final_balance=101.8765</code>، <code>PF=1.0377</code>، <code>maxDD=7.7910</code> در برابر Option A <code>final_balance=100.8956</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>. اما Option B ماه August را منفی داده، پس هنوز weak/fragile است. آخرین نتیجه معاملاتی موجود، Phase147B Option B sequence WaveNet PnL audit است: <code>trades=135</code>، <code>final_balance=100.8956</code>، <code>return=+0.8956%</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>، <code>BUY PnL=+1.7578</code>، <code>SELL PnL=-0.8622</code>. این weak-positive research result است، نه production pass. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
           آخرین تغییر فنی، Phase145A Option A است: دیتاست WaveNet-native با شکل <code>[samples,WindowSize,Features]</code> ساخته شد تا 5M/4H/1D features روی یک feature axis قرار بگیرند و RAM/ابعاد نسبت به 4D interaction tensor کمتر شود.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">Option B PnL</span><span class="value good">+$1.88</span></div>
-          <div class="card span-3 metric"><span class="label">Option B PF</span><span class="value warn">1.038</span></div>
-          <div class="card span-3 metric"><span class="label">Option B Max DD</span><span class="value bad">$7.79</span></div>
+          <div class="card span-3 metric"><span class="label">180 full test acc</span><span class="value warn">51.68%</span></div>
+          <div class="card span-3 metric"><span class="label">180 bottom AP</span><span class="value warn">0.212</span></div>
+          <div class="card span-3 metric"><span class="label">Raw B PF</span><span class="value warn">1.038</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>

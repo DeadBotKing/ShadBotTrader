@@ -1463,6 +1463,52 @@ _ADVANCED_COMMAND_FIELDS: Dict[CommandKind, set[str]] = {
         "report_title",
         "timeout_minutes",
     },
+    CommandKind.AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS: {
+        "tensor_path",
+        "meta_path",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_samples",
+        "stream_chunk_size",
+        "scan_chunk_size",
+        "full_scan",
+        "max_scan_samples",
+        "branch_target_features",
+        "feature_augmentation_mode",
+        "feature_augmentation_clip",
+        "timeout_minutes",
+    },
+    CommandKind.AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT: {
+        "tensor_path",
+        "meta_path",
+        "flat_path",
+        "model_id",
+        "model_version",
+        "model_path",
+        "record_path",
+        "max_samples",
+        "eval_split",
+        "eval_frac",
+        "train_frac",
+        "val_frac",
+        "purge_gap",
+        "max_windows",
+        "batch_size",
+        "buy_threshold",
+        "sell_threshold",
+        "min_margin",
+        "min_buy_r",
+        "min_sell_r",
+        "check_groups",
+        "check_features",
+        "feature_group_filter",
+        "max_features_to_check",
+        "harmful_threshold",
+        "useful_threshold",
+        "report_title",
+        "timeout_minutes",
+    },
     CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE: {
         "tensor_path",
         "meta_path",
@@ -5148,6 +5194,93 @@ def descriptors(storage_root: "str | Path" = "datasets") -> List[CommandDescript
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS,
+            label="Audit pivot sequence Option B input health",
+            description=(
+                "Audit the actual training-time Option B expanded inputs, e.g. three "
+                "[batch,100,180] causal-augmented branches, using train-only scaler."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Sequence tensor path", ""),
+                CommandField("meta_path", "Sequence tensor meta path", ""),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("max_samples", "Selected samples, 0 all", "0", kind="number"),
+                CommandField("stream_chunk_size", "Scaler chunk size", "512", kind="number"),
+                CommandField("scan_chunk_size", "Scan chunk size", "256", kind="number"),
+                CommandField("full_scan", "Full input scan", "1", kind="select", options=("1", "0")),
+                CommandField("max_scan_samples", "Max scan samples", "0", kind="number"),
+                CommandField("branch_target_features", "Expanded features per branch", "180", kind="number"),
+                CommandField(
+                    "feature_augmentation_mode",
+                    "Feature augmentation",
+                    "causal",
+                    kind="select",
+                    options=("causal", "off"),
+                ),
+                CommandField("feature_augmentation_clip", "Augmentation clip", "8", kind="number"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT,
+            label="Audit pivot sequence feature impact",
+            description=(
+                "Validation-only feature/group ablation audit for sequence WaveNet models; "
+                "ranks KEEP_IMPORTANT, NEUTRAL, and DROP_CANDIDATE features."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("tensor_path", "Sequence tensor path", ""),
+                CommandField("meta_path", "Sequence tensor meta path", ""),
+                CommandField("model_id", "Model id", "gold_pivot_pattern_sequence_wavenet_option_b_5m"),
+                CommandField("model_version", "Model version, 0 latest", "0", kind="number"),
+                CommandField("model_path", "Explicit model path", ""),
+                CommandField("record_path", "Explicit record path", ""),
+                CommandField("max_samples", "Selected samples", "24000", kind="number"),
+                CommandField("eval_split", "Eval split", "validation", kind="select", options=("validation", "test", "tail")),
+                CommandField("eval_frac", "Tail eval fraction", "0.15", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("max_windows", "Max eval windows", "1500", kind="number"),
+                CommandField("batch_size", "Prediction batch size", "128", kind="number"),
+                CommandField("buy_threshold", "BUY threshold", "0.34", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "0.34", kind="number"),
+                CommandField("min_margin", "Min margin", "0", kind="number"),
+                CommandField("min_buy_r", "Min BUY R", "-999", kind="number"),
+                CommandField("min_sell_r", "Min SELL R", "-999", kind="number"),
+                CommandField("check_groups", "Check feature groups", "1", kind="select", options=("1", "0")),
+                CommandField("check_features", "Check individual features", "1", kind="select", options=("1", "0")),
+                CommandField("feature_group_filter", "Feature group filter", "all"),
+                CommandField("max_features_to_check", "Max features to check", "0", kind="number"),
+                CommandField("harmful_threshold", "Drop-candidate threshold", "0.005", kind="number"),
+                CommandField("useful_threshold", "Keep-important threshold", "0.005", kind="number"),
+                CommandField("report_title", "Report title", "Phase149A sequence feature impact audit"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "360", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE,
             label="Backtest sequence WaveNet range-aware archive",
             description=(
@@ -6022,6 +6155,12 @@ class CommandHandlers:
                 ),
                 CommandKind.TRAIN_PIVOT_PATTERN_SEQUENCE_WAVENET_OPTION_B: (
                     accounts.train_pivot_pattern_sequence_wavenet_option_b
+                ),
+                CommandKind.AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS: (
+                    accounts.audit_pivot_pattern_sequence_option_b_inputs
+                ),
+                CommandKind.AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT: (
+                    accounts.audit_pivot_sequence_feature_impact
                 ),
                 CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE: (
                     accounts.backtest_pivot_pattern_sequence_wavenet_range
@@ -11150,6 +11289,111 @@ class AccountCommandHandlers(CommandHandlers):
             f"Backtested Phase146A pivot sequence WaveNet PnL for {symbol} {dataset}",
             started,
             timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def audit_pivot_pattern_sequence_option_b_inputs(self, command: Command) -> CommandResult:
+        """Audit Phase147C actual expanded Option B input batches."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        tensor_path = command.text("tensor_path", "").strip()
+        meta_path = command.text("meta_path", "").strip()
+        if tensor_path:
+            extra_args.extend(["--tensor-path", tensor_path])
+        if meta_path:
+            extra_args.extend(["--meta-path", meta_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_pattern_sequence_option_b_inputs.py",
+                "--symbol",
+                symbol,
+                "--timeframe",
+                dataset,
+                "--train-frac",
+                str(command.number("train_frac", 0.70)),
+                "--val-frac",
+                str(command.number("val_frac", 0.15)),
+                "--purge-gap",
+                str(max(command.integer("purge_gap", 336), 0)),
+                "--max-samples",
+                str(max(command.integer("max_samples", 0), 0)),
+                "--stream-chunk-size",
+                str(max(command.integer("stream_chunk_size", 512), 1)),
+                "--scan-chunk-size",
+                str(max(command.integer("scan_chunk_size", 256), 1)),
+                "--full-scan",
+                "1" if command.text("full_scan", "1").strip() != "0" else "0",
+                "--max-scan-samples",
+                str(max(command.integer("max_scan_samples", 0), 0)),
+                "--branch-target-features",
+                str(max(command.integer("branch_target_features", 180), 0)),
+                "--feature-augmentation-mode",
+                command.text("feature_augmentation_mode", "causal").strip().lower() or "causal",
+                "--feature-augmentation-clip",
+                str(max(command.number("feature_augmentation_clip", 8.0), 0.0)),
+                "--storage-root",
+                str(self._storage_root),
+                "--output-dir",
+                "run_logs\\pivot_pattern_sequence_option_b_input_health",
+                *extra_args,
+            ],
+            f"Audited Phase147C Option B expanded inputs for {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def audit_pivot_sequence_feature_impact(self, command: Command) -> CommandResult:
+        """Run Phase149A sequence feature/group impact audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        for field, flag in (
+            ("tensor_path", "--tensor-path"),
+            ("meta_path", "--meta-path"),
+            ("model_path", "--model-path"),
+            ("record_path", "--record-path"),
+        ):
+            value = command.text(field, "").strip()
+            if value:
+                extra_args.extend([flag, value])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_sequence_feature_impact.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--model-id", command.text("model_id", "gold_pivot_pattern_sequence_wavenet_option_b_5m").strip() or "gold_pivot_pattern_sequence_wavenet_option_b_5m",
+                "--model-version", str(max(command.integer("model_version", 0), 0)),
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--eval-split", command.text("eval_split", "validation").strip().lower() or "validation",
+                "--eval-frac", str(command.number("eval_frac", 0.15)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--max-windows", str(max(command.integer("max_windows", 1500), 0)),
+                "--batch-size", str(max(command.integer("batch_size", 128), 1)),
+                "--buy-threshold", str(command.number("buy_threshold", 0.34)),
+                "--sell-threshold", str(command.number("sell_threshold", 0.34)),
+                "--min-margin", str(max(command.number("min_margin", 0.0), 0.0)),
+                "--min-buy-r", str(command.number("min_buy_r", -999.0)),
+                "--min-sell-r", str(command.number("min_sell_r", -999.0)),
+                "--check-groups", "1" if command.text("check_groups", "1").strip() != "0" else "0",
+                "--check-features", "1" if command.text("check_features", "1").strip() != "0" else "0",
+                "--feature-group-filter", command.text("feature_group_filter", "all").strip() or "all",
+                "--max-features-to-check", str(max(command.integer("max_features_to_check", 0), 0)),
+                "--harmful-threshold", str(max(command.number("harmful_threshold", 0.005), 0.0)),
+                "--useful-threshold", str(max(command.number("useful_threshold", 0.005), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", "run_logs\\pivot_sequence_feature_impact",
+                "--report-title", command.text("report_title", "Phase149A sequence feature impact audit").strip() or "Phase149A sequence feature impact audit",
+                *extra_args,
+            ],
+            f"Audited Phase149A sequence feature impact for {symbol} {dataset}",
+            started,
+            timeout=max(command.integer("timeout_minutes", 360), 5) * 60,
         )
 
     def backtest_pivot_pattern_sequence_wavenet_range(self, command: Command) -> CommandResult:

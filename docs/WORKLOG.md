@@ -12134,3 +12134,338 @@ Caution:
 This is an experiment. The existing overfit symptoms are not necessarily caused by too few input features. More channels may help representation, but may also overfit harder. Compare by validation/test PnL, not training accuracy.
 ```
 
+## Phase147C Option B 180-channel input health audit completed — 2026-09-19
+
+Completed the owner-requested pre-training dataset/input health step for the Option B 180-channel experiment.
+
+Implemented:
+
+```text
+scripts/audit_pivot_pattern_sequence_option_b_inputs.py
+GUI: Audit pivot sequence Option B input health
+```
+
+Purpose:
+
+```text
+Before training, verify the exact training-time Option B expanded inputs:
+  m5_context_input  = [batch, 100, 180]
+  source_5m_input   = [batch, 100, 180]
+  htf_context_input = [batch, 100, 180]
+```
+
+The audit does not duplicate the dataset on disk. It:
+
+```text
+1. Loads the healthy source tensor [53098,100,140] as memmap.
+2. Rebuilds Option B groups from feature metadata.
+3. Selects the same sample universe as training.
+4. Reconstructs chronological train/validation/test split.
+5. Fits the same train-only scaler as training.
+6. Builds expanded 180-channel batches exactly like the trainer.
+7. Scans each branch for NaN/Inf and clip violations.
+8. Confirms the intended Keras input shapes.
+```
+
+Recommended health command before 180-channel training:
+
+```powershell
+python -u scripts\audit_pivot_pattern_sequence_option_b_inputs.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --stream-chunk-size 512 `
+  --scan-chunk-size 256 `
+  --full-scan 1 `
+  --max-scan-samples 0 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_option_b_input_health
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_option_b_input_health\latest.json
+run_logs\pivot_pattern_sequence_option_b_input_health\latest.html
+```
+
+Only after `status=PASS` should the owner run the 180-channel training command.
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_pattern_sequence_option_b_inputs.py scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 64 passed
+```
+
+## Phase147C Option B 180-channel input health PASS — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_option_b_input_health\latest.json` after running the official Phase147C 180-channel Option B input audit.
+
+Audit input:
+
+```text
+stored_x_shape      : [53098, 100, 140]
+selected_x_shape    : [53098, 100, 140]
+branch_target       : 180
+augmentation_mode   : causal
+augmentation_clip   : 8.0
+```
+
+Chronological split rebuilt by the audit:
+
+```text
+train_rows      : 37168
+validation_rows : 7629
+test_rows       : 7629
+purge_gap       : 336
+```
+
+Raw branch counts:
+
+```text
+m5_context raw  : 35
+source_5m raw   : 83
+htf_context raw : 22
+```
+
+Expanded Keras inputs:
+
+```text
+m5_context_input  : [batch, 100, 180]
+source_5m_input   : [batch, 100, 180]
+htf_context_input : [batch, 100, 180]
+```
+
+Full expanded-input scan:
+
+```text
+m5_context_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -8.0 / 8.0 / 8.0
+  chunks          : 208
+
+source_5m_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -8.0 / 8.0 / 8.0
+  chunks          : 208
+
+htf_context_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -6.2252612114 / 8.0 / 8.0
+  chunks          : 208
+```
+
+Total scanned expanded cells:
+
+```text
+2,867,292,000
+```
+
+Targets over selected samples:
+
+```text
+SELL : 5,384
+HOLD : 43,252
+BUY  : 4,462
+```
+
+Result:
+
+```text
+status   : PASS
+warnings : []
+errors   : []
+```
+
+Decision:
+
+```text
+The actual 180-channel Option B training-time inputs are accepted as healthy.
+The owner can proceed with full-dataset 180-channel Option B training.
+This remains research-only; no production/paper/live permission.
+```
+
+## Phase147C Option B 180-channel full-dataset training result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_full\latest.json` for the full-dataset 180-channel Option B training run.
+
+Training configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_180_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+stored_x_shape    : [53098, 100, 140]
+keras inputs:
+  m5_context_input  : [batch, 100, 180]
+  source_5m_input   : [batch, 100, 180]
+  htf_context_input : [batch, 100, 180]
+samples           : 53098
+train_rows        : 37168
+validation_rows   : 7629
+test_rows         : 7629
+branch_target_features      : 180
+feature_augmentation_mode   : causal
+feature_augmentation_clip   : 8.0
+nonfinite_input_values      : 0
+```
+
+Metrics:
+
+```text
+val_action_accuracy : 0.5585266745
+val_top_ap          : 0.2717308013
+val_bottom_ap       : 0.2202253973
+val_buy_r_mae       : 0.6357029080
+val_sell_r_mae      : 0.6304646134
+val_selected_rate   : 0.4700484991
+
+test_action_accuracy : 0.5168436230
+test_top_ap          : 0.2486227103
+test_bottom_ap       : 0.2121224816
+test_buy_r_mae       : 0.7210720181
+test_sell_r_mae      : 0.7024750710
+test_selected_rate   : 0.4856468738
+```
+
+Comparison to the 24k raw-branch Option B run:
+
+```text
+Option B raw branches [24000,100,140]
+  test_action_accuracy : 0.6544
+  test_top_ap          : 0.2637
+  test_bottom_ap       : 0.2550
+  test_selected_rate   : 0.3134
+  PnL/PF               : +1.8765%, PF=1.0377
+
+Option B 180-channel full universe [53098,100,140 → grouped 180]
+  test_action_accuracy : 0.5168
+  test_top_ap          : 0.2486
+  test_bottom_ap       : 0.2121
+  test_selected_rate   : 0.4856
+  PnL/PF               : not run yet
+```
+
+Interpretation:
+
+```text
+- The 180-channel input health was PASS, so this is not a NaN/Inf problem.
+- The 180-channel causal augmentation did not improve diagnostic metrics in this full-universe run.
+- test_selected_rate rose to ~48.6%, suggesting the model became more aggressive.
+- Action accuracy and bottom AP are materially worse than the 24k raw-branch Option B run.
+- This supports the earlier caution: more channels/features do not automatically reduce overfit; they can add noisy degrees of freedom.
+```
+
+Decision:
+
+```text
+Do not promote the 180-channel full-dataset model based on current classifier/AP diagnostics.
+Keep the raw-branch Option B 24k model as the current preliminary PnL/PF winner until a better full-dataset run proves otherwise.
+If testing this 180 model further, run range-aware archive/backtest only as a diagnostic, not as a preferred candidate.
+Next recommended route: train raw-branch Option B full dataset or proceed with Step 4 archive on the current best Option B model, then Step 5 anti-overfit filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149A sequence feature impact audit implemented — 2026-09-19
+
+Implemented validation-only feature/group ablation diagnostics to answer which raw sequence features are useful, neutral, or drop candidates.
+
+Implemented:
+
+```text
+scripts/audit_pivot_sequence_feature_impact.py
+GUI: Audit pivot sequence feature impact
+```
+
+Method:
+
+```text
+- Load trained Option A or Option B sequence WaveNet.
+- Evaluate a chronological split, default validation.
+- Compute baseline metrics.
+- Zero-ablate groups/features at inference time.
+- Compute metric deltas and composite score deltas.
+- Mark features as KEEP_IMPORTANT / NEUTRAL / DROP_CANDIDATE.
+```
+
+Composite score:
+
+```text
+composite = action_accuracy + 0.5*top_ap + 0.5*bottom_ap - 0.25*buy_r_mae - 0.25*sell_r_mae
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_feature_impact\latest.json
+run_logs\pivot_sequence_feature_impact\latest.html
+run_logs\pivot_sequence_feature_impact\latest_features.csv
+run_logs\pivot_sequence_feature_impact\latest_groups.csv
+```
+
+Recommended command:
+
+```powershell
+python -u scripts\audit_pivot_sequence_feature_impact.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split validation `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 1500 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --check-groups 1 `
+  --check-features 1 `
+  --feature-group-filter all `
+  --max-features-to-check 0 `
+  --harmful-threshold 0.005 `
+  --useful-threshold 0.005 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_sequence_feature_impact `
+  --report-title "Phase149A sequence feature impact audit"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_sequence_feature_impact.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_feature_impact.py tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 68 passed
+```
+
+Anti-overfit rule:
+
+```text
+Use validation for discovery. Do not drop based on final test only.
+Retrain/confirm on test and later walk-forward before adopting filters.
+```
+
