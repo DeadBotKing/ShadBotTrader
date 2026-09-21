@@ -73,6 +73,10 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN).label
         == "Audit pivot payoff target redesign"
     )
+    assert (
+        descriptor_for(CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC).label
+        == "Run payoff-target Option B diagnostic"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -437,3 +441,30 @@ def test_pivot_payoff_target_redesign_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--same-bar-policy") + 1] == "target_first"
     assert args[args.index("--timeout-score-mode") + 1] == "close_r"
     assert args[args.index("--output-dir") + 1] == "out_phase154"
+
+
+def test_pivot_payoff_option_b_diagnostic_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.run_pivot_payoff_option_b_diagnostic(
+        Command(
+            CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC,
+            {
+                "candidates": "B4:asym:24:0.35:1.0:0.5:0.1",
+                "build_max_samples": "1000",
+                "train_max_samples": "500",
+                "epochs": "3",
+                "skip_training": "1",
+                "output_dir": "out_phase155",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_pivot_payoff_option_b_diagnostic.py"
+    assert args[args.index("--candidates") + 1] == "B4:asym:24:0.35:1.0:0.5:0.1"
+    assert args[args.index("--build-max-samples") + 1] == "1000"
+    assert args[args.index("--train-max-samples") + 1] == "500"
+    assert args[args.index("--epochs") + 1] == "3"
+    assert args[args.index("--skip-training") + 1] == "1"
+    assert args[args.index("--output-dir") + 1] == "out_phase155"

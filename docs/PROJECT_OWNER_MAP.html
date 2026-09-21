@@ -343,7 +343,8 @@
         <span class="badge"><span class="dot blue"></span>Phase152A label stability audit: BUILT</span>
         <span class="badge"><span class="dot amber"></span>Phase152A result: label counts stable / R drift</span>
         <span class="badge"><span class="dot red"></span>Phase153A C1/C2 result: not training-ready</span>
-        <span class="badge"><span class="dot blue"></span>Phase154A payoff target audit: BUILT</span>
+        <span class="badge"><span class="dot green"></span>Phase154A result: B4/B2 target-ready</span>
+        <span class="badge"><span class="dot green"></span>Phase155A target metadata crash fix: DONE</span>
         <span class="badge"><span class="dot red"></span>Best non-ATR test: FAILED</span>
         <span class="badge"><span class="dot green"></span>Phase151A report bug: FIXED</span>
         <span class="badge"><span class="dot green"></span>Phase151A skip existing seed models: ADDED</span>
@@ -1006,7 +1007,12 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           </tr>
           <tr>
             <td>Phase154A — payoff/trade-outcome target redesign</td>
-            <td>پیاده‌سازی شد: first-hit/barrier target candidates را audit می‌کند تا قبل از train بفهمیم target معاملاتی train/validation/test پایدار است یا نه. خروجی اصلی: <code>run_logs\pivot_payoff_target_redesign\latest.json</code>.</td>
+            <td>اجرا شد و بالاخره دو target payoff-stable پیدا شد: B4 به عنوان اولویت، B2 به عنوان backup. B1/B3/B5/B6 به خاطر sign flip رد شدند.</td>
+            <td><span class="pill pass">Completed</span></td>
+          </tr>
+          <tr>
+            <td>Phase155A — payoff-target Option B diagnostic</td>
+            <td>پیاده‌سازی شد: B4/B2 را tensor-build می‌کند، health audit می‌گیرد، Option B را train می‌کند، و validation/test PnL transfer را گزارش می‌دهد.</td>
             <td><span class="pill info">Built / owner should run</span></td>
           </tr>
           <tr>
@@ -1084,6 +1090,8 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase153A target redesign candidate audit built:</strong> added <code>scripts/run_pivot_target_redesign_candidate_audit.py</code> and GUI command <code>Build/audit pivot target redesign candidates</code>. It builds C1/C2 tensors, runs sequence tensor health, runs label/payoff stability, and writes <code>run_logs\pivot_target_redesign_candidates\latest.json</code>. No training/live approval is implied.</div>
           <div class="event"><strong>Phase153A result:</strong> C1/C2 tensors both passed health and label stability, but both kept the same payoff sign flip: train/validation buy_r negative and sell_r positive, while test buy_r positive and sell_r negative. <code>training_ready_candidates=0</code>. Do not train C1/C2; next should be Phase154A payoff/trade-outcome target redesign.</div>
           <div class="event"><strong>Phase154A built:</strong> added <code>scripts/audit_pivot_payoff_target_redesign.py</code> and GUI command <code>Audit pivot payoff target redesign</code>. It audits first-hit/barrier BUY/SELL trade-outcome targets and reports label/payoff stability before any new training.</div>
+          <div class="event"><strong>Phase154A result:</strong> 6 candidates audited; all 6 label-stable, 2 payoff-stable. B4 (<code>24 bars, zone=0.35 ATR, TP=1.0 ATR, SL=0.5 ATR, edge=0.1</code>) is best and tensor-ready; B2 is conservative backup. Next is Phase155A diagnostic tensor/training for B4 first.</div>
+          <div class="event"><strong>Phase155A built/fixed:</strong> payoff tensor builder and Option B diagnostic wrapper were added. B4 tensor build and health passed. Training then crashed because scalar metadata <code>target_mode=[first_hit_payoff]</code> was being indexed like a per-sample target array. The trainer now scopes only target arrays whose first axis matches the tensor sample count; <code>class_weight=off</code> remains the default for this sparse payoff diagnostic.</div>
         </div>
       </div>
     </section>

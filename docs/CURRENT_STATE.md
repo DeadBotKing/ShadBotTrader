@@ -8138,3 +8138,204 @@ No Phase134.
 No paper shadow.
 No live trading.
 ```
+
+## Latest execution result — Phase154A payoff target audit — 2026-09-21
+
+The owner ran Phase154A.
+
+Top-level result:
+
+```text
+completed_candidates      : 6
+label_stable_candidates   : 6
+payoff_stable_candidates  : 2
+tensor_ready_candidates   : 2
+best_candidate_id         : B4
+```
+
+Rejected candidates due to payoff sign flip:
+
+```text
+B1 balanced_24_rr1
+B3 dense_24_half_atr
+B5 short_12_rr1
+B6 wide_36_rr1
+```
+
+Training-ready candidates:
+
+```text
+B4 asym_24_tp1_sl05:
+  lookahead_bars        : 24
+  pivot_zone_atr        : 0.35
+  tp_atr                : 1.0
+  sl_atr                : 0.5
+  min_score_edge        : 0.1
+  train/val/test actionable : 3.8333% / 4.8407% / 4.3505%
+  validation/test PSI       : 0.0060524 / 0.0125569
+  buy_score_sign_flip       : 0
+  sell_score_sign_flip      : 0
+  candidate_ready_for_tensor_gate : 1
+
+B2 conservative_24_tp1_sl075:
+  lookahead_bars        : 24
+  pivot_zone_atr        : 0.25
+  tp_atr                : 1.0
+  sl_atr                : 0.75
+  min_score_edge        : 0.1
+  train/val/test actionable : 3.1607% / 4.1973% / 3.5846%
+  validation/test PSI       : 0.0046029 / 0.0121399
+  buy_score_sign_flip       : 0
+  sell_score_sign_flip      : 0
+  candidate_ready_for_tensor_gate : 1
+```
+
+Current decision:
+
+```text
+Phase154A found two payoff-stable target candidates.
+B4 is preferred for the next diagnostic training path.
+B2 is the conservative backup.
+```
+
+Important caveat:
+
+```text
+Phase154A is only a target audit.
+It does not prove model profitability.
+The next phase must build target-compatible tensors/metadata and train/evaluate diagnostically.
+```
+
+Recommended next phase:
+
+```text
+Phase155A — Build payoff-target tensor + diagnostic Option B training for B4/B2
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase155A payoff-target Option B diagnostic — 2026-09-21
+
+Phase155A has been implemented after Phase154A found B4/B2 as payoff-stable targets.
+
+New script / GUI command:
+
+```text
+scripts/build_pivot_payoff_sequence_tensor.py
+scripts/run_pivot_payoff_option_b_diagnostic.py
+GUI: Run payoff-target Option B diagnostic
+```
+
+The command runs the full diagnostic chain:
+
+```text
+B4/B2 payoff tensor build
+→ tensor health audit
+→ raw Option B training with explicit seed
+→ validation backtest
+→ test backtest
+→ transfer report
+```
+
+Default priority:
+
+```text
+B4 first:
+  24 bars, zone=0.35 ATR, TP=1.0 ATR, SL=0.5 ATR, edge=0.1
+
+B2 backup:
+  24 bars, zone=0.25 ATR, TP=1.0 ATR, SL=0.75 ATR, edge=0.1
+```
+
+After owner run, send:
+
+```text
+run_logs\pivot_payoff_option_b_diagnostic\latest.json
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest fix — Phase155A B4 training crash after health PASS — 2026-09-21
+
+The first Phase155A run built and health-audited B4 successfully:
+
+```text
+B4 tensor shape : [53098, 100, 140]
+source5m        : 83
+targets         : SELL=1236, HOLD=51044, BUY=917
+actionable      : 4.05%
+health          : PASS, nonfinite=0, max_abs=8
+```
+
+Training crashed before epoch 1:
+
+```text
+IndexError: index 2 is out of bounds for axis 0 with size 1
+```
+
+Fix:
+
+```text
+Phase155A now defaults class_weight=off.
+GUI exposes Class weights with default off.
+Option B trainer defensively disables class_weight=auto for target_mode=first_hit_payoff.
+```
+
+Next owner action:
+
+```text
+Rerun Phase155A with --skip-existing-tensors 1 and --class-weight off.
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest fix — Phase155A scalar target metadata indexing crash — 2026-09-21
+
+The second Phase155A rerun still crashed before epoch 1 with:
+
+```text
+IndexError: index 2 is out of bounds for axis 0 with size 1
+```
+
+Actual root cause:
+
+```text
+New payoff tensors include scalar target metadata:
+target_mode = ["first_hit_payoff"]
+
+The Option B trainer tried to index all target_* keys by sample indices, including target_mode.
+```
+
+Fix:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+scoped_target_meta() now indexes only per-sample target arrays whose first axis matches tensor sample count.
+Scalar target metadata is ignored for training targets.
+```
+
+Next owner action:
+
+```text
+Replace project with latest zip and rerun Phase155A with:
+  --skip-existing-tensors 1
+  --class-weight off
+```

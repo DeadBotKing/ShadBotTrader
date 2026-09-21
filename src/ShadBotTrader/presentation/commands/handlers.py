@@ -5648,6 +5648,53 @@ CommandField("temporal_filters", "Temporal filters", "96", kind="number"),
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC,
+            label="Run payoff-target Option B diagnostic",
+            description=(
+                "Phase155A: build payoff-target sequence tensors for B4/B2, audit health, "
+                "train diagnostic Option B models, then run validation/test PnL checks."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("candidates", "Candidates", "B4:asym_24_tp1_sl05:24:0.35:1.0:0.50:0.1;B2:conservative_24_tp1_sl075:24:0.25:1.0:0.75:0.1"),
+                CommandField("source_mode", "Source mode", "storage", kind="select", options=("storage", "yahoo", "files")),
+                CommandField("build_max_samples", "Build max samples", "0", kind="number"),
+                CommandField("train_max_samples", "Train max samples", "24000", kind="number"),
+                CommandField("epochs", "Epochs", "80", kind="number"),
+                CommandField("early_stopping_patience", "Early stop patience", "8", kind="number"),
+                CommandField("random_seed", "Random seed", "20260921", kind="number"),
+                CommandField("learning_rate", "Learning rate", "0.0005", kind="number"),
+                CommandField("batch_size", "Batch size", "16", kind="number"),
+                CommandField("branch_filters", "Branch filters", "48", kind="number"),
+                CommandField("branch_target_features", "Expanded branch features", "0", kind="number"),
+                CommandField("feature_augmentation_mode", "Feature augmentation", "off", kind="select", options=("off", "causal")),
+                CommandField("class_weight", "Class weights", "off", kind="select", options=("off", "auto")),
+                CommandField("same_bar_policy", "Payoff same-bar policy", "stop_first", kind="select", options=("stop_first", "target_first", "skip_ambiguous")),
+                CommandField("timeout_score_mode", "Payoff timeout score", "zero", kind="select", options=("zero", "close_r")),
+                CommandField("buy_threshold", "BUY threshold", "0.34", kind="number"),
+                CommandField("sell_threshold", "SELL threshold", "0.34", kind="number"),
+                CommandField("min_margin", "Min margin", "0", kind="number"),
+                CommandField("tp_multiplier", "ATR backtest TP multiplier", "0.75", kind="number"),
+                CommandField("sl_multiplier", "ATR backtest SL multiplier", "0.75", kind="number"),
+                CommandField("hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_payoff_option_b_diagnostic"),
+                CommandField("skip_existing_tensors", "Skip existing tensors", "0", kind="select", options=("0", "1")),
+                CommandField("skip_training", "Skip training", "0", kind="select", options=("0", "1")),
+                CommandField("timeout_minutes", "Give up after (minutes)", "720", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
             label="Validate production hybrid stack",
             description=(
@@ -6456,6 +6503,9 @@ class CommandHandlers:
                 ),
                 CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN: (
                     accounts.audit_pivot_payoff_target_redesign
+                ),
+                CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC: (
+                    accounts.run_pivot_payoff_option_b_diagnostic
                 ),
                 CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
                     accounts.validate_production_hybrid_stack
@@ -12221,6 +12271,50 @@ class AccountCommandHandlers(CommandHandlers):
             "Audited Phase154A pivot payoff target redesign",
             started,
             timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def run_pivot_payoff_option_b_diagnostic(self, command: Command) -> CommandResult:
+        """Run Phase155A payoff-target tensor + Option B diagnostic training."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        return self._run_script(
+            command,
+            [
+                "scripts/run_pivot_payoff_option_b_diagnostic.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--source-mode", command.text("source_mode", "storage").strip().lower() or "storage",
+                "--candidates", command.text("candidates", "B4:asym_24_tp1_sl05:24:0.35:1.0:0.50:0.1;B2:conservative_24_tp1_sl075:24:0.25:1.0:0.75:0.1").strip() or "B4:asym_24_tp1_sl05:24:0.35:1.0:0.50:0.1;B2:conservative_24_tp1_sl075:24:0.25:1.0:0.75:0.1",
+                "--build-max-samples", str(max(command.integer("build_max_samples", 0), 0)),
+                "--train-max-samples", str(max(command.integer("train_max_samples", 24000), 0)),
+                "--epochs", str(max(command.integer("epochs", 80), 1)),
+                "--early-stopping-patience", str(max(command.integer("early_stopping_patience", 8), 1)),
+                "--random-seed", str(max(command.integer("random_seed", 20260921), 0)),
+                "--learning-rate", str(max(command.number("learning_rate", 0.0005), 1e-9)),
+                "--batch-size", str(max(command.integer("batch_size", 16), 1)),
+                "--branch-filters", str(max(command.integer("branch_filters", 48), 1)),
+                "--branch-target-features", str(max(command.integer("branch_target_features", 0), 0)),
+                "--feature-augmentation-mode", command.text("feature_augmentation_mode", "off").strip().lower() or "off",
+                "--class-weight", command.text("class_weight", "off").strip().lower() or "off",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--timeout-score-mode", command.text("timeout_score_mode", "zero").strip().lower() or "zero",
+                "--buy-threshold", str(command.number("buy_threshold", 0.34)),
+                "--sell-threshold", str(command.number("sell_threshold", 0.34)),
+                "--min-margin", str(max(command.number("min_margin", 0.0), 0.0)),
+                "--tp-multiplier", str(max(command.number("tp_multiplier", 0.75), 0.01)),
+                "--sl-multiplier", str(max(command.number("sl_multiplier", 0.75), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 48), 1)),
+                "--spread-mode", command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value", str(max(command.number("spread_value", 0.06), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_payoff_option_b_diagnostic").strip() or "run_logs/pivot_payoff_option_b_diagnostic",
+                "--skip-existing-tensors", "1" if command.text("skip_existing_tensors", "0").strip() == "1" else "0",
+                "--skip-training", "1" if command.text("skip_training", "0").strip() == "1" else "0",
+            ],
+            "Ran Phase155A payoff-target Option B diagnostic",
+            started,
+            timeout=max(command.integer("timeout_minutes", 720), 5) * 60,
         )
 
     def validate_production_hybrid_stack(self, command: Command) -> CommandResult:

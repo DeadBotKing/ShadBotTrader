@@ -276,6 +276,39 @@ def parse_name_list(text: str) -> list[str]:
     return values
 
 
+def scoped_target_meta(
+    meta: Mapping[str, Any], indices: Sequence[int], expected_rows: int
+) -> dict[str, np.ndarray]:
+    """Return per-sample target arrays scoped to selected tensor rows.
+
+    Phase155A payoff tensors also store scalar target metadata such as
+    ``target_mode=['first_hit_payoff']``. Those keys intentionally start with
+    ``target_`` but are not per-sample arrays, so blindly indexing every
+    target_* key by tensor rows raises IndexError. Only arrays whose first axis
+    matches the tensor sample count are scoped for training.
+    """
+    rows = np.asarray(indices, dtype=np.int64)
+    scoped: dict[str, np.ndarray] = {}
+    for key, value in meta.items():
+        if not str(key).startswith("target_"):
+            continue
+        array = np.asarray(value)
+        if array.ndim == 0 or int(array.shape[0]) != int(expected_rows):
+            continue
+        scoped[str(key)] = array[rows]
+    required = (
+        "target_action",
+        "target_top_zone",
+        "target_bottom_zone",
+        "target_buy_r",
+        "target_sell_r",
+    )
+    missing = [key for key in required if key not in scoped]
+    if missing:
+        raise RuntimeError(f"sequence tensor meta is missing per-sample targets: {missing}")
+    return scoped
+
+
 def zero_feature_selection(meta: Mapping[str, Any], args: argparse.Namespace) -> tuple[np.ndarray, list[str], list[str]]:
     names = [str(value) for value in np.asarray(meta.get("feature_names", [])).tolist()]
     groups = [str(value) for value in np.asarray(meta.get("feature_groups", [])).tolist()]
@@ -674,14 +707,22 @@ def main(argv: list[str] | None = None) -> int:
         set_reproducibility_seed(tf, int(args.random_seed))
         x_all = np.load(tensor_path, mmap_mode="r")
         meta = load_meta(meta_path)
+        target_mode = ""
+        if "target_mode" in meta:
+            target_values = np.asarray(meta["target_mode"], dtype=object).reshape(-1)
+            target_mode = str(target_values[0]) if len(target_values) else ""
+        class_weight_mode = str(args.class_weight)
+        if target_mode == "first_hit_payoff" and class_weight_mode == "auto":
+            class_weight_mode = "off"
+            print(
+                "  [i] first_hit_payoff target detected; class_weight=auto disabled "
+                "for this diagnostic to avoid Keras sparse Sequence sample-weight instability.",
+                flush=True,
+            )
         groups = option_b_groups(meta)
         zero_indices, zero_names, zero_groups = zero_feature_selection(meta, args)
         indices = selected_indices(len(x_all), int(args.max_samples))
-        meta_scoped = {
-            key: np.asarray(value)[indices]
-            for key, value in meta.items()
-            if key.startswith("target_")
-        }
+        meta_scoped = scoped_target_meta(meta, indices, expected_rows=len(x_all))
         train_idx, validation_idx, test_idx = split_indices(
             len(indices), args.train_frac, args.val_frac, args.purge_gap
         )
@@ -728,7 +769,7 @@ def main(argv: list[str] | None = None) -> int:
             args.feature_augmentation_mode,
             float(args.feature_augmentation_clip),
             zero_indices,
-            sample_weights(train_targets, args.class_weight),
+            sample_weights(train_targets, class_weight_mode),
             shuffle=True,
         )
         validation_sequence = make_grouped_sequence(

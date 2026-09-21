@@ -107,6 +107,7 @@ class CommandKind(str, Enum):
     AUDIT_PIVOT_LABEL_TARGET_STABILITY = "audit_pivot_label_target_stability"
     RUN_PIVOT_TARGET_REDESIGN_CANDIDATE_AUDIT = "run_pivot_target_redesign_candidate_audit"
     AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN = "audit_pivot_payoff_target_redesign"
+    RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC = "run_pivot_payoff_option_b_diagnostic"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 

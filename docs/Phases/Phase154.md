@@ -139,14 +139,67 @@ python -u scripts\audit_pivot_payoff_target_redesign.py `
   --report-title "Phase154A pivot payoff target redesign audit"
 ```
 
-## Interpretation
+## Execution result
+
+The owner ran Phase154A.
+
+Top-level result:
 
 ```text
-If candidate_ready_for_tensor_gate > 0:
-  Phase155A can build sequence tensors for the winning payoff target and train diagnostically.
+completed_candidates      : 6
+label_stable_candidates   : 6
+payoff_stable_candidates  : 2
+tensor_ready_candidates   : 2
+best_candidate_id         : B4
+```
 
-If all candidates fail:
-  Do not train; expand/adjust payoff target definitions before model training.
+Training-ready candidates:
+
+```text
+B4 asym_24_tp1_sl05:
+  lookahead_bars     : 24
+  pivot_zone_atr     : 0.35
+  tp_atr             : 1.0
+  sl_atr             : 0.5
+  min_score_edge     : 0.1
+  actionable train/val/test : 3.8333% / 4.8407% / 4.3505%
+  buy/sell score sign flip  : 0 / 0
+
+B2 conservative_24_tp1_sl075:
+  lookahead_bars     : 24
+  pivot_zone_atr     : 0.25
+  tp_atr             : 1.0
+  sl_atr             : 0.75
+  min_score_edge     : 0.1
+  actionable train/val/test : 3.1607% / 4.1973% / 3.5846%
+  buy/sell score sign flip  : 0 / 0
+```
+
+Rejected candidates due to payoff sign flip:
+
+```text
+B1, B3, B5, B6
+```
+
+## Decision
+
+```text
+Proceed to Phase155A with B4 first.
+Keep B2 as conservative backup.
+Do not train B1/B3/B5/B6 now.
+```
+
+Critical caveat:
+
+```text
+Phase154A is still a target audit, not a trained model/backtest proof.
+No production/paper/live approval.
+```
+
+## Next phase
+
+```text
+Phase155A — Build payoff-target tensor + diagnostic Option B training for B4/B2
 ```
 
 ## Verification

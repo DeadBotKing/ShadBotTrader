@@ -95,6 +95,24 @@ def test_zero_feature_empty_flags_are_powershell_safe():
 
 
 
+def test_scoped_target_meta_ignores_scalar_target_metadata():
+    module = load_script()
+    meta = {
+        "target_action": np.asarray([0, 1, 2, 1], dtype=np.int64),
+        "target_top_zone": np.asarray([1, 0, 0, 0], dtype=np.float32),
+        "target_bottom_zone": np.asarray([0, 0, 1, 0], dtype=np.float32),
+        "target_buy_r": np.asarray([0.0, 0.1, 1.0, 0.0], dtype=np.float32),
+        "target_sell_r": np.asarray([1.0, 0.1, 0.0, 0.0], dtype=np.float32),
+        "target_mode": np.asarray(["first_hit_payoff"], dtype=object),
+    }
+
+    scoped = module.scoped_target_meta(meta, np.asarray([0, 2], dtype=np.int64), expected_rows=4)
+
+    assert scoped["target_action"].tolist() == [0, 2]
+    assert "target_mode" not in scoped
+
+
+
 def test_parse_args_records_random_seed_default_and_override():
     module = load_script()
 
