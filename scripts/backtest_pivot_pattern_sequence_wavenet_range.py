@@ -152,7 +152,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model-path", default="")
     parser.add_argument("--record-path", default="")
     parser.add_argument("--max-samples", type=int, default=0)
-    parser.add_argument("--eval-split", choices=("test", "validation", "all", "tail"), default="test")
+    parser.add_argument("--eval-split", choices=("train", "test", "validation", "all", "tail"), default="test")
     parser.add_argument("--eval-frac", type=float, default=0.15, help="Used only with --eval-split tail")
     parser.add_argument("--train-frac", type=float, default=0.70)
     parser.add_argument("--val-frac", type=float, default=0.15)

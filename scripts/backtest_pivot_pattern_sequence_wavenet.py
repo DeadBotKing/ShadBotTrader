@@ -153,7 +153,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model-path", default="")
     parser.add_argument("--record-path", default="")
     parser.add_argument("--max-samples", type=int, default=24000)
-    parser.add_argument("--eval-split", choices=("test", "validation", "all", "tail"), default="test")
+    parser.add_argument("--eval-split", choices=("train", "test", "validation", "all", "tail"), default="test")
     parser.add_argument("--eval-frac", type=float, default=0.15, help="Used only with --eval-split tail")
     parser.add_argument("--train-frac", type=float, default=0.70)
     parser.add_argument("--val-frac", type=float, default=0.15)
@@ -348,6 +348,13 @@ def normalize_batch(x_batch: np.ndarray, record: Mapping[str, Any]) -> np.ndarra
     return np.nan_to_num(normalized, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
 
+def zero_feature_indices_from_record(record: Mapping[str, Any]) -> np.ndarray:
+    payload = record.get("payload", {}) if isinstance(record, Mapping) else {}
+    selection = payload.get("feature_selection", {}) if isinstance(payload, Mapping) else {}
+    values = selection.get("zero_feature_indices", []) if isinstance(selection, Mapping) else []
+    return np.asarray(values, dtype=np.int64) if values is not None else np.asarray([], dtype=np.int64)
+
+
 def make_predict_sequence(
     tf: Any,
     x_values: np.ndarray,
@@ -372,6 +379,10 @@ def make_predict_sequence(
             end = min(len(self.tensor_indices), start + max(int(batch_size), 1))
             rows = self.tensor_indices[start:end]
             normalized = normalize_batch(np.asarray(x_values[rows]), record)
+            zero_indices = zero_feature_indices_from_record(record)
+            if len(zero_indices):
+                normalized = normalized.copy()
+                normalized[:, :, zero_indices] = 0.0
             if not option_b:
                 return normalized
             assert groups is not None
@@ -417,7 +428,12 @@ def eval_tensor_indices(
     train_idx, validation_idx, test_idx = split_indices(
         len(selected_rows), float(args.train_frac), float(args.val_frac), int(args.purge_gap)
     )
-    local = validation_idx if args.eval_split == "validation" else test_idx
+    if args.eval_split == "train":
+        local = train_idx
+    elif args.eval_split == "validation":
+        local = validation_idx
+    else:
+        local = test_idx
     return apply_max_windows(selected_rows[local], int(args.max_windows)), args.eval_split
 
 

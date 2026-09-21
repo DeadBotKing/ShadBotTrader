@@ -65,6 +65,14 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE).label
         == "Backtest sequence WaveNet range-aware archive"
     )
+    assert (
+        descriptor_for(CommandKind.RUN_PIVOT_TARGET_REDESIGN_CANDIDATE_AUDIT).label
+        == "Build/audit pivot target redesign candidates"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN).label
+        == "Audit pivot payoff target redesign"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -188,6 +196,8 @@ def test_train_sequence_wavenet_option_b_passes_grouped_args(gui, monkeypatch):
                 "branch_target_features": "180",
                 "feature_augmentation_mode": "causal",
                 "feature_augmentation_clip": "8",
+                "random_seed": "123",
+                "zero_feature_names": "m5_pos_in_range_48,h4_ret3",
                 "temporal_kernels": "3,5,9",
                 "dilations": "1,2,4,8",
             },
@@ -203,6 +213,8 @@ def test_train_sequence_wavenet_option_b_passes_grouped_args(gui, monkeypatch):
     assert args[args.index("--branch-target-features") + 1] == "180"
     assert args[args.index("--feature-augmentation-mode") + 1] == "causal"
     assert args[args.index("--feature-augmentation-clip") + 1] == "8.0"
+    assert args[args.index("--random-seed") + 1] == "123"
+    assert args[args.index("--zero-feature-names") + 1] == "m5_pos_in_range_48,h4_ret3"
     assert args[args.index("--temporal-kernels") + 1] == "3,5,9"
     assert args[args.index("--dilations") + 1] == "1,2,4,8"
 
@@ -286,3 +298,142 @@ def test_feature_impact_audit_passes_validation_args(gui, monkeypatch):
     assert args[args.index("--eval-split") + 1] == "validation"
     assert args[args.index("--max-windows") + 1] == "100"
     assert args[args.index("--feature-group-filter") + 1] == "source_5m"
+
+
+def test_range_bracket_geometry_audit_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_sequence_range_bracket_geometry(
+        Command(
+            CommandKind.AUDIT_PIVOT_SEQUENCE_RANGE_BRACKET_GEOMETRY,
+            {
+                "predictions_path": "pred.parquet",
+                "flat_path": "flat.parquet",
+                "split_name": "validation",
+                "range_bracket_modes": "atr,range_capped",
+                "min_sl_distances": "0.5,5",
+                "output_dir": "out_geom",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_sequence_range_bracket_geometry.py"
+    assert args[args.index("--predictions-path") + 1] == "pred.parquet"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--split-name") + 1] == "validation"
+    assert args[args.index("--range-bracket-modes") + 1] == "atr,range_capped"
+    assert args[args.index("--min-sl-distances") + 1] == "0.5,5"
+    assert args[args.index("--output-dir") + 1] == "out_geom"
+
+
+def test_option_b_seed_transfer_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.run_pivot_sequence_option_b_seed_transfer(
+        Command(
+            CommandKind.RUN_PIVOT_SEQUENCE_OPTION_B_SEED_TRANSFER,
+            {
+                "tensor_path": "seq.npy",
+                "meta_path": "seq_meta.npz",
+                "flat_path": "flat.parquet",
+                "model_id_prefix": "seed_audit",
+                "seeds": "1,2",
+                "epochs": "3",
+                "skip_training": "1",
+                "skip_existing_models": "0",
+                "output_dir": "out_seed",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_pivot_sequence_option_b_seed_transfer_validation.py"
+    assert args[args.index("--tensor-path") + 1] == "seq.npy"
+    assert args[args.index("--meta-path") + 1] == "seq_meta.npz"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--model-id-prefix") + 1] == "seed_audit"
+    assert args[args.index("--seeds") + 1] == "1,2"
+    assert args[args.index("--epochs") + 1] == "3"
+    assert args[args.index("--skip-existing-models") + 1] == "0"
+    assert args[args.index("--skip-training") + 1] == "1"
+    assert args[args.index("--output-dir") + 1] == "out_seed"
+
+
+def test_pivot_label_target_stability_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_label_target_stability(
+        Command(
+            CommandKind.AUDIT_PIVOT_LABEL_TARGET_STABILITY,
+            {
+                "flat_path": "flat.parquet",
+                "meta_path": "meta.npz",
+                "max_samples": "24000",
+                "sensitivity_lookahead_bars": "24,48",
+                "output_dir": "out_labels",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_label_target_stability.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--meta-path") + 1] == "meta.npz"
+    assert args[args.index("--max-samples") + 1] == "24000"
+    assert args[args.index("--sensitivity-lookahead-bars") + 1] == "24,48"
+    assert args[args.index("--output-dir") + 1] == "out_labels"
+
+
+def test_pivot_target_redesign_candidate_audit_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.run_pivot_target_redesign_candidate_audit(
+        Command(
+            CommandKind.RUN_PIVOT_TARGET_REDESIGN_CANDIDATE_AUDIT,
+            {
+                "candidates": "C1:stable:24:0.75:0.25:1.0",
+                "build_max_samples": "1000",
+                "audit_max_samples": "500",
+                "health_full_scan": "0",
+                "skip_existing_tensors": "1",
+                "output_dir": "out_phase153",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/run_pivot_target_redesign_candidate_audit.py"
+    assert args[args.index("--candidates") + 1] == "C1:stable:24:0.75:0.25:1.0"
+    assert args[args.index("--build-max-samples") + 1] == "1000"
+    assert args[args.index("--audit-max-samples") + 1] == "500"
+    assert args[args.index("--health-full-scan") + 1] == "0"
+    assert args[args.index("--skip-existing-tensors") + 1] == "1"
+    assert args[args.index("--output-dir") + 1] == "out_phase153"
+
+
+def test_pivot_payoff_target_redesign_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_payoff_target_redesign(
+        Command(
+            CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN,
+            {
+                "flat_path": "flat.parquet",
+                "meta_path": "meta.npz",
+                "candidates": "B1:test:24:0.35:0.75:0.75:0",
+                "same_bar_policy": "target_first",
+                "timeout_score_mode": "close_r",
+                "output_dir": "out_phase154",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_payoff_target_redesign.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--meta-path") + 1] == "meta.npz"
+    assert args[args.index("--candidates") + 1] == "B1:test:24:0.35:0.75:0.75:0"
+    assert args[args.index("--same-bar-policy") + 1] == "target_first"
+    assert args[args.index("--timeout-score-mode") + 1] == "close_r"
+    assert args[args.index("--output-dir") + 1] == "out_phase154"

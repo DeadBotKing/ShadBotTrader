@@ -102,6 +102,11 @@ class CommandKind(str, Enum):
     AUDIT_PIVOT_PATTERN_SEQUENCE_OPTION_B_INPUTS = "audit_pivot_pattern_sequence_option_b_inputs"
     AUDIT_PIVOT_SEQUENCE_FEATURE_IMPACT = "audit_pivot_sequence_feature_impact"
     BACKTEST_PIVOT_PATTERN_SEQUENCE_WAVENET_RANGE = "backtest_pivot_pattern_sequence_wavenet_range"
+    AUDIT_PIVOT_SEQUENCE_RANGE_BRACKET_GEOMETRY = "audit_pivot_sequence_range_bracket_geometry"
+    RUN_PIVOT_SEQUENCE_OPTION_B_SEED_TRANSFER = "run_pivot_sequence_option_b_seed_transfer"
+    AUDIT_PIVOT_LABEL_TARGET_STABILITY = "audit_pivot_label_target_stability"
+    RUN_PIVOT_TARGET_REDESIGN_CANDIDATE_AUDIT = "run_pivot_target_redesign_candidate_audit"
+    AUDIT_PIVOT_PAYOFF_TARGET_REDESIGN = "audit_pivot_payoff_target_redesign"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 

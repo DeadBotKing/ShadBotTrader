@@ -1,0 +1,30 @@
+# Phase149A validation-discovered DROP_CANDIDATE features.
+# Source audit: gold_pivot_pattern_sequence_wavenet_option_b_180_5m v1
+# Eval split: validation, max_windows=1500
+# IMPORTANT: Use for controlled experiments only. Retrain and confirm on test/walk-forward.
+src5m_rolling_12_trades_timeout_rate_lag
+m5_pos_in_range_48
+src5m_specialist_max_prob
+src5m_rolling_12_trades_profit_factor_lag
+src5m_rolling_48_trades_profit_factor_lag
+src5m_rolling_48_trades_timeout_rate_lag
+m5_pos_in_range_96
+src5m_rolling_24_trades_avg_pnl_lag
+m5_mid_slow_dist_atr
+d1_ret3
+src5m_lagged_trade_count
+h4_ret3
+h4_rsi14
+src5m_last_closed_trade_pnl_lag
+src5m_rolling_12_trades_avg_pnl_lag
+m5_fast_mid_dist_atr
+m5_dist_low_48_atr
+src5m_range_1d_up_room_pct
+src5m_range_1d_down_room_pct
+m5_ret48
+m5_pos_in_range_24
+h4_room_down_atr
+src5m_5m_body_pct
+h4_close_mid_dist_atr
+m5_ret24
+src5m_rolling_48_trades_avg_pnl_lag

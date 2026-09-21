@@ -78,3 +78,71 @@ def test_grouped_batch_can_expand_each_branch_to_target_features():
     assert batch["source_5m_input"].shape == (2, 5, 8)
     assert batch["htf_context_input"].shape == (2, 5, 8)
     assert np.max(np.abs(batch["m5_context_input"])) <= 8.0
+
+
+def test_zero_feature_empty_flags_are_powershell_safe():
+    module = load_script()
+
+    args = module.parse_args([
+        "--zero-feature-names",
+        "--zero-feature-file",
+        "--zero-feature-groups",
+    ])
+
+    assert args.zero_feature_names == ""
+    assert args.zero_feature_file == ""
+    assert args.zero_feature_groups == ""
+
+
+
+def test_parse_args_records_random_seed_default_and_override():
+    module = load_script()
+
+    default_args = module.parse_args([])
+    custom_args = module.parse_args(["--random-seed", "123"])
+
+    assert default_args.random_seed == 20260919
+    assert custom_args.random_seed == 123
+
+
+
+def test_option_b_report_accepts_random_seed():
+    module = load_script()
+
+    report = module.OptionBReport(
+        model_id="m",
+        version=1,
+        tensor_path="x.npy",
+        meta_path="x.npz",
+        samples=1,
+        train_rows=1,
+        validation_rows=1,
+        test_rows=1,
+        stored_x_shape=[1, 2, 3],
+        keras_input_shapes={},
+        metrics={},
+        architecture_features=[],
+        feature_count=3,
+        m5_context_feature_count=1,
+        source_5m_feature_count=1,
+        htf_feature_count=1,
+        branch_target_features=0,
+        feature_augmentation_mode="off",
+        feature_augmentation_clip=8.0,
+        random_seed=123,
+        zeroed_feature_count=0,
+        zeroed_feature_names=[],
+        zeroed_feature_groups=[],
+        model_path="m.keras",
+        record_path="m.json",
+        architecture_json_path="a.json",
+        model_summary_path="s.txt",
+        epoch_checkpoint_path="c.keras",
+        batch_log_path="b.jsonl",
+        nonfinite_input_values=0,
+        output_json="latest.json",
+        output_html="latest.html",
+        production_status="blocked",
+    )
+
+    assert report.random_seed == 123

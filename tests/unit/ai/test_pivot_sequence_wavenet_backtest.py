@@ -43,6 +43,30 @@ def test_eval_tensor_indices_uses_purged_test_split():
     assert indices[-1] == 99
 
 
+
+def test_eval_tensor_indices_can_select_train_split():
+    module = load_script()
+    selected_rows = np.arange(100, dtype=np.int64)
+    args = module.parse_args(
+        [
+            "--eval-split",
+            "train",
+            "--train-frac",
+            "0.70",
+            "--val-frac",
+            "0.15",
+            "--purge-gap",
+            "2",
+        ]
+    )
+
+    indices, name = module.eval_tensor_indices(selected_rows, args)
+
+    assert name == "train"
+    assert indices[0] == 0
+    assert indices[-1] == 69
+
+
 def test_apply_max_windows_downsamples_chronologically():
     module = load_script()
     indices = np.arange(10, dtype=np.int64)
@@ -194,3 +218,37 @@ def test_option_b_predict_sequence_returns_grouped_inputs():
     assert batch["m5_context_input"].shape == (2, 3, 8)
     assert batch["source_5m_input"].shape == (2, 3, 8)
     assert batch["htf_context_input"].shape == (2, 3, 8)
+
+
+def test_predict_sequence_applies_zero_feature_selection():
+    module = load_script()
+
+    class FakeSequence:
+        def __init__(self):
+            pass
+
+    class FakeUtils:
+        Sequence = FakeSequence
+
+    class FakeKeras:
+        utils = FakeUtils()
+
+    class FakeTF:
+        keras = FakeKeras()
+
+    x = np.ones((1, 2, 3), dtype=np.float32)
+    record = {
+        "payload": {
+            "scaler_mean": np.zeros((1, 1, 3), dtype=np.float32).tolist(),
+            "scaler_std": np.ones((1, 1, 3), dtype=np.float32).tolist(),
+            "feature_selection": {"zero_feature_indices": [1]},
+        }
+    }
+
+    seq = module.make_predict_sequence(FakeTF(), x, np.asarray([0]), record, 1)
+    batch = seq[0]
+
+    assert batch.shape == (1, 2, 3)
+    assert np.all(batch[:, :, 0] == 1.0)
+    assert np.all(batch[:, :, 1] == 0.0)
+    assert np.all(batch[:, :, 2] == 1.0)

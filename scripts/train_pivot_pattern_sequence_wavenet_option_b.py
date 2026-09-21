@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import random
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -91,6 +92,10 @@ class OptionBReport:
     branch_target_features: int
     feature_augmentation_mode: str
     feature_augmentation_clip: float
+    random_seed: int
+    zeroed_feature_count: int
+    zeroed_feature_names: list[str]
+    zeroed_feature_groups: list[str]
     model_path: str
     record_path: str
     architecture_json_path: str
@@ -101,6 +106,28 @@ class OptionBReport:
     output_json: str
     output_html: str
     production_status: str
+
+
+
+def set_reproducibility_seed(tf: Any, seed: int) -> None:
+    """Set Python/NumPy/TensorFlow seeds for controlled research reruns.
+
+    This improves reproducibility for model initialization, dropout, and other
+    TensorFlow random operations. Some GPU kernels can still be nondeterministic,
+    so this is a control, not a promise of byte-identical outputs on every host.
+    """
+    value = int(seed)
+    if value <= 0:
+        return
+    random.seed(value)
+    np.random.seed(value)
+    try:
+        tf.keras.utils.set_random_seed(value)
+    except Exception:
+        try:
+            tf.random.set_seed(value)
+        except Exception:
+            return
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -121,10 +148,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--learning-rate", type=float, default=0.0005)
+    parser.add_argument("--random-seed", type=int, default=20260919)
     parser.add_argument("--branch-filters", type=int, default=48)
     parser.add_argument("--branch-target-features", type=int, default=0, help="0 = raw group feature counts; e.g. 180 expands every Option B input to 180 causal channels")
     parser.add_argument("--feature-augmentation-mode", choices=("off", "causal"), default="off")
     parser.add_argument("--feature-augmentation-clip", type=float, default=8.0)
+    parser.add_argument("--zero-feature-names", nargs="?", const="", default="", help="Comma-separated raw feature names to zero before grouping/augmentation")
+    parser.add_argument("--zero-feature-file", nargs="?", const="", default="", help="Optional text file with one feature name per line to zero")
+    parser.add_argument("--zero-feature-groups", nargs="?", const="", default="", help="Comma-separated feature groups to zero, e.g. closed_4h")
     parser.add_argument("--temporal-filters", type=int, default=96)
     parser.add_argument("--temporal-kernels", default="3,5,9")
     parser.add_argument("--dilations", default="1,2,4,8,16,32")
@@ -236,13 +267,52 @@ def expand_group_features(
     return np.nan_to_num(expanded, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
 
 
+def parse_name_list(text: str) -> list[str]:
+    values: list[str] = []
+    for raw in str(text or "").replace(";", ",").split(","):
+        value = raw.strip()
+        if value and value not in values:
+            values.append(value)
+    return values
+
+
+def zero_feature_selection(meta: Mapping[str, Any], args: argparse.Namespace) -> tuple[np.ndarray, list[str], list[str]]:
+    names = [str(value) for value in np.asarray(meta.get("feature_names", [])).tolist()]
+    groups = [str(value) for value in np.asarray(meta.get("feature_groups", [])).tolist()]
+    if len(groups) != len(names):
+        groups = ["unknown"] * len(names)
+    zero_names = parse_name_list(getattr(args, "zero_feature_names", ""))
+    file_path = str(getattr(args, "zero_feature_file", "") or "").strip()
+    if file_path:
+        path = Path(file_path)
+        if not path.exists():
+            raise RuntimeError(f"zero-feature-file not found: {path}")
+        for line in path.read_text(encoding="utf-8").splitlines():
+            clean = line.split("#", 1)[0].strip()
+            if clean and clean not in zero_names:
+                zero_names.append(clean)
+    zero_groups = parse_name_list(getattr(args, "zero_feature_groups", ""))
+    selected: list[int] = []
+    zero_name_set = set(zero_names)
+    zero_group_set = set(zero_groups)
+    for idx, (name, group) in enumerate(zip(names, groups, strict=True)):
+        if name in zero_name_set or group in zero_group_set:
+            selected.append(idx)
+    resolved_names = [names[idx] for idx in selected]
+    return np.asarray(selected, dtype=np.int64), resolved_names, zero_groups
+
+
 def grouped_normalized_batch(
     normalized: np.ndarray,
     groups: OptionBGroups,
     branch_target_features: int,
     feature_augmentation_mode: str,
     feature_augmentation_clip: float,
+    zero_feature_indices: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
+    if zero_feature_indices is not None and len(zero_feature_indices):
+        normalized = normalized.copy()
+        normalized[:, :, np.asarray(zero_feature_indices, dtype=np.int64)] = 0.0
     return {
         "m5_context_input": expand_group_features(
             normalized[:, :, groups.m5_context],
@@ -273,6 +343,7 @@ def grouped_batch(
     branch_target_features: int = 0,
     feature_augmentation_mode: str = "off",
     feature_augmentation_clip: float = 8.0,
+    zero_feature_indices: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     normalized = normalize_batch_sequence(x_batch, mean, std)
     return grouped_normalized_batch(
@@ -281,6 +352,7 @@ def grouped_batch(
         branch_target_features,
         feature_augmentation_mode,
         feature_augmentation_clip,
+        zero_feature_indices,
     )
 
 
@@ -296,6 +368,7 @@ def make_grouped_sequence(
     branch_target_features: int = 0,
     feature_augmentation_mode: str = "off",
     feature_augmentation_clip: float = 8.0,
+    zero_feature_indices: np.ndarray | None = None,
     weights: Mapping[str, np.ndarray] | None = None,
     shuffle: bool = False,
 ) -> Any:
@@ -332,6 +405,7 @@ def make_grouped_sequence(
                 int(branch_target_features),
                 feature_augmentation_mode,
                 float(feature_augmentation_clip),
+                zero_feature_indices,
             )
             y_batch = {key: value[local] for key, value in self.targets.items()}
             if self.weights is None:
@@ -352,6 +426,7 @@ def make_grouped_predict_sequence(
     branch_target_features: int = 0,
     feature_augmentation_mode: str = "off",
     feature_augmentation_clip: float = 8.0,
+    zero_feature_indices: np.ndarray | None = None,
 ) -> Any:
     class OptionBPredictSequence(tf.keras.utils.Sequence):
         def __init__(self) -> None:
@@ -373,6 +448,7 @@ def make_grouped_predict_sequence(
                 int(branch_target_features),
                 feature_augmentation_mode,
                 float(feature_augmentation_clip),
+                zero_feature_indices,
             )
 
     return OptionBPredictSequence()
@@ -595,9 +671,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  tensor      : {tensor_path}")
         print(f"  meta        : {meta_path}")
         tf = require_tensorflow()
+        set_reproducibility_seed(tf, int(args.random_seed))
         x_all = np.load(tensor_path, mmap_mode="r")
         meta = load_meta(meta_path)
         groups = option_b_groups(meta)
+        zero_indices, zero_names, zero_groups = zero_feature_selection(meta, args)
         indices = selected_indices(len(x_all), int(args.max_samples))
         meta_scoped = {
             key: np.asarray(value)[indices]
@@ -649,6 +727,7 @@ def main(argv: list[str] | None = None) -> int:
             int(args.branch_target_features),
             args.feature_augmentation_mode,
             float(args.feature_augmentation_clip),
+            zero_indices,
             sample_weights(train_targets, args.class_weight),
             shuffle=True,
         )
@@ -664,6 +743,7 @@ def main(argv: list[str] | None = None) -> int:
             int(args.branch_target_features),
             args.feature_augmentation_mode,
             float(args.feature_augmentation_clip),
+            zero_indices,
             None,
             shuffle=False,
         )
@@ -687,6 +767,7 @@ def main(argv: list[str] | None = None) -> int:
                     int(args.branch_target_features),
                     args.feature_augmentation_mode,
                     float(args.feature_augmentation_clip),
+                    zero_indices,
                 ),
                 verbose=0,
             )
@@ -704,6 +785,7 @@ def main(argv: list[str] | None = None) -> int:
                     int(args.branch_target_features),
                     args.feature_augmentation_mode,
                     float(args.feature_augmentation_clip),
+                    zero_indices,
                 ),
                 verbose=0,
             )
@@ -734,6 +816,7 @@ def main(argv: list[str] | None = None) -> int:
             "metrics": metrics,
             "batch_log_path": str(batch_log_path),
             "production_status": "research_only_not_approved",
+            "random_seed": int(args.random_seed),
         }
         payload = {
             "scaler_mean": mean.tolist(),
@@ -744,6 +827,11 @@ def main(argv: list[str] | None = None) -> int:
                 "m5_context": groups.m5_context.tolist(),
                 "source_5m": groups.source_5m.tolist(),
                 "htf_context": groups.htf_context.tolist(),
+            },
+            "feature_selection": {
+                "zero_feature_indices": zero_indices.tolist(),
+                "zero_feature_names": zero_names,
+                "zero_feature_groups": zero_groups,
             },
             "thresholds": {
                 "buy_threshold": args.buy_threshold,
@@ -757,6 +845,7 @@ def main(argv: list[str] | None = None) -> int:
                 "branch_target_features": args.branch_target_features,
                 "feature_augmentation_mode": args.feature_augmentation_mode,
                 "feature_augmentation_clip": args.feature_augmentation_clip,
+                "random_seed": int(args.random_seed),
                 "temporal_filters": args.temporal_filters,
                 "temporal_kernels": parse_int_list(args.temporal_kernels, [3, 5, 9]),
                 "dilations": parse_int_list(args.dilations, [1, 2, 4, 8, 16, 32]),
@@ -804,6 +893,10 @@ def main(argv: list[str] | None = None) -> int:
             branch_target_features=int(args.branch_target_features),
             feature_augmentation_mode=str(args.feature_augmentation_mode),
             feature_augmentation_clip=float(args.feature_augmentation_clip),
+            random_seed=int(args.random_seed),
+            zeroed_feature_count=int(len(zero_indices)),
+            zeroed_feature_names=zero_names,
+            zeroed_feature_groups=zero_groups,
             model_path=model_path,
             record_path=record_path,
             architecture_json_path=architecture_path,
@@ -835,6 +928,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         print(f"  X shape     : {report.stored_x_shape}")
         print(f"  inputs      : {report.keras_input_shapes}")
+        print(f"  zeroed      : {len(zero_indices)} features")
         print(f"  val acc     : {metrics.get('val_action_accuracy', 0.0):.4f}")
         print(f"  test acc    : {metrics.get('test_action_accuracy', 0.0):.4f}")
         print(f"  test select : {metrics.get('test_selected_rate', 0.0):.2%}")

@@ -6219,3 +6219,1922 @@ Use validation for discovery. Do not drop based on final test only.
 Retrain/confirm on test and later walk-forward before adopting filters.
 ```
 
+## Phase149A feature impact result — 2026-09-19
+
+The owner supplied `run_logs\pivot_sequence_feature_impact\latest.json` for the validation-only feature/group ablation audit.
+
+Audit target/model:
+
+```text
+model_id        : gold_pivot_pattern_sequence_wavenet_option_b_180_5m
+model_version   : 1
+eval_split      : validation
+max_samples     : 24000
+max_windows     : 1500
+evaluated period: 2026-05-28 09:20:00+00:00 → 2026-06-29 10:35:00+00:00
+option_b_model  : true
+branch_target_features : 180
+augmentation    : causal, clip=8
+```
+
+Baseline validation metrics on the audit subset:
+
+```text
+action_accuracy : 0.6466666667
+top_ap          : 0.6543383331
+bottom_ap       : 0.4293868145
+buy_r_mae       : 0.5251473784
+sell_r_mae      : 0.5323911309
+selected_rate   : 0.4813333333
+composite       : 0.9241446131
+```
+
+Group ablation result:
+
+```text
+KEEP_IMPORTANT:
+- generated_5m   Δcomposite=-0.39947
+- source_5m      Δcomposite=-0.45480
+- session        Δcomposite=-0.04034
+- closed_1d      Δcomposite=-0.04649
+- m5_context     Δcomposite=-0.42006
+- htf_context    Δcomposite=-0.01588
+- all_features   Δcomposite=-1.16648
+
+DROP_CANDIDATE:
+- closed_4h      Δcomposite=+0.02278
+```
+
+Feature-level summary:
+
+```text
+feature_count       : 140
+checked_feature_count : 140
+DROP_CANDIDATE      : 26
+KEEP_IMPORTANT      : 31
+NEUTRAL             : 83
+```
+
+Strongest DROP_CANDIDATE examples from validation-only ablation:
+
+```text
+src5m_rolling_12_trades_timeout_rate_lag
+m5_pos_in_range_48
+src5m_specialist_max_prob
+src5m_rolling_12_trades_profit_factor_lag
+src5m_rolling_48_trades_profit_factor_lag
+src5m_rolling_48_trades_timeout_rate_lag
+m5_pos_in_range_96
+src5m_rolling_24_trades_avg_pnl_lag
+m5_mid_slow_dist_atr
+d1_ret3
+src5m_lagged_trade_count
+h4_ret3
+h4_rsi14
+src5m_last_closed_trade_pnl_lag
+src5m_rolling_12_trades_avg_pnl_lag
+m5_fast_mid_dist_atr
+m5_dist_low_48_atr
+src5m_range_1d_up_room_pct
+src5m_range_1d_down_room_pct
+m5_ret48
+m5_pos_in_range_24
+h4_room_down_atr
+src5m_5m_body_pct
+h4_close_mid_dist_atr
+m5_ret24
+src5m_rolling_48_trades_avg_pnl_lag
+```
+
+Strongest KEEP_IMPORTANT examples:
+
+```text
+src5m_rolling_24_trades_profit_factor_lag
+src5m_specialist_buy_minus_sell
+src5m_booster_buy_prob
+src5m_specialist_sell_minus_buy
+src5m_buy_specialist_prob
+src5m_booster_sell_prob
+session_dow_sin
+session_hour_cos
+src5m_sell_specialist_prob
+d1_mid_slow_dist_atr
+d1_room_down_atr
+m5_ema_fast
+m5_atr
+m5_dist_high_48_atr
+m5_ema_slow
+m5_volatility_24
+src5m_4h_last_closed_age_5m
+m5_dist_low_24_atr
+h4_range_pct
+d1_fast_mid_dist_atr
+d1_close_mid_dist_atr
+src5m_session_hour_cos
+m5_dist_high_96_atr
+src5m_1d_return_1
+src5m_booster_action_margin
+session_dow_cos
+m5_ret1
+m5_upper_wick_pct
+src5m_session_dow_cos
+m5_ema_mid
+src5m_1d_body_pct
+```
+
+Interpretation:
+
+```text
+- source_5m and generated_5m are strongly important as groups.
+- session/time is useful despite only four raw columns.
+- closed_1d is useful.
+- closed_4h as a group is suspicious in this 180-channel model and should become a controlled ablation candidate.
+- Individual DROP_CANDIDATE labels are not delete commands; they are validation-discovered hypotheses.
+```
+
+Anti-overfit rule:
+
+```text
+Do not delete features solely from this audit.
+Use this result to define controlled pruning experiments, then retrain and confirm on test/walk-forward.
+```
+
+Recommended controlled pruning experiments:
+
+```text
+P0 baseline: current raw-branch Option B winner
+P1 remove closed_4h group only
+P2 remove top 10 validation DROP_CANDIDATE features
+P3 remove all 26 validation DROP_CANDIDATE features
+P4 remove closed_4h + top 10 DROP_CANDIDATE features
+```
+
+## Phase149B pruned-feature training support — 2026-09-19
+
+After the Phase149A validation feature-impact result, training and prediction loaders were extended to support controlled feature-zeroing experiments.
+
+Implemented in:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+```
+
+New trainer flags:
+
+```text
+--zero-feature-names "name1,name2,..."
+--zero-feature-file configs/phase149a_option_b_180_validation_drop_candidates.txt
+--zero-feature-groups "closed_4h"
+```
+
+Tracked drop-list file:
+
+```text
+configs/phase149a_option_b_180_validation_drop_candidates.txt
+```
+
+It contains the 26 validation-discovered DROP_CANDIDATE features from Phase149A.
+
+Behavior:
+
+```text
+The original tensor is not rewritten.
+Selected features are zeroed after train-only normalization and before Option B grouping/causal augmentation.
+Model records store the feature_selection payload.
+Backtest/range archive loaders apply the same zero mask at prediction time.
+```
+
+Recommended controlled experiment command:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --zero-feature-file configs\phase149a_option_b_180_validation_drop_candidates.txt `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 25 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned `
+  --report-title "Option B 180 pruned validation-drop-candidate training"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/audit_pivot_sequence_feature_impact.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_feature_impact.py tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 69 passed
+```
+
+Anti-overfit reminder:
+
+```text
+This model is a controlled experiment using validation-discovered drop candidates.
+If it improves validation, confirm with test PnL and then walk-forward before adopting.
+```
+
+## Phase149B pruned 180-channel training result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned\latest.json` and late batch/epoch logs for the controlled pruned 180-channel Option B experiment.
+
+Training configuration:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m
+version               : 1
+stored_x_shape        : [24000, 100, 140]
+keras inputs          : [batch,100,180] × 3 branches
+max_samples           : 24000
+branch_target_features: 180
+augmentation          : causal, clip=8
+zero_feature_file     : configs\phase149a_option_b_180_validation_drop_candidates.txt
+zeroed_feature_count  : 26
+epochs                : 200
+early_stopping_patience: 200
+nonfinite_input_values: 0
+```
+
+Zeroed validation-discovered DROP_CANDIDATE features included:
+
+```text
+m5_fast_mid_dist_atr
+m5_mid_slow_dist_atr
+m5_pos_in_range_24
+m5_pos_in_range_48
+m5_dist_low_48_atr
+m5_pos_in_range_96
+m5_ret24
+m5_ret48
+h4_ret3
+h4_close_mid_dist_atr
+h4_rsi14
+h4_room_down_atr
+d1_ret3
+src5m_5m_body_pct
+src5m_specialist_max_prob
+src5m_range_1d_up_room_pct
+src5m_range_1d_down_room_pct
+src5m_lagged_trade_count
+src5m_last_closed_trade_pnl_lag
+src5m_rolling_12_trades_avg_pnl_lag
+src5m_rolling_12_trades_profit_factor_lag
+src5m_rolling_12_trades_timeout_rate_lag
+src5m_rolling_24_trades_avg_pnl_lag
+src5m_rolling_48_trades_avg_pnl_lag
+src5m_rolling_48_trades_profit_factor_lag
+src5m_rolling_48_trades_timeout_rate_lag
+```
+
+Final report metrics:
+
+```text
+val_action_accuracy : 0.6875000000
+val_top_ap          : 0.3458503914
+val_bottom_ap       : 0.2774233380
+val_buy_r_mae       : 0.6454545856
+val_sell_r_mae      : 0.6455140710
+val_selected_rate   : 0.3026960784
+
+test_action_accuracy : 0.6611519608
+test_top_ap          : 0.2793102151
+test_bottom_ap       : 0.2795754914
+test_buy_r_mae       : 0.7160413861
+test_sell_r_mae      : 0.7160999179
+test_selected_rate   : 0.3060661765
+```
+
+Late training log showed strong train/validation divergence:
+
+```text
+epoch 198 train_acc≈0.9917, val_loss≈3.0868
+epoch 199 train_acc≈0.9933, val_loss≈2.7145
+epoch 200 train_acc≈0.9945, val_loss≈2.9824
+```
+
+Interpretation:
+
+```text
+- The model heavily overfit by late epochs.
+- The final report metrics are still useful only if restored/best validation weights were used; in any case, the late logs confirm that patience=200 is too large for future runs.
+- Despite overfit risk, the pruned 180-channel model improved test diagnostics versus raw Option B on this 24k benchmark.
+```
+
+Comparison to raw Option B 24k:
+
+```text
+Raw Option B:
+  test_action_accuracy : 0.6544
+  test_top_ap          : 0.2637
+  test_bottom_ap       : 0.2550
+  test_buy/sell_r_mae  : ~0.820 / ~0.820
+  test_selected_rate   : 0.3134
+  PnL/PF               : +1.8765%, PF=1.0377
+
+Pruned 180 Option B:
+  test_action_accuracy : 0.6612
+  test_top_ap          : 0.2793
+  test_bottom_ap       : 0.2796
+  test_buy/sell_r_mae  : ~0.716 / ~0.716
+  test_selected_rate   : 0.3061
+  PnL/PF               : pending
+```
+
+Decision:
+
+```text
+The pruned 180-channel model is now the strongest classifier/ranking diagnostic among the 24k sequence models.
+It must not be promoted until PnL audit and range-aware archive confirm it.
+Next action: run fair Phase146A ATR PnL audit for gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m, then Phase148A range-aware archive if promising.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149B pruned 180 PnL audit failure — 2026-09-20
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned_backtest\latest.json` for the ATR-based PnL audit of the pruned 180-channel Option B model.
+
+Backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m
+model_version     : 1
+eval_split        : test
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy/sell threshold: 0.34 / 0.34
+min_margin        : 0
+tp/sl multiplier  : 0.75 / 0.75
+hold_bars         : 48
+spread            : pct 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Result:
+
+```text
+trades             : 120
+BUY / SELL trades  : 41 / 79
+wins / losses      : 57 / 63
+win_rate           : 47.50%
+final_balance      : 91.6591309299
+return_percent     : -8.3408690701%
+total_cash_pnl     : -8.3408690701
+gross_profit       : 36.3334344612
+gross_loss         : 44.6743035313
+profit_factor      : 0.8132960469
+max_drawdown_cash  : 10.2459750447
+take_profit        : 26
+stop_loss          : 38
+timeout            : 56
+```
+
+Side breakdown:
+
+```text
+BUY cash PnL  : +0.1146579499
+SELL cash PnL : -8.4555270200
+```
+
+Monthly result:
+
+```text
+2026-07 : -5.3828214745 / 99 trades
+2026-08 : -2.9580475956 / 21 trades
+positive_months : 0
+negative_months : 2
+```
+
+Comparison to raw Option B 24k benchmark:
+
+```text
+Raw Option B:
+  final_balance : 101.8764768367
+  return        : +1.8765%
+  PF            : 1.0377
+  maxDD         : 7.7910
+  BUY PnL       : +1.9372
+  SELL PnL      : -0.0608
+  months        : July +4.1184, August -2.2419
+
+Pruned 180 Option B:
+  final_balance : 91.6591309299
+  return        : -8.3409%
+  PF            : 0.8133
+  maxDD         : 10.2460
+  BUY PnL       : +0.1147
+  SELL PnL      : -8.4555
+  months        : July -5.3828, August -2.9580
+```
+
+Interpretation:
+
+```text
+- The pruned 180-channel model improved classifier/ranking diagnostics but failed trading replay badly.
+- The validation-discovered DROP_CANDIDATE pruning did not transfer to PnL.
+- SELL side became the dominant damage source again.
+- Both evaluated months are negative.
+- This confirms the anti-overfit warning: feature ablation improvements on validation classification metrics are not sufficient for trade profitability.
+```
+
+Decision:
+
+```text
+Reject gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m as a trading candidate.
+Do not continue range-aware archive or full training for this pruned 180 model.
+Current best research candidate reverts to raw Option B 24k: gold_pivot_pattern_sequence_wavenet_option_b_5m.
+Next steps should focus on raw Option B range-aware archive and/or validation-based TP/SL/side-specific filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+
+
+## Latest execution result — raw Option B full-dataset rebuild failed PnL — 2026-09-20
+
+The owner retrained raw Option B on the full tensor because the earlier current-best 24k model artifact had been deleted.
+
+Dataset/feature health for this run is OK:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_full_5m
+stored_x_shape        : [53098, 100, 140]
+samples               : 53098
+train/validation/test : 37168 / 7629 / 7629
+Option B groups       : 35 / 83 / 22
+source_5m_features    : 83
+branch_target_features: 0
+augmentation          : off
+zeroed_features       : 0
+nonfinite_input_values: 0
+```
+
+Training diagnostics:
+
+```text
+val_action_accuracy  : 0.6051907196
+test_action_accuracy : 0.5586577533
+test_top_ap          : 0.2518729500
+test_bottom_ap       : 0.2330887866
+test_selected_rate   : 0.4570717001
+```
+
+ATR PnL check:
+
+```text
+evaluated period  : 2026-07-24 14:05:00+00:00 → 2026-09-02 10:25:00+00:00
+trades            : 174
+buy/sell          : 93 / 81
+wins/losses       : 86 / 88
+final_balance     : 96.1853978886
+return_percent    : -3.8146021114%
+profit_factor     : 0.9402022118
+max_drawdown_cash : 15.1989241036
+BUY PnL           : +1.0795518044
+SELL PnL          : -4.8941539158
+monthly           : 2026-07 +4.9827, 2026-08 -9.2147, 2026-09 +0.4173
+```
+
+Decision:
+
+```text
+The dataset/features are structurally healthy; this is not a NaN/Inf or tensor-shape failure.
+The full-dataset raw Option B model is rejected as a trading candidate because PnL is negative and drawdown is larger than prior 24k raw Option B.
+Current research status remains diagnostic-only. To continue Step 4 archive work, rebuild the 24k raw Option B model or run range-aware archive only as a diagnostic on the full model.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149B/147D PowerShell empty zero-feature flag fix — 2026-09-20
+
+The owner reran raw Option B 24k rebuild with explicit empty zero-feature flags:
+
+```text
+--zero-feature-names ""
+--zero-feature-file ""
+--zero-feature-groups ""
+```
+
+PowerShell/native argv handling dropped the empty strings, so argparse saw `--zero-feature-names` without a value and failed:
+
+```text
+train_pivot_pattern_sequence_wavenet_option_b.py: error: argument --zero-feature-names: expected one argument
+```
+
+Fix implemented in:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+```
+
+The three optional zero-feature flags now use:
+
+```text
+nargs="?"
+const=""
+default=""
+```
+
+Safe forms now include both:
+
+```powershell
+# recommended for no pruning: omit these flags entirely
+
+# also accepted now if a shell drops the empty value
+--zero-feature-names
+--zero-feature-file
+--zero-feature-groups
+```
+
+Immediate operator workaround on older checkouts:
+
+```text
+Remove the three empty zero-feature lines from the raw Option B rebuild command.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py -q
+→ 4 passed
+```
+
+## Phase147E raw Option B 24k rebuild result — previous weak-positive result did not reproduce — 2026-09-20
+
+The owner rebuilt the raw Option B 24k model after the earlier historical current-best artifact had been deleted.
+
+Training configuration:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_5m
+version               : 1
+max_samples           : 24000
+stored_x_shape        : [24000, 100, 140]
+keras inputs          : [batch,100,35] / [batch,100,83] / [batch,100,22]
+branch_target_features: 0
+augmentation          : off
+zeroed_feature_count  : 0
+nonfinite_input_values: 0
+```
+
+Training diagnostics:
+
+```text
+val_action_accuracy  : 0.6875000000
+val_top_ap           : 0.4298344451
+val_bottom_ap        : 0.3018743404
+val_buy_r_mae        : 0.6229432821
+val_sell_r_mae       : 0.6397787333
+val_selected_rate    : 0.3452818627
+
+test_action_accuracy : 0.6151960784
+test_top_ap          : 0.2843775626
+test_bottom_ap       : 0.3673007788
+test_buy_r_mae       : 0.6919192076
+test_sell_r_mae      : 0.6780540347
+test_selected_rate   : 0.4056372549
+```
+
+ATR PnL check:
+
+```text
+eval_split        : test
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+trades            : 135
+BUY / SELL trades : 46 / 89
+wins / losses     : 60 / 75
+win_rate          : 44.4444%
+final_balance     : 90.7052413035
+return_percent    : -9.2947586965%
+total_cash_pnl    : -9.2947586965
+profit_factor     : 0.8270058072
+max_drawdown_cash : 10.7624722054
+take_profit       : 34
+stop_loss         : 46
+timeout           : 55
+BUY PnL           : -5.3900375011
+SELL PnL          : -3.9047211954
+monthly           : 2026-07 -3.6628516601, 2026-08 -5.6319070363
+positive_months   : 0
+negative_months   : 2
+```
+
+Comparison with the deleted historical raw Option B 24k benchmark:
+
+```text
+Historical raw B 24k:
+  test_action_accuracy : 0.6544
+  test_selected_rate   : 0.3134
+  final_balance        : 101.8765
+  return               : +1.8765%
+  PF                   : 1.0377
+  maxDD                : 7.7910
+  BUY PnL              : +1.9372
+  SELL PnL             : -0.0608
+
+Rebuilt raw B 24k:
+  test_action_accuracy : 0.6152
+  test_selected_rate   : 0.4056
+  final_balance        : 90.7052
+  return               : -9.2948%
+  PF                   : 0.8270
+  maxDD                : 10.7625
+  BUY PnL              : -5.3900
+  SELL PnL             : -3.9047
+```
+
+Interpretation:
+
+```text
+The dataset/features are still healthy. This is not a tensor-shape or NaN/Inf issue.
+The old weak-positive Option B artifact was not reproducible after deletion and retraining.
+The new run selected a different local solution: lower action accuracy, higher selected_rate, and materially worse trade timing.
+Both BUY and SELL are negative, and both evaluated months are negative.
+```
+
+Important root cause / correction:
+
+```text
+The Option B trainer did not previously expose a run seed. The batch Sequence shuffle used a fixed RNG, but TensorFlow/Keras initialization, dropout, and some backend operations were not under an explicit recorded seed.
+Deleting the old model artifact made exact recovery impossible.
+```
+
+Fix implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+--random-seed 20260919
+```
+
+The trainer now calls Python/NumPy/TensorFlow seed setters before model creation and records the seed in the training record/report. The GUI command `Train pivot sequence WaveNet Option B` now has a `Random seed` field and forwards `--random-seed`.
+
+Caution:
+
+```text
+A seed improves controlled reruns but does not guarantee byte-identical output across every GPU/TF backend. It also cannot recover the deleted old artifact.
+```
+
+Decision:
+
+```text
+Reject this rebuilt raw Option B 24k model as a trading candidate.
+Do not run Phase148A range-aware archive on this rebuilt v1 as if it were the old winner.
+The previous weak-positive raw Option B result is now treated as fragile/non-reproducible until a seeded validation/test process can reproduce it.
+Next valid research step is not blind retraining; it is a controlled repeatability/seed audit selected on validation and confirmed on test.
+No Phase134. No paper shadow. No live trading.
+```
+
+Verification for reproducibility-seed support:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/handlers.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 43 passed
+```
+
+## Phase147F raw Option B 24k rebuild validation-vs-test transfer failure — 2026-09-20
+
+The owner ran the validation ATR PnL check for the rebuilt raw Option B 24k model after its test PnL failed.
+
+Validation replay configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_5m
+model_version     : 1
+eval_split        : validation
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-05-28 09:20:00+00:00 → 2026-07-01 09:05:00+00:00
+buy/sell threshold: 0.34 / 0.34
+min_margin        : 0
+tp/sl multiplier  : 0.75 / 0.75
+hold_bars         : 48
+spread            : pct 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Validation result:
+
+```text
+trades             : 110
+BUY / SELL trades  : 70 / 40
+wins / losses      : 62 / 48
+win_rate           : 56.3636%
+final_balance      : 108.7914207603
+return_percent     : +8.7914207603%
+total_cash_pnl     : +8.7914207603
+gross_profit       : 43.2124907078
+gross_loss         : 34.4210699475
+profit_factor      : 1.2554081199
+max_drawdown_cash  : 5.9715931205
+take_profit        : 33
+stop_loss          : 25
+timeout            : 52
+BUY PnL            : -1.8550476298
+SELL PnL           : +10.6464683900
+monthly            : 2026-05 +1.1865238507, 2026-06 +7.6048969096
+positive_months    : 2
+negative_months    : 0
+```
+
+Same rebuilt model on test:
+
+```text
+trades             : 135
+final_balance      : 90.7052413035
+return_percent     : -9.2947586965%
+profit_factor      : 0.8270058072
+max_drawdown_cash  : 10.7624722054
+BUY PnL            : -5.3900375011
+SELL PnL           : -3.9047211954
+monthly            : 2026-07 -3.6628516601, 2026-08 -5.6319070363
+positive_months    : 0
+negative_months    : 2
+```
+
+Interpretation:
+
+```text
+This is a clear validation-to-test transfer failure.
+The model has strong validation PnL, but that edge is almost entirely SELL-side and does not survive the later test regime.
+Validation: BUY is negative, SELL is strongly positive.
+Test: both BUY and SELL are negative.
+```
+
+Decision:
+
+```text
+Do not promote the rebuilt raw Option B 24k model.
+Do not run Step 4/range-aware archive on this model as if it is the historical winner.
+The correct next phase is a controlled anti-overfit validation-to-test audit: discover only on validation, confirm on test, and later walk-forward.
+No Phase134. No paper shadow. No live trading.
+```
+
+Recommended next research phase:
+
+```text
+Phase150A — Option B validation-to-test transfer / seed-threshold audit
+```
+
+Required anti-overfit rules for Phase150A:
+
+```text
+- validation is for discovery only
+- test is confirmation only
+- no threshold/filter chosen from test
+- if validation-selected candidate fails test, reject it
+- if test passes, still require walk-forward before paper/live
+```
+
+## Phase148B range-aware archive now supports train/validation splits — 2026-09-20
+
+The owner proposed the correct next direction after the raw Option B rebuild showed validation-to-test transfer failure:
+
+```text
+Build/run a more realistic simulation backtest where TP and SL are derived from range forecasts.
+Run it fully on train and validation first.
+Then perform anti-overfit filtering/selection from those archive outputs before any test confirmation.
+```
+
+Assessment:
+
+```text
+This is the correct direction. The previous ATR-only PnL checks may be too crude for exit geometry, and test must be held back for confirmation rather than used for discovery.
+```
+
+Implementation update:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+GUI: Backtest pivot sequence WaveNet PnL
+GUI: Backtest sequence WaveNet range-aware archive
+```
+
+Both backtest scripts now support:
+
+```text
+--eval-split train
+```
+
+Previously Phase148A range-aware archive supported only:
+
+```text
+test, validation, all, tail
+```
+
+Now the realistic range-aware archive can be generated separately for:
+
+```text
+train      → in-sample anatomy / diagnostics only
+validation → discovery / filter selection
+test       → confirmation only, not tuning
+```
+
+Anti-overfit rule:
+
+```text
+Do not use test for discovery.
+Run train + validation range-aware archives first.
+Discover candidate thresholds/filters from train/validation only.
+Then run exactly one unchanged confirmation on test.
+If test fails, reject.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/handlers.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase148C range-aware train/validation archive result — range-model TP/SL failed badly — 2026-09-20
+
+The owner ran the Phase148B range-aware archive on the rebuilt raw Option B 24k model using range-derived TP/SL from range models.
+
+Common configuration:
+
+```text
+model_id            : gold_pivot_pattern_sequence_wavenet_option_b_5m
+model_version       : 1
+max_samples         : 24000
+range_source        : auto → models
+range_bracket_mode  : range_capped
+range_fallback      : skip
+range_1d_model_id   : gold_range_1d
+range_4h_model_id   : gold_range_4h
+use_1d_tp_cap       : 1
+max_tp_atr          : 2.0
+max_sl_atr          : 1.25
+min_tp_distance     : 0.5
+min_sl_distance     : 0.5
+hold_bars           : 48
+spread              : pct 0.06
+same_bar_policy     : stop_first
+```
+
+Train archive result:
+
+```text
+eval_split        : train
+evaluated period  : 2025-11-28 17:05:00+00:00 → 2026-05-25 19:15:00+00:00
+evaluated_samples : 16800
+trades            : 1176
+BUY / SELL        : 547 / 629
+wins / losses     : 392 / 784
+win_rate          : 33.3333%
+final_balance     : 6.5162807311
+return_percent    : -93.4837192689%
+total_cash_pnl    : -93.4837192689
+profit_factor     : 0.6073804291
+max_drawdown_cash : 93.5008911264
+take_profit       : 356
+stop_loss         : 769
+timeout           : 51
+invalid_bracket   : 1410
+BUY PnL           : -28.2722708191
+SELL PnL          : -65.2114484498
+positive_months   : 0
+negative_months   : 7
+```
+
+Train monthly summary:
+
+```text
+2025-11 :  -4.9010 / 5 trades
+2025-12 : -45.9841 / 233 trades
+2026-01 : -24.8121 / 215 trades
+2026-02 :  -2.3687 / 167 trades
+2026-03 :  -1.3067 / 176 trades
+2026-04 :  -9.3004 / 215 trades
+2026-05 :  -4.8107 / 165 trades
+```
+
+Validation archive result:
+
+```text
+eval_split        : validation
+evaluated period  : 2026-05-28 09:20:00+00:00 → 2026-07-01 09:05:00+00:00
+evaluated_samples : 3264
+trades            : 250
+BUY / SELL        : 151 / 99
+wins / losses     : 53 / 197
+win_rate          : 21.2000%
+final_balance     : 27.1922217861
+return_percent    : -72.8077782139%
+total_cash_pnl    : -72.8077782139
+profit_factor     : 0.3114226665
+max_drawdown_cash : 76.6329350539
+take_profit       : 49
+stop_loss         : 194
+timeout           : 7
+invalid_bracket   : 392
+BUY PnL           : -50.9467117142
+SELL PnL          : -21.8610664997
+positive_months   : 0
+negative_months   : 2
+```
+
+Validation monthly summary:
+
+```text
+2026-05 :  -5.5864 / 16 trades
+2026-06 : -67.2213 / 234 trades
+```
+
+Comparison to ATR validation for the same rebuilt model:
+
+```text
+ATR validation:
+  final_balance : 108.7914
+  PF            : 1.2554
+  maxDD         : 5.9716
+  BUY PnL       : -1.8550
+  SELL PnL      : +10.6465
+
+Range-aware validation:
+  final_balance : 27.1922
+  PF            : 0.3114
+  maxDD         : 76.6329
+  BUY PnL       : -50.9467
+  SELL PnL      : -21.8611
+```
+
+Interpretation:
+
+```text
+The owner’s proposed workflow was correct: build/run realistic range-aware TP/SL archive before filtering.
+The result shows the current range-model TP/SL geometry is unusable with this sequence model.
+This is not a model-entry improvement; it is a bracket failure.
+```
+
+Key failure signatures:
+
+```text
+- range_source resolved to models, not flat cached range columns.
+- Train and validation both collapse, so this is not only out-of-time overfit.
+- Stop-loss rate is extremely high: train 769/1176, validation 194/250.
+- Timeouts nearly disappear under range brackets, meaning trades are being resolved by TP/SL quickly, mostly by SL.
+- Many invalid brackets occur: train 1410, validation 392.
+- BUY and SELL are both negative under range-aware validation.
+- Many preview trades show very tight stop distances, sometimes near min_sl_distance=0.5, combined with fixed risk sizing and stop_first same-bar policy.
+```
+
+Decision:
+
+```text
+Reject current Phase148 range-model TP/SL configuration as a viable simulation rule.
+Do not use these range-aware train/validation archives for strategy filter selection yet; their base bracket geometry fails before filtering.
+Do not run test range-aware confirmation for this configuration.
+The next research should be bracket diagnostics/calibration, not signal filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+Recommended next phase:
+
+```text
+Phase150A — Range bracket geometry audit for pivot sequence archive
+```
+
+Recommended controls for Phase150A:
+
+```text
+1. ATR mode control inside the same archive script:
+   --range-bracket-mode atr
+   This should roughly reproduce the ATR baseline and proves the archive/prediction path is not the source of damage.
+
+2. Range model diagnostics:
+   distribution of tp_distance/sl_distance, min-distance hits, same-bar stop rate, invalid bracket rate, side/month breakdown.
+
+3. Validation-only bracket grid:
+   min_sl_distance: 0.5, 2, 5, 10, 15
+   min_tp_distance: 0.5, 2, 5
+   max_tp_atr/max_sl_atr alternatives
+   use_1d_tp_cap 0/1
+   range_fallback skip/atr
+   same_bar_policy stop_first/tp_first as sensitivity only
+
+4. Test remains untouched until a validation-selected bracket policy exists.
+```
+
+## Phase150A range bracket geometry audit implemented — 2026-09-20
+
+Implemented the next diagnostic phase after Phase148C showed catastrophic range-model TP/SL results on train and validation.
+
+Implemented:
+
+```text
+scripts/audit_pivot_sequence_range_bracket_geometry.py
+GUI: Audit sequence range bracket geometry
+```
+
+Purpose:
+
+```text
+Replay already-archived Phase148 predictions under alternative bracket policies without retraining and without changing model predictions.
+```
+
+This phase includes an ATR-control policy inside the same archive replay path:
+
+```text
+range_bracket_mode=atr
+```
+
+and range policies over:
+
+```text
+range_bracket_modes
+range_fallbacks
+use_1d_tp_cap
+min_tp_distance
+min_sl_distance
+max_tp_atr
+max_sl_atr
+same_bar_policy
+allowed_sides
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_range_bracket_geometry\latest.json
+run_logs\pivot_sequence_range_bracket_geometry\latest.html
+run_logs\pivot_sequence_range_bracket_geometry\latest_grid.csv
+run_logs\pivot_sequence_range_bracket_geometry\latest_best_trades.csv
+```
+
+Anti-overfit rule:
+
+```text
+Run on validation first.
+Select bracket policy only from validation.
+Test remains confirmation-only.
+No paper/live/Phase134.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_sequence_range_bracket_geometry.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_range_bracket_geometry.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+## Phase150A range bracket geometry audit result — ATR control wins, range adds no edge — 2026-09-20
+
+The owner ran Phase150A on the validation Phase148 prediction archive.
+
+Input:
+
+```text
+predictions_path : run_logs\pivot_pattern_sequence_wavenet_range_archive_validation\latest_predictions.parquet
+flat_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet
+split_name       : validation
+evaluated_rows   : 3264
+policies         : 735
+score_metric     : drawdown_adjusted
+min_trades       : 30
+```
+
+Best policy:
+
+```text
+policy_key        : mode=atr|fallback=skip|use1d=0|min_tp=0.5|min_sl=0.5|max_tp_atr=0|max_sl_atr=0|min4h=0|min1d=0|same=stop_first
+range_bracket_mode: atr
+trades            : 110
+BUY / SELL        : 70 / 40
+wins / losses     : 62 / 48
+win_rate          : 56.3636%
+final_balance     : 108.7914207603
+return_percent    : +8.7914207603%
+total_cash_pnl    : +8.7914207603
+profit_factor     : 1.2554081199
+max_drawdown_cash : 5.9715931205
+BUY PnL           : -1.8550476298
+SELL PnL          : +10.6464683900
+positive_months   : 2
+negative_months   : 0
+pass_gate         : 1
+```
+
+Baseline ATR policy is identical to the best policy:
+
+```text
+baseline_atr_policy.rank = 1
+baseline_atr_policy.PF   = 1.2554081199
+```
+
+Top-15 policies were all ATR variants. The `min_tp_distance` / `min_sl_distance` values did not change the ATR result because actual ATR distances were already larger than those minima:
+
+```text
+avg_tp_distance    : 31.0171
+avg_sl_distance    : 31.0171
+median_tp_distance : 31.6098
+median_sl_distance : 31.6098
+min_sl_hits        : 0
+min_tp_hits        : 0
+```
+
+Best non-ATR range-enhanced policy in top list:
+
+```text
+policy_key        : mode=range_capped|fallback=atr|use1d=0|min_tp=0.5|min_sl=15|max_tp_atr=2|max_sl_atr=1.25|min4h=0|min1d=0|same=stop_first
+rank              : 16
+trades            : 124
+BUY / SELL        : 77 / 47
+wins / losses     : 66 / 58
+final_balance     : 106.7674592914
+return_percent    : +6.7674592914%
+profit_factor     : 1.1439634226
+max_drawdown_cash : 9.7927443251
+BUY PnL           : -5.2818947734
+SELL PnL          : +12.0493540648
+positive_months   : 1
+negative_months   : 1
+pass_gate         : 1
+```
+
+Interpretation:
+
+```text
+- The Phase148 prediction/archive replay path is healthy because ATR-control exactly reproduces the earlier positive validation ATR result.
+- Current range-model TP/SL does not add edge on validation; the best overall policy is pure ATR, not range.
+- A range_capped+ATR-fallback policy with min_sl=15 is less catastrophic than raw range, but it is still worse than ATR and still depends on SELL while BUY is negative.
+- Since ATR-control is the validation-selected best policy and that same ATR policy already failed test, the candidate fails validation→test confirmation.
+```
+
+Existing test confirmation for the same ATR policy:
+
+```text
+ATR test for rebuilt raw Option B 24k:
+  final_balance : 90.7052413035
+  return        : -9.2947586965%
+  PF            : 0.8270058072
+  maxDD         : 10.7624722054
+  BUY PnL       : -5.3900375011
+  SELL PnL      : -3.9047211954
+```
+
+Decision:
+
+```text
+Reject the rebuilt raw Option B 24k candidate.
+Reject current range-model TP/SL as an improvement over ATR.
+Do not run paper/live/Phase134.
+Do not proceed to signal-filtering on the failed range archive as if it were a viable base.
+```
+
+Allowed diagnostic if the owner wants to continue investigating range:
+
+```text
+Confirm the best non-ATR validation policy on test exactly once:
+mode=range_capped, fallback=atr, use1d=0, min_tp=0.5, min_sl=15, max_tp_atr=2, max_sl_atr=1.25, same=stop_first.
+This is diagnostic only because it was rank 16, not the best validation policy.
+```
+
+Recommended strategic next phase:
+
+```text
+Phase151A — Pivot sequence walk-forward / seed-repeatability validation
+```
+
+Rationale:
+
+```text
+The model shows validation-only edge and test failure. The next proof must be walk-forward/repeated-seed validation, not more test-aware tuning.
+```
+
+## Phase151A Option B seed transfer validation implemented — 2026-09-20
+
+Implemented the repeatability/transfer audit requested after Phase150A.
+
+Implemented:
+
+```text
+scripts/run_pivot_sequence_option_b_seed_transfer_validation.py
+GUI: Run Option B seed transfer validation
+```
+
+Protocol:
+
+```text
+For each seed:
+  train raw Option B with explicit --random-seed
+  run validation ATR PnL backtest
+  run test ATR PnL backtest
+  select only by validation score
+  report test confirmation/pass-fail
+```
+
+Default seeds:
+
+```text
+20260919,20260920,20260921
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_option_b_seed_transfer\latest.json
+run_logs\pivot_sequence_option_b_seed_transfer\latest.html
+run_logs\pivot_sequence_option_b_seed_transfer\latest.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/run_pivot_sequence_option_b_seed_transfer_validation.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_option_b_seed_transfer.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase151A trainer report bug fixed / resume existing seed models — 2026-09-20
+
+The owner started Phase151A. The first seed model (`20260919`) trained and saved its model artifacts, but the trainer crashed while building the JSON report:
+
+```text
+[X] TypeError: OptionBReport.__init__() missing 1 required positional argument: 'random_seed'
+```
+
+Root cause:
+
+```text
+Phase147E added `random_seed` to the OptionBReport dataclass, but one report construction path did not pass `random_seed=int(args.random_seed)`.
+```
+
+Important state:
+
+```text
+The model artifact was saved before the report crash:
+datasets\models\gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260919\v1_model.keras
+datasets\models\gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260919\v1_training.json
+```
+
+Fixes implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+  - OptionBReport construction now includes random_seed.
+
+scripts/run_pivot_sequence_option_b_seed_transfer_validation.py
+  - added --skip-existing-models {0,1}, default=1.
+  - If a seed model already has v*_training.json, Phase151A skips retraining that seed and runs validation/test backtests.
+```
+
+GUI update:
+
+```text
+Run Option B seed transfer validation
+  Skip existing models = 1/0
+```
+
+Recommended recovery action:
+
+```text
+Replace with the fixed zip and rerun the same Phase151A command.
+The script should detect the existing seed_20260919 model and continue without retraining it.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/run_pivot_sequence_option_b_seed_transfer_validation.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_seed_transfer.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+## Phase151A execution result — seed transfer failed — 2026-09-21
+
+The owner ran Phase151A with three explicit seeds:
+
+```text
+20260919
+20260920
+20260921
+```
+
+The validation-selected seed was:
+
+```text
+selected_seed     : 20260921
+selected_model_id : gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260921
+selection_metric  : drawdown_adjusted
+```
+
+Selected seed validation result:
+
+```text
+validation_trades          : 103
+validation_final_balance   : 107.4354957611
+validation_return_percent  : +7.4354957611%
+validation_profit_factor   : 1.2310390020
+validation_max_drawdown    : 5.5600713875
+validation_total_cash_pnl  : +7.4354957611
+validation_buy_cash_pnl    : +0.1865227161
+validation_sell_cash_pnl   : +7.2489730450
+validation_positive_months : 1
+validation_negative_months : 2
+validation_pass_gate       : 1
+```
+
+Selected seed test result:
+
+```text
+test_trades          : 104
+test_final_balance   : 93.2596575995
+test_return_percent  : -6.7403424005%
+test_profit_factor   : 0.8213467893
+test_max_drawdown    : 10.0037166505
+test_total_cash_pnl  : -6.7403424005
+test_buy_cash_pnl    : -1.3009957153
+test_sell_cash_pnl   : -5.4393466852
+test_positive_months : 1
+test_negative_months : 1
+test_pass_gate       : 0
+transfer_pass_gate   : 0
+```
+
+All seed results:
+
+```text
+seed 20260921:
+  validation PF/final : 1.2310 / 107.4355
+  test PF/final       : 0.8213 / 93.2597
+  transfer_pass       : 0
+
+seed 20260920:
+  validation PF/final : 1.0051 / 100.2053
+  test PF/final       : 0.9510 / 97.7156
+  transfer_pass       : 0
+
+seed 20260919:
+  validation PF/final : 0.9919 / 99.6772
+  test PF/final       : 0.8707 / 93.9395
+  transfer_pass       : 0
+```
+
+Interpretation:
+
+```text
+Phase151A failed. The best validation seed did not transfer to test.
+The only seed with validation pass gate (20260921) failed test badly.
+No seed passed transfer_pass_gate.
+```
+
+Decision:
+
+```text
+Reject raw Option B 24k seed-repeatability route as a trading candidate.
+Do not continue with Step 4 archive/filtering for this Option B family as a production path.
+Any future pivot-sequence work needs target/label/architecture or walk-forward redesign, not more blind seed retrains.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase150A best non-ATR test confirmation failed — 2026-09-21
+
+The owner ran the optional diagnostic test confirmation for the best non-ATR validation policy from Phase150A.
+
+Policy:
+
+```text
+range_bracket_mode : range_capped
+range_fallback     : atr
+use_1d_tp_cap      : 0
+min_tp_distance    : 0.5
+min_sl_distance    : 15
+max_tp_atr         : 2.0
+max_sl_atr         : 1.25
+same_bar_policy    : stop_first
+```
+
+Validation rank-16 result was:
+
+```text
+validation_final_balance : 106.7675
+validation_PF            : 1.1440
+validation_maxDD         : 9.7927
+```
+
+Test confirmation result:
+
+```text
+eval_split        : test
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+trades            : 157
+BUY / SELL trades : 50 / 107
+wins / losses     : 74 / 83
+win_rate          : 47.1338%
+final_balance     : 88.0744190317
+return_percent    : -11.9255809683%
+total_cash_pnl    : -11.9255809683
+profit_factor     : 0.8215049757
+max_drawdown_cash : 15.8457758848
+BUY PnL           : -5.7357534232
+SELL PnL          : -6.1898275451
+monthly           : 2026-07 -8.6762935082, 2026-08 -3.2492874601
+positive_months   : 0
+negative_months   : 2
+```
+
+Comparison to ATR test for rebuilt raw Option B:
+
+```text
+ATR test:
+  final_balance : 90.7052
+  PF            : 0.8270
+  maxDD         : 10.7625
+
+Best non-ATR test:
+  final_balance : 88.0744
+  PF            : 0.8215
+  maxDD         : 15.8458
+```
+
+Interpretation:
+
+```text
+The best non-ATR validation policy failed test and was slightly worse than ATR test.
+This closes the current range-rescue attempt for the rebuilt Option B candidate.
+```
+
+Decision:
+
+```text
+Reject current range_capped + fallback=atr policy.
+Range TP/SL is not a rescue path for this candidate.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase152A pivot label/target stability audit implemented — 2026-09-21
+
+Implemented the requested Phase152A after Phase151A showed seed-transfer failure.
+
+Implemented:
+
+```text
+scripts/audit_pivot_label_target_stability.py
+GUI: Audit pivot label/target stability
+```
+
+The audit consumes the pivot sequence flat file and optional tensor meta file so it can inspect the exact sampled universe used by Option B models.
+
+It reports:
+
+```text
+- SELL/HOLD/BUY action distribution by split and month
+- top_zone and bottom_zone rates
+- future_up_r / future_down_r distribution
+- target_buy_r / target_sell_r distribution
+- PSI drift vs train
+- monthly worst drift
+- sensitivity to lookahead_bars, pivot_move_atr, pivot_zone_atr, min_direction_edge
+```
+
+Outputs:
+
+```text
+run_logs\pivot_label_target_stability\latest.json
+run_logs\pivot_label_target_stability\latest.html
+run_logs\pivot_label_target_stability\latest_splits.csv
+run_logs\pivot_label_target_stability\latest_monthly.csv
+run_logs\pivot_label_target_stability\latest_sensitivity.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_label_target_stability.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_label_target_stability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase152A result — action labels stable, payoff targets drift by regime — 2026-09-21
+
+The owner ran Phase152A on the exact Option B 24k sampled universe from `pivot_pattern_sequence_tensor_latest_meta.npz`.
+
+Input/universe:
+
+```text
+flat_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet
+meta_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+sampled_universe : meta_sample_indices
+flat_rows        : 53197
+sampled_rows     : 24000
+train/val/test   : 16800 / 3264 / 3264
+period           : 2025-11-28 17:05:00+00:00 → 2026-08-06 19:20:00+00:00
+```
+
+Current label config:
+
+```text
+lookahead_bars     : 48
+pivot_move_atr     : 0.75
+pivot_zone_atr     : 0.35
+recent_window_bars : 48
+min_direction_edge : 1.10
+```
+
+Current target counts:
+
+```text
+SELL : 2411
+HOLD : 19605
+BUY  : 1984
+```
+
+Action-label distribution by split:
+
+```text
+Train      SELL=10.1369%  HOLD=82.0357%  BUY=7.8274%
+Validation SELL= 9.1299%  HOLD=82.9044%  BUY=7.9657%
+Test       SELL=10.7537%  HOLD=78.6765%  BUY=10.5699%
+```
+
+Action-label drift:
+
+```text
+validation_psi_vs_train = 0.0011693337
+test_psi_vs_train       = 0.0100065951
+```
+
+Interpretation:
+
+```text
+The action labels themselves are not showing severe split-level drift. SELL/HOLD/BUY proportions are broadly stable from train to validation/test. The very high `max_monthly_psi_vs_train=2.0860` comes from 2025-11, which is only a tiny partial month at the start of the sampled window and should not be overinterpreted alone.
+```
+
+The important target drift is in the payoff targets:
+
+```text
+Top sensitivity rows show:
+train_buy_r_mean      ≈ -0.0352
+validation_buy_r_mean ≈ -0.0586
+test_buy_r_mean       ≈ +0.0167
+
+train_sell_r_mean      ≈ +0.0352
+validation_sell_r_mean ≈ +0.0586
+test_sell_r_mean       ≈ -0.0167
+```
+
+Interpretation:
+
+```text
+The market regime flips from train/validation being slightly SELL-favorable to test being slightly BUY-favorable in the continuous R targets, even though categorical label counts look stable. This explains the repeated pattern:
+validation SELL edge looks good, then test SELL edge fails.
+```
+
+Sensitivity result:
+
+```text
+Most stable label configs are dominated by lookahead_bars=24 rather than the current 48.
+The lowest drift row:
+  lookahead_bars      : 24
+  pivot_move_atr      : 0.75
+  pivot_zone_atr      : 0.25
+  min_direction_edge  : 1.0
+  train actionable    : 6.6845%
+  validation actionable: 6.8627%
+  test actionable      : 7.6593%
+  drift_score          : 0.1591275985
+
+A denser but still stable candidate:
+  lookahead_bars      : 24
+  pivot_move_atr      : 0.5
+  pivot_zone_atr      : 0.5
+  min_direction_edge  : 1.25
+  train actionable    : 23.7381%
+  validation actionable: 23.0392%
+  test actionable      : 26.8689%
+  drift_score          : 0.1592708572
+```
+
+Decision:
+
+```text
+Phase152A does not approve any strategy.
+It shows the current label counts are reasonably stable, but the payoff/R-target regime changes sign between validation and test.
+More blind training of the same target is not justified.
+```
+
+Recommended next phase:
+
+```text
+Phase153A — Pivot Target Redesign Candidate Build/Audit
+```
+
+Recommended target candidates:
+
+```text
+Candidate C1 conservative:
+  lookahead_bars     = 24
+  pivot_move_atr     = 0.75
+  pivot_zone_atr     = 0.25
+  min_direction_edge = 1.0
+  Expected: fewer but more stable actionable labels.
+
+Candidate C2 denser stable:
+  lookahead_bars     = 24
+  pivot_move_atr     = 0.5
+  pivot_zone_atr     = 0.5
+  min_direction_edge = 1.25
+  Expected: more actionable labels while keeping low drift.
+```
+
+Required anti-overfit rule:
+
+```text
+Build tensors for C1/C2, run health audits, train only as diagnostic, and evaluate validation/test transfer. Do not tune on test. No Phase134/paper/live.
+```
+
+## Latest implementation update — Phase153A pivot target redesign candidate build/audit — 2026-09-21
+
+Phase153A has been implemented as the next diagnostic step after Phase152A rejected more blind raw Option B training.
+
+New executable/GUI path:
+
+```text
+script : scripts/run_pivot_target_redesign_candidate_audit.py
+GUI    : Build/audit pivot target redesign candidates
+```
+
+Default candidates:
+
+```text
+C1 stable = C1:stable:24:0.75:0.25:1.0
+C2 dense  = C2:dense:24:0.5:0.5:1.25
+```
+
+What the command does:
+
+```text
+1. Builds full candidate sequence tensors:
+   datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_c1_stable_latest.npy
+   datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_c2_dense_latest.npy
+
+2. Runs official sequence tensor health audit for each.
+
+3. Runs label/target stability audit for each candidate flat/meta output.
+
+4. Aggregates candidate health, label PSI, actionable-rate, and payoff sign-flip diagnostics into:
+   run_logs\pivot_target_redesign_candidates\latest.json
+   run_logs\pivot_target_redesign_candidates\latest.html
+   run_logs\pivot_target_redesign_candidates\latest.csv
+```
+
+Important status:
+
+```text
+Phase153A is research/diagnostic only.
+It does not train a model and does not approve paper/live/production.
+Training C1/C2 is allowed only after candidate tensor health and stability reports are reviewed.
+```
+
+Recommended owner action:
+
+```text
+Dashboard → AI → Build/audit pivot target redesign candidates → Run
+```
+
+Equivalent CLI if needed:
+
+```powershell
+python -u scripts\run_pivot_target_redesign_candidate_audit.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --source-mode storage `
+  --candidates "C1:stable:24:0.75:0.25:1.0;C2:dense:24:0.5:0.5:1.25" `
+  --build-max-samples 0 `
+  --audit-max-samples 24000 `
+  --health-full-scan 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_target_redesign_candidates
+```
+
+Current pivot route decision:
+
+```text
+Raw Option B route is rejected for now as a trading route.
+Range TP/SL is not a rescue for this candidate.
+Current pivot target labels have stable counts but payoff/R target flips by regime.
+Next evidence needed: Phase153A C1/C2 build/audit output.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Latest execution result — Phase153A C1/C2 target candidate audit — 2026-09-21
+
+The owner ran Phase153A successfully.
+
+Result summary:
+
+```text
+completed_candidates      : 2
+label_stable_candidates   : 2
+training_ready_candidates : 0
+production_status         : BLOCKED — Phase153A research target redesign audit only
+```
+
+Both candidates built healthy tensors:
+
+```text
+C1 tensor shape : [53098, 100, 140]
+C2 tensor shape : [53098, 100, 140]
+health_status   : PASS for both
+nonfinite_cells : 0 for both
+health_max_abs  : 8.0 for both
+```
+
+Both candidates were label-stable:
+
+```text
+C1 validation/test PSI : 0.0010691657 / 0.0073619577
+C2 validation/test PSI : 0.0014521958 / 0.0071221864
+```
+
+Actionable rates:
+
+```text
+C1 train/validation/test : 6.6845% / 6.8627% / 7.6593%
+C2 train/validation/test : 23.7381% / 23.0392% / 26.8689%
+```
+
+But the critical payoff/R target sign-flip remains in both:
+
+```text
+train_buy_r_mean      = -0.0352140814
+validation_buy_r_mean = -0.0586298741
+test_buy_r_mean       = +0.0167183634
+
+train_sell_r_mean      = +0.0352140814
+validation_sell_r_mean = +0.0586298741
+test_sell_r_mean       = -0.0167183634
+```
+
+Gate result:
+
+```text
+C1 candidate_ready_for_training_gate = 0
+C2 candidate_ready_for_training_gate = 0
+```
+
+Current decision:
+
+```text
+Do not train Option B on C1/C2 now.
+C1/C2 fixed label density/stability, but did not fix payoff target regime drift.
+Next work must redesign the tradable payoff/first-hit target itself, not only pivot label thresholds.
+```
+
+Recommended next phase:
+
+```text
+Phase154A — Pivot Payoff/Trade-Outcome Target Redesign Audit
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase154A pivot payoff target redesign audit — 2026-09-21
+
+Phase154A has been implemented after Phase153A showed that C1/C2 label redesign did not fix payoff/R target sign-flip.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_payoff_target_redesign.py
+GUI: Audit pivot payoff target redesign
+```
+
+Purpose:
+
+```text
+Audit first-hit/barrier trade-outcome pivot targets before training any new model.
+```
+
+Target logic:
+
+```text
+BUY score  = +tp_atr if upside barrier hits before downside stop, otherwise -sl_atr or 0 timeout.
+SELL score = +tp_atr if downside barrier hits before upside stop, otherwise -sl_atr or 0 timeout.
+BUY label  = near bottom zone + positive BUY score + score edge.
+SELL label = near top zone + positive SELL score + score edge.
+HOLD       = everything else.
+```
+
+Default candidate grid:
+
+```text
+B1 balanced_24_rr1
+B2 conservative_24_tp1_sl075
+B3 dense_24_half_atr
+B4 asym_24_tp1_sl05
+B5 short_12_rr1
+B6 wide_36_rr1
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_payoff_target_redesign\latest.json
+run_logs\pivot_payoff_target_redesign\latest.html
+run_logs\pivot_payoff_target_redesign\latest_candidates.csv
+run_logs\pivot_payoff_target_redesign\latest_splits.csv
+run_logs\pivot_payoff_target_redesign\latest_monthly.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit pivot payoff target redesign
+Then send run_logs\pivot_payoff_target_redesign\latest.json
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```

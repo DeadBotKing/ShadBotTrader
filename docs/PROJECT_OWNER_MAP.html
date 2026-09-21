@@ -265,8 +265,8 @@
         نه اینکه فقط command اجرا شود.
       </p>
       <div class="badge-row">
-        <span class="badge"><span class="dot blue"></span>Last updated: 2026-09-16</span>
-        <span class="badge"><span class="dot amber"></span>Current stage: Research / Validation</span>
+        <span class="badge"><span class="dot blue"></span>Last updated: 2026-09-21</span>
+        <span class="badge"><span class="dot amber"></span>Current stage: Research / Pivot Payoff Target Redesign</span>
         <span class="badge"><span class="dot red"></span>Production: BLOCKED</span>
         <span class="badge"><span class="dot green"></span>Full stream telemetry: BUILT</span>
         <span class="badge"><span class="dot red"></span>Phase133 classifier: FAILED</span>
@@ -323,7 +323,30 @@
         <span class="badge"><span class="dot green"></span>Phase147C 180 input health: PASS</span>
         <span class="badge"><span class="dot amber"></span>Phase147C 180 full: weaker metrics</span>
         <span class="badge"><span class="dot blue"></span>Phase149A feature impact audit: BUILT</span>
+        <span class="badge"><span class="dot amber"></span>Phase149A feature impact: 26 drop candidates</span>
+        <span class="badge"><span class="dot blue"></span>Phase149B pruned training support: ADDED</span>
+        <span class="badge"><span class="dot green"></span>Phase149B pruned 180 result: test_acc=0.661</span>
+        <span class="badge"><span class="dot red"></span>Phase149B pruned 180 PnL: FAILED</span>
         <span class="badge"><span class="dot blue"></span>Phase148A range-aware archive: BUILT</span>
+        <span class="badge"><span class="dot green"></span>Raw B full dataset health: OK</span>
+        <span class="badge"><span class="dot red"></span>Phase147D raw B full: PF=0.940 / rejected</span>
+        <span class="badge"><span class="dot green"></span>Zero-feature empty flag parser: FIXED</span>
+        <span class="badge"><span class="dot red"></span>Phase147E raw B 24k rebuild: FAILED</span>
+        <span class="badge"><span class="dot green"></span>Option B random seed control: ADDED</span>
+        <span class="badge"><span class="dot red"></span>Phase147F validation→test transfer: FAILED</span>
+        <span class="badge"><span class="dot blue"></span>Phase148B train/validation range archive: READY</span>
+        <span class="badge"><span class="dot red"></span>Phase148C range-aware TP/SL: FAILED</span>
+        <span class="badge"><span class="dot blue"></span>Phase150A bracket geometry audit: BUILT</span>
+        <span class="badge"><span class="dot red"></span>Phase150A result: ATR wins / range no edge</span>
+        <span class="badge"><span class="dot blue"></span>Phase151A seed transfer audit: BUILT</span>
+        <span class="badge"><span class="dot red"></span>Phase151A result: seed transfer FAILED</span>
+        <span class="badge"><span class="dot blue"></span>Phase152A label stability audit: BUILT</span>
+        <span class="badge"><span class="dot amber"></span>Phase152A result: label counts stable / R drift</span>
+        <span class="badge"><span class="dot red"></span>Phase153A C1/C2 result: not training-ready</span>
+        <span class="badge"><span class="dot blue"></span>Phase154A payoff target audit: BUILT</span>
+        <span class="badge"><span class="dot red"></span>Best non-ATR test: FAILED</span>
+        <span class="badge"><span class="dot green"></span>Phase151A report bug: FIXED</span>
+        <span class="badge"><span class="dot green"></span>Phase151A skip existing seed models: ADDED</span>
       </div>
     </header>
 
@@ -335,13 +358,18 @@
           هنوز bot قابل paper/live نداریم. مدل‌ها در research pipeline هستند. اجرای Phase134 paper shadow یا live trading با candidate فعلی مجاز نیست.
         </div>
         <p>
-          آخرین نتیجه 180-channel full-dataset Option B ضعیف‌تر از انتظار بود: test_action_accuracy=0.5168، test_top_ap=0.2486، test_bottom_ap=0.2121 و selected_rate=0.4856. بنابراین 180-channel فعلاً candidate بهتر نیست. آخرین نتیجه Step2 A/B benchmark همچنان نشان داد raw-branch Option B از نظر PnL/PF جلوتر است: Option B <code>final_balance=101.8765</code>، <code>PF=1.0377</code>، <code>maxDD=7.7910</code> در برابر Option A <code>final_balance=100.8956</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>. اما Option B ماه August را منفی داده، پس هنوز weak/fragile است. آخرین نتیجه معاملاتی موجود، Phase147B Option B sequence WaveNet PnL audit است: <code>trades=135</code>، <code>final_balance=100.8956</code>، <code>return=+0.8956%</code>، <code>PF=1.0184</code>، <code>maxDD=7.2327</code>، <code>BUY PnL=+1.7578</code>، <code>SELL PnL=-0.8622</code>. این weak-positive research result است، نه production pass. آخرین نتیجه دیتاست Option A هم health PASS روی <code>[53098,100,140]</code> با <code>nonfinite_cells=0</code> بود. نتیجه underfed قبلی <code>[24000,100,57]</code> دیگر final candidate نیست: <code>val_action_accuracy=0.4605</code>، <code>test_action_accuracy=0.4792</code>، <code>test_selected_rate=0.5720</code> و <code>nonfinite_input_values=0</code>. این مدل از نظر RAM و tensor layout بهتر و برای top-zone ranking کمی بهتر از 4D بود، اما روی action accuracy و bottom-zone AP از Phase144A 4D Image WaveNet ضعیف‌تر است. build report نشان داد source_5m_feature_count=0 بوده، پس این نتیجه underfed/generated-feature-only است؛ builder اکنون auto-probe/override برای source 5M features دارد. هنوز backtest/walk-forward/PnL نداریم و production همچنان BLOCKED است.
-          آخرین تغییر فنی، Phase145A Option A است: دیتاست WaveNet-native با شکل <code>[samples,WindowSize,Features]</code> ساخته شد تا 5M/4H/1D features روی یک feature axis قرار بگیرند و RAM/ابعاد نسبت به 4D interaction tensor کمتر شود.
+          آخرین اجرای مهم، rebuild مدل <code>gold_pivot_pattern_sequence_wavenet_option_b_full_5m</code> روی full dataset بود. از نظر دیتاست/فیچر مشکلی دیده نشد: tensor همان <code>[53098,100,140]</code> سالم است، گروه‌های Option B دقیقاً <code>35 / 83 / 22</code> هستند، <code>source_5m_feature_count=83</code> داریم، و <code>nonfinite_input_values=0</code>. پس پاسخ فنی به سؤال «دیتاست/فیچرها اوکی بوده؟» این است: <strong>بله، از نظر سلامت عددی، شکل tensor، گروه‌بندی، source features و split زمانی اوکی بوده.</strong>
+        </p>
+        <p>
+          اما نتیجه معاملاتی full raw Option B خوب نبود: <code>final_balance=96.1854</code>، <code>return=-3.8146%</code>، <code>PF=0.9402</code>، <code>maxDD=15.1989</code>، <code>BUY PnL=+1.0796</code>، <code>SELL PnL=-4.8942</code>. ماه July مثبت بود (<code>+4.9827</code>) اما August سنگین منفی شد (<code>-9.2147</code>). بنابراین full raw Option B به عنوان trading candidate رد می‌شود. این شکست به معنی خرابی دیتاست نیست؛ به معنی ضعف generalization/regime sensitivity مدل است.
+        </p>
+        <p>
+          rebuild مدل raw Option B 24k هم نتیجه تاریخی را تکرار نکرد: روی validation خوب بود (<code>final_balance=108.7914</code>، <code>PF=1.2554</code>، <code>SELL PnL=+10.6465</code>، <code>BUY PnL=-1.8550</code>) اما روی test شکست خورد (<code>final_balance=90.7052</code>، <code>PF=0.8270</code>، <code>BUY PnL=-5.3900</code>، <code>SELL PnL=-3.9047</code>). پس مشکل اصلی <strong>validation-to-test transfer failure</strong> است، نه خرابی دیتاست. نتیجه weak-positive قبلی باید fragile/non-reproducible حساب شود تا زمانی که با seed و انتخاب validation→test دوباره ثابت شود. Production همچنان <strong>BLOCKED</strong> است: No Phase134, No paper shadow, No live trading. سپس range-aware archive با TP/SL از مدل‌های range اجرا شد و بدتر شکست خورد: train <code>final_balance=6.5163</code>، <code>PF=0.6074</code>، validation <code>final_balance=27.1922</code>، <code>PF=0.3114</code>. پس فعلاً مشکل بعدی bracket geometry/range models است، نه فیلتر سیگنال. Phase150A نشان داد بهترین validation policy خود ATR است: <code>final=108.7914</code>، <code>PF=1.2554</code>؛ بهترین non-ATR فقط rank=16 بود و از ATR ضعیف‌تر بود. چون همین ATR روی test قبلاً fail شده (<code>PF=0.8270</code>)، candidate فعلی رد است. Phase151A هم با سه seed شکست خورد: seed منتخب validation یعنی <code>20260921</code> روی validation <code>PF=1.2310</code> داشت ولی روی test <code>PF=0.8213</code> و <code>final=93.2597</code> داد. همچنین best non-ATR range policy روی test <code>PF=0.8215</code> و <code>final=88.0744</code> شد. پس raw Option B route فعلاً بسته است. Phase152A نشان داد action-label countها خیلی drift ندارند (<code>test PSI=0.0100</code>)، اما payoff targetها بین validation و test جهت عوض می‌کنند: <code>buy_r_mean</code> از منفی به مثبت و <code>sell_r_mean</code> از مثبت به منفی می‌رود؛ همین دلیل شکست SELL edge در test است.
         </p>
         <div class="grid">
-          <div class="card span-3 metric"><span class="label">180 full test acc</span><span class="value warn">51.68%</span></div>
-          <div class="card span-3 metric"><span class="label">180 bottom AP</span><span class="value warn">0.212</span></div>
-          <div class="card span-3 metric"><span class="label">Raw B PF</span><span class="value warn">1.038</span></div>
+          <div class="card span-3 metric"><span class="label">Dataset health</span><span class="value good">OK</span></div>
+          <div class="card span-3 metric"><span class="label">Full Raw B PF</span><span class="value bad">0.940</span></div>
+          <div class="card span-3 metric"><span class="label">Range Val PF</span><span class="value bad">0.311</span></div>
           <div class="card span-3 metric"><span class="label">Production</span><span class="value bad">BLOCKED</span></div>
         </div>
       </div>
@@ -848,6 +876,7 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
             <tr><td>Phase144A advanced image WaveNet</td><td><code>run_logs\pivot_pattern_image_wavenet\latest.json</code></td></tr>
             <tr><td>Phase145A sequence tensor</td><td><code>datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy</code></td></tr>
             <tr><td>Phase145A sequence WaveNet</td><td><code>run_logs\pivot_pattern_sequence_wavenet\latest.json</code></td></tr>
+            <tr><td>Phase153A target redesign candidates</td><td><code>run_logs\pivot_target_redesign_candidates\latest.json</code></td></tr>
             <tr><td>Current owner map</td><td><code>docs\PROJECT_OWNER_MAP.html</code></td></tr>
           </tbody>
         </table>
@@ -966,38 +995,33 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
         <thead><tr><th>مسیر</th><th>چرا</th><th>مجاز؟</th></tr></thead>
         <tbody>
           <tr>
-            <td>Phase140A — <code>Audit candidate direction/entry</code></td>
-            <td>اجرا شد و به عنوان strategy شکست خورد؛ فقط diagnosis داد: BUY partially contrarian، SELL not inverted، delay helps.</td>
-            <td><span class="pill fail">Failed gate</span></td>
+            <td>Phase152A result</td>
+            <td>action labelها پایدارند، اما R-target/payoff regime عوض شده: train/validation SELL-favorable، test BUY-favorable.</td>
+            <td><span class="pill info">Reviewed</span></td>
           </tr>
           <tr>
-            <td>Phase141A — <code>Train pivot pattern recognition</code></td>
-            <td>اجرا شد: مدل قله/کف train شد اما walk-forward روی GC=F منفی بود: $100→$79.01، PF=0.534.</td>
-            <td><span class="pill fail">Failed first WF</span></td>
+            <td>Phase153A — target redesign candidates</td>
+            <td>اجرا شد. C1/C2 هر دو health=PASS و label PSI پایدار داشتند، اما <code>buy_r</code>/<code>sell_r</code> sign flip همان قبلی باقی ماند؛ <code>training_ready_candidates=0</code>.</td>
+            <td><span class="pill fail">Completed / do not train C1-C2</span></td>
           </tr>
           <tr>
-            <td>Phase142A — <code>Build pivot pattern tensor</code></td>
-            <td>اول باید دیتاست سه‌بعدی واقعی ساخته شود: <code>[samples,288,channels]</code>.</td>
-            <td><span class="pill info">Next command</span></td>
+            <td>Phase154A — payoff/trade-outcome target redesign</td>
+            <td>پیاده‌سازی شد: first-hit/barrier target candidates را audit می‌کند تا قبل از train بفهمیم target معاملاتی train/validation/test پایدار است یا نه. خروجی اصلی: <code>run_logs\pivot_payoff_target_redesign\latest.json</code>.</td>
+            <td><span class="pill info">Built / owner should run</span></td>
           </tr>
           <tr>
-            <td>Phase142A/B WaveNet train/backtest/walk-forward</td>
-            <td>بعد از tensor، مدل Keras WaveNet آموزش می‌بیند، backtest می‌شود، و در نهایت fold-by-fold walk-forward می‌گیرد.</td>
-            <td><span class="pill hold">After tensor build</span></td>
+            <td>Raw Option B current target</td>
+            <td>فعلاً ادامه ندهیم؛ seed/range/full/rebuild همگی transfer ندادند و Phase152A payoff drift را نشان داد.</td>
+            <td><span class="pill fail">Rejected for now</span></td>
           </tr>
           <tr>
-            <td>BUY handling</td>
-            <td>BUY حذف نمی‌شود؛ Phase140A فقط BUY original را با BUY→SELL counterfactual مقایسه می‌کند.</td>
-            <td><span class="pill hold">Research diagnostic</span></td>
-          </tr>
-          <tr>
-            <td>Phase129/130/131 tensor alternatives</td>
-            <td>هر مدل sequence جدید فقط با walk-forward واقعی ارزش دارد؛ فعلاً مشکل direction/entry مقدم است.</td>
-            <td><span class="pill hold">Later, only with validation</span></td>
+            <td>Blind retraining / bigger model</td>
+            <td>مجاز نیست؛ اول target redesign candidateها باید با health + validation/test gate سنجیده شوند.</td>
+            <td><span class="pill fail">Stop</span></td>
           </tr>
           <tr>
             <td>Phase134 paper shadow / live</td>
-            <td>هیچ validation gate قابل قبول پاس نشده است.</td>
+            <td>هیچ candidate فعلی gate معاملاتی و walk-forward را پاس نکرده است.</td>
             <td><span class="pill fail">BLOCKED</span></td>
           </tr>
         </tbody>
@@ -1055,6 +1079,11 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase147A Option B training result:</strong> Option B trained on X=[24000,100,140] with grouped inputs. Metrics: val_action_accuracy=0.7273, test_action_accuracy=0.6544, val_top_ap=0.4792, test_top_ap=0.2637, val_bottom_ap=0.2816, test_bottom_ap=0.2550, test_selected_rate=0.3134. Next: fair PnL audit against Option A.</div>
           <div class="event"><strong>Phase147B Option B PnL audit result:</strong> same replay rules as Option A. Option B: trades=134, final_balance=101.8765, return=+1.8765%, PF=1.0377, maxDD=$7.7910, BUY PnL=+1.9372, SELL PnL=-0.0608, July +4.1184, August -2.2419. Preliminary PnL/PF winner but still fragile and research-only.</div>
           <div class="event"><strong>Phase148A range-aware prediction/backtest archive built:</strong> added <code>scripts/backtest_pivot_pattern_sequence_wavenet_range.py</code> and GUI command <code>Backtest sequence WaveNet range-aware archive</code>. It calculates TP/SL from range forecasts when available, writes full predictions/trades/monthly/side archives, and is the basis for Step 5 filtering with anti-overfit rules.</div>
+          <div class="event"><strong>Phase147D raw B full dataset:</strong> full raw Option B rebuild used healthy inputs (<code>[53098,100,140]</code>, groups <code>35/83/22</code>, <code>nonfinite_input_values=0</code>) but failed ATR PnL: final_balance=96.1854, return=-3.8146%, PF=0.9402, maxDD=15.1989. Dataset OK; trading candidate rejected.</div>
+          <div class="event"><strong>PowerShell empty zero-feature flags:</strong> <code>--zero-feature-names ""</code> can be dropped by PowerShell/native argv. Trainer now accepts <code>--zero-feature-names</code>, <code>--zero-feature-file</code>, and <code>--zero-feature-groups</code> with no explicit value. On older checkouts, omit those empty lines.</div>
+          <div class="event"><strong>Phase153A target redesign candidate audit built:</strong> added <code>scripts/run_pivot_target_redesign_candidate_audit.py</code> and GUI command <code>Build/audit pivot target redesign candidates</code>. It builds C1/C2 tensors, runs sequence tensor health, runs label/payoff stability, and writes <code>run_logs\pivot_target_redesign_candidates\latest.json</code>. No training/live approval is implied.</div>
+          <div class="event"><strong>Phase153A result:</strong> C1/C2 tensors both passed health and label stability, but both kept the same payoff sign flip: train/validation buy_r negative and sell_r positive, while test buy_r positive and sell_r negative. <code>training_ready_candidates=0</code>. Do not train C1/C2; next should be Phase154A payoff/trade-outcome target redesign.</div>
+          <div class="event"><strong>Phase154A built:</strong> added <code>scripts/audit_pivot_payoff_target_redesign.py</code> and GUI command <code>Audit pivot payoff target redesign</code>. It audits first-hit/barrier BUY/SELL trade-outcome targets and reports label/payoff stability before any new training.</div>
         </div>
       </div>
     </section>

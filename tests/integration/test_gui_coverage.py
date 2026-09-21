@@ -106,6 +106,8 @@ class TestEveryRunHasAButton:
             "run_hybrid_tensor_walk_forward_validation.py",
             "run_pivot_pattern_wavenet_walk_forward.py",
             "run_hybrid_paper_shadow.py",
+            "run_pivot_sequence_option_b_seed_transfer_validation.py",
+            "run_pivot_target_redesign_candidate_audit.py",
         }
 
         unaccounted = scripts - covered - set(NOT_GUI_OPERATIONS)

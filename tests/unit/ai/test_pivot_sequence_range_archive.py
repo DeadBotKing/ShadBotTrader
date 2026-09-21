@@ -77,3 +77,12 @@ def test_range_filter_uses_directional_room():
 
     assert module.range_filter_pass(record, 100.0, module.ACTION_BUY, args)
     assert not module.range_filter_pass(record, 100.0, module.ACTION_SELL, args)
+
+
+
+def test_range_archive_accepts_train_eval_split():
+    module = load_script()
+
+    args = module.parse_args(["--eval-split", "train"])
+
+    assert args.eval_split == "train"
