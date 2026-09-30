@@ -344,7 +344,17 @@
         <span class="badge"><span class="dot amber"></span>Phase152A result: label counts stable / R drift</span>
         <span class="badge"><span class="dot red"></span>Phase153A C1/C2 result: not training-ready</span>
         <span class="badge"><span class="dot green"></span>Phase154A result: B4/B2 target-ready</span>
-        <span class="badge"><span class="dot green"></span>Phase155A target metadata crash fix: DONE</span>
+        <span class="badge"><span class="dot red"></span>Phase155A result: no transfer pass</span>
+        <span class="badge"><span class="dot red"></span>Phase156A result: threshold audit failed</span>
+        <span class="badge"><span class="dot red"></span>Phase157A result: learnability gates failed</span>
+        <span class="badge"><span class="dot red"></span>Phase158A result: zone reframe failed</span>
+        <span class="badge"><span class="dot red"></span>Phase159A result: selective but negative</span>
+        <span class="badge"><span class="dot green"></span>Phase160A result: bottom-buy transfer pass</span>
+        <span class="badge"><span class="dot red"></span>Phase161A result: chronological replay failed</span>
+        <span class="badge"><span class="dot red"></span>Phase162A result: no execution transfer</span>
+        <span class="badge"><span class="dot red"></span>Phase163A result: 1H spread gate failed</span>
+        <span class="badge"><span class="dot green"></span>Phase164A result: 1H cost-sensitive transfer found</span>
+        <span class="badge"><span class="dot blue"></span>Phase165A 1H lockdown replay: BUILT</span>
         <span class="badge"><span class="dot red"></span>Best non-ATR test: FAILED</span>
         <span class="badge"><span class="dot green"></span>Phase151A report bug: FIXED</span>
         <span class="badge"><span class="dot green"></span>Phase151A skip existing seed models: ADDED</span>
@@ -878,6 +888,10 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
             <tr><td>Phase145A sequence tensor</td><td><code>datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy</code></td></tr>
             <tr><td>Phase145A sequence WaveNet</td><td><code>run_logs\pivot_pattern_sequence_wavenet\latest.json</code></td></tr>
             <tr><td>Phase153A target redesign candidates</td><td><code>run_logs\pivot_target_redesign_candidates\latest.json</code></td></tr>
+            <tr><td>Phase162A execution-gap audit</td><td><code>run_logs\pivot_bottom_buy_execution_gap\latest.json</code> + <code>latest.html</code></td></tr>
+            <tr><td>Phase163A 1H feasibility audit</td><td><code>run_logs\pivot_1h_entry_feasibility\latest.json</code> + <code>latest.html</code></td></tr>
+            <tr><td>Phase164A spread/bracket audit</td><td><code>run_logs\pivot_1h_spread_bracket_sensitivity\latest.json</code> + <code>latest_break_even.csv</code></td></tr>
+            <tr><td>Phase165A candidate lockdown</td><td><code>run_logs\pivot_1h_fixed_spread_candidate_lockdown\latest.json</code> + <code>latest_trades.csv</code></td></tr>
             <tr><td>Current owner map</td><td><code>docs\PROJECT_OWNER_MAP.html</code></td></tr>
           </tbody>
         </table>
@@ -1012,8 +1026,58 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           </tr>
           <tr>
             <td>Phase155A — payoff-target Option B diagnostic</td>
-            <td>پیاده‌سازی شد: B4/B2 را tensor-build می‌کند، health audit می‌گیرد، Option B را train می‌کند، و validation/test PnL transfer را گزارش می‌دهد.</td>
-            <td><span class="pill info">Built / owner should run</span></td>
+            <td>اجرا شد ولی transfer pass نداد. B4 test مثبت بود اما فقط 1 validation trade و 5 test trades داشت؛ B2 با 22 test trades منفی شد. نتیجه: under-selection / HOLD bias.</td>
+            <td><span class="pill fail">Completed / failed transfer</span></td>
+          </tr>
+          <tr>
+            <td>Phase156A — payoff prediction threshold calibration</td>
+            <td>اجرا شد و شکست خورد. حتی با پایین‌ترین threshold یعنی <code>0.05/0.05</code>، B4 فقط 1 validation trade و 5 test trades داد؛ B2 هم با 22 test trades منفی شد. خروجی نشان داد action head شدیداً HOLD-dominant است.</td>
+            <td><span class="pill fail">Completed / failed</span></td>
+          </tr>
+          <tr>
+            <td>Phase157A — payoff target learnability / imbalance diagnostic</td>
+            <td>اجرا شد و gateها شکست خوردند. Full-universe actionability قابل یادگیری پایدار نبود؛ اما candidate-only side AP بالا بود. نتیجه: مشکل اصلی candidate/actionability discovery است.</td>
+            <td><span class="pill fail">Completed / failed gates</span></td>
+          </tr>
+          <tr>
+            <td>Phase158A — pivot-zone candidate reframe</td>
+            <td>اجرا شد و شکست خورد. B4 حدود 90٪ و B2 حدود 70٪ rowها را candidate می‌کند؛ event win rate فقط حدود 5٪ و mean R در validation/test منفی است. side preference هم از SELL در validation به BUY در test عوض شد.</td>
+            <td><span class="pill fail">Completed / failed</span></td>
+          </tr>
+          <tr>
+            <td>Phase159A — pivot candidate geometry tightening</td>
+            <td>اجرا شد. Candidate rate از 70–90٪ به حدود 3٪ کاهش یافت و side preference روی BUY پایدار شد، اما validation/test mean R هنوز منفی بود و هیچ policy پاس نشد.</td>
+            <td><span class="pill fail">Completed / failed expectancy</span></td>
+          </tr>
+          <tr>
+            <td>Phase160A — side-mapping / counterfactual direction</td>
+            <td>اجرا شد و اولین transfer مثبت را داد: B2 bottom_buy delay=0 با validation mean R=+0.0278 و test mean R=+0.0774، اما هنوز فقط event-scoring است نه full chronological backtest.</td>
+            <td><span class="pill pass">Completed / diagnostic pass</span></td>
+          </tr>
+          <tr>
+            <td>Phase161A — bottom-buy chronological replay</td>
+            <td>اجرا شد و شکست خورد. Validation PF=0.716 و test PF=0.685؛ event-scoring مثبت Phase160A در replay واقعی‌تر زنده نماند.</td>
+            <td><span class="pill fail">Completed / failed replay</span></td>
+          </tr>
+          <tr>
+            <td>Phase162A — execution gap / entry timing audit</td>
+            <td>اجرا شد و transfer نداد. 16 config تست شد، 4 config فقط validation را پاس کردند، اما <code>transfer_pass_configs=0</code>. انتخاب validation-only بدون spread بود: PF validation=1.203 ولی test PF=0.911. اجرای realistic با spread=0.06 شکست Phase161A را تأیید کرد: validation PF=0.716 و test PF=0.685. نتیجه: bottom-buy rule رد می‌شود.</td>
+            <td><span class="pill fail">Completed / failed transfer</span></td>
+          </tr>
+          <tr>
+            <td>Phase163A — 1H pivot entry feasibility</td>
+            <td>اجرا شد و route_feasible_gate=0 داد. دیتای 1H از نظر OHLC/ATR سالم بود و no-spread چند transfer مثبت نشان داد، اما با spread=0.06% هیچ configای validation را پاس نکرد. median spread/ATR در validation حدود 0.236 و در test حدود 0.160 بود؛ بنابراین مشکل فعلی cost/spread assumption است، نه training.</td>
+            <td><span class="pill fail">Completed / spread gate failed</span></td>
+          </tr>
+          <tr>
+            <td>Phase164A — 1H spread/bracket sensitivity</td>
+            <td>اجرا شد و نتیجه diagnostic مثبت داد: 352 config، تعداد 244 validation-pass و 131 transfer-pass. fixed-transfer=69 و pct-transfer=62. کاندیدای nonzero مهم: <code>BRK_D1_FAST</code> با fixed spread=0.2، train PF=1.061، validation PF=1.636 و test PF=1.355. هنوز production نیست؛ باید Phase165A candidate lockdown انجام شود.</td>
+            <td><span class="pill pass">Completed / diagnostic pass</span></td>
+          </tr>
+          <tr>
+            <td>Phase165A — 1H fixed-spread candidate lockdown</td>
+            <td>ساخته شد. یک candidate غیرصفر را قفل می‌کند: <code>BRK_D1_FAST</code> breakout، delay=1، rw=24، zone=0.05، bracket 1.5/1.0، hold=24، fixed spread=0.2. خروجی شامل split summary، trades، monthly stability و spread stress است. نتیجه واقعی هنوز اجرا نشده است.</td>
+            <td><span class="pill info">Built / awaiting owner run</span></td>
           </tr>
           <tr>
             <td>Raw Option B current target</td>
@@ -1091,7 +1155,17 @@ Estimated float16 X size ≈ 1417 MB before compression</pre>
           <div class="event"><strong>Phase153A result:</strong> C1/C2 tensors both passed health and label stability, but both kept the same payoff sign flip: train/validation buy_r negative and sell_r positive, while test buy_r positive and sell_r negative. <code>training_ready_candidates=0</code>. Do not train C1/C2; next should be Phase154A payoff/trade-outcome target redesign.</div>
           <div class="event"><strong>Phase154A built:</strong> added <code>scripts/audit_pivot_payoff_target_redesign.py</code> and GUI command <code>Audit pivot payoff target redesign</code>. It audits first-hit/barrier BUY/SELL trade-outcome targets and reports label/payoff stability before any new training.</div>
           <div class="event"><strong>Phase154A result:</strong> 6 candidates audited; all 6 label-stable, 2 payoff-stable. B4 (<code>24 bars, zone=0.35 ATR, TP=1.0 ATR, SL=0.5 ATR, edge=0.1</code>) is best and tensor-ready; B2 is conservative backup. Next is Phase155A diagnostic tensor/training for B4 first.</div>
-          <div class="event"><strong>Phase155A built/fixed:</strong> payoff tensor builder and Option B diagnostic wrapper were added. B4 tensor build and health passed. Training then crashed because scalar metadata <code>target_mode=[first_hit_payoff]</code> was being indexed like a per-sample target array. The trainer now scopes only target arrays whose first axis matches the tensor sample count; <code>class_weight=off</code> remains the default for this sparse payoff diagnostic.</div>
+          <div class="event"><strong>Phase155A result:</strong> B4/B2 tensors and training chain completed, but no transfer pass. B4: validation=1 trade, test=5 trades, test PF=3.99, transfer=0. B2: validation=2 trades, test=22 trades, test PF=0.742, transfer=0. Under-selection/HOLD bias remains; next is threshold calibration audit.</div>
+          <div class="event"><strong>Phase156A result:</strong> threshold audit confirmed HOLD collapse. B4 hold_mean was 0.981 on validation and 0.973 on test; buy/sell margins were strongly negative. Validation-selected threshold was already the lowest grid value <code>0.05/0.05</code>, yet B4 had only 1 validation trade and B2 failed test. Next recommended phase is learnability/imbalance diagnostics, not another bigger model.</div>
+          <div class="event"><strong>Phase157A result:</strong> learnability gates failed. Full 3-class baseline degenerates to always-HOLD. Binary actionability AP lift does not transfer meaningfully to test. Candidate-only side AP is high, suggesting side ranking may be learnable after a valid candidate generator exists. Next: Phase158A pivot-zone candidate reframe.</div>
+          <div class="event"><strong>Phase158A result:</strong> pivot-zone reframe failed. B4 marks about 90% of rows and B2 about 70% as zone events; event win rate is only around 5% and event mean R is negative in validation/test. Side preference flips from SELL in validation to BUY in test. Next recommended step is Phase159A geometry tightening, not model training.</div>
+          <div class="event"><strong>Phase159A result:</strong> geometry tightening reduced candidate event rate to about 3% and stabilized best side as BUY, but validation/test mean R remained negative (selected validation=-0.00505, test=-0.02723). No policy passed; next is side-mapping / counterfactual direction audit.</div>
+          <div class="event"><strong>Phase160A result:</strong> first positive pivot transfer diagnostic found. Selected policy is B2 tightened geometry with <code>bottom_buy</code> and delay 0: validation mean R +0.0278, PF 1.2, 54 events; test mean R +0.0774, PF 5.33, 42 events. Still research-only because it is event scoring, not full chronological replay.</div>
+          <div class="event"><strong>Phase161A result:</strong> strict bottom-buy chronological replay failed. Validation: 30 trades, PnL -3.3832, PF 0.7156. Test: 21 trades, PnL -2.2486, PF 0.6853. The Phase160A event edge did not survive next-bar entry, spread, risk sizing and single-position execution.</div>
+          <div class="event"><strong>Phase162A result:</strong> execution-gap audit failed transfer. 16 configs evaluated, 4 validation-pass configs, 0 transfer-pass configs. Selected no-spread validation row had PF=1.203 but test PF=0.911. Realistic spread=0.06 reproduced Phase161A failure (validation PF=0.7156, test PF=0.6853). Diagnosis: spread kills the thin BUY edge and single-position replay skips many test winners; same-bar ambiguity is not the cause.</div>
+          <div class="event"><strong>Phase163A result:</strong> 1H feasibility failed under current spread=0.06%. Data health was numerically clean, and no-spread 1H breakout/bottom-buy rows showed raw signal, but realistic spread had median spread/ATR ≈0.236 on validation and ≈0.160 on test. validation_pass_configs=0, transfer_pass_configs=0, route_feasible_gate=0. Next recommended diagnostic is broker spread-unit / bracket-cost sensitivity, not 1H model training.</div>
+          <div class="event"><strong>Phase164A result:</strong> spread/bracket sensitivity found positive 1H diagnostics. 352 configs evaluated, 244 validation-pass, 131 transfer-pass, fixed-transfer=69 and pct-transfer=62. The top selected row was no-spread, but a nonzero fixed-spread candidate exists: <code>BRK_D1_FAST</code> breakout, delay=1, rw=24, zone=0.05, bracket 1.5/1.0, hold=24, fixed spread=0.2 with train PF=1.061, validation PF=1.636 and test PF=1.355. Next is Phase165A lockdown/stability replay, not production.</div>
+          <div class="event"><strong>Phase165A built:</strong> added <code>scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py</code> and GUI command <code>Replay 1H fixed-spread candidate lockdown</code>. It locks <code>BRK_D1_FAST</code> fixed spread=0.2 and exports train/validation/test summaries, full trades, monthly stability and spread-stress diagnostics.</div>
         </div>
       </div>
     </section>

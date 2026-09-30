@@ -77,6 +77,46 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC).label
         == "Run payoff-target Option B diagnostic"
     )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_PAYOFF_PREDICTION_THRESHOLDS).label
+        == "Audit payoff prediction thresholds"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_LEARNABILITY).label
+        == "Audit payoff target learnability"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_ZONE_CANDIDATE_REFRAME).label
+        == "Audit pivot-zone candidate reframe"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_CANDIDATE_GEOMETRY_TIGHTENING).label
+        == "Audit pivot candidate geometry tightening"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_CANDIDATE_SIDE_MAPPING).label
+        == "Audit pivot candidate side mapping"
+    )
+    assert (
+        descriptor_for(CommandKind.REPLAY_PIVOT_BOTTOM_BUY_CANDIDATE).label
+        == "Replay pivot bottom-buy candidate"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_BOTTOM_BUY_EXECUTION_GAP).label
+        == "Audit pivot bottom-buy execution gap"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_1H_ENTRY_FEASIBILITY).label
+        == "Audit 1H pivot entry feasibility"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_1H_SPREAD_BRACKET_SENSITIVITY).label
+        == "Audit 1H spread/bracket sensitivity"
+    )
+    assert (
+        descriptor_for(CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN).label
+        == "Replay 1H fixed-spread candidate lockdown"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -468,3 +508,252 @@ def test_pivot_payoff_option_b_diagnostic_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--epochs") + 1] == "3"
     assert args[args.index("--skip-training") + 1] == "1"
     assert args[args.index("--output-dir") + 1] == "out_phase155"
+
+
+def test_pivot_payoff_prediction_threshold_audit_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_payoff_prediction_thresholds(
+        Command(
+            CommandKind.AUDIT_PIVOT_PAYOFF_PREDICTION_THRESHOLDS,
+            {
+                "candidates": "B4,B2",
+                "buy_thresholds": "0.1,0.2",
+                "sell_thresholds": "0.1,0.2",
+                "margins": "0,0.05",
+                "output_dir": "out_phase156",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_payoff_prediction_thresholds.py"
+    assert args[args.index("--candidates") + 1] == "B4,B2"
+    assert args[args.index("--buy-thresholds") + 1] == "0.1,0.2"
+    assert args[args.index("--sell-thresholds") + 1] == "0.1,0.2"
+    assert args[args.index("--margins") + 1] == "0,0.05"
+    assert args[args.index("--output-dir") + 1] == "out_phase156"
+
+
+def test_pivot_payoff_target_learnability_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_payoff_target_learnability(
+        Command(
+            CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_LEARNABILITY,
+            {
+                "candidates": "B4,B2",
+                "max_samples": "1000",
+                "summary_mode": "last",
+                "output_dir": "out_phase157",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_payoff_target_learnability.py"
+    assert args[args.index("--candidates") + 1] == "B4,B2"
+    assert args[args.index("--max-samples") + 1] == "1000"
+    assert args[args.index("--summary-mode") + 1] == "last"
+    assert args[args.index("--output-dir") + 1] == "out_phase157"
+
+
+def test_pivot_zone_candidate_reframe_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_zone_candidate_reframe(
+        Command(
+            CommandKind.AUDIT_PIVOT_ZONE_CANDIDATE_REFRAME,
+            {
+                "candidates": "B4,B2",
+                "max_samples": "1000",
+                "summary_mode": "last",
+                "min_validation_events": "50",
+                "output_dir": "out_phase158",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_zone_candidate_reframe.py"
+    assert args[args.index("--candidates") + 1] == "B4,B2"
+    assert args[args.index("--max-samples") + 1] == "1000"
+    assert args[args.index("--summary-mode") + 1] == "last"
+    assert args[args.index("--min-validation-events") + 1] == "50"
+    assert args[args.index("--output-dir") + 1] == "out_phase158"
+
+
+def test_pivot_candidate_geometry_tightening_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_candidate_geometry_tightening(
+        Command(
+            CommandKind.AUDIT_PIVOT_CANDIDATE_GEOMETRY_TIGHTENING,
+            {
+                "targets": "B4:24:1.0:0.5",
+                "recent_window_bars": "24,48",
+                "pivot_zone_atrs": "0.05,0.10",
+                "top_position_thresholds": "0.90",
+                "output_dir": "out_phase159",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_candidate_geometry_tightening.py"
+    assert args[args.index("--targets") + 1] == "B4:24:1.0:0.5"
+    assert args[args.index("--recent-window-bars") + 1] == "24,48"
+    assert args[args.index("--pivot-zone-atrs") + 1] == "0.05,0.10"
+    assert args[args.index("--top-position-thresholds") + 1] == "0.90"
+    assert args[args.index("--output-dir") + 1] == "out_phase159"
+
+
+def test_pivot_candidate_side_mapping_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_candidate_side_mapping(
+        Command(
+            CommandKind.AUDIT_PIVOT_CANDIDATE_SIDE_MAPPING,
+            {
+                "geometry_grid_path": "grid.csv",
+                "side_mappings": "reversal,breakout",
+                "entry_delays": "0,1",
+                "output_dir": "out_phase160",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_candidate_side_mapping.py"
+    assert args[args.index("--geometry-grid-path") + 1] == "grid.csv"
+    assert args[args.index("--side-mappings") + 1] == "reversal,breakout"
+    assert args[args.index("--entry-delays") + 1] == "0,1"
+    assert args[args.index("--output-dir") + 1] == "out_phase160"
+
+
+def test_pivot_bottom_buy_replay_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.replay_pivot_bottom_buy_candidate(
+        Command(
+            CommandKind.REPLAY_PIVOT_BOTTOM_BUY_CANDIDATE,
+            {
+                "flat_path": "flat.parquet",
+                "target_id": "B2",
+                "pivot_zone_atr": "0.05",
+                "bottom_position_threshold": "0.15",
+                "output_dir": "out_phase161",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/replay_pivot_bottom_buy_candidate.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--target-id") + 1] == "B2"
+    assert args[args.index("--pivot-zone-atr") + 1] == "0.05"
+    assert args[args.index("--bottom-position-threshold") + 1] == "0.15"
+    assert args[args.index("--output-dir") + 1] == "out_phase161"
+
+
+def test_pivot_bottom_buy_execution_gap_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_bottom_buy_execution_gap(
+        Command(
+            CommandKind.AUDIT_PIVOT_BOTTOM_BUY_EXECUTION_GAP,
+            {
+                "flat_path": "flat.parquet",
+                "entry_delays": "0,2",
+                "same_bar_policies": "stop_first,tp_first",
+                "spread_values": "0,0.06",
+                "output_dir": "out_phase162",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_bottom_buy_execution_gap.py"
+    assert args[args.index("--flat-path") + 1] == "flat.parquet"
+    assert args[args.index("--entry-delays") + 1] == "0,2"
+    assert args[args.index("--same-bar-policies") + 1] == "stop_first,tp_first"
+    assert args[args.index("--spread-values") + 1] == "0,0.06"
+    assert args[args.index("--output-dir") + 1] == "out_phase162"
+
+
+def test_pivot_1h_entry_feasibility_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_1h_entry_feasibility(
+        Command(
+            CommandKind.AUDIT_PIVOT_1H_ENTRY_FEASIBILITY,
+            {
+                "flat_path": "one_hour.parquet",
+                "recent_window_bars": "24",
+                "spread_values": "0,0.06",
+                "selection_spread_value": "0.06",
+                "output_dir": "out_phase163",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_1h_entry_feasibility.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--recent-window-bars") + 1] == "24"
+    assert args[args.index("--spread-values") + 1] == "0,0.06"
+    assert args[args.index("--selection-spread-value") + 1] == "0.06"
+    assert args[args.index("--output-dir") + 1] == "out_phase163"
+
+
+def test_pivot_1h_spread_bracket_sensitivity_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_1h_spread_bracket_sensitivity(
+        Command(
+            CommandKind.AUDIT_PIVOT_1H_SPREAD_BRACKET_SENSITIVITY,
+            {
+                "flat_path": "one_hour.parquet",
+                "fixed_spreads": "0,0.5,1.0",
+                "pct_spreads": "0,0.03,0.06",
+                "brackets": "B:2.0:1.0",
+                "output_dir": "out_phase164",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_1h_spread_bracket_sensitivity.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--fixed-spreads") + 1] == "0,0.5,1.0"
+    assert args[args.index("--pct-spreads") + 1] == "0,0.03,0.06"
+    assert args[args.index("--brackets") + 1] == "B:2.0:1.0"
+    assert args[args.index("--output-dir") + 1] == "out_phase164"
+
+
+def test_pivot_1h_candidate_lockdown_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.replay_pivot_1h_fixed_spread_candidate_lockdown(
+        Command(
+            CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN,
+            {
+                "flat_path": "one_hour.parquet",
+                "policy_key": "BRK_D1_FAST",
+                "spread_value": "0.2",
+                "stress_spreads": "0.2,0.5",
+                "output_dir": "out_phase165",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--policy-key") + 1] == "BRK_D1_FAST"
+    assert args[args.index("--spread-value") + 1] == "0.2"
+    assert args[args.index("--stress-spreads") + 1] == "0.2,0.5"
+    assert args[args.index("--output-dir") + 1] == "out_phase165"

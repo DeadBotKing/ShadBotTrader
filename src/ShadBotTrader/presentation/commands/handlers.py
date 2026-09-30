@@ -5675,7 +5675,7 @@ CommandField("temporal_filters", "Temporal filters", "96", kind="number"),
                 CommandField("branch_filters", "Branch filters", "48", kind="number"),
                 CommandField("branch_target_features", "Expanded branch features", "0", kind="number"),
                 CommandField("feature_augmentation_mode", "Feature augmentation", "off", kind="select", options=("off", "causal")),
-                CommandField("class_weight", "Class weights", "off", kind="select", options=("off", "auto")),
+                CommandField("class_weight", "Class weights", "auto", kind="select", options=("auto", "off")),
                 CommandField("same_bar_policy", "Payoff same-bar policy", "stop_first", kind="select", options=("stop_first", "target_first", "skip_ambiguous")),
                 CommandField("timeout_score_mode", "Payoff timeout score", "zero", kind="select", options=("zero", "close_r")),
                 CommandField("buy_threshold", "BUY threshold", "0.34", kind="number"),
@@ -5690,6 +5690,468 @@ CommandField("temporal_filters", "Temporal filters", "96", kind="number"),
                 CommandField("skip_existing_tensors", "Skip existing tensors", "0", kind="select", options=("0", "1")),
                 CommandField("skip_training", "Skip training", "0", kind="select", options=("0", "1")),
                 CommandField("timeout_minutes", "Give up after (minutes)", "720", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_PAYOFF_PREDICTION_THRESHOLDS,
+            label="Audit payoff prediction thresholds",
+            description=(
+                "Phase156A: load B4/B2 payoff Option B predictions, scan thresholds on "
+                "validation only, then confirm the selected policy once on test."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("candidates", "Candidates", "B4,B2"),
+                CommandField("model_version", "Model version", "0", kind="number"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("batch_size", "Prediction batch size", "128", kind="number"),
+                CommandField("buy_thresholds", "BUY thresholds", "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50"),
+                CommandField("sell_thresholds", "SELL thresholds", "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50"),
+                CommandField("margins", "Min margins", "0,0.03,0.05,0.10"),
+                CommandField("min_buy_r_values", "Min BUY R values", "none,0,0.25"),
+                CommandField("min_sell_r_values", "Min SELL R values", "none,0,0.25"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.05", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.05", kind="number"),
+                CommandField("score_metric", "Score metric", "drawdown_adjusted", kind="select", options=("drawdown_adjusted", "total_pnl", "profit_factor", "final_balance")),
+                CommandField("tp_multiplier", "ATR TP multiplier", "0.75", kind="number"),
+                CommandField("sl_multiplier", "ATR SL multiplier", "0.75", kind="number"),
+                CommandField("hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_payoff_prediction_thresholds"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "240", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_LEARNABILITY,
+            label="Audit payoff target learnability",
+            description=(
+                "Phase157A: check B4/B2 payoff target imbalance and learnability with "
+                "simple transparent baselines before any more deep training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("candidates", "Candidates", "B4,B2"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("summary_mode", "Feature summary", "basic", kind="select", options=("basic", "last")),
+                CommandField("chunk_size", "Chunk size", "512", kind="number"),
+                CommandField("min_action_ap_lift", "Min action AP lift", "0.05", kind="number"),
+                CommandField("min_binary_balanced_accuracy", "Min binary balanced acc", "0.55", kind="number"),
+                CommandField("min_side_balanced_accuracy", "Min side balanced acc", "0.55", kind="number"),
+                CommandField("min_candidate_train_rows", "Min side train rows", "200", kind="number"),
+                CommandField("min_candidate_validation_rows", "Min side validation rows", "30", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_payoff_target_learnability"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_ZONE_CANDIDATE_REFRAME,
+            label="Audit pivot-zone candidate reframe",
+            description=(
+                "Phase158A: stop classifying the full universe and audit live-known "
+                "pivot-zone candidate events for enrichment, payoff stability and learnability."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("candidates", "Candidates", "B4,B2"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("summary_mode", "Feature summary", "basic", kind="select", options=("basic", "last")),
+                CommandField("chunk_size", "Chunk size", "512", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "100", kind="number"),
+                CommandField("min_test_events", "Min test events", "100", kind="number"),
+                CommandField("min_validation_mean_r", "Min validation mean R", "0", kind="number"),
+                CommandField("min_test_mean_r", "Min test mean R", "0", kind="number"),
+                CommandField("min_event_ap_lift", "Min event AP lift", "0.03", kind="number"),
+                CommandField("min_event_balanced_accuracy", "Min event balanced acc", "0.53", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_zone_candidate_reframe"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_CANDIDATE_GEOMETRY_TIGHTENING,
+            label="Audit pivot candidate geometry tightening",
+            description=(
+                "Phase159A: search tighter live-known pivot candidate geometry before any "
+                "new model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Pivot flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("meta_path", "Pivot meta path", ""),
+                CommandField("targets", "Payoff target specs", "B4:24:1.0:0.5;B2:24:1.0:0.75"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("recent_window_bars", "Recent windows", "24,48,96"),
+                CommandField("pivot_zone_atrs", "Zone ATR grid", "0.05,0.10,0.15,0.20,0.25"),
+                CommandField("top_position_thresholds", "Top position thresholds", "0.85,0.90,0.95"),
+                CommandField("bottom_position_thresholds", "Bottom position thresholds", "0.15,0.10,0.05"),
+                CommandField("exclude_both_zones", "Exclude both-zone grid", "1,0"),
+                CommandField("min_range_width_atrs", "Min range width ATRs", "0,0.5,1.0"),
+                CommandField("max_range_width_atrs", "Max range width ATRs", "0"),
+                CommandField("zone_logic", "Zone logic", "and", kind="select", options=("and", "or")),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "target_first", "skip_ambiguous")),
+                CommandField("timeout_score_mode", "Timeout score mode", "zero", kind="select", options=("zero", "close_r")),
+                CommandField("min_validation_events", "Min validation events", "50", kind="number"),
+                CommandField("min_test_events", "Min test events", "50", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_validation_mean_r", "Min validation mean R", "0", kind="number"),
+                CommandField("min_test_mean_r", "Min test mean R", "0", kind="number"),
+                CommandField("score_metric", "Score metric", "mean_r", kind="select", options=("mean_r", "sum_r", "profit_factor")),
+                CommandField("max_policies", "Max policies", "0", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_candidate_geometry_tightening"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_CANDIDATE_SIDE_MAPPING,
+            label="Audit pivot candidate side mapping",
+            description=(
+                "Phase160A: test reversal, breakout, top-only, bottom-only and entry-delay "
+                "side mappings on tightened pivot candidate geometry before model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Pivot flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("meta_path", "Pivot meta path", ""),
+                CommandField("geometry_grid_path", "Phase159 grid path", "run_logs/pivot_candidate_geometry_tightening/latest_grid.csv"),
+                CommandField("fallback_targets", "Fallback targets", "B4:24:1.0:0.5;B2:24:1.0:0.75"),
+                CommandField("max_geometry_policies", "Max geometry policies", "30", kind="number"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("side_mappings", "Side mappings", "reversal,breakout,top_sell,bottom_buy,top_buy,bottom_sell,all_buy,all_sell"),
+                CommandField("entry_delays", "Entry delays", "0,1,2,3"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "target_first", "skip_ambiguous")),
+                CommandField("timeout_score_mode", "Timeout score mode", "zero", kind="select", options=("zero", "close_r")),
+                CommandField("zone_logic", "Zone logic", "and", kind="select", options=("and", "or")),
+                CommandField("min_validation_events", "Min validation events", "30", kind="number"),
+                CommandField("min_test_events", "Min test events", "30", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_validation_mean_r", "Min validation mean R", "0", kind="number"),
+                CommandField("min_test_mean_r", "Min test mean R", "0", kind="number"),
+                CommandField("score_metric", "Score metric", "mean_r", kind="select", options=("mean_r", "sum_r", "profit_factor")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_candidate_side_mapping"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.REPLAY_PIVOT_BOTTOM_BUY_CANDIDATE,
+            label="Replay pivot bottom-buy candidate",
+            description=(
+                "Phase161A: replay the Phase160A selected strict bottom-zone BUY policy "
+                "chronologically with spread, risk sizing and split/month reports."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Pivot flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("meta_path", "Pivot meta path", ""),
+                CommandField("target_id", "Target id", "B2"),
+                CommandField("recent_window_bars", "Recent window", "48", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top position threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom position threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("entry_delay_bars", "Entry delay bars", "0", kind="number"),
+                CommandField("tp_atr", "TP ATR", "1.0", kind="number"),
+                CommandField("sl_atr", "SL ATR", "0.75", kind="number"),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("hold_bars", "Max hold bars", "48", kind="number"),
+                CommandField("spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")),
+                CommandField("spread_value", "Spread value", "0.06", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.05", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.05", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_bottom_buy_chronological_replay"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_BOTTOM_BUY_EXECUTION_GAP,
+            label="Audit pivot bottom-buy execution gap",
+            description=(
+                "Phase162A: explain why the Phase160A bottom-buy event edge failed "
+                "Phase161A chronological replay by auditing entry gap, spread, skipped "
+                "events, delay grid and same-bar policy sensitivity."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "5M" if "5M" in datasets else (datasets[0] if datasets else "5M"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "Pivot flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("meta_path", "Pivot meta path", ""),
+                CommandField("target_id", "Target id", "B2"),
+                CommandField("recent_window_bars", "Recent window", "48", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top position threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom position threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("entry_delays", "Entry-delay grid", "0,1,2,3"),
+                CommandField("same_bar_policies", "Same-bar policies", "stop_first,tp_first"),
+                CommandField("spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")),
+                CommandField("spread_values", "Spread values", "0,0.06"),
+                CommandField("tp_atr", "TP ATR", "1.0", kind="number"),
+                CommandField("sl_atr", "SL ATR", "0.75", kind="number"),
+                CommandField("event_lookahead_bars", "Event lookahead bars", "24", kind="number"),
+                CommandField("hold_bars", "Replay hold bars", "48", kind="number"),
+                CommandField("timeout_score_mode", "Timeout score mode", "zero", kind="select", options=("zero", "close_r")),
+                CommandField("max_samples", "Max samples", "24000", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "336", kind="number"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.05", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.05", kind="number"),
+                CommandField("score_metric", "Score metric", "chronological_pnl", kind="select", options=("chronological_pnl", "chronological_pf", "independent_mean_atr")),
+                CommandField("max_event_rows", "Max event rows CSV", "20000", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_bottom_buy_execution_gap"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_1H_ENTRY_FEASIBILITY,
+            label="Audit 1H pivot entry feasibility",
+            description=(
+                "Phase163A: audit whether 1H pivot entries have healthier spread/ATR "
+                "economics and simple chronological replay behavior before any 1H model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("expected_step_minutes", "Expected step minutes", "60", kind="number"),
+                CommandField("recent_window_bars", "Recent windows", "24,48"),
+                CommandField("pivot_zone_atrs", "Zone ATR grid", "0.05,0.10,0.15"),
+                CommandField("top_position_thresholds", "Top position thresholds", "0.85,0.90"),
+                CommandField("bottom_position_thresholds", "Bottom position thresholds", "0.15,0.10"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1"),
+                CommandField("min_range_width_atrs", "Min range width ATRs", "1.0"),
+                CommandField("max_range_width_atrs", "Max range width ATRs", "0"),
+                CommandField("side_mappings", "Side mappings", "reversal,bottom_buy,top_sell,breakout"),
+                CommandField("entry_delays", "Entry delays", "0,1"),
+                CommandField("spread_mode", "Spread mode", "pct", kind="select", options=("pct", "fixed")),
+                CommandField("spread_values", "Spread values", "0,0.06"),
+                CommandField("selection_spread_value", "Selection spread", "0.06", kind="number"),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.12", kind="number"),
+                CommandField("tp_atr", "TP ATR", "1.5", kind="number"),
+                CommandField("sl_atr", "SL ATR", "1.0", kind="number"),
+                CommandField("hold_bars", "Hold bars", "24", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "10", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.05", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "10", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.05", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("score_metric", "Score metric", "cash_pnl", kind="select", options=("cash_pnl", "profit_factor", "independent_mean_atr")),
+                CommandField("max_policies", "Max policies", "0", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_entry_feasibility"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_1H_SPREAD_BRACKET_SENSITIVITY,
+            label="Audit 1H spread/bracket sensitivity",
+            description=(
+                "Phase164A: test fixed-vs-percent spread units and wider 1H ATR brackets "
+                "to decide whether the no-spread 1H signal can survive realistic costs."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("candidate_policies", "Candidate policies", "BRK_D1_FAST:breakout:1:24:0.05:0.85:0.15:1:1.0:0;BRK_D0_MID:breakout:0:24:0.10:0.85:0.15:1:1.0:0;BRK_D0_WIDE:breakout:0:48:0.10:0.85:0.15:1:1.0:0;BB_D1_WIDE:bottom_buy:1:24:0.15:0.85:0.15:1:1.0:0"),
+                CommandField("brackets", "Bracket grid", "B15_10:1.5:1.0;B20_10:2.0:1.0;B25_125:2.5:1.25;B30_15:3.0:1.5"),
+                CommandField("hold_bars_grid", "Hold bars grid", "24,48"),
+                CommandField("fixed_spreads", "Fixed spread values", "0,0.2,0.5,1.0,1.5,2.0"),
+                CommandField("pct_spreads", "Percent spread values", "0,0.01,0.02,0.03,0.06"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.12", kind="number"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "10", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.05", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "10", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.05", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("score_metric", "Score metric", "cash_pnl", kind="select", options=("cash_pnl", "profit_factor", "independent_mean_atr")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_spread_bracket_sensitivity"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN,
+            label="Replay 1H fixed-spread candidate lockdown",
+            description=(
+                "Phase165A: lock one nonzero-cost 1H breakout candidate and replay it "
+                "with train, validation, test, monthly stability and spread-stress gates."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("policy_key", "Policy key", "BRK_D1_FAST"),
+                CommandField("side_mapping", "Side mapping", "breakout"),
+                CommandField("entry_delay_bars", "Entry delay", "1", kind="number"),
+                CommandField("recent_window_bars", "Recent window", "24", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("bracket_id", "Bracket id", "B15_10"),
+                CommandField("tp_atr", "TP ATR", "1.5", kind="number"),
+                CommandField("sl_atr", "SL ATR", "1.0", kind="number"),
+                CommandField("hold_bars", "Hold bars", "24", kind="number"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.2", kind="number"),
+                CommandField("stress_spreads", "Stress spreads", "0.2,0.5,1.0"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("train_min_trades", "Train min trades", "50", kind="number"),
+                CommandField("train_min_profit_factor", "Train min PF", "1.00", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.10", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.10", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_positive_month_ratio", "Min positive month ratio", "0.50", kind="number"),
+                CommandField("max_worst_month_loss", "Max worst month loss", "12", kind="number"),
+                CommandField("require_stress_pass", "Require stress pass", "0", kind="select", options=("0", "1")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_fixed_spread_candidate_lockdown"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "120", kind="number"),
             ],
             slow=True,
             group="AI",
@@ -6506,6 +6968,36 @@ class CommandHandlers:
                 ),
                 CommandKind.RUN_PIVOT_PAYOFF_OPTION_B_DIAGNOSTIC: (
                     accounts.run_pivot_payoff_option_b_diagnostic
+                ),
+                CommandKind.AUDIT_PIVOT_PAYOFF_PREDICTION_THRESHOLDS: (
+                    accounts.audit_pivot_payoff_prediction_thresholds
+                ),
+                CommandKind.AUDIT_PIVOT_PAYOFF_TARGET_LEARNABILITY: (
+                    accounts.audit_pivot_payoff_target_learnability
+                ),
+                CommandKind.AUDIT_PIVOT_ZONE_CANDIDATE_REFRAME: (
+                    accounts.audit_pivot_zone_candidate_reframe
+                ),
+                CommandKind.AUDIT_PIVOT_CANDIDATE_GEOMETRY_TIGHTENING: (
+                    accounts.audit_pivot_candidate_geometry_tightening
+                ),
+                CommandKind.AUDIT_PIVOT_CANDIDATE_SIDE_MAPPING: (
+                    accounts.audit_pivot_candidate_side_mapping
+                ),
+                CommandKind.REPLAY_PIVOT_BOTTOM_BUY_CANDIDATE: (
+                    accounts.replay_pivot_bottom_buy_candidate
+                ),
+                CommandKind.AUDIT_PIVOT_BOTTOM_BUY_EXECUTION_GAP: (
+                    accounts.audit_pivot_bottom_buy_execution_gap
+                ),
+                CommandKind.AUDIT_PIVOT_1H_ENTRY_FEASIBILITY: (
+                    accounts.audit_pivot_1h_entry_feasibility
+                ),
+                CommandKind.AUDIT_PIVOT_1H_SPREAD_BRACKET_SENSITIVITY: (
+                    accounts.audit_pivot_1h_spread_bracket_sensitivity
+                ),
+                CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN: (
+                    accounts.replay_pivot_1h_fixed_spread_candidate_lockdown
                 ),
                 CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
                     accounts.validate_production_hybrid_stack
@@ -12296,7 +12788,7 @@ class AccountCommandHandlers(CommandHandlers):
                 "--branch-filters", str(max(command.integer("branch_filters", 48), 1)),
                 "--branch-target-features", str(max(command.integer("branch_target_features", 0), 0)),
                 "--feature-augmentation-mode", command.text("feature_augmentation_mode", "off").strip().lower() or "off",
-                "--class-weight", command.text("class_weight", "off").strip().lower() or "off",
+                "--class-weight", command.text("class_weight", "auto").strip().lower() or "auto",
                 "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
                 "--timeout-score-mode", command.text("timeout_score_mode", "zero").strip().lower() or "zero",
                 "--buy-threshold", str(command.number("buy_threshold", 0.34)),
@@ -12315,6 +12807,463 @@ class AccountCommandHandlers(CommandHandlers):
             "Ran Phase155A payoff-target Option B diagnostic",
             started,
             timeout=max(command.integer("timeout_minutes", 720), 5) * 60,
+        )
+
+    def audit_pivot_payoff_prediction_thresholds(self, command: Command) -> CommandResult:
+        """Run Phase156A payoff prediction threshold calibration audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_payoff_prediction_thresholds.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--candidates", command.text("candidates", "B4,B2").strip() or "B4,B2",
+                "--model-version", str(max(command.integer("model_version", 0), 0)),
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--batch-size", str(max(command.integer("batch_size", 128), 1)),
+                "--buy-thresholds", command.text("buy_thresholds", "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50").strip() or "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50",
+                "--sell-thresholds", command.text("sell_thresholds", "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50").strip() or "0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50",
+                "--margins", command.text("margins", "0,0.03,0.05,0.10").strip() or "0,0.03,0.05,0.10",
+                "--min-buy-r-values", command.text("min_buy_r_values", "none,0,0.25").strip() or "none,0,0.25",
+                "--min-sell-r-values", command.text("min_sell_r_values", "none,0,0.25").strip() or "none,0,0.25",
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.05), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.05), 0.0)),
+                "--score-metric", command.text("score_metric", "drawdown_adjusted").strip() or "drawdown_adjusted",
+                "--tp-multiplier", str(max(command.number("tp_multiplier", 0.75), 0.01)),
+                "--sl-multiplier", str(max(command.number("sl_multiplier", 0.75), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 48), 1)),
+                "--spread-mode", command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value", str(max(command.number("spread_value", 0.06), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_payoff_prediction_thresholds").strip() or "run_logs/pivot_payoff_prediction_thresholds",
+                "--report-title", command.text("report_title", "Phase156A payoff prediction threshold calibration audit").strip() or "Phase156A payoff prediction threshold calibration audit",
+            ],
+            "Audited Phase156A payoff prediction thresholds",
+            started,
+            timeout=max(command.integer("timeout_minutes", 240), 5) * 60,
+        )
+
+    def audit_pivot_payoff_target_learnability(self, command: Command) -> CommandResult:
+        """Run Phase157A payoff target learnability / imbalance diagnostic."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_payoff_target_learnability.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--candidates", command.text("candidates", "B4,B2").strip() or "B4,B2",
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--summary-mode", command.text("summary_mode", "basic").strip().lower() or "basic",
+                "--chunk-size", str(max(command.integer("chunk_size", 512), 1)),
+                "--min-action-ap-lift", str(max(command.number("min_action_ap_lift", 0.05), 0.0)),
+                "--min-binary-balanced-accuracy", str(max(command.number("min_binary_balanced_accuracy", 0.55), 0.0)),
+                "--min-side-balanced-accuracy", str(max(command.number("min_side_balanced_accuracy", 0.55), 0.0)),
+                "--min-candidate-train-rows", str(max(command.integer("min_candidate_train_rows", 200), 1)),
+                "--min-candidate-validation-rows", str(max(command.integer("min_candidate_validation_rows", 30), 1)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_payoff_target_learnability").strip() or "run_logs/pivot_payoff_target_learnability",
+                "--report-title", command.text("report_title", "Phase157A payoff target learnability diagnostic").strip() or "Phase157A payoff target learnability diagnostic",
+            ],
+            "Audited Phase157A payoff target learnability",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_zone_candidate_reframe(self, command: Command) -> CommandResult:
+        """Run Phase158A pivot-zone candidate/actionability reframe audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_zone_candidate_reframe.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--candidates", command.text("candidates", "B4,B2").strip() or "B4,B2",
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--summary-mode", command.text("summary_mode", "basic").strip().lower() or "basic",
+                "--chunk-size", str(max(command.integer("chunk_size", 512), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 100), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 100), 1)),
+                "--min-validation-mean-r", str(command.number("min_validation_mean_r", 0.0)),
+                "--min-test-mean-r", str(command.number("min_test_mean_r", 0.0)),
+                "--min-event-ap-lift", str(max(command.number("min_event_ap_lift", 0.03), 0.0)),
+                "--min-event-balanced-accuracy", str(max(command.number("min_event_balanced_accuracy", 0.53), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_zone_candidate_reframe").strip() or "run_logs/pivot_zone_candidate_reframe",
+                "--report-title", command.text("report_title", "Phase158A pivot-zone candidate reframe audit").strip() or "Phase158A pivot-zone candidate reframe audit",
+            ],
+            "Audited Phase158A pivot-zone candidate reframe",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_candidate_geometry_tightening(self, command: Command) -> CommandResult:
+        """Run Phase159A pivot candidate geometry tightening audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        meta_path = command.text("meta_path", "").strip()
+        if meta_path:
+            extra_args.extend(["--meta-path", meta_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_candidate_geometry_tightening.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--targets", command.text("targets", "B4:24:1.0:0.5;B2:24:1.0:0.75").strip() or "B4:24:1.0:0.5;B2:24:1.0:0.75",
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--recent-window-bars", command.text("recent_window_bars", "24,48,96").strip() or "24,48,96",
+                "--pivot-zone-atrs", command.text("pivot_zone_atrs", "0.05,0.10,0.15,0.20,0.25").strip() or "0.05,0.10,0.15,0.20,0.25",
+                "--top-position-thresholds", command.text("top_position_thresholds", "0.85,0.90,0.95").strip() or "0.85,0.90,0.95",
+                "--bottom-position-thresholds", command.text("bottom_position_thresholds", "0.15,0.10,0.05").strip() or "0.15,0.10,0.05",
+                "--exclude-both-zones", command.text("exclude_both_zones", "1,0").strip() or "1,0",
+                "--min-range-width-atrs", command.text("min_range_width_atrs", "0,0.5,1.0").strip() or "0,0.5,1.0",
+                "--max-range-width-atrs", command.text("max_range_width_atrs", "0").strip() or "0",
+                "--zone-logic", command.text("zone_logic", "and").strip().lower() or "and",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--timeout-score-mode", command.text("timeout_score_mode", "zero").strip().lower() or "zero",
+                "--min-validation-events", str(max(command.integer("min_validation_events", 50), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 50), 1)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-validation-mean-r", str(command.number("min_validation_mean_r", 0.0)),
+                "--min-test-mean-r", str(command.number("min_test_mean_r", 0.0)),
+                "--score-metric", command.text("score_metric", "mean_r").strip() or "mean_r",
+                "--max-policies", str(max(command.integer("max_policies", 0), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_candidate_geometry_tightening").strip() or "run_logs/pivot_candidate_geometry_tightening",
+                "--report-title", command.text("report_title", "Phase159A pivot candidate geometry tightening audit").strip() or "Phase159A pivot candidate geometry tightening audit",
+                *extra_args,
+            ],
+            "Audited Phase159A pivot candidate geometry tightening",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_candidate_side_mapping(self, command: Command) -> CommandResult:
+        """Run Phase160A pivot candidate side-mapping audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        meta_path = command.text("meta_path", "").strip()
+        if meta_path:
+            extra_args.extend(["--meta-path", meta_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_candidate_side_mapping.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--geometry-grid-path", command.text("geometry_grid_path", "run_logs/pivot_candidate_geometry_tightening/latest_grid.csv").strip() or "run_logs/pivot_candidate_geometry_tightening/latest_grid.csv",
+                "--fallback-targets", command.text("fallback_targets", "B4:24:1.0:0.5;B2:24:1.0:0.75").strip() or "B4:24:1.0:0.5;B2:24:1.0:0.75",
+                "--max-geometry-policies", str(max(command.integer("max_geometry_policies", 30), 1)),
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--side-mappings", command.text("side_mappings", "reversal,breakout,top_sell,bottom_buy,top_buy,bottom_sell,all_buy,all_sell").strip() or "reversal,breakout,top_sell,bottom_buy,top_buy,bottom_sell,all_buy,all_sell",
+                "--entry-delays", command.text("entry_delays", "0,1,2,3").strip() or "0,1,2,3",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--timeout-score-mode", command.text("timeout_score_mode", "zero").strip().lower() or "zero",
+                "--zone-logic", command.text("zone_logic", "and").strip().lower() or "and",
+                "--min-validation-events", str(max(command.integer("min_validation_events", 30), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 30), 1)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-validation-mean-r", str(command.number("min_validation_mean_r", 0.0)),
+                "--min-test-mean-r", str(command.number("min_test_mean_r", 0.0)),
+                "--score-metric", command.text("score_metric", "mean_r").strip() or "mean_r",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_candidate_side_mapping").strip() or "run_logs/pivot_candidate_side_mapping",
+                "--report-title", command.text("report_title", "Phase160A pivot candidate side-mapping audit").strip() or "Phase160A pivot candidate side-mapping audit",
+                *extra_args,
+            ],
+            "Audited Phase160A pivot candidate side mapping",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def replay_pivot_bottom_buy_candidate(self, command: Command) -> CommandResult:
+        """Run Phase161A pivot bottom-buy chronological replay."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        meta_path = command.text("meta_path", "").strip()
+        if meta_path:
+            extra_args.extend(["--meta-path", meta_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/replay_pivot_bottom_buy_candidate.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--target-id", command.text("target_id", "B2").strip() or "B2",
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 48), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--entry-delay-bars", str(max(command.integer("entry_delay_bars", 0), 0)),
+                "--tp-atr", str(max(command.number("tp_atr", 1.0), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 0.75), 0.01)),
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--hold-bars", str(max(command.integer("hold_bars", 48), 1)),
+                "--spread-mode", command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-value", str(max(command.number("spread_value", 0.06), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.05), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.05), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_bottom_buy_chronological_replay").strip() or "run_logs/pivot_bottom_buy_chronological_replay",
+                "--report-title", command.text("report_title", "Phase161A pivot bottom-buy chronological replay").strip() or "Phase161A pivot bottom-buy chronological replay",
+                *extra_args,
+            ],
+            "Ran Phase161A pivot bottom-buy chronological replay",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_bottom_buy_execution_gap(self, command: Command) -> CommandResult:
+        """Run Phase162A pivot bottom-buy execution-gap audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "5M").strip().upper() or "5M"
+        extra_args = []
+        meta_path = command.text("meta_path", "").strip()
+        if meta_path:
+            extra_args.extend(["--meta-path", meta_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_bottom_buy_execution_gap.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--target-id", command.text("target_id", "B2").strip() or "B2",
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 48), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--entry-delays", command.text("entry_delays", "0,1,2,3").strip() or "0,1,2,3",
+                "--same-bar-policies", command.text("same_bar_policies", "stop_first,tp_first").strip() or "stop_first,tp_first",
+                "--spread-mode", command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-values", command.text("spread_values", "0,0.06").strip() or "0,0.06",
+                "--tp-atr", str(max(command.number("tp_atr", 1.0), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 0.75), 0.01)),
+                "--event-lookahead-bars", str(max(command.integer("event_lookahead_bars", 24), 1)),
+                "--hold-bars", str(max(command.integer("hold_bars", 48), 1)),
+                "--timeout-score-mode", command.text("timeout_score_mode", "zero").strip().lower() or "zero",
+                "--max-samples", str(max(command.integer("max_samples", 24000), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 336), 0)),
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.05), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.05), 0.0)),
+                "--score-metric", command.text("score_metric", "chronological_pnl").strip() or "chronological_pnl",
+                "--max-event-rows", str(max(command.integer("max_event_rows", 20000), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_bottom_buy_execution_gap").strip() or "run_logs/pivot_bottom_buy_execution_gap",
+                "--report-title", command.text("report_title", "Phase162A pivot bottom-buy execution gap audit").strip() or "Phase162A pivot bottom-buy execution gap audit",
+                *extra_args,
+            ],
+            "Audited Phase162A pivot bottom-buy execution gap",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_1h_entry_feasibility(self, command: Command) -> CommandResult:
+        """Run Phase163A 1H pivot / entry feasibility audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_1h_entry_feasibility.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--expected-step-minutes", str(max(command.number("expected_step_minutes", 60.0), 1.0)),
+                "--recent-window-bars", command.text("recent_window_bars", "24,48").strip() or "24,48",
+                "--pivot-zone-atrs", command.text("pivot_zone_atrs", "0.05,0.10,0.15").strip() or "0.05,0.10,0.15",
+                "--top-position-thresholds", command.text("top_position_thresholds", "0.85,0.90").strip() or "0.85,0.90",
+                "--bottom-position-thresholds", command.text("bottom_position_thresholds", "0.15,0.10").strip() or "0.15,0.10",
+                "--exclude-both-zones", command.text("exclude_both_zones", "1").strip() or "1",
+                "--min-range-width-atrs", command.text("min_range_width_atrs", "1.0").strip() or "1.0",
+                "--max-range-width-atrs", command.text("max_range_width_atrs", "0").strip() or "0",
+                "--side-mappings", command.text("side_mappings", "reversal,bottom_buy,top_sell,breakout").strip() or "reversal,bottom_buy,top_sell,breakout",
+                "--entry-delays", command.text("entry_delays", "0,1").strip() or "0,1",
+                "--spread-mode", command.text("spread_mode", "pct").strip().lower() or "pct",
+                "--spread-values", command.text("spread_values", "0,0.06").strip() or "0,0.06",
+                "--selection-spread-value", str(max(command.number("selection_spread_value", 0.06), 0.0)),
+                "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.12), 0.0)),
+                "--tp-atr", str(max(command.number("tp_atr", 1.5), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 1.0), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 24), 1)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 10), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.05), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 10), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.05), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--score-metric", command.text("score_metric", "cash_pnl").strip() or "cash_pnl",
+                "--max-policies", str(max(command.integer("max_policies", 0), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_entry_feasibility").strip() or "run_logs/pivot_1h_entry_feasibility",
+                "--report-title", command.text("report_title", "Phase163A 1H pivot entry feasibility audit").strip() or "Phase163A 1H pivot entry feasibility audit",
+            ],
+            "Audited Phase163A 1H pivot entry feasibility",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def audit_pivot_1h_spread_bracket_sensitivity(self, command: Command) -> CommandResult:
+        """Run Phase164A 1H spread-unit / bracket-cost sensitivity audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_1h_spread_bracket_sensitivity.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--candidate-policies", command.text("candidate_policies", "BRK_D1_FAST:breakout:1:24:0.05:0.85:0.15:1:1.0:0;BRK_D0_MID:breakout:0:24:0.10:0.85:0.15:1:1.0:0;BRK_D0_WIDE:breakout:0:48:0.10:0.85:0.15:1:1.0:0;BB_D1_WIDE:bottom_buy:1:24:0.15:0.85:0.15:1:1.0:0").strip() or "BRK_D1_FAST:breakout:1:24:0.05:0.85:0.15:1:1.0:0;BRK_D0_MID:breakout:0:24:0.10:0.85:0.15:1:1.0:0;BRK_D0_WIDE:breakout:0:48:0.10:0.85:0.15:1:1.0:0;BB_D1_WIDE:bottom_buy:1:24:0.15:0.85:0.15:1:1.0:0",
+                "--brackets", command.text("brackets", "B15_10:1.5:1.0;B20_10:2.0:1.0;B25_125:2.5:1.25;B30_15:3.0:1.5").strip() or "B15_10:1.5:1.0;B20_10:2.0:1.0;B25_125:2.5:1.25;B30_15:3.0:1.5",
+                "--hold-bars-grid", command.text("hold_bars_grid", "24,48").strip() or "24,48",
+                "--fixed-spreads", command.text("fixed_spreads", "0,0.2,0.5,1.0,1.5,2.0").strip() or "0,0.2,0.5,1.0,1.5,2.0",
+                "--pct-spreads", command.text("pct_spreads", "0,0.01,0.02,0.03,0.06").strip() or "0,0.01,0.02,0.03,0.06",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.12), 0.0)),
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 10), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.05), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 10), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.05), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--score-metric", command.text("score_metric", "cash_pnl").strip() or "cash_pnl",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_spread_bracket_sensitivity").strip() or "run_logs/pivot_1h_spread_bracket_sensitivity",
+                "--report-title", command.text("report_title", "Phase164A 1H spread/bracket cost sensitivity audit").strip() or "Phase164A 1H spread/bracket cost sensitivity audit",
+            ],
+            "Audited Phase164A 1H spread/bracket cost sensitivity",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def replay_pivot_1h_fixed_spread_candidate_lockdown(self, command: Command) -> CommandResult:
+        """Run Phase165A 1H fixed-spread candidate lockdown replay."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--policy-key", command.text("policy_key", "BRK_D1_FAST").strip() or "BRK_D1_FAST",
+                "--side-mapping", command.text("side_mapping", "breakout").strip() or "breakout",
+                "--entry-delay-bars", str(max(command.integer("entry_delay_bars", 1), 0)),
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 24), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--bracket-id", command.text("bracket_id", "B15_10").strip() or "B15_10",
+                "--tp-atr", str(max(command.number("tp_atr", 1.5), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 1.0), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 24), 1)),
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.2), 0.0)),
+                "--stress-spreads", command.text("stress_spreads", "0.2,0.5,1.0").strip() or "0.2,0.5,1.0",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--train-min-trades", str(max(command.integer("train_min_trades", 50), 1)),
+                "--train-min-profit-factor", str(max(command.number("train_min_profit_factor", 1.0), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.10), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.10), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-positive-month-ratio", str(max(command.number("min_positive_month_ratio", 0.50), 0.0)),
+                "--max-worst-month-loss", str(max(command.number("max_worst_month_loss", 12.0), 0.0)),
+                "--require-stress-pass", "1" if command.text("require_stress_pass", "0").strip() == "1" else "0",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_fixed_spread_candidate_lockdown").strip() or "run_logs/pivot_1h_fixed_spread_candidate_lockdown",
+                "--report-title", command.text("report_title", "Phase165A 1H fixed-spread candidate lockdown replay").strip() or "Phase165A 1H fixed-spread candidate lockdown replay",
+            ],
+            "Ran Phase165A 1H fixed-spread candidate lockdown replay",
+            started,
+            timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
         )
 
     def validate_production_hybrid_stack(self, command: Command) -> CommandResult:

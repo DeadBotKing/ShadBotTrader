@@ -163,3 +163,69 @@ After completion, send:
 ```text
 run_logs\pivot_payoff_option_b_diagnostic\latest.json
 ```
+
+## First diagnostic result with class_weight=off
+
+The owner completed Phase155A with class weights disabled.
+
+Summary:
+
+```text
+selected_candidate_id      : B4
+selected_model_id          : gold_pivot_payoff_option_b_b4_5m
+selected_test_profit_factor: 3.9898980099
+selected_test_final_balance: 103.0198
+selected_transfer_pass_gate: 0
+```
+
+B4:
+
+```text
+validation_trades         : 1
+validation_final_balance  : 101.0000
+validation_profit_factor  : 999.0
+validation_total_cash_pnl : +1.0000
+
+test_trades               : 5
+test_final_balance        : 103.0198
+test_profit_factor        : 3.9899
+test_total_cash_pnl       : +3.0198
+
+validation_pass_gate      : 0
+test_pass_gate            : 1
+transfer_pass_gate        : 0
+```
+
+B2:
+
+```text
+validation_trades         : 2
+validation_total_cash_pnl : +0.2914
+
+test_trades               : 22
+test_profit_factor        : 0.7425
+test_total_cash_pnl       : -2.7912
+transfer_pass_gate        : 0
+```
+
+Interpretation:
+
+```text
+This is not a valid pass. B4 is positive but selected only one validation trade and five test trades.
+The class_weight=off run mostly learned HOLD, so validation selection is not meaningful.
+```
+
+Follow-up code update:
+
+```text
+The real training crash was scalar target metadata indexing, not class_weight itself.
+After fixing scoped_target_meta(), class_weight=auto is re-enabled for Phase155A.
+The wrapper and GUI now default to auto again.
+```
+
+Recommended rerun:
+
+```text
+--skip-existing-tensors 1
+--class-weight auto
+```

@@ -712,13 +712,8 @@ def main(argv: list[str] | None = None) -> int:
             target_values = np.asarray(meta["target_mode"], dtype=object).reshape(-1)
             target_mode = str(target_values[0]) if len(target_values) else ""
         class_weight_mode = str(args.class_weight)
-        if target_mode == "first_hit_payoff" and class_weight_mode == "auto":
-            class_weight_mode = "off"
-            print(
-                "  [i] first_hit_payoff target detected; class_weight=auto disabled "
-                "for this diagnostic to avoid Keras sparse Sequence sample-weight instability.",
-                flush=True,
-            )
+        if target_mode:
+            print(f"  target mode : {target_mode} | class_weight={class_weight_mode}", flush=True)
         groups = option_b_groups(meta)
         zero_indices, zero_names, zero_groups = zero_feature_selection(meta, args)
         indices = selected_indices(len(x_all), int(args.max_samples))

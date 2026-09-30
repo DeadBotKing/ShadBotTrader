@@ -168,7 +168,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--top-loss-weight", type=float, default=0.5)
     parser.add_argument("--bottom-loss-weight", type=float, default=0.5)
     parser.add_argument("--r-loss-weight", type=float, default=0.5)
-    parser.add_argument("--class-weight", choices=("auto", "off"), default="off")
+    parser.add_argument("--class-weight", choices=("auto", "off"), default="auto")
     parser.add_argument("--buy-threshold", type=float, default=0.34)
     parser.add_argument("--sell-threshold", type=float, default=0.34)
     parser.add_argument("--min-margin", type=float, default=0.0)

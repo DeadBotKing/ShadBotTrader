@@ -14865,3 +14865,1658 @@ Rerun Phase155A with:
 
 This should reuse the already healthy B4 tensor and proceed to training.
 ```
+
+## Phase155A first diagnostic result — B4/B2 did not transfer with class_weight=off; auto re-enabled — 2026-09-21
+
+The owner completed Phase155A with `class_weight=off` after the metadata scoping fix.
+
+B4 result:
+
+```text
+model_id                  : gold_pivot_payoff_option_b_b4_5m
+health_status             : PASS
+train_val_action_accuracy : 0.9522058824
+train_test_action_accuracy: 0.9525122549
+train_val_selected_rate   : 0.0006127451
+train_test_selected_rate  : 0.0070465686
+validation_trades         : 1
+validation_final_balance  : 101.0000
+validation_profit_factor  : 999.0
+validation_total_cash_pnl : +1.0000
+test_trades               : 5
+test_final_balance        : 103.0198
+test_profit_factor        : 3.9899
+test_total_cash_pnl       : +3.0198
+validation_pass_gate      : 0
+test_pass_gate            : 1
+transfer_pass_gate        : 0
+```
+
+B2 result:
+
+```text
+model_id                  : gold_pivot_payoff_option_b_b2_5m
+health_status             : PASS
+train_val_action_accuracy : 0.9540441176
+train_test_action_accuracy: 0.9451593137
+train_val_selected_rate   : 0.0039828431
+train_test_selected_rate  : 0.0232843137
+validation_trades         : 2
+validation_final_balance  : 100.2914
+validation_profit_factor  : 999.0
+validation_total_cash_pnl : +0.2914
+test_trades               : 22
+test_final_balance        : 97.2088
+test_profit_factor        : 0.7425
+test_total_cash_pnl       : -2.7912
+validation_pass_gate      : 0
+test_pass_gate            : 0
+transfer_pass_gate        : 0
+```
+
+Interpretation:
+
+```text
+The payoff targets are trainable enough to produce high action accuracy, but with class_weight=off the model mostly learns HOLD.
+B4 is positive on test but only 5 test trades and only 1 validation trade; this is not a valid transfer pass.
+B2 is denser but fails test PnL.
+```
+
+Decision:
+
+```text
+Do not accept Phase155A class_weight=off result.
+The model under-selects trades too severely for validation selection to be meaningful.
+```
+
+Follow-up implementation:
+
+```text
+After the real metadata indexing bug was fixed, class_weight=auto can be re-enabled for first_hit_payoff targets.
+Phase155A wrapper default is now class_weight=auto again.
+GUI Class weights default is auto.
+The defensive auto-disable in Option B trainer was removed.
+```
+
+Recommended next diagnostic:
+
+```text
+Rerun Phase155A with:
+  --skip-existing-tensors 1
+  --class-weight auto
+
+This should reuse healthy B4/B2 tensors and test whether balanced training increases validation/test selected_rate enough for a meaningful transfer test.
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase155A rerun result — payoff Option B still under-selects and fails transfer — 2026-09-21
+
+The owner reran Phase155A into `run_logs\pivot_payoff_option_b_diagnostic_auto`.
+
+Top-level result:
+
+```text
+completed_candidates         : 2
+selected_candidate_id        : B4
+selected_model_id            : gold_pivot_payoff_option_b_b4_5m
+selected_validation_PF       : 999.0
+selected_test_PF             : 3.9898980099
+selected_test_final_balance  : 103.01979699
+selected_transfer_pass_gate  : 0
+```
+
+B4 result:
+
+```text
+health_status             : PASS
+health_nonfinite_cells    : 0
+train_val_action_accuracy : 0.9522058824
+train_test_action_accuracy: 0.9525122549
+train_val_selected_rate   : 0.0006127451
+train_test_selected_rate  : 0.0070465686
+validation_trades         : 1
+validation_final_balance  : 101.0000
+validation_PF             : 999.0
+validation_pnl            : +1.0000
+test_trades               : 5
+test_final_balance        : 103.0198
+test_PF                   : 3.9899
+test_pnl                  : +3.0198
+validation_pass_gate      : 0
+test_pass_gate            : 1
+transfer_pass_gate        : 0
+```
+
+B2 result:
+
+```text
+health_status             : PASS
+health_nonfinite_cells    : 0
+train_val_action_accuracy : 0.9540441176
+train_test_action_accuracy: 0.9451593137
+train_val_selected_rate   : 0.0039828431
+train_test_selected_rate  : 0.0232843137
+validation_trades         : 2
+validation_final_balance  : 100.2914
+validation_PF             : 999.0
+validation_pnl            : +0.2914
+test_trades               : 22
+test_final_balance        : 97.2088
+test_PF                   : 0.7425
+test_pnl                  : -2.7912
+transfer_pass_gate        : 0
+```
+
+Interpretation:
+
+```text
+Phase155A did not pass. B4 is positive on the tiny test sample, but validation has only 1 trade and test only 5 trades. B2 selects more but fails test.
+The diagnostic is dominated by under-selection / HOLD bias. High action accuracy is mostly majority-HOLD accuracy, not trading edge.
+The reported auto-output metrics are identical to the class_weight=off run, so effective behavior did not improve selection density.
+```
+
+Decision:
+
+```text
+Do not accept B4/B2 Option B diagnostic training as a transfer pass.
+Do not proceed to Phase134/paper/live.
+Do not train bigger models on this setup yet.
+```
+
+Recommended next phase:
+
+```text
+Phase156A — Payoff-target prediction/threshold calibration audit
+```
+
+Purpose:
+
+```text
+Inspect B4/B2 probability distributions and run validation-only threshold grid to determine whether the model has usable but low-confidence signal, or whether it is simply collapsing to HOLD.
+```
+
+Anti-overfit requirement:
+
+```text
+Select thresholds only on validation.
+Run one unchanged test confirmation.
+If validation-selected thresholds fail test or trade count is too low, reject.
+```
+
+## Phase156A payoff prediction threshold calibration audit implemented — 2026-09-22
+
+After Phase155A showed B4/B2 under-selected trades under fixed thresholds, Phase156A was implemented.
+
+Implemented:
+
+```text
+scripts/audit_pivot_payoff_prediction_thresholds.py
+GUI: Audit payoff prediction thresholds
+```
+
+Purpose:
+
+```text
+Load existing B4/B2 payoff Option B models, predict validation/test once, select thresholds only on validation, and confirm exactly that selected policy on test.
+```
+
+Default candidates:
+
+```text
+B4 → gold_pivot_payoff_option_b_b4_5m / pivot_payoff_sequence_tensor_b4_latest
+B2 → gold_pivot_payoff_option_b_b2_5m / pivot_payoff_sequence_tensor_b2_latest
+```
+
+Default grid:
+
+```text
+buy_thresholds  = 0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50
+sell_thresholds = 0.05,0.10,0.15,0.20,0.25,0.30,0.34,0.40,0.50
+margins         = 0,0.03,0.05,0.10
+min_buy_r       = none,0,0.25
+min_sell_r      = none,0,0.25
+```
+
+Outputs:
+
+```text
+run_logs\pivot_payoff_prediction_thresholds\latest.json
+run_logs\pivot_payoff_prediction_thresholds\latest.html
+run_logs\pivot_payoff_prediction_thresholds\latest_validation_grid.csv
+run_logs\pivot_payoff_prediction_thresholds\latest_selection.csv
+run_logs\pivot_payoff_prediction_thresholds\latest_probability_summary.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_payoff_prediction_thresholds.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_payoff_prediction_thresholds.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_payoff_prediction_thresholds.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 49 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase156A result — threshold calibration confirms HOLD collapse / under-selection — 2026-09-22
+
+The owner ran Phase156A payoff-target prediction threshold calibration audit.
+
+Top-level result:
+
+```text
+completed_candidates          : 2
+selected_candidate_id         : B4
+selected_model_id             : gold_pivot_payoff_option_b_b4_5m
+selected_validation_score     : +1.0000
+selected_validation_PF        : 999.0
+selected_test_PF              : 3.9899
+selected_test_final_balance   : 103.0198
+selected_transfer_pass_gate   : 0
+```
+
+B4 probability diagnostics showed extreme HOLD dominance:
+
+```text
+Validation:
+  sell_mean  : 0.0057
+  hold_mean  : 0.9814
+  buy_mean   : 0.0129
+  buy_p95    : 0.0674
+  sell_p95   : 0.0195
+  buy_margin_p95  : -0.8387
+  sell_margin_p95 : -0.8879
+
+Test:
+  sell_mean  : 0.0162
+  hold_mean  : 0.9728
+  buy_mean   : 0.0110
+  buy_p95    : 0.0557
+  sell_p95   : 0.0724
+  buy_margin_p95  : -0.8042
+  sell_margin_p95 : -0.8133
+```
+
+B2 also showed HOLD dominance:
+
+```text
+Validation hold_mean : 0.9850
+Test hold_mean       : 0.9671
+```
+
+Validation-selected threshold for both candidates was the lowest grid setting:
+
+```text
+buy_threshold  : 0.05
+sell_threshold : 0.05
+min_margin     : 0.0
+min_buy_r      : -999
+min_sell_r     : -999
+```
+
+Even at the lowest threshold, validation trade count remained too low:
+
+```text
+B4 validation trades : 1
+B4 test trades       : 5
+B4 transfer_pass     : 0
+
+B2 validation trades : 2
+B2 test trades       : 22
+B2 test PF           : 0.7425
+B2 transfer_pass     : 0
+```
+
+Interpretation:
+
+```text
+Phase156A confirms that the trained payoff Option B models are not merely using too-strict thresholds.
+The action head is overwhelmingly HOLD-dominant. BUY/SELL probabilities are too low and margins versus HOLD are deeply negative.
+Lowering thresholds within a reasonable grid cannot create enough validation trades.
+```
+
+Decision:
+
+```text
+Reject current Phase155A B4/B2 trained models as trading candidates.
+Keep B4 payoff target as structurally promising, but the current Option B training objective/label handling is not learning actionable BUY/SELL sufficiently.
+Do not proceed to Phase134/paper/live.
+Do not train bigger versions of the same setup blindly.
+```
+
+Recommended next phase:
+
+```text
+Phase157A — Payoff Target Learnability / Imbalance-Control Diagnostic
+```
+
+Purpose:
+
+```text
+Audit whether B4/B2 can be learned with a candidate-only or action-vs-hold learning setup before returning to full Option B training.
+```
+
+Potential Phase157A diagnostics:
+
+```text
+1. Action class imbalance report after purge split.
+2. Baselines: always-HOLD, prior-probability, centroid/LightGBM tabular target sanity.
+3. Candidate-only model: train/evaluate only rows where target_action != HOLD, to test BUY vs SELL learnability.
+4. Binary actionability head: actionable vs HOLD.
+5. Focal-loss / class-weight sanity on a small controlled model only if diagnostics justify it.
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase157A payoff target learnability / imbalance diagnostic implemented — 2026-09-22
+
+After Phase156A confirmed that threshold calibration could not rescue the current B4/B2 payoff Option B models due to HOLD collapse / under-selection, Phase157A was implemented.
+
+Implemented:
+
+```text
+scripts/audit_pivot_payoff_target_learnability.py
+GUI: Audit payoff target learnability
+```
+
+Purpose:
+
+```text
+Before training another deep model, test whether B4/B2 targets are learnable at all from the current sequence tensor features.
+```
+
+Diagnostics:
+
+```text
+1. Split class imbalance and always-HOLD baselines.
+2. Full SELL/HOLD/BUY centroid classifier.
+3. Binary ACTIONABLE-vs-HOLD centroid classifier.
+4. Candidate-only BUY-vs-SELL centroid classifier.
+```
+
+Feature summary:
+
+```text
+basic = last timestep + window mean + window std
+last  = last timestep only
+```
+
+Outputs:
+
+```text
+run_logs\pivot_payoff_target_learnability\latest.json
+run_logs\pivot_payoff_target_learnability\latest.html
+run_logs\pivot_payoff_target_learnability\latest_candidates.csv
+run_logs\pivot_payoff_target_learnability\latest_splits.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_payoff_target_learnability.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_payoff_target_learnability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_payoff_target_learnability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase157A result — B4/B2 actionability not learnable enough; side conditional signal exists but no gate pass — 2026-09-22
+
+The owner ran Phase157A payoff target learnability / imbalance-control diagnostic.
+
+Top-level result:
+
+```text
+completed_candidates : 2
+learnable_candidates : 0
+best_candidate_id    : B2
+best_candidate_reason: no gate pass; best diagnostic score only
+```
+
+B4 class distribution:
+
+```text
+train      SELL=425, HOLD=16156, BUY=219, actionable=644 / 16800 = 3.8333%
+validation SELL=82,  HOLD=3106,  BUY=76,  actionable=158 / 3264 = 4.8407%
+test       SELL=56,  HOLD=3122,  BUY=86,  actionable=142 / 3264 = 4.3505%
+```
+
+B4 learnability metrics:
+
+```text
+always_hold_validation_accuracy : 0.9515931373
+always_hold_test_accuracy       : 0.9564950980
+full3_validation_accuracy       : 0.9515931373
+full3_test_accuracy             : 0.9564950980
+full3_balanced_accuracy         : 0.3333333333 / 0.3333333333
+
+binary_validation_base_rate     : 0.0484068627
+binary_validation_ap            : 0.1722548759
+binary_validation_ap_lift       : +0.1238480131
+binary_test_base_rate           : 0.0435049020
+binary_test_ap                  : 0.0561184764
+binary_test_ap_lift             : +0.0126135744
+binary_balanced_accuracy        : 0.5 / 0.5
+binary_f1                       : 0.0 / 0.0
+
+side_train_rows                 : 644
+side_validation_rows            : 158
+side_test_rows                  : 142
+side_validation_buy_ap          : 0.8666607330
+side_test_buy_ap                : 0.8925912570
+side_balanced_accuracy          : 0.5 / 0.5
+candidate_learnability_gate     : 0
+```
+
+B2 class distribution:
+
+```text
+train      actionable=531 / 16800 = 3.1607%
+validation actionable=137 / 3264  = 4.1973%
+test       actionable=117 / 3264  = 3.5846%
+```
+
+B2 learnability metrics:
+
+```text
+always_hold_validation_accuracy : 0.9580269608
+always_hold_test_accuracy       : 0.9641544118
+full3_validation_accuracy       : 0.9580269608
+full3_test_accuracy             : 0.9641544118
+full3_balanced_accuracy         : 0.3333333333 / 0.3333333333
+
+binary_validation_ap_lift       : +0.1500396355
+binary_test_ap_lift             : +0.0118765579
+binary_balanced_accuracy        : 0.5 / 0.5
+binary_f1                       : 0.0 / 0.0
+
+side_train_rows                 : 531
+side_validation_rows            : 137
+side_test_rows                  : 117
+side_validation_buy_ap          : 0.9235997639
+side_test_buy_ap                : 0.9172319370
+side_balanced_accuracy          : 0.5 / 0.5
+candidate_learnability_gate     : 0
+```
+
+Interpretation:
+
+```text
+Phase157A confirms the bottleneck is actionability detection, not only threshold choice.
+The full 3-class baseline degenerates to always-HOLD.
+Binary ACTIONABLE-vs-HOLD has some validation AP lift but almost no test AP lift and no usable threshold behavior.
+Candidate-only BUY-vs-SELL ranking AP is high, which suggests side can be ranked if a valid candidate set already exists, but it does not solve the live problem of discovering actionable rows.
+```
+
+Decision:
+
+```text
+Do not train another bigger Option B / WaveNet on the same sparse full-universe 3-class target.
+B4/B2 payoff targets are structurally cleaner, but full-universe actionability is too sparse/unstable for the current model path.
+No Phase134, no paper shadow, no live trading.
+```
+
+Recommended next phase:
+
+```text
+Phase158A — Pivot Zone Candidate / Actionability Reframe Audit
+```
+
+Purpose:
+
+```text
+Stop asking the model to classify the whole universe as SELL/HOLD/BUY.
+Instead, define live-known pivot-zone candidate rows from recent top/bottom zones, then audit win/actionability/side learnability inside that candidate universe.
+```
+
+Rationale:
+
+```text
+Side ranking looks promising conditional on candidates.
+The missing part is a stable, live-known candidate generator / actionability gate.
+```
+
+## Phase158A pivot-zone candidate / actionability reframe audit implemented — 2026-09-30
+
+After Phase157A showed that full-universe actionability is not learnable enough but candidate-only side ranking has signal, Phase158A was implemented.
+
+Implemented:
+
+```text
+scripts/audit_pivot_zone_candidate_reframe.py
+GUI: Audit pivot-zone candidate reframe
+```
+
+Purpose:
+
+```text
+Stop asking a model to classify the full 5M universe directly as SELL/HOLD/BUY.
+Instead, audit a live-known pivot-zone candidate universe:
+  top-zone row    → SELL candidate event
+  bottom-zone row → BUY candidate event
+```
+
+Diagnostics:
+
+```text
+- zone-event counts by train/validation/test
+- event win rate and mean R
+- side-specific BUY/SELL mean R and win rate
+- mean-R validation-to-test sign flip
+- event win learnability with transparent centroid baseline
+- side preference stability between validation and test
+```
+
+Outputs:
+
+```text
+run_logs\pivot_zone_candidate_reframe\latest.json
+run_logs\pivot_zone_candidate_reframe\latest.html
+run_logs\pivot_zone_candidate_reframe\latest_candidates.csv
+run_logs\pivot_zone_candidate_reframe\latest_splits.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_zone_candidate_reframe.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_zone_candidate_reframe.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_zone_candidate_reframe.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 52 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase158A result — pivot-zone candidate reframe failed; zone definitions too broad and negative expectancy — 2026-09-30
+
+The owner ran Phase158A pivot-zone candidate / actionability reframe audit.
+
+Top-level result:
+
+```text
+completed_candidates      : 2
+reframe_ready_candidates  : 0
+best_candidate_id         : B2
+best_candidate_reason     : no gate pass; best diagnostic score only
+production_status         : BLOCKED — Phase158A pivot-zone candidate audit only
+```
+
+B4 zone candidate universe:
+
+```text
+train zone events      : 14824 / 16800 = 88.2381%
+validation zone events : 2954 / 3264   = 90.5025%
+test zone events       : 2908 / 3264   = 89.0931%
+
+validation event win rate : 5.3487%
+test event win rate       : 4.8831%
+validation event mean R   : -0.0680433
+test event mean R         : -0.0689477
+
+event_validation_ap       : 0.11818
+event_test_ap             : 0.05764
+event_validation_ap_lift  : +0.06470
+event_test_ap_lift        : +0.00880
+event balanced accuracy   : 0.5 / 0.5
+candidate_reframe_gate    : 0
+```
+
+B4 side preference was unstable:
+
+```text
+validation best side : SELL
+  validation SELL mean R = -0.03014
+  validation BUY mean R  = -0.10114
+
+test best side       : BUY
+  test SELL mean R = -0.08616
+  test BUY mean R  = -0.05325
+
+side_preference_stable_gate = 0
+```
+
+B2 zone candidate universe:
+
+```text
+train zone events      : 11117 / 16800 = 66.1726%
+validation zone events : 2292 / 3264   = 70.2206%
+test zone events       : 2255 / 3264   = 69.0870%
+
+validation event win rate : 5.9773%
+test event win rate       : 5.1885%
+validation event mean R   : -0.0272688
+test event mean R         : -0.0402439
+
+event_validation_ap       : 0.11447
+event_test_ap             : 0.06237
+event_validation_ap_lift  : +0.05470
+event_test_ap_lift        : +0.01048
+event balanced accuracy   : 0.5 / 0.5
+candidate_reframe_gate    : 0
+```
+
+B2 side preference also flipped:
+
+```text
+validation best side : SELL
+  validation SELL mean R = -0.00215
+  validation BUY mean R  = -0.04839
+
+test best side       : BUY
+  test SELL mean R = -0.07247
+  test BUY mean R  = -0.01135
+
+side_preference_stable_gate = 0
+```
+
+Interpretation:
+
+```text
+Phase158A failed. The current pivot-zone definitions are too broad and negative-expectancy.
+B4 marks ~90% of rows as top/bottom zone events; B2 marks ~70%.
+The event win rate is only around 5%, and mean R is negative across train/validation/test.
+Validation shows small ranking AP lift, but it does not transfer enough to test and threshold behavior remains unusable.
+Side preference still changes from SELL-favorable in validation to BUY-less-bad in test.
+```
+
+Decision:
+
+```text
+Do not train another model on the current B4/B2 zone candidate universe.
+Do not proceed to Phase134/paper/live.
+The bottleneck has moved earlier: live-known candidate-zone geometry is too broad and must be tightened before modeling.
+```
+
+Recommended next phase:
+
+```text
+Phase159A — Pivot Candidate Geometry Tightening Audit
+```
+
+Purpose:
+
+```text
+Search live-known candidate-zone geometry without training:
+  recent_window_bars grid
+  pivot_zone_atr grid tighter than 0.35 / 0.25
+  top/bottom range-position thresholds, e.g. top >= 0.85/0.90/0.95 and bottom <= 0.15/0.10/0.05
+  exclude both-zone ambiguity
+  optional min recent range width / ATR regime filters
+  session/hour stratification
+```
+
+Acceptance target before any new model:
+
+```text
+candidate event rate must be meaningfully lower than 70–90%
+validation and test event_mean_r should not be negative
+side preference should be stable enough to choose a modeling route
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase159A pivot candidate geometry tightening audit implemented — 2026-09-30
+
+After Phase158A showed the current pivot-zone candidate universe was too broad and negative-expectancy, Phase159A was implemented.
+
+Implemented:
+
+```text
+scripts/audit_pivot_candidate_geometry_tightening.py
+GUI: Audit pivot candidate geometry tightening
+```
+
+Purpose:
+
+```text
+Search tighter live-known pivot candidate geometry before any model training.
+```
+
+Grid includes:
+
+```text
+payoff targets: B4/B2
+recent_window_bars: 24,48,96
+pivot_zone_atr: 0.05,0.10,0.15,0.20,0.25
+top position threshold: 0.85,0.90,0.95
+bottom position threshold: 0.15,0.10,0.05
+exclude both-zone rows: 1/0
+min range width ATR: 0,0.5,1.0
+zone logic: and/or
+```
+
+Outputs:
+
+```text
+run_logs\pivot_candidate_geometry_tightening\latest.json
+run_logs\pivot_candidate_geometry_tightening\latest.html
+run_logs\pivot_candidate_geometry_tightening\latest_grid.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_candidate_geometry_tightening.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_candidate_geometry_tightening.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_candidate_geometry_tightening.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 52 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase159A result — geometry tightening reduced candidate rate but still negative expectancy — 2026-09-30
+
+The owner ran Phase159A pivot candidate geometry tightening audit.
+
+Top-level result:
+
+```text
+policies                 : 1620
+validation_pass_policies : 0
+transfer_pass_policies   : 0
+selected_policy_id       : B2|rw=48|zone=0.05|top=0.85|bottom=0.15|exclude_both=1|minw=1|maxw=0
+selected_target_id       : B2
+selected_validation_mean_r : -0.0050505050
+selected_test_mean_r       : -0.0272277221
+selected_validation_PF     : 0.9629629630
+selected_test_PF           : 0.7179487179
+selected_transfer_pass_gate: 0
+```
+
+Best policy geometry:
+
+```text
+target              : B2
+lookahead_bars      : 24
+tp_atr / sl_atr     : 1.0 / 0.75
+recent_window_bars  : 48
+pivot_zone_atr      : 0.05
+top_position        : 0.85
+bottom_position     : 0.15
+exclude_both_zones  : 1
+min_range_width_atr : 1.0
+max_range_width_atr : off / 0
+```
+
+Improvement versus Phase158A:
+
+```text
+Phase158A B2 zone_event_rate validation/test ≈ 70.22% / 69.09%
+Phase159A best event_rate validation/test    ≈  3.03% /  3.09%
+```
+
+So the geometry tightening worked as a filter: it reduced candidate density from broad/noisy to sparse/selective.
+
+But expectancy remained negative:
+
+```text
+validation_event_count : 99
+validation_win_rate    : 13.1313%
+validation_mean_r      : -0.00505
+validation_sum_r       : -0.5
+validation_PF          : 0.9630
+validation_best_side   : BUY
+
+test_event_count       : 101
+test_win_rate          : 6.9307%
+test_mean_r            : -0.02723
+test_sum_r             : -2.75
+test_PF                : 0.7179
+test_best_side         : BUY
+```
+
+Stable part:
+
+```text
+event_mean_r_sign_flip       : 0
+side_preference_stable_gate  : 1
+validation_best_side         : BUY
+test_best_side               : BUY
+```
+
+Failed part:
+
+```text
+validation_pass_gate : 0
+test_pass_gate       : 0
+transfer_pass_gate   : 0
+warnings             : validation/test mean R below minimum
+```
+
+Interpretation:
+
+```text
+Phase159A improved candidate selectivity and side stability, but not expectancy.
+The best tightened reversal-style geometry is still slightly negative on validation and materially negative on test.
+Therefore the current pivot-zone reversal mapping (top→SELL, bottom→BUY) is not enough.
+```
+
+Decision:
+
+```text
+Do not train a model on this Phase159A candidate geometry.
+Do not proceed to Phase134/paper/live.
+Do not blindly tighten geometry more without checking side/action mapping.
+```
+
+Recommended next diagnostic:
+
+```text
+Phase160A — Pivot Candidate Side-Mapping / Counterfactual Direction Audit
+```
+
+Purpose:
+
+```text
+Using the tightened geometry candidates, test side mapping modes without model training:
+  reversal:   top→SELL, bottom→BUY
+  breakout:   top→BUY,  bottom→SELL
+  top-only / bottom-only policies
+  side chosen by validation mean R, then confirmed on test
+  optional entry delay on candidate event rows
+```
+
+Reason:
+
+```text
+Phase159A found stable best side=BUY for the best policy, while reversal mapping still has negative expectancy.
+Before abandoning the pivot route, test whether the live-known candidate geometry is being mapped to the wrong side or wrong entry timing.
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase160A pivot candidate side-mapping / counterfactual direction audit implemented — 2026-09-30
+
+After Phase159A tightened candidate geometry but still produced negative expectancy under reversal mapping, Phase160A was implemented.
+
+Implemented:
+
+```text
+scripts/audit_pivot_candidate_side_mapping.py
+GUI: Audit pivot candidate side mapping
+```
+
+Purpose:
+
+```text
+Test whether tightened pivot candidates fail because of side mapping or entry timing rather than geometry itself.
+```
+
+Side mappings tested:
+
+```text
+reversal     : top→SELL, bottom→BUY
+breakout     : top→BUY,  bottom→SELL
+top_sell     : top→SELL only
+bottom_buy   : bottom→BUY only
+top_buy      : top→BUY only
+bottom_sell  : bottom→SELL only
+all_buy      : all zone events BUY
+all_sell     : all zone events SELL
+```
+
+Entry delays:
+
+```text
+0,1,2,3 bars
+```
+
+Outputs:
+
+```text
+run_logs\pivot_candidate_side_mapping\latest.json
+run_logs\pivot_candidate_side_mapping\latest.html
+run_logs\pivot_candidate_side_mapping\latest_grid.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_candidate_side_mapping.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_candidate_side_mapping.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_candidate_side_mapping.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 53 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase160A result — side mapping found first positive transfer on tightened pivot candidates — 2026-09-30
+
+The owner ran Phase160A pivot candidate side-mapping / counterfactual direction audit.
+
+Important run note:
+
+```text
+geometry_policies_loaded : 2
+```
+
+The run used fallback geometry policies, including the same B2 geometry that Phase159A selected:
+
+```text
+B2|fallback|rw=48|zone=0.05|top=0.85|bottom=0.15|exclude_both=1|minw=1|maxw=0
+```
+
+Top-level result:
+
+```text
+evaluated_rows              : 64
+validation_pass_rows        : 14
+transfer_pass_rows          : 3
+selected_geometry_policy_id : B2|fallback|rw=48|zone=0.05|top=0.85|bottom=0.15|exclude_both=1|minw=1|maxw=0
+selected_side_mapping       : bottom_buy
+selected_entry_delay_bars   : 0
+selected_validation_mean_r  : +0.0277777780
+selected_test_mean_r        : +0.0773809552
+selected_validation_PF      : 1.2000
+selected_test_PF            : 5.3333
+selected_transfer_pass_gate : 1
+```
+
+Selected policy:
+
+```text
+target_id              : B2
+mapping                : bottom_buy
+entry_delay_bars       : 0
+recent_window_bars     : 48
+pivot_zone_atr         : 0.05
+top_position_threshold : 0.85
+bottom_position        : 0.15
+exclude_both_zones     : 1
+min_range_width_atr    : 1.0
+```
+
+Validation confirmation:
+
+```text
+validation_events       : 54
+validation_event_rate   : 1.6544%
+validation_win_rate     : 16.6667%
+validation_mean_r       : +0.0277777780
+validation_sum_r        : +1.5
+validation_PF           : 1.2
+validation_pass_gate    : 1
+```
+
+Test confirmation:
+
+```text
+test_events             : 42
+test_event_rate         : 1.2868%
+test_win_rate           : 9.5238%
+test_mean_r             : +0.0773809552
+test_sum_r              : +3.25
+test_PF                 : 5.3333
+test_pass_gate          : 1
+```
+
+Other positive transfer rows:
+
+```text
+bottom_buy delay=1:
+  validation_mean_r=+0.0231481, test_mean_r=+0.1011905, transfer=1
+
+bottom_buy delay=2:
+  validation_mean_r=+0.0046296, test_mean_r=+0.0833333, transfer=1
+```
+
+Interpretation:
+
+```text
+This is the first pivot-target diagnostic after Phase151/152 that produced a validation-selected policy with positive test confirmation.
+The useful mapping is not broad reversal/top SELL. It is a much narrower bottom-zone BUY-only rule.
+The earlier negative Phase159A result mixed top and bottom events; top-side/SELL events were dragging expectancy down.
+```
+
+Critical caveats:
+
+```text
+- This is still a direct first-hit event audit, not a full broker-style chronological backtest.
+- It does not include spread/risk sizing/account balance simulation.
+- It uses a small sample: 54 validation events and 42 test events.
+- It used fallback geometry policies; the selected policy matches the Phase159A best geometry, but this should be kept explicit.
+```
+
+Decision:
+
+```text
+Do not go to Phase134/paper/live.
+Do not train a model yet.
+The next phase should convert the selected bottom_buy geometry into a realistic chronological replay with spread/risk, monthly breakdown, and train/validation/test reporting.
+```
+
+Recommended next phase:
+
+```text
+Phase161A — Pivot Bottom-Buy Candidate Chronological Replay
+```
+
+Minimum Phase161A rule:
+
+```text
+Use selected Phase160A policy:
+  target_id=B2
+  mapping=bottom_buy
+  entry_delay=0
+  recent_window=48
+  pivot_zone_atr=0.05
+  bottom_position<=0.15
+  exclude_both=1
+  min_range_width_atr=1.0
+
+Replay with:
+  spread pct 0.06
+  same_bar_policy stop_first
+  TP/SL from B2 geometry: TP=1.0 ATR, SL=0.75 ATR
+  chronological single-position mode
+  train/validation/test split reports
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase161A pivot bottom-buy chronological replay implemented — 2026-09-30
+
+After Phase160A found the first positive pivot transfer diagnostic, Phase161A was implemented.
+
+Implemented:
+
+```text
+scripts/replay_pivot_bottom_buy_candidate.py
+GUI: Replay pivot bottom-buy candidate
+```
+
+Purpose:
+
+```text
+Convert the selected event-scoring policy into a chronological single-position replay with spread, risk sizing, TP/SL path, monthly breakdown and train/validation/test reports.
+```
+
+Selected rule:
+
+```text
+target_id              : B2
+side_mapping           : bottom_buy only
+entry_delay_bars       : 0
+recent_window_bars     : 48
+pivot_zone_atr         : 0.05
+top_position_threshold : 0.85
+bottom_position        : 0.15
+exclude_both_zones     : 1
+min_range_width_atr    : 1.0
+TP                     : 1.0 ATR
+SL                     : 0.75 ATR
+spread                 : pct 0.06
+same_bar_policy        : stop_first
+```
+
+Outputs:
+
+```text
+run_logs\pivot_bottom_buy_chronological_replay\latest.json
+run_logs\pivot_bottom_buy_chronological_replay\latest.html
+run_logs\pivot_bottom_buy_chronological_replay\latest_summary.csv
+run_logs\pivot_bottom_buy_chronological_replay\latest_trades.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/replay_pivot_bottom_buy_candidate.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_bottom_buy_replay.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_bottom_buy_replay.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 53 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase161A result — bottom-buy chronological replay failed despite positive event scoring — 2026-09-30
+
+The owner ran Phase161A chronological replay for the Phase160A selected strict bottom-buy policy.
+
+Policy:
+
+```text
+target_id              : B2
+side_mapping           : bottom_buy
+recent_window_bars     : 48
+pivot_zone_atr         : 0.05
+bottom_position        : 0.15
+exclude_both_zones     : 1
+min_range_width_atr    : 1.0
+entry_delay_bars       : 0
+tp_atr                 : 1.0
+sl_atr                 : 0.75
+spread                 : pct 0.06
+same_bar_policy        : stop_first
+initial_capital        : 100
+risk_per_trade         : 0.01
+```
+
+Chronological replay result:
+
+```text
+validation_pass_gate : 0
+test_pass_gate       : 0
+transfer_pass_gate   : 0
+```
+
+Train split:
+
+```text
+candidate_rows     : 136
+trades             : 84
+wins / losses      : 35 / 49
+win_rate           : 41.6667%
+total_cash_pnl     : -13.2068
+final_balance      : 86.7932
+profit_factor      : 0.6670
+max_drawdown_cash  : 14.9216
+positive_months    : 2
+negative_months    : 4
+```
+
+Validation split:
+
+```text
+candidate_rows     : 54
+trades             : 30
+wins / losses      : 13 / 17
+win_rate           : 43.3333%
+total_cash_pnl     : -3.3832
+final_balance      : 96.6168
+profit_factor      : 0.7156
+max_drawdown_cash  : 5.9745
+monthly_pnl        : 2026-06 -3.2919, 2026-07 -0.0913
+```
+
+Test split:
+
+```text
+candidate_rows     : 42
+trades             : 21
+wins / losses      : 10 / 11
+win_rate           : 47.6190%
+total_cash_pnl     : -2.2486
+final_balance      : 97.7514
+profit_factor      : 0.6853
+max_drawdown_cash  : 2.7327
+monthly_pnl        : 2026-07 -2.7248, 2026-08 +0.4762
+```
+
+Interpretation:
+
+```text
+Phase161A failed. The positive Phase160A event-score result did not survive a realistic chronological replay.
+The likely gap is execution realism: Phase160A scored first-hit events from candidate/close-style assumptions, while Phase161A enters via trade_path on the next bar with spread and single-position constraints.
+The candidate is not a deployable strategy.
+```
+
+Decision:
+
+```text
+Reject the strict bottom-buy rule as a trading candidate under current chronological replay rules.
+Do not proceed to Phase134/paper/live.
+Do not train a model around this rule until the execution gap is understood.
+```
+
+Recommended next diagnostic if continuing pivot route:
+
+```text
+Phase162A — Pivot Bottom-Buy Execution Gap / Entry Timing Audit
+```
+
+Purpose:
+
+```text
+Decompose why Phase160A event scoring was positive but Phase161A replay was negative:
+  candidate-close vs next-open entry
+  spread/no-spread sensitivity
+  independent vs single-position chronological counting
+  skipped_while_open winners/losses
+  entry_delay grid with replay, not event score
+  TP/SL same-bar sensitivity
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## 2026-09-30 — Phase162A: Pivot bottom-buy execution-gap audit built
+
+**درخواست اپراتور:** بعد از شکست Phase161A، فاز 162 ساخته شود تا بفهمیم چرا event scoring مثبت Phase160A در replay واقعی‌تر منفی شد.
+
+**پیاده‌سازی:**
+- `scripts/audit_pivot_bottom_buy_execution_gap.py` اضافه شد.
+- GUI command جدید اضافه شد: `Audit pivot bottom-buy execution gap` با `CommandKind.AUDIT_PIVOT_BOTTOM_BUY_EXECUTION_GAP`.
+- audit به‌صورت research-only این موارد را اندازه می‌گیرد:
+  - `candidate close → next-open` gap برای BUY؛
+  - no-spread در برابر spread پیش‌فرض `0.06%`؛
+  - event scoring مستقل در برابر replay path مستقل؛
+  - chronological one-position replay؛
+  - `skipped_while_open` winners/losers/timeouts؛
+  - grid برای `entry_delays=0,1,2,3`؛
+  - grid برای `same_bar_policies=stop_first,tp_first`؛
+  - TP/SL/timeout path disagreement بین event scoring و replay؛
+  - breakdown ماهانه train/validation/test.
+- خروجی‌ها:
+  - `run_logs\pivot_bottom_buy_execution_gap\latest.json`
+  - `latest.html`
+  - `latest_grid.csv`
+  - `latest_selection.csv`
+  - `latest_monthly.csv`
+  - `latest_events.csv`
+- تست unit جدید: `tests/unit/ai/test_pivot_bottom_buy_execution_gap.py`.
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_pivot_bottom_buy_execution_gap.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_bottom_buy_execution_gap.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_bottom_buy_execution_gap.py tests/unit/ai/test_pivot_bottom_buy_replay.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**محدودیت:** دیتاست کامل کاربر داخل sandbox نیست، پس نتیجه واقعی Phase162A هنوز باید توسط اپراتور از GUI یا PowerShell اجرا و paste شود. Production همچنان BLOCKED است.
+
+**وضعیت تولید:**
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## 2026-09-30 — Phase162A result: execution-gap audit failed transfer
+
+**Owner run result:** `run_logs\pivot_bottom_buy_execution_gap\latest.json` was pasted.
+
+Top-level:
+
+```text
+evaluated_configs       : 16
+validation_pass_configs : 4
+transfer_pass_configs   : 0
+selected_config         : delay=0, same_bar=stop_first, spread=0.0
+selected_validation_PF  : 1.203013055453164
+selected_validation_PnL : +1.9564356399935086
+selected_test_PF        : 0.9105459631947063
+selected_test_PnL       : -0.5422007496410663
+selected_transfer_gate  : 0
+```
+
+**Diagnosis:**
+- No configuration transferred validation → test.
+- No-spread rows show the edge is thin and unstable; the validation-selected no-spread row failed test.
+- Realistic `spread_value=0.06` reproduces Phase161A failure:
+  - validation PF `0.7155627225917369`
+  - test PF `0.685300120022801`
+- Spread turns the BUY entry gap adverse almost always:
+  - validation adverse adjusted gap rate ≈ `98.15%`
+  - test adverse adjusted gap rate = `100.0%`
+- Single-position replay skips too many test winners in the selected no-spread row:
+  - skipped winners/losses = `15/7`
+  - skipped independent sum = `+5.0221294762 ATR`
+  - executed independent mean = `-0.0184017744 ATR`
+- `same_bar_policy` is not the failure source: `event_ambiguous=0` and stop_first/tp_first rows are identical.
+
+**Decision:**
+```text
+Phase162A failed.
+Reject strict B2 bottom-buy as a trading candidate.
+Stop optimizing this bottom-buy execution rule.
+No Phase134, no paper shadow, no live trading.
+```
+
+**Docs updated:**
+```text
+docs/Phases/Phase162.md
+docs/Report/PHASE162A_PIVOT_BOTTOM_BUY_EXECUTION_GAP_REPORT.md
+docs/Report/PHASE162A_PIVOT_BOTTOM_BUY_EXECUTION_GAP_RESULT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+## 2026-09-30 — Phase163A: 1H pivot entry feasibility audit built
+
+**درخواست اپراتور:** بعد از شکست Phase162A، پیشنهاد شد نقطه ورود به‌جای 5M روی تایم‌فریم 1H بررسی شود. فاز 163 ساخته شد تا قبل از هر training، feasibility مسیر 1H سنجیده شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_pivot_1h_entry_feasibility.py` اضافه شد.
+- GUI command جدید اضافه شد: `Audit 1H pivot entry feasibility`.
+- CommandKind جدید اضافه شد: `AUDIT_PIVOT_1H_ENTRY_FEASIBILITY`.
+- تست unit جدید اضافه شد: `tests/unit/ai/test_pivot_1h_entry_feasibility.py`.
+
+**کارکرد audit:**
+- سلامت دیتای 1H: gaps، duplicate timestamps، OHLC validity، nonfinite values، ATR validity.
+- نسبت spread به ATR روی train/validation/test.
+- replay خام قبل از training برای mappingهای `reversal,bottom_buy,top_sell,breakout`.
+- selection روی realistic spread پیش‌فرض `0.06` انجام می‌شود؛ no-spread فقط diagnostic است.
+- chronological replay با single-position، spread، risk sizing، skipped_while_open و monthly breakdown.
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_entry_feasibility\latest.json
+run_logs\pivot_1h_entry_feasibility\latest.html
+run_logs\pivot_1h_entry_feasibility\latest_spread_atr.csv
+run_logs\pivot_1h_entry_feasibility\latest_candidate_replay.csv
+run_logs\pivot_1h_entry_feasibility\latest_selection.csv
+run_logs\pivot_1h_entry_feasibility\latest_monthly.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_pivot_1h_entry_feasibility.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/ai/test_pivot_bottom_buy_execution_gap.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**محدودیت:** نتیجه واقعی Phase163A هنوز باید روی دیتاست کامل 1H اپراتور اجرا و paste شود. این فاز هیچ مجوز production/paper/live نمی‌دهد.
+
+## 2026-09-30 — Phase163A result: 1H route failed under current spread assumption
+
+**Owner run result:** `run_logs\pivot_1h_entry_feasibility\latest.json` was pasted.
+
+Top-level:
+
+```text
+flat_rows                : 50000
+replay_policy_rows       : 1152
+selection_rows           : 384
+validation_pass_configs  : 0
+transfer_pass_configs    : 0
+spread_feasible_gate     : 0
+route_feasible_gate      : 0
+```
+
+Selected realistic-spread row:
+
+```text
+policy_id       : 1H|breakout|d=1|rw=48|zone=0.05|top=0.85|bottom=0.15|ex=1|minw=1|maxw=0|spread=0.06
+validation PF   : 0.9875648654547112
+validation PnL  : -0.37308487550487257
+test PF         : 0.9567436757286336
+test PnL        : -1.3693540267499014
+transfer_gate   : 0
+```
+
+**Data health:** OHLC and ATR were numerically clean:
+
+```text
+duplicate_timestamps=0
+missing_timestamp_rows=0
+nonfinite_ohlc_cells=0
+invalid_ohlc_rows=0
+atr_nonpositive_rows=0
+```
+
+There are many 1H timestamp gaps (`train=1594`, `validation=334`, `test=326`), likely market closure/session gaps; this is not the immediate failure source but future 1H phases must remain gap-aware.
+
+**Spread/ATR finding:**
+
+```text
+spread=0.06% median full spread/ATR:
+  train      : 0.27117005195240595
+  validation : 0.2357716197367245
+  test       : 0.1597977693295558
+configured max median spread/ATR: 0.12
+spread_feasible_gate: 0
+```
+
+**Important diagnostic:** Many no-spread 1H rows transferred, e.g. breakout d=1/rw=24/zone=0.05 had train PF=1.1107, validation PF=1.5772, test PF=1.3548. But these are no-spread diagnostics only. With realistic `spread=0.06`, no configuration passed validation.
+
+**Decision:**
+```text
+Do not train a 1H pivot model yet.
+Under spread=0.06%, 1H pivot-entry route is not feasible.
+The next issue is broker spread-unit/cost calibration, not model architecture.
+```
+
+**Recommended next diagnostic:**
+```text
+Phase164A — 1H Spread Unit / Bracket Cost Sensitivity Audit
+```
+
+## 2026-09-30 — Phase164A: 1H spread-unit / bracket-cost sensitivity audit built
+
+**درخواست اپراتور:** بعد از Phase163A مشخص شد 1H بدون spread سیگنال خام دارد، اما با spread=0.06% هیچ configای پاس نمی‌شود. Phase164A ساخته شد تا واحد spread و حساسیت bracket بررسی شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_pivot_1h_spread_bracket_sensitivity.py` اضافه شد.
+- GUI command جدید: `Audit 1H spread/bracket sensitivity`.
+- CommandKind جدید: `AUDIT_PIVOT_1H_SPREAD_BRACKET_SENSITIVITY`.
+- تست unit جدید: `tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py`.
+
+**Grid پیش‌فرض:**
+```text
+fixed_spreads = 0,0.2,0.5,1.0,1.5,2.0
+pct_spreads   = 0,0.01,0.02,0.03,0.06
+brackets      = 1.5/1.0, 2.0/1.0, 2.5/1.25, 3.0/1.5
+hold_bars     = 24,48
+```
+
+**Candidate policies:** از no-spread-positiveهای Phase163A انتخاب شدند:
+```text
+BRK_D1_FAST
+BRK_D0_MID
+BRK_D0_WIDE
+BB_D1_WIDE
+```
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_spread_bracket_sensitivity\latest.json
+latest.html
+latest_grid.csv
+latest_split_replay.csv
+latest_break_even.csv
+latest_spread_atr.csv
+latest_monthly.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_pivot_1h_spread_bracket_sensitivity.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند.
+
+**محدودیت:** نتیجه واقعی Phase164A هنوز باید روی دیتاست کامل اپراتور اجرا شود. این فاز training/paper/live نیست.
+
+## 2026-09-30 — Phase164A result: 1H spread/bracket sensitivity found positive transfer diagnostics
+
+**Owner run result:** `run_logs\pivot_1h_spread_bracket_sensitivity\latest.json` was pasted.
+
+Top-level:
+
+```text
+evaluated_configs           : 352
+validation_pass_configs     : 244
+transfer_pass_configs       : 131
+fixed_transfer_pass_configs : 69
+pct_transfer_pass_configs   : 62
+route_feasible_gate         : 1
+```
+
+**Important caveat:** the selected top row was no-spread:
+
+```text
+selected_config_id : BRK_D0_MID|breakout|d=0|rw=24|zone=0.1|bracket=B25_125|hold=24|spread_mode=fixed|spread=0
+validation PF      : 1.4744696009702762
+validation PnL     : +38.81352959768986
+test PF            : 1.0845370178384561
+test PnL           : +7.788579434364673
+```
+
+No-spread is diagnostic only, but nonzero-cost rows also transferred.
+
+**Strong nonzero-cost diagnostic row:**
+
+```text
+config_id      : BRK_D1_FAST|breakout|d=1|rw=24|zone=0.05|bracket=B15_10|hold=24|spread_mode=fixed|spread=0.2
+train PF       : 1.060733745773545
+train PnL      : +11.074247798276177
+validation PF  : 1.6359758199652334
+validation PnL : +20.318939484345947
+test PF        : 1.3548137730296756
+test PnL       : +14.379353264011254
+transfer_gate  : 1
+```
+
+**Cost insight:**
+
+```text
+fixed spread 0.2 median spread/ATR:
+  train      : 0.05248
+  validation : 0.03098
+  test       : 0.01257
+
+pct spread 0.06 median spread/ATR:
+  train      : 0.27117
+  validation : 0.23577
+  test       : 0.15980
+```
+
+**Decision:**
+```text
+Phase164A is positive diagnostically.
+Do not reject the 1H route.
+Do not train yet.
+Next: lock a nonzero fixed-spread candidate with train/monthly stability gates.
+```
+
+**Recommended next phase:**
+```text
+Phase165A — 1H Fixed-Spread Candidate Lockdown / Stability Replay
+```
+
+## 2026-09-30 — Phase165A: 1H fixed-spread candidate lockdown replay built
+
+**درخواست اپراتور:** بعد از مثبت شدن Phase164A، فاز 165 ساخته شود تا یک candidate واقعی nonzero-cost قفل شود و قبل از هر training با stability gates بررسی شود.
+
+**پیاده‌سازی:**
+- `scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py` اضافه شد.
+- GUI command جدید: `Replay 1H fixed-spread candidate lockdown`.
+- CommandKind جدید: `REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN`.
+- تست unit جدید: `tests/unit/ai/test_pivot_1h_candidate_lockdown.py`.
+
+**Candidate قفل‌شده:**
+```text
+policy_key       : BRK_D1_FAST
+side_mapping     : breakout
+entry_delay      : 1
+recent_window    : 24
+pivot_zone_atr   : 0.05
+bracket          : B15_10 = TP 1.5 ATR / SL 1.0 ATR
+hold_bars        : 24
+spread_mode      : fixed
+spread_value     : 0.2
+```
+
+**گیت‌ها:**
+- train stability: trades، PF، final balance، positive month ratio، worst month loss.
+- validation/test: trades، PF، final balance، event rate، monthly stability.
+- optional spread stress: `stress_spreads=0.2,0.5,1.0`.
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_fixed_spread_candidate_lockdown\latest.json
+latest.html
+latest_summary.csv
+latest_trades.csv
+latest_monthly.csv
+latest_stress.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. نتیجه واقعی Phase165A هنوز باید روی دیتاست کامل اپراتور اجرا و paste شود. Production همچنان BLOCKED است.

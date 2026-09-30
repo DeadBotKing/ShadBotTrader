@@ -45,7 +45,7 @@ def test_phase155_build_and_backtest_commands_use_candidate_paths(tmp_path):
     assert train[train.index("--model-id") + 1] == "gold_pivot_payoff_option_b_b4_5m"
     assert train[train.index("--max-samples") + 1] == "500"
     assert train[train.index("--epochs") + 1] == "3"
-    assert train[train.index("--class-weight") + 1] == "off"
+    assert train[train.index("--class-weight") + 1] == "auto"
     assert backtest[2] == "scripts/backtest_pivot_pattern_sequence_wavenet.py"
     assert backtest[backtest.index("--eval-split") + 1] == "validation"
     assert backtest[backtest.index("--model-id") + 1] == "gold_pivot_payoff_option_b_b4_5m"

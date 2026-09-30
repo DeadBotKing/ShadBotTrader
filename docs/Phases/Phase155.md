@@ -121,7 +121,7 @@ python -u scripts\run_pivot_payoff_option_b_diagnostic.py `
   --branch-filters 48 `
   --branch-target-features 0 `
   --feature-augmentation-mode off `
-  --class-weight off `
+  --class-weight auto `
   --same-bar-policy stop_first `
   --timeout-score-mode zero `
   --buy-threshold 0.34 `
