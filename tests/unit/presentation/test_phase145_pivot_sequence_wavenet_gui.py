@@ -117,6 +117,66 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN).label
         == "Replay 1H fixed-spread candidate lockdown"
     )
+    assert (
+        descriptor_for(CommandKind.REPLAY_PIVOT_1H_LOCKED_CANDIDATE_WALK_FORWARD).label
+        == "Replay 1H locked candidate walk-forward"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_PIVOT_1H_LOCKED_CANDIDATE_REGIME_FAILURES).label
+        == "Audit 1H locked candidate regime failures"
+    )
+    assert (
+        descriptor_for(CommandKind.REPLAY_PIVOT_1H_PREDECLARED_FILTER_CONFIRMATION).label
+        == "Replay 1H predeclared filter confirmation"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_BROKER_COST_REALITY_RESEARCH_RESET).label
+        == "Audit broker cost reality / research reset"
+    )
+    assert (
+        descriptor_for(CommandKind.CAPTURE_BROKER_SPREAD_COST_PIPELINE).label
+        == "Capture broker spread / cost pipeline"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX).label
+        == "Audit research route redesign matrix"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_FAMILY).label
+        == "Audit broker-cost-aware 1H target family"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY).label
+        == "Audit broker-cost-aware 1H target learnability"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_HYBRID_REGIME_FIRST_TARGET_REDESIGN).label
+        == "Audit hybrid/regime-first target redesign"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_HYBRID_REGIME_WALKFORWARD_FAILURES).label
+        == "Audit hybrid/regime walk-forward failures"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE).label
+        == "Audit target-definition walk-forward root cause"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATES).label
+        == "Audit walk-forward target-family redesign candidates"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET).label
+        == "Audit post-failure research route reset"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY).label
+        == "Audit 4H/1D broker-cost feasibility"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES).label
+        == "Audit higher-timeframe target failures"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -757,3 +817,371 @@ def test_pivot_1h_candidate_lockdown_passes_gui_args(gui, monkeypatch):
     assert args[args.index("--spread-value") + 1] == "0.2"
     assert args[args.index("--stress-spreads") + 1] == "0.2,0.5"
     assert args[args.index("--output-dir") + 1] == "out_phase165"
+
+
+def test_pivot_1h_locked_candidate_walk_forward_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.replay_pivot_1h_locked_candidate_walk_forward(
+        Command(
+            CommandKind.REPLAY_PIVOT_1H_LOCKED_CANDIDATE_WALK_FORWARD,
+            {
+                "flat_path": "one_hour.parquet",
+                "fold_train_bars": "1000",
+                "fold_validation_bars": "200",
+                "fold_test_bars": "200",
+                "fold_step_bars": "200",
+                "output_dir": "out_phase166",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/replay_pivot_1h_locked_candidate_walk_forward.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--fold-train-bars") + 1] == "1000"
+    assert args[args.index("--fold-validation-bars") + 1] == "200"
+    assert args[args.index("--fold-test-bars") + 1] == "200"
+    assert args[args.index("--fold-step-bars") + 1] == "200"
+    assert args[args.index("--output-dir") + 1] == "out_phase166"
+
+
+def test_pivot_1h_locked_candidate_regime_failures_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_pivot_1h_locked_candidate_regime_failures(
+        Command(
+            CommandKind.AUDIT_PIVOT_1H_LOCKED_CANDIDATE_REGIME_FAILURES,
+            {
+                "flat_path": "one_hour.parquet",
+                "diagnostic_filters": "none,min_atr_q50",
+                "fold_train_bars": "1000",
+                "output_dir": "out_phase167",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_pivot_1h_locked_candidate_regime_failures.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--diagnostic-filters") + 1] == "none,min_atr_q50"
+    assert args[args.index("--fold-train-bars") + 1] == "1000"
+    assert args[args.index("--output-dir") + 1] == "out_phase167"
+
+
+def test_pivot_1h_predeclared_filter_confirmation_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.replay_pivot_1h_predeclared_filter_confirmation(
+        Command(
+            CommandKind.REPLAY_PIVOT_1H_PREDECLARED_FILTER_CONFIRMATION,
+            {
+                "flat_path": "one_hour.parquet",
+                "filters": "none,buy_leg_only",
+                "fold_train_bars": "1000",
+                "output_dir": "out_phase168",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/replay_pivot_1h_predeclared_filter_confirmation.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--filters") + 1] == "none,buy_leg_only"
+    assert args[args.index("--fold-train-bars") + 1] == "1000"
+    assert args[args.index("--output-dir") + 1] == "out_phase168"
+
+
+def test_broker_cost_reality_research_reset_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_broker_cost_reality_research_reset(
+        Command(
+            CommandKind.AUDIT_BROKER_COST_REALITY_RESEARCH_RESET,
+            {
+                "timeframes": "5M,1H",
+                "m5_flat_path": "m5.parquet",
+                "h1_flat_path": "h1.parquet",
+                "fixed_spreads": "0.2,0.5",
+                "output_dir": "out_phase169",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_broker_cost_reality_research_reset.py"
+    assert args[args.index("--timeframes") + 1] == "5M,1H"
+    assert args[args.index("--m5-flat-path") + 1] == "m5.parquet"
+    assert args[args.index("--h1-flat-path") + 1] == "h1.parquet"
+    assert args[args.index("--fixed-spreads") + 1] == "0.2,0.5"
+    assert args[args.index("--output-dir") + 1] == "out_phase169"
+
+
+def test_broker_spread_capture_pipeline_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.capture_broker_spread_cost_pipeline(
+        Command(
+            CommandKind.CAPTURE_BROKER_SPREAD_COST_PIPELINE,
+            {
+                "source_mode": "csv",
+                "sample_path": "spread.csv",
+                "broker_symbol": "XAUUSD_i",
+                "duration_seconds": "10",
+                "output_dir": "out_phase170",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/capture_broker_spread_cost_pipeline.py"
+    assert args[args.index("--source-mode") + 1] == "csv"
+    assert args[args.index("--sample-path") + 1] == "spread.csv"
+    assert args[args.index("--broker-symbol") + 1] == "XAUUSD_i"
+    assert args[args.index("--duration-seconds") + 1] == "10.0"
+    assert args[args.index("--output-dir") + 1] == "out_phase170"
+
+
+def test_research_route_redesign_decision_matrix_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_research_route_redesign_decision_matrix(
+        Command(
+            CommandKind.AUDIT_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX,
+            {
+                "phase170_path": "p170.json",
+                "phase168_path": "p168.json",
+                "manual_broker_spread_median": "0.39",
+                "output_dir": "out_phase171",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_research_route_redesign_decision_matrix.py"
+    assert args[args.index("--phase170-path") + 1] == "p170.json"
+    assert args[args.index("--phase168-path") + 1] == "p168.json"
+    assert args[args.index("--manual-broker-spread-median") + 1] == "0.39"
+    assert args[args.index("--output-dir") + 1] == "out_phase171"
+
+
+def test_broker_cost_aware_1h_target_family_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_broker_cost_aware_1h_target_family(
+        Command(
+            CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_FAMILY,
+            {
+                "flat_path": "one_hour.parquet",
+                "families": "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24",
+                "spread_value": "0.4",
+                "stress_spread_value": "0.5",
+                "output_dir": "out_phase172",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_broker_cost_aware_1h_target_family.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--families") + 1] == "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24"
+    assert args[args.index("--spread-value") + 1] == "0.4"
+    assert args[args.index("--stress-spread-value") + 1] == "0.5"
+    assert args[args.index("--output-dir") + 1] == "out_phase172"
+
+
+def test_broker_cost_aware_1h_target_learnability_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_broker_cost_aware_1h_target_learnability(
+        Command(
+            CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY,
+            {
+                "flat_path": "one_hour.parquet",
+                "families": "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24",
+                "spread_value": "0.4",
+                "min_ap_lift": "0.02",
+                "output_dir": "out_phase173",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_broker_cost_aware_1h_target_learnability.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--families") + 1] == "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24"
+    assert args[args.index("--spread-value") + 1] == "0.4"
+    assert args[args.index("--min-ap-lift") + 1] == "0.02"
+    assert args[args.index("--output-dir") + 1] == "out_phase173"
+
+
+def test_hybrid_regime_first_target_redesign_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_hybrid_regime_first_target_redesign(
+        Command(
+            CommandKind.AUDIT_HYBRID_REGIME_FIRST_TARGET_REDESIGN,
+            {
+                "flat_path": "one_hour.parquet",
+                "families": "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24",
+                "regime_rules": "ALL;SELL_ONLY",
+                "spread_value": "0.4",
+                "min_train_independent_pf": "0.90",
+                "output_dir": "out_phase174",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_hybrid_regime_first_target_redesign.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--families") + 1] == "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:2:1:24"
+    assert args[args.index("--regime-rules") + 1] == "ALL;SELL_ONLY"
+    assert args[args.index("--spread-value") + 1] == "0.4"
+    assert args[args.index("--min-train-independent-pf") + 1] == "0.9"
+    assert args[args.index("--output-dir") + 1] == "out_phase174"
+
+
+def test_hybrid_regime_walkforward_failures_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_hybrid_regime_walkforward_failures(
+        Command(
+            CommandKind.AUDIT_HYBRID_REGIME_WALKFORWARD_FAILURES,
+            {
+                "phase174_path": "phase174.json",
+                "min_ap_lift": "0.02",
+                "min_train_independent_pf": "0.90",
+                "output_dir": "out_phase175",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_hybrid_regime_walkforward_failure_attribution.py"
+    assert args[args.index("--phase174-path") + 1] == "phase174.json"
+    assert args[args.index("--min-ap-lift") + 1] == "0.02"
+    assert args[args.index("--min-train-independent-pf") + 1] == "0.9"
+    assert args[args.index("--output-dir") + 1] == "out_phase175"
+
+
+def test_target_definition_walkforward_root_cause_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_target_definition_walkforward_root_cause(
+        Command(
+            CommandKind.AUDIT_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE,
+            {
+                "phase174_path": "phase174.json",
+                "phase175_path": "phase175.json",
+                "output_dir": "out_phase176",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_target_definition_walkforward_root_cause_redesign.py"
+    assert args[args.index("--phase174-path") + 1] == "phase174.json"
+    assert args[args.index("--phase175-path") + 1] == "phase175.json"
+    assert args[args.index("--output-dir") + 1] == "out_phase176"
+
+
+def test_walkforward_target_family_redesign_candidates_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_walkforward_target_family_redesign_candidates(
+        Command(
+            CommandKind.AUDIT_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATES,
+            {
+                "flat_path": "one_hour.parquet",
+                "families": "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:1.5:1:12",
+                "spread_value": "0.4",
+                "min_train_events": "20",
+                "output_dir": "out_phase177",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_walkforward_target_family_redesign_candidates.py"
+    assert args[args.index("--timeframe") + 1] == "1H"
+    assert args[args.index("--flat-path") + 1] == "one_hour.parquet"
+    assert args[args.index("--families") + 1] == "F:label:breakout:1:24:0.1:0.85:0.15:1:1:0:1.5:1:12"
+    assert args[args.index("--spread-value") + 1] == "0.4"
+    assert args[args.index("--min-train-events") + 1] == "20"
+    assert args[args.index("--output-dir") + 1] == "out_phase177"
+
+
+def test_post_failure_research_route_reset_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_post_failure_research_route_reset(
+        Command(
+            CommandKind.AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET,
+            {
+                "phase173_path": "p173.json",
+                "phase177_path": "p177.json",
+                "manual_broker_spread_median": "0.39",
+                "output_dir": "out_phase178",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_post_failure_research_route_reset.py"
+    assert args[args.index("--phase173-path") + 1] == "p173.json"
+    assert args[args.index("--phase177-path") + 1] == "p177.json"
+    assert args[args.index("--manual-broker-spread-median") + 1] == "0.39"
+    assert args[args.index("--output-dir") + 1] == "out_phase178"
+
+
+def test_higher_timeframe_cost_feasibility_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_higher_timeframe_cost_feasibility(
+        Command(
+            CommandKind.AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY,
+            {
+                "timeframes": "4H,1D",
+                "h4_flat_path": "h4.parquet",
+                "d1_flat_path": "d1.parquet",
+                "spread_value": "0.4",
+                "max_median_spread_atr": "0.08",
+                "output_dir": "out_phase179",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_higher_timeframe_cost_feasibility.py"
+    assert args[args.index("--timeframes") + 1] == "4H,1D"
+    assert args[args.index("--h4-flat-path") + 1] == "h4.parquet"
+    assert args[args.index("--d1-flat-path") + 1] == "d1.parquet"
+    assert args[args.index("--spread-value") + 1] == "0.4"
+    assert args[args.index("--max-median-spread-atr") + 1] == "0.08"
+    assert args[args.index("--output-dir") + 1] == "out_phase179"
+
+
+def test_higher_timeframe_target_failures_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_higher_timeframe_target_failures(
+        Command(
+            CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES,
+            {
+                "phase179_path": "phase179.json",
+                "output_dir": "out_phase180",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_higher_timeframe_target_failure_attribution.py"
+    assert args[args.index("--phase179-path") + 1] == "phase179.json"
+    assert args[args.index("--output-dir") + 1] == "out_phase180"

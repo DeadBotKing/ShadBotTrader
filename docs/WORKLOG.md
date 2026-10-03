@@ -16520,3 +16520,1924 @@ python -m pytest tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/ai
 ```
 
 `ruff` و `black` در sandbox موجود نبودند. نتیجه واقعی Phase165A هنوز باید روی دیتاست کامل اپراتور اجرا و paste شود. Production همچنان BLOCKED است.
+
+## 2026-09-30 — Phase165A result: 1H fixed-spread lockdown passed diagnostic gates
+
+**Owner run result:** `run_logs\pivot_1h_fixed_spread_candidate_lockdown\latest.json` was pasted.
+
+Top-level:
+
+```text
+train_pass_gate        : 1
+validation_pass_gate   : 1
+test_pass_gate         : 1
+transfer_pass_gate     : 1
+monthly_stability_gate : 1
+lockdown_pass_gate     : 1
+```
+
+Locked candidate:
+
+```text
+policy_key       : BRK_D1_FAST
+side_mapping     : breakout
+entry_delay      : 1
+recent_window    : 24
+pivot_zone_atr   : 0.05
+bracket          : B15_10 = TP 1.5 ATR / SL 1.0 ATR
+hold_bars        : 24
+spread_mode      : fixed
+spread_value     : 0.2
+```
+
+Split metrics:
+
+```text
+train:
+  trades=305
+  PF=1.060733745773545
+  PnL=+11.074247798276177
+  final=111.07424779827605
+  maxDD=23.520721785388957
+  positive_month_ratio=0.50
+
+validation:
+  trades=61
+  PF=1.6359758199652334
+  PnL=+20.318939484345947
+  final=120.31893948434596
+  maxDD=5.382938511517068
+  positive_month_ratio=0.5714285714285714
+
+test:
+  trades=71
+  PF=1.3548137730296756
+  PnL=+14.379353264011254
+  final=114.37935326401126
+  maxDD=4.691881753934851
+  positive_month_ratio=0.50
+```
+
+Stress:
+
+```text
+fixed spread 0.2 : transfer pass
+fixed spread 0.5 : train fails
+fixed spread 1.0 : train/test stability fails
+```
+
+**Decision:**
+```text
+Phase165A passed as a diagnostic lockdown.
+The 1H fixed-spread breakout route is now the leading research lane.
+Still no Phase134, no paper shadow, no live trading.
+```
+
+**Risk notes:**
+```text
+Train PF is weak at 1.0607.
+Train maxDD is high at 23.52.
+Train/test positive_month_ratio are exactly 0.50.
+Spread robustness fails above fixed 0.2.
+```
+
+**Recommended next phase:**
+```text
+Phase166A — 1H Locked Candidate Walk-Forward / Anti-Overfit Replay
+```
+
+## 2026-09-30 — Phase166A: 1H locked candidate walk-forward anti-overfit replay built
+
+**درخواست اپراتور:** بعد از پاس شدن Phase165A، فاز 166 ساخته شود تا candidate قفل‌شده 1H در walk-forward replay و بدون grid search بررسی شود.
+
+**پیاده‌سازی:**
+- `scripts/replay_pivot_1h_locked_candidate_walk_forward.py` اضافه شد.
+- GUI command جدید: `Replay 1H locked candidate walk-forward`.
+- CommandKind جدید: `REPLAY_PIVOT_1H_LOCKED_CANDIDATE_WALK_FORWARD`.
+- تست unit جدید: `tests/unit/ai/test_pivot_1h_walk_forward.py`.
+
+**Candidate ثابت:**
+```text
+BRK_D1_FAST breakout
+entry_delay=1
+recent_window=24
+pivot_zone_atr=0.05
+bracket B15_10 = TP 1.5 ATR / SL 1.0 ATR
+hold_bars=24
+fixed spread=0.2
+```
+
+**Protocol پیش‌فرض:**
+```text
+fold_train_bars      = 18000
+fold_validation_bars = 4000
+fold_test_bars       = 4000
+fold_step_bars       = 4000
+purge_gap            = 24
+```
+
+**Pass gates:**
+```text
+min_folds=5
+min_fold_pass_ratio=0.55
+min_test_pass_ratio=0.60
+min_median_test_profit_factor=1.05
+min_aggregate_test_cash_pnl=0
+max_worst_test_drawdown=25
+```
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_locked_candidate_walk_forward\latest.json
+latest.html
+latest_folds.csv
+latest_fold_splits.csv
+latest_trades.csv
+latest_monthly.csv
+latest_stress.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/replay_pivot_1h_locked_candidate_walk_forward.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_walk_forward.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_walk_forward.py tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. نتیجه واقعی Phase166A هنوز باید روی دیتاست کامل اپراتور اجرا و paste شود. Production همچنان BLOCKED است.
+
+## 2026-09-30 — Phase166A result: locked 1H walk-forward anti-overfit failed
+
+**Owner run result:** `run_logs\pivot_1h_locked_candidate_walk_forward\latest.json` was pasted.
+
+Top-level:
+
+```text
+folds                     : 6
+fold_pass_count           : 0
+fold_pass_ratio           : 0.0
+test_pass_count           : 4
+test_pass_ratio           : 0.6666666666666666
+aggregate_test_cash_pnl   : +38.640147609608306
+median_test_profit_factor : 1.383576104732664
+mean_test_profit_factor   : 1.4109730098527464
+worst_test_profit_factor  : 0.7849777518968888
+worst_test_cash_pnl       : -5.560744993965023
+worst_test_max_drawdown   : 6.86223346129448
+walk_forward_pass_gate    : 0
+```
+
+**Interpretation:**
+- Positive diagnostic: test side is not dead; 4/6 test folds passed and aggregate test PnL is positive.
+- Negative diagnostic: 0/6 complete folds passed because train, validation and monthly gates are unstable.
+- Train failed in 5/6 folds.
+- Monthly stability failed in all folds.
+- Stress transfer failed in all folds.
+
+**Decision:**
+```text
+Phase166A failed.
+Do not train a 1H model around this locked candidate yet.
+Do not proceed to Phase134, paper shadow, or live trading.
+```
+
+**Recommended next diagnostic:**
+```text
+Phase167A — 1H Locked Candidate Regime / Failure Attribution Audit
+```
+
+**Purpose:** explain why test folds often pass while train/validation/monthly stability fails. Check ATR/spread regime, year/month clustering, BUY-vs-SELL legs, and whether a pre-declared volatility/liquidity filter explains the instability without curve fitting.
+
+## 2026-09-30 — Phase167A: 1H locked candidate regime/failure attribution audit built
+
+**درخواست اپراتور:** بعد از شکست Phase166A، فاز 167 ساخته شود تا علت شکست walk-forward candidate قفل‌شده 1H مشخص شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_pivot_1h_locked_candidate_regime_failures.py` اضافه شد.
+- GUI command جدید: `Audit 1H locked candidate regime failures`.
+- CommandKind جدید: `AUDIT_PIVOT_1H_LOCKED_CANDIDATE_REGIME_FAILURES`.
+- تست unit جدید: `tests/unit/ai/test_pivot_1h_regime_failures.py`.
+
+**Diagnostic scope:**
+```text
+fold failure reasons
+BUY vs SELL leg attribution
+ATR regime using train-only fold quantiles
+spread/ATR regime
+month/year clustering
+pre-declared diagnostic filters:
+  none
+  min_atr_q50
+  min_atr_q75
+  buy_leg_only
+  sell_leg_only
+  max_spread_atr_0.05
+  max_spread_atr_0.10
+```
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_locked_candidate_regime_failures\latest.json
+latest.html
+latest_fold_failures.csv
+latest_regime_summary.csv
+latest_side_summary.csv
+latest_monthly_summary.csv
+latest_filter_diagnostics.csv
+latest_filter_summary.csv
+latest_trades.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_pivot_1h_locked_candidate_regime_failures.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_regime_failures.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_regime_failures.py tests/unit/ai/test_pivot_1h_walk_forward.py tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. نتیجه واقعی Phase167A هنوز باید روی دیتاست کامل اپراتور اجرا و paste شود. Production همچنان BLOCKED است.
+
+## 2026-09-30 — Phase167A result: regime attribution found no strong rescue filter
+
+**Owner run result:** `run_logs\pivot_1h_locked_candidate_regime_failures\latest.json` was pasted.
+
+Top-level:
+
+```text
+folds                       : 6
+baseline_fold_pass_count    : 0
+baseline_test_pass_count    : 4
+baseline_aggregate_test_pnl : +38.640147609608306
+dominant_failure_reason     : monthly_stability_failed
+worst_side                  : ALL|BUY
+worst_side_total_pnl        : +32.373761889586895
+worst_atr_regime            : atr_q3_mid_high
+worst_atr_regime_total_pnl  : +1.5931376966985034
+best_filter_name            : buy_leg_only
+best_filter_fold_pass_ratio : 0.16666666666666666
+recommendation              : REGIME_FILTER_CONFIRMATION_REQUIRED_NO_TRAINING
+```
+
+**Filter summary:**
+```text
+buy_leg_only:
+  fold_pass_ratio=0.1667
+  test_pass_ratio=0.3333
+  aggregate_test_pnl=+31.8855
+
+max_spread_atr_0.10:
+  fold_pass_ratio=0.0
+  test_pass_ratio=0.6667
+  aggregate_test_pnl=+41.8019
+
+none:
+  fold_pass_ratio=0.0
+  test_pass_ratio=0.6667
+  aggregate_test_pnl=+38.6401
+```
+
+**Decision:**
+```text
+Phase167A did not find a strong enough regime filter to justify model training.
+No Phase134, no paper shadow, no live trading.
+```
+
+**Recommended next diagnostic if continuing:**
+```text
+Phase168A — 1H Predeclared Filter Confirmation Replay
+```
+
+Allowed filters only:
+```text
+none
+max_spread_atr_0.10
+buy_leg_only
+buy_leg_only + max_spread_atr_0.10
+```
+
+No grid search and no model training.
+
+## 2026-09-30 — Phase168A: 1H predeclared filter confirmation replay built
+
+**درخواست اپراتور:** بعد از Phase167A، فاز 168 ساخته شود تا فقط فیلترهای از پیش تعریف‌شده و محدود را confirmation-only تست کند.
+
+**پیاده‌سازی:**
+- `scripts/replay_pivot_1h_predeclared_filter_confirmation.py` اضافه شد.
+- GUI command جدید: `Replay 1H predeclared filter confirmation`.
+- CommandKind جدید: `REPLAY_PIVOT_1H_PREDECLARED_FILTER_CONFIRMATION`.
+- تست unit جدید: `tests/unit/ai/test_pivot_1h_filter_confirmation.py`.
+
+**Allowed filters فقط:**
+```text
+none
+max_spread_atr_0.10
+buy_leg_only
+buy_leg_only+max_spread_atr_0.10
+```
+
+**ممنوعیت‌ها:**
+```text
+no grid search
+no threshold optimization
+no new candidate
+no model training
+no paper/live
+```
+
+**خروجی‌ها:**
+```text
+run_logs\pivot_1h_predeclared_filter_confirmation\latest.json
+latest.html
+latest_filter_summary.csv
+latest_filter_folds.csv
+latest_filter_splits.csv
+latest_trades.csv
+latest_monthly.csv
+latest_stress.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/replay_pivot_1h_predeclared_filter_confirmation.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_pivot_1h_filter_confirmation.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_1h_filter_confirmation.py tests/unit/ai/test_pivot_1h_regime_failures.py tests/unit/ai/test_pivot_1h_walk_forward.py tests/unit/ai/test_pivot_1h_candidate_lockdown.py tests/unit/ai/test_pivot_1h_spread_bracket_sensitivity.py tests/unit/ai/test_pivot_1h_entry_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. نتیجه واقعی Phase168A هنوز باید روی دیتاست کامل اپراتور اجرا و paste شود. Production همچنان BLOCKED است.
+
+## 2026-09-30 — Phase168A result: predeclared filter confirmation failed
+
+**Owner run result:** `run_logs\pivot_1h_predeclared_filter_confirmation\latest.json` was pasted.
+
+Top-level:
+
+```text
+selected_filter_name       : buy_leg_only
+selected_filter_pass_gate  : 0
+selected_fold_pass_ratio   : 0.16666666666666666
+selected_test_pass_ratio   : 0.3333333333333333
+selected_aggregate_test_pnl: +31.885510318263545
+selected_median_test_pf    : 1.3055548257488616
+confirmation_pass_gate     : 0
+recommendation             : STOP_1H_LOCKED_FILTER_ROUTE_OR_REDESIGN
+```
+
+Filter comparison:
+
+```text
+none:
+  fold_pass=0/6
+  test_pass=4/6
+  aggregate_test_pnl=+38.6401
+  pass_gate=0
+
+max_spread_atr_0.10:
+  fold_pass=0/6
+  test_pass=4/6
+  aggregate_test_pnl=+41.8019
+  pass_gate=0
+
+buy_leg_only:
+  fold_pass=1/6
+  test_pass=2/6
+  aggregate_test_pnl=+31.8855
+  pass_gate=0
+
+buy_leg_only+max_spread_atr_0.10:
+  fold_pass=1/6
+  test_pass=2/6
+  aggregate_test_pnl=+31.8855
+  pass_gate=0
+```
+
+**Decision:**
+```text
+Phase168A failed.
+No predeclared filter confirmed the locked 1H candidate.
+Stop the current 1H locked-candidate route.
+Do not train a model around this rule/filter set.
+No Phase134, no paper shadow, no live trading.
+```
+
+## 2026-09-30 — Phase169A: broker cost reality + research lane reset audit built
+
+**درخواست اپراتور:** بعد از شکست Phase168A، فاز 169 ساخته شود تا مسیر research reset شود و broker cost reality رسمی بررسی شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_broker_cost_reality_research_reset.py` اضافه شد.
+- GUI command جدید: `Audit broker cost reality / research reset`.
+- CommandKind جدید: `AUDIT_BROKER_COST_REALITY_RESEARCH_RESET`.
+- تست unit جدید: `tests/unit/ai/test_broker_cost_reality_research_reset.py`.
+
+**کارکرد:**
+- لاگ‌های Phase162A تا Phase168A را از `run_logs` می‌خواند.
+- route decision matrix می‌سازد:
+  - `5M pivot bottom-buy`
+  - `1H locked breakout BRK_D1_FAST`
+  - `1H cost model`
+- سلامت دیتاست OHLC/ATR را برای تایم‌فریم‌های انتخابی بررسی می‌کند.
+- fixed spread و percent spread را به نسبت ATR محاسبه می‌کند.
+- اگر broker spread sample داده شود، median/p90/p99 spread واقعی را خلاصه می‌کند.
+
+**خروجی‌ها:**
+```text
+run_logs\research_lane_reset_cost_audit\latest.json
+latest.html
+latest_route_decisions.csv
+latest_cost_assumptions.csv
+latest_dataset_health.csv
+latest_phase_sources.csv
+latest_spread_samples.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_broker_cost_reality_research_reset.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_broker_cost_reality_research_reset.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_broker_cost_reality_research_reset.py tests/unit/ai/test_pivot_1h_filter_confirmation.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. Production همچنان BLOCKED است.
+
+## 2026-10-01 — Phase169A result: cost audit completed, phase run_logs missing
+
+**Owner run result:** `run_logs\research_lane_reset_cost_audit\latest.json` was pasted.
+
+Top-level:
+
+```text
+route_decision             : INSUFFICIENT_ROUTE_EVIDENCE
+broker_cost_reality_status : BROKER_SPREAD_SAMPLE_MISSING_OR_UNVERIFIED
+recommended_next_phase     : Restore missing phase logs or run confirmation diagnostics
+```
+
+**Cause of insufficient route evidence:**
+```text
+Phase169A could not find run_logs for Phase162A–Phase168A on disk.
+All phase_source_rows were MISSING.
+```
+
+**Important:** This does not overwrite the documented/pasted results. The project docs already record:
+```text
+5M bottom-buy route rejected.
+1H locked-candidate route rejected after Phase168A.
+No model training, paper, live, or Phase134.
+```
+
+**Dataset health:**
+```text
+5M PASS: rows=53197, no duplicate timestamp, no nonfinite OHLC, no invalid OHLC, ATR OK.
+1H PASS: rows=50000, no duplicate timestamp, no nonfinite OHLC, no invalid OHLC, ATR OK.
+```
+
+**Cost insight:**
+```text
+1H fixed 0.2 median spread/ATR = 0.0428 -> feasible
+1H fixed 0.5 median spread/ATR = 0.1070 -> feasible
+1H fixed 1.0 median spread/ATR = 0.2140 -> not feasible
+1H pct 0.06 median spread/ATR  = 0.2478 -> not feasible
+```
+
+**Broker spread sample:**
+```text
+NOT_PROVIDED
+```
+
+**Decision:**
+```text
+Current 5M and 1H locked pivot routes remain rejected by recorded evidence.
+Broker spread reality remains unverified.
+Recommended next if continuing: Phase170A broker spread capture / cost data pipeline.
+```
+
+## 2026-10-01 — Phase170A: broker spread capture / cost data pipeline built
+
+**درخواست اپراتور:** بعد از Phase169A و نامشخص بودن broker spread reality، فاز 170 ساخته شود تا spread واقعی Alpari/XAUUSD capture یا import شود.
+
+**پیاده‌سازی:**
+- `scripts/capture_broker_spread_cost_pipeline.py` اضافه شد.
+- GUI command جدید: `Capture broker spread / cost pipeline`.
+- CommandKind جدید: `CAPTURE_BROKER_SPREAD_COST_PIPELINE`.
+- تست unit جدید: `tests/unit/ai/test_broker_spread_capture_pipeline.py`.
+
+**حالت‌ها:**
+```text
+source_mode=mt5 : اتصال به MT5 و نمونه‌گیری bid/ask از symbol_info_tick
+source_mode=csv : import فایل CSV/parquet شامل bid/ask یا spread
+```
+
+**خروجی‌ها:**
+```text
+run_logs\broker_spread_capture\latest.json
+latest.html
+latest_spread_samples.csv
+latest_session_summary.csv
+latest_timeframe_cost.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/capture_broker_spread_cost_pipeline.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_broker_spread_capture_pipeline.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_broker_spread_capture_pipeline.py tests/unit/ai/test_broker_cost_reality_research_reset.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. این فاز هیچ trading approval نمی‌دهد.
+
+## 2026-10-01 — Phase170A result: Alpari XAUUSD_i broker spread captured
+
+**Owner run result:** `run_logs\broker_spread_capture\latest.json` was pasted.
+
+Top-level:
+
+```text
+source_mode              : mt5
+symbol                   : XAUUSD
+broker_symbol            : XAUUSD_i
+samples                  : 121
+sample_status            : PASS
+broker_cost_reality_gate : 1
+spread_price_median      : 0.3900000000003274
+spread_price_p90         : 0.4000000000005457
+spread_price_p99         : 0.41000000000058207
+spread_points_median     : 39.00000000003274
+spread_points_p90        : 40.00000000005457
+spread_points_p99        : 41.00000000005821
+```
+
+**Data issue found:** one placeholder/invalid MT5 tick was included:
+
+```text
+timestamp = 1970-01-01T00:00:00+00:00
+spread    = 0.0
+```
+
+The script was patched to ignore invalid MT5 epoch ticks in future captures.
+
+**Cost/ATR:**
+
+```text
+5M median spread/ATR = 0.009875382083243615
+1H median spread/ATR = 0.08347347500389216
+```
+
+**Decision:**
+```text
+Real broker spread is approximately fixed 0.39–0.41 during the sampled window.
+Future research should use fixed spread around 0.4 or stress around 0.4/0.5.
+The rejected 1H locked candidate must not be revived based on fixed spread=0.2.
+No model training, no Phase134, no paper/live.
+```
+
+## 2026-10-01 — Phase171A: research route redesign decision matrix built
+
+**درخواست اپراتور:** بعد از Phase170A و روشن شدن spread واقعی broker، فاز 171 ساخته شود تا مسیر research بعدی با matrix شفاف مشخص شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_research_route_redesign_decision_matrix.py` اضافه شد.
+- GUI command جدید: `Audit research route redesign matrix`.
+- CommandKind جدید: `AUDIT_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX`.
+- تست unit جدید: `tests/unit/ai/test_research_route_redesign_decision_matrix.py`.
+
+**Route options:**
+```text
+STOP_CURRENT_LOCKED_ROUTES
+NEW_1H_COST_AWARE_TARGET_FAMILY
+HYBRID_REGIME_FIRST_REDESIGN
+4H_1D_COST_FEASIBILITY
+TRAIN_CURRENT_1H_LOCKED_RULE
+PAPER_OR_LIVE
+```
+
+**خروجی‌ها:**
+```text
+run_logs\research_route_redesign_decision_matrix\latest.json
+latest.html
+latest_decision_matrix.csv
+latest_criteria.csv
+latest_recommended_plan.csv
+latest_evidence.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_research_route_redesign_decision_matrix.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_research_route_redesign_decision_matrix.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_research_route_redesign_decision_matrix.py tests/unit/ai/test_broker_spread_capture_pipeline.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. این فاز فقط decision matrix است و هیچ trading/model approval نمی‌دهد.
+
+## 2026-10-01 — Phase171A result: next route selected as broker-cost-aware 1H target-family design
+
+**Owner run result:** `run_logs\research_route_redesign_decision_matrix\latest.json` was pasted.
+
+Top-level:
+
+```text
+route_reset_status      : CURRENT_5M_AND_1H_LOCKED_ROUTES_REJECTED_BY_DOCUMENTED_RESULTS
+broker_cost_status      : MISSING_PHASE170_USING_DOCUMENTED_MANUAL_VALUES
+broker_spread_median    : 0.39
+broker_spread_p90       : 0.40
+broker_spread_p99       : 0.41
+h1_median_spread_atr    : 0.08347
+selected_route_id       : NEW_1H_COST_AWARE_TARGET_FAMILY
+selected_required_phase : Phase172A — Broker-cost-aware 1H target-family design audit
+```
+
+Decision matrix:
+
+```text
+NEW_1H_COST_AWARE_TARGET_FAMILY   : RECOMMENDED_RESEARCH, score=87, rank=1
+STOP_CURRENT_LOCKED_ROUTES        : MANDATORY, score=94, rank=2
+HYBRID_REGIME_FIRST_REDESIGN      : SECONDARY_RESEARCH, score=90, rank=3
+4H_1D_COST_FEASIBILITY            : SECONDARY_RESEARCH, score=73, rank=4
+TRAIN_CURRENT_1H_LOCKED_RULE      : BLOCKED, score=0, rank=5
+PAPER_OR_LIVE                     : BLOCKED, score=0, rank=6
+```
+
+**Decision:**
+```text
+Proceed only to Phase172A diagnostic audit.
+Do not train current 1H locked rule.
+Do not patch rejected 5M/1H locked routes.
+No Phase134, no paper shadow, no live trading.
+```
+
+**Next:**
+```text
+Phase172A — Broker-cost-aware 1H target-family design audit
+```
+
+## 2026-10-01 — Phase172A: broker-cost-aware 1H target-family design audit built
+
+**درخواست اپراتور:** بعد از Phase171A، فاز 172 ساخته شود تا target-family جدید 1H با broker cost واقعی طراحی/ممیزی شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_broker_cost_aware_1h_target_family.py` اضافه شد.
+- GUI command جدید: `Audit broker-cost-aware 1H target family`.
+- CommandKind جدید: `AUDIT_BROKER_COST_AWARE_1H_TARGET_FAMILY`.
+- تست unit جدید: `tests/unit/ai/test_broker_cost_aware_1h_target_family.py`.
+
+**Target families پیش‌فرض:**
+```text
+CA1_BRK_MID
+CA2_BRK_WIDE
+CA3_BRK_STRICT
+CA4_REV_MID
+```
+
+**Cost assumptions:**
+```text
+primary fixed spread = 0.4
+stress fixed spread  = 0.5
+```
+
+**خروجی‌ها:**
+```text
+run_logs\broker_cost_aware_1h_target_family\latest.json
+latest.html
+latest_candidates.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_events.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_broker_cost_aware_1h_target_family.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_broker_cost_aware_1h_target_family.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_broker_cost_aware_1h_target_family.py tests/unit/ai/test_research_route_redesign_decision_matrix.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. این فاز فقط target-family audit است و هیچ model/paper/live approval نمی‌دهد.
+
+## 2026-10-01 — Phase172A result: broker-cost-aware 1H target family passed structural gates
+
+**Owner run result:** `run_logs\broker_cost_aware_1h_target_family\latest.json` was pasted.
+
+Top-level:
+
+```text
+candidate_families                    : 4
+ready_families                        : 3
+selected_family_id                    : CA1_BRK_MID
+selected_family_ready_gate            : 1
+target_family_ready_for_training_gate : 1
+spread_value                          : fixed 0.4
+stress_spread_value                   : fixed 0.5
+```
+
+Selected family:
+
+```text
+CA1_BRK_MID
+mapping       : breakout
+entry_delay   : 1
+rw            : 24
+zone          : 0.10
+TP/SL         : 2.0 / 1.0 ATR
+hold          : 24
+```
+
+CA1 target diagnostics:
+
+```text
+train_events              : 775
+validation_events         : 184
+test_events               : 202
+train_positive_rate       : 0.3084
+validation_positive_rate  : 0.3641
+test_positive_rate        : 0.3713
+validation_label_psi      : 0.01395
+test_label_psi            : 0.01767
+walkforward_pass_ratio    : 1.0
+stress_gate               : 1
+family_ready_gate         : 1
+```
+
+Economic caution for CA1:
+
+```text
+train_independent_pf : 0.8623
+train_chrono_pf      : 0.8453
+validation_chrono_pf : 1.1887
+test_chrono_pf       : 1.1022
+```
+
+**Decision:**
+```text
+CA1_BRK_MID is structurally target-ready, not a trading strategy.
+Do not paper/live/Phase134.
+Do not jump directly to production model training.
+Proceed to Phase173A learnability / dataset build audit.
+```
+
+Ready backups:
+```text
+CA3_BRK_STRICT
+CA2_BRK_WIDE
+```
+
+Rejected:
+```text
+CA4_REV_MID — stress spread gate failed.
+```
+
+**Recommended next:**
+```text
+Phase173A — Broker-cost-aware 1H Target Learnability / Dataset Build Audit
+```
+
+## 2026-10-01 — Phase173A: broker-cost-aware 1H target learnability audit built
+
+**درخواست اپراتور:** بعد از پاس شدن structural target-family در Phase172A، فاز 173 ساخته شود تا قبل از هر training، learnability و dataset labels بررسی شود.
+
+**پیاده‌سازی:**
+- `scripts/audit_broker_cost_aware_1h_target_learnability.py` اضافه شد.
+- GUI command جدید: `Audit broker-cost-aware 1H target learnability`.
+- CommandKind جدید: `AUDIT_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY`.
+- تست unit جدید: `tests/unit/ai/test_broker_cost_aware_1h_target_learnability.py`.
+
+**Families پیش‌فرض:**
+```text
+CA1_BRK_MID
+CA3_BRK_STRICT
+CA2_BRK_WIDE
+```
+
+**کارکرد:**
+- event-level dataset با featureهای causal ساخته می‌شود.
+- labels به `POSITIVE` در برابر `NEGATIVE/TIMEOUT` تبدیل می‌شود.
+- centroid baseline بدون dependency خارجی اجرا می‌شود.
+- metricها: AP lift، balanced accuracy، F1، side AP، label PSI و walk-forward learnability.
+
+**خروجی‌ها:**
+```text
+run_logs\broker_cost_aware_1h_target_learnability\latest.json
+latest.html
+latest_families.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_dataset.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_broker_cost_aware_1h_target_learnability.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_broker_cost_aware_1h_target_learnability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_broker_cost_aware_1h_target_learnability.py tests/unit/ai/test_broker_cost_aware_1h_target_family.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+`ruff` و `black` در sandbox موجود نبودند. این فاز هیچ production/paper/live approval نمی‌دهد.
+
+## 2026-10-01 — Phase173A result: broker-cost-aware 1H target learnability failed
+
+**درخواست/ورودی اپراتور:** اپراتور خروجی `run_logs\broker_cost_aware_1h_target_learnability\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+symbol                         : XAUUSD
+timeframe                      : 1H
+flat_rows                      : 50000
+train_rows / val_rows / test   : 35000 / 7476 / 7476
+spread_mode/value              : fixed / 0.4
+candidate_families             : 3
+learnable_families             : 0
+selected_family_id             : CA3_BRK_STRICT
+selected_family_ready_gate     : 0
+target_learnability_ready_gate : 0
+production_status              : BLOCKED — Phase173A target learnability audit only
+```
+
+**Family metrics:**
+```text
+CA3_BRK_STRICT:
+  events train/val/test       : 344 / 68 / 82
+  positive rate train/val/test: 0.3314 / 0.3971 / 0.3659
+  validation/test AP lift     : -0.0460 / +0.1219
+  validation/test balanced acc: 0.5000 / 0.5000
+  walkforward pass            : 0/6
+
+CA1_BRK_MID:
+  events train/val/test       : 775 / 184 / 202
+  positive rate train/val/test: 0.3084 / 0.3641 / 0.3713
+  validation/test AP lift     : -0.0397 / +0.0305
+  validation/test balanced acc: 0.4448 / 0.5018
+  walkforward pass            : 0/6
+
+CA2_BRK_WIDE:
+  events train/val/test       : 574 / 144 / 141
+  positive rate train/val/test: 0.2944 / 0.3681 / 0.4184
+  validation/test AP lift     : -0.0208 / +0.0191
+  validation/test balanced acc: 0.5024 / 0.5000
+  walkforward pass            : 0/6
+```
+
+**تشخیص:**
+- `class_balance_gate=1` برای هر سه خانواده بود؛ مشکل از density/imbalance خام نیست.
+- label PSI پایین بود؛ مشکل اصلی label-count drift نیست.
+- هر سه family در `static_learnability_gate=0` و `walkforward_learnability_gate=0` شکست خوردند.
+- `selected_family_id=CA3_BRK_STRICT` فقط best diagnostic among failed rows است، نه مجوز training.
+
+**تصمیم:**
+```text
+Phase173A failed.
+Do not train CA1_BRK_MID.
+Do not train CA3_BRK_STRICT.
+Do not train CA2_BRK_WIDE.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE173A_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY_RESULT.md` اضافه شد.
+- `docs/Phases/Phase173.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` با gate شکست‌خورده آپدیت شدند.
+
+**گام بعدی پیشنهادی، فقط با اجازهٔ صریح مالک:**
+```text
+Phase174A — Hybrid/regime-first target redesign decision/audit
+```
+این گام نباید model-training باشد؛ فقط باید مشخص کند آیا مسیر ثانویهٔ Phase171A یعنی `HYBRID_REGIME_FIRST_REDESIGN` ارزش ادامهٔ diagnostic دارد یا نه.
+
+## 2026-10-01 — Phase174A: hybrid/regime-first target redesign audit built
+
+**درخواست اپراتور:** بعد از شکست Phase173A، فاز 174 ساخته شود.
+
+**زمینه:**
+```text
+Phase173A failed:
+learnable_families             : 0
+target_learnability_ready_gate : 0
+CA1/CA3/CA2 walk-forward pass  : 0/6 each
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_hybrid_regime_first_target_redesign.py` اضافه شد.
+- GUI command جدید: `Audit hybrid/regime-first target redesign`.
+- CommandKind جدید: `AUDIT_HYBRID_REGIME_FIRST_TARGET_REDESIGN`.
+- تست unit جدید: `tests/unit/ai/test_hybrid_regime_first_target_redesign.py`.
+
+**کار فاز:**
+- روی CA1/CA3/CA2، subsetهای predeclared side/regime/session/cost را audit می‌کند.
+- quantile thresholdهای ATR/width را فقط از train split/fold می‌گیرد تا leakage نشود.
+- برای هر `family × regime_rule` این‌ها را می‌سنجد:
+  - train/validation/test event count
+  - positive rate
+  - label PSI
+  - AP lift
+  - balanced accuracy
+  - independent PF از target outcomeهای فیلترشده
+  - walk-forward pass ratio
+- decision matrix می‌نویسد و صریحاً `DEEP_MODEL_TRAINING_NOW` و `PAPER_OR_LIVE` را BLOCKED نگه می‌دارد.
+
+**Regime rules پیش‌فرض:**
+```text
+ALL
+BUY_ONLY / SELL_ONLY
+TOP_ZONE / BOTTOM_ZONE
+SPREAD_ATR_LE_008 / SPREAD_ATR_LE_010
+ATR_GE_Q50 / ATR_GE_Q75 / ATR_LE_Q50
+WIDTH_GE_Q50 / WIDTH_GE_Q75
+ACTIVE_UTC_07_17 / ASIA_UTC_00_06
+RET24_POS / RET24_NEG
+MOMENTUM_ALIGNED / MOMENTUM_COUNTER
+BUY_MOMENTUM_ALIGNED / SELL_MOMENTUM_ALIGNED
+BUY_SPREAD_ATR_LE_010 / SELL_SPREAD_ATR_LE_010
+```
+
+**خروجی‌ها:**
+```text
+run_logs\hybrid_regime_first_target_redesign\latest.json
+latest.html
+latest_regime_candidates.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_decision_matrix.csv
+latest_dataset.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_hybrid_regime_first_target_redesign.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_regime_first_target_redesign.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_hybrid_regime_first_target_redesign.py tests/unit/ai/test_broker_cost_aware_1h_target_learnability.py tests/unit/ai/test_broker_cost_aware_1h_target_family.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**تصمیم:**
+```text
+Phase174A is implemented, not run yet.
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit hybrid/regime-first target redesign
+Then send run_logs\hybrid_regime_first_target_redesign\latest.json
+```
+
+## 2026-10-01 — Phase174A result: hybrid/regime-first route failed gates
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\hybrid_regime_first_target_redesign\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+symbol                         : XAUUSD
+timeframe                      : 1H
+flat_rows                      : 50000
+spread_mode/value              : fixed / 0.4
+candidate_families             : 3
+regime_rules                   : 22
+evaluated_regime_candidates    : 66
+ready_regime_candidates        : 0
+selected_family_id             : CA2_BRK_WIDE
+selected_regime_rule_id        : ASIA_UTC_00_06
+selected_regime_ready_gate     : 0
+hybrid_regime_first_ready_gate : 0
+recommendation                 : STOP_OR_REDESIGN_REQUIRED_NO_MODEL_TRAINING
+```
+
+**Best failed diagnostic row:**
+```text
+CA2_BRK_WIDE + ASIA_UTC_00_06
+train/validation/test events       : 154 / 37 / 37
+validation/test AP lift            : +0.1977 / +0.0900
+validation/test balanced accuracy  : 0.5676 / 0.6071
+validation/test independent PF     : 1.7000 / 1.2174
+train independent PF               : 0.7416
+train mean ATR score               : -0.2349
+walk-forward pass                  : 0/6
+ready gate                         : 0
+```
+
+**Near misses:**
+```text
+CA1_BRK_MID + WIDTH_GE_Q75:
+  economic_gate=1
+  validation/test AP lift=+0.1417/+0.1991
+  validation/test PF=1.2923/1.0857
+  but test balanced accuracy=0.5000 and walk-forward=0/6
+
+CA3_BRK_STRICT + ACTIVE_UTC_07_17:
+  economic_gate=1
+  validation/test PF=1.5726/1.0526
+  but validation AP lift=0.0119, test balanced accuracy=0.5263 and walk-forward=0/6
+```
+
+**Decision matrix:**
+```text
+STOP_PHASE173_DIRECT_TRAINING : MANDATORY, score=100.0
+HYBRID_REGIME_FIRST_REDESIGN  : NOT_CONFIRMED, score=35.0
+DEEP_MODEL_TRAINING_NOW       : BLOCKED, score=0.0
+PAPER_OR_LIVE                 : BLOCKED, score=0.0
+```
+
+**تشخیص:**
+- Phase174A چند pocket مثبت پیدا کرد، اما هیچ‌کدام stable نبودند.
+- شکست اصلی `walkforward_pass_ratio=0.0` برای همهٔ 66 candidate است.
+- بهترین candidate هم train economics منفی داشت، پس نمی‌شود آن را با تکیه بر validation/test کوتاه train کرد.
+- gate relaxation برای ساختن pass مصنوعی مجاز نیست.
+
+**تصمیم:**
+```text
+Phase174A failed.
+Do not train any CA1/CA3/CA2 regime candidate.
+Do not proceed to Phase175 model training.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE174A_HYBRID_REGIME_FIRST_TARGET_REDESIGN_RESULT.md` اضافه شد.
+- `docs/Phases/Phase174.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE174A_HYBRID_REGIME_FIRST_TARGET_REDESIGN_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` با gate شکست‌خورده آپدیت شدند.
+
+**گام بعدی فقط با اجازهٔ صریح مالک:**
+```text
+Option A: stop/pause the 1H broker-cost-aware target/regime route for manual review.
+Option B: diagnostic-only redesign focused on why walk-forward is 0/6 and whether target definition/features must change.
+```
+
+## 2026-10-01 — Phase175A: hybrid/regime walk-forward failure attribution audit built
+
+**درخواست اپراتور:** بعد از شکست Phase174A، اپراتور پرسید پیشنهاد چیست و اجازه داد پیشنهاد منتخب اجرا شود.
+
+**تصمیم پیشنهادی/اجراشده:**
+```text
+Do not train.
+Do not relax gates.
+Build a diagnostic-only walk-forward failure attribution audit.
+```
+
+**علت:**
+```text
+Phase174A:
+ready_regime_candidates        : 0
+hybrid_regime_first_ready_gate : 0
+best failed row                : CA2_BRK_WIDE + ASIA_UTC_00_06
+main failure                   : train economics negative and walk-forward pass=0/6
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_hybrid_regime_walkforward_failure_attribution.py` اضافه شد.
+- GUI command جدید: `Audit hybrid/regime walk-forward failures`.
+- CommandKind جدید: `AUDIT_HYBRID_REGIME_WALKFORWARD_FAILURES`.
+- تست unit جدید: `tests/unit/ai/test_hybrid_regime_walkforward_failure_attribution.py`.
+
+**کار فاز:**
+- خروجی Phase174A را می‌خواند: `run_logs\hybrid_regime_first_target_redesign\latest.json`.
+- برای هر candidate و هر walk-forward fold دلیل شکست را attribute می‌کند:
+  - density
+  - positive-rate stability
+  - label PSI
+  - train/validation/test raw economics
+  - AP lift
+  - balanced accuracy
+  - walk-forward pass ratio
+- decision matrix می‌نویسد و training/paper/live را blocked نگه می‌دارد.
+
+**خروجی‌ها:**
+```text
+run_logs\hybrid_regime_walkforward_failure_attribution\latest.json
+latest.html
+latest_candidate_failures.csv
+latest_failure_reasons.csv
+latest_fold_failure_summary.csv
+latest_decision_matrix.csv
+latest_next_plan.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_hybrid_regime_walkforward_failure_attribution.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_hybrid_regime_walkforward_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_hybrid_regime_walkforward_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit hybrid/regime walk-forward failures
+Then send run_logs\hybrid_regime_walkforward_failure_attribution\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## 2026-10-01 — Phase175A result: walk-forward failure attribution confirmed target/regime instability
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\hybrid_regime_walkforward_failure_attribution\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+candidate_rows                      : 66
+walkforward_rows                    : 396
+walkforward_pass_rows               : 0
+walkforward_global_pass_ratio       : 0.0
+candidates_with_class_balance_gate  : 53
+candidates_with_economic_gate       : 4
+candidates_with_static_learnability : 0
+candidates_with_walkforward_gate    : 0
+candidates_with_ready_gate          : 0
+```
+
+**Dominant candidate failures:**
+```text
+static_learnability_gate_failed      : 66/66 = 1.0000
+walkforward_learnability_gate_failed : 66/66 = 1.0000
+walkforward_pass_ratio_failed        : 66/66 = 1.0000
+test_balanced_accuracy_failed        : 63/66 = 0.9545
+economic_gate_failed                 : 62/66 = 0.9394
+train_negative_expectancy_failed     : 57/66 = 0.8636
+train_raw_economics_failed           : 55/66 = 0.8333
+validation_ap_lift_failed            : 52/66 = 0.7879
+validation_balanced_accuracy_failed  : 49/66 = 0.7424
+```
+
+**Dominant walk-forward fold failures:**
+```text
+fold_pass_gate_failed               : 396/396 = 1.0000
+test_balanced_accuracy_failed       : 292/396 = 0.7374
+validation_balanced_accuracy_failed : 292/396 = 0.7374
+validation_raw_economics_failed     : 253/396 = 0.6389
+test_raw_economics_failed           : 241/396 = 0.6086
+test_ap_lift_failed                 : 206/396 = 0.5202
+validation_ap_lift_failed           : 190/396 = 0.4798
+```
+
+**Selected near miss:**
+```text
+CA1_BRK_MID + WIDTH_GE_Q75
+primary_failure_reason       : static_learnability_gate_failed
+validation/test AP lift      : +0.1417 / +0.1991
+validation/test PF           : 1.2923 / 1.0857
+test balanced accuracy       : 0.5000
+train mean ATR score         : -0.02786
+walk-forward pass            : 0/6
+ready gate                   : 0
+```
+
+**تشخیص:**
+- Phase175A ثابت کرد شکست Phase174A یک مشکل isolated نیست.
+- هیچ‌کدام از 66 candidate نه static learnability را پاس کردند و نه walk-forward gate را.
+- همهٔ 396 fold-row شکست خوردند.
+- failure pattern بیشتر به target/regime instability و target-definition mismatch شبیه است تا کمبود مدل بزرگ‌تر.
+
+**Decision matrix:**
+```text
+STOP_PHASE174_REGIME_TRAINING            : MANDATORY, score=100.0
+TARGET_DEFINITION_FAILURE_REDESIGN_AUDIT : RECOMMENDED_DIAGNOSTIC, score=82.0
+TRAIN_MODEL_NOW                          : BLOCKED, score=0.0
+PAPER_OR_LIVE                            : BLOCKED, score=0.0
+```
+
+**تصمیم:**
+```text
+Freeze Phase173A/174A targets as failed diagnostics.
+Do not train.
+Do not relax gates.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE175A_HYBRID_REGIME_WALKFORWARD_FAILURE_ATTRIBUTION_RESULT.md` اضافه شد.
+- `docs/Phases/Phase175.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE175A_HYBRID_REGIME_WALKFORWARD_FAILURE_ATTRIBUTION_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی، فقط diagnostic:**
+```text
+Phase176A — target-definition walk-forward root-cause redesign audit
+```
+این فاز نباید model training باشد؛ باید target definition / payoff horizon / side / fold failure را root-cause کند.
+
+## 2026-10-01 — Phase176A: target-definition walk-forward root-cause redesign audit built
+
+**درخواست اپراتور:** بعد از Phase175A، اپراتور اجازه داد Phase176A ساخته شود.
+
+**زمینه:**
+```text
+Phase175A:
+walkforward_pass_rows                 : 0/396
+static_learnability_gate_failed       : 66/66
+walkforward_learnability_gate_failed  : 66/66
+walkforward_pass_ratio_failed         : 66/66
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_target_definition_walkforward_root_cause_redesign.py` اضافه شد.
+- GUI command جدید: `Audit target-definition walk-forward root cause`.
+- CommandKind جدید: `AUDIT_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE`.
+- تست unit جدید: `tests/unit/ai/test_target_definition_walkforward_root_cause_redesign.py`.
+
+**کار فاز:**
+- خروجی‌های Phase174A و Phase175A را می‌خواند.
+- شکست را بر اساس target-definition axes تحلیل می‌کند:
+  - family
+  - geometry_profile
+  - hold_bars
+  - TP/SL geometry
+  - regime_axis
+  - regime_rule
+- target definitions فعلی را attribute می‌کند:
+  - `CA1_BRK_MID`: mid_zone_rw24, TP/SL=2.0/1.0, hold=24
+  - `CA3_BRK_STRICT`: strict_zone_rw24, TP/SL=2.0/1.0, hold=24
+  - `CA2_BRK_WIDE`: wide_zone_rw48, TP/SL=2.5/1.25, hold=48
+- redesign hypotheses می‌سازد، ولی هیچ target/training artifact تولید نمی‌کند.
+
+**خروجی‌ها:**
+```text
+run_logs\target_definition_walkforward_root_cause_redesign\latest.json
+latest.html
+latest_target_definitions.csv
+latest_axis_attribution.csv
+latest_redesign_hypotheses.csv
+latest_decision_matrix.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_target_definition_walkforward_root_cause_redesign.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_target_definition_walkforward_root_cause_redesign.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_target_definition_walkforward_root_cause_redesign.py tests/unit/ai/test_hybrid_regime_walkforward_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit target-definition walk-forward root cause
+Then send run_logs\target_definition_walkforward_root_cause_redesign\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+## 2026-10-01 — Phase176A result: current target definitions rejected
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\target_definition_walkforward_root_cause_redesign\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+source_candidate_rows                           : 66
+source_walkforward_rows                         : 396
+source_walkforward_pass_rows                    : 0
+source_walkforward_global_pass_ratio            : 0.0
+source_candidates_with_static_learnability_gate : 0
+source_candidates_with_walkforward_gate         : 0
+source_candidates_with_ready_gate               : 0
+root_cause_confirmed_gate                       : 1
+target_definition_redesign_required_gate        : 1
+direct_training_blocked_gate                    : 1
+paper_live_blocked_gate                         : 1
+route_decision                                  : CURRENT_TARGET_DEFINITIONS_REJECTED_REDESIGN_DIAGNOSTIC_ONLY
+recommended_next_phase                          : Phase177A — walk-forward target-family redesign candidate audit
+```
+
+**Target definitions:**
+```text
+CA1_BRK_MID:
+  geometry        : mid_zone_rw24
+  TP/SL/hold      : 2.0 / 1.0 / 24
+  economic_pass   : 1/22
+  static_pass     : 0/22
+  walkforward     : 0/132 folds
+  root_failure    : static_learnability_gate_failed
+
+CA3_BRK_STRICT:
+  geometry        : strict_zone_rw24
+  TP/SL/hold      : 2.0 / 1.0 / 24
+  economic_pass   : 3/22
+  static_pass     : 0/22
+  walkforward     : 0/132 folds
+  root_failure    : static_learnability_gate_failed
+
+CA2_BRK_WIDE:
+  geometry        : wide_zone_rw48
+  TP/SL/hold      : 2.5 / 1.25 / 48
+  economic_pass   : 0/22
+  static_pass     : 0/22
+  walkforward     : 0/132 folds
+  root_failure    : economic_gate_failed
+```
+
+**Axis attribution:**
+```text
+family           : all REJECTED_WALKFORWARD_ZERO
+geometry_profile : all REJECTED_WALKFORWARD_ZERO
+hold_bars        : all REJECTED_WALKFORWARD_ZERO
+TP/SL            : all REJECTED_WALKFORWARD_ZERO
+regime_axis      : all REJECTED_WALKFORWARD_ZERO
+regime_rule      : all REJECTED_WALKFORWARD_ZERO
+```
+
+**Supported redesign hypotheses:**
+```text
+H1_TARGET_DEFINITION_MISMATCH            : SUPPORTED
+H2_TRAIN_EXPECTANCY_INSTABILITY          : SUPPORTED
+H3_CLASSIFIER_SIGNAL_NOT_STABLE          : SUPPORTED
+H4_RAW_ECONOMICS_DO_NOT_TRANSFER_BY_FOLD : SUPPORTED
+H5_DENSITY_IS_SECONDARY_NOT_PRIMARY      : SUPPORTED
+H6_SESSION_FILTERS_NOT_ENOUGH            : SUPPORTED
+```
+
+**Decision matrix:**
+```text
+FREEZE_PHASE173_174_TARGETS       : MANDATORY, score=100.0
+TARGET_FAMILY_REDESIGN_DIAGNOSTIC : RECOMMENDED_DIAGNOSTIC, score=86.0
+TRAIN_MODEL_NOW                   : BLOCKED, score=0.0
+PAPER_OR_LIVE                     : BLOCKED, score=0.0
+```
+
+**تصمیم:**
+```text
+Freeze CA1_BRK_MID, CA3_BRK_STRICT, and CA2_BRK_WIDE as failed diagnostics.
+Do not train.
+Do not relax gates.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE176A_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE_REDESIGN_RESULT.md` اضافه شد.
+- `docs/Phases/Phase176.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE176A_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE_REDESIGN_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی، فقط diagnostic و با اجازهٔ مالک:**
+```text
+Phase177A — walk-forward target-family redesign candidate audit
+```
+این فاز نباید model training باشد؛ باید target familyهای جدیدی را فقط audit کند که مستقیماً مشکلات train-negative expectancy، chance-level balanced accuracy و raw economics not transferring را هدف بگیرند.
+
+## 2026-10-01 — Phase177A: walk-forward target-family redesign candidate audit built
+
+**درخواست اپراتور:** بعد از Phase176A، اپراتور اجازه داد Phase177A ساخته شود.
+
+**زمینه:**
+```text
+Phase176A:
+route_decision = CURRENT_TARGET_DEFINITIONS_REJECTED_REDESIGN_DIAGNOSTIC_ONLY
+recommended_next_phase = Phase177A — walk-forward target-family redesign candidate audit
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_walkforward_target_family_redesign_candidates.py` اضافه شد.
+- GUI command جدید: `Audit walk-forward target-family redesign candidates`.
+- CommandKind جدید: `AUDIT_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATES`.
+- تست unit جدید: `tests/unit/ai/test_walkforward_target_family_redesign_candidates.py`.
+
+**Candidate families پیش‌فرض:**
+```text
+R1_FAST_MID_B15_10_H12
+R2_FAST_MID_B12_08_H12
+R3_STRICT_B15_10_H12
+R4_STRICT_B10_075_H12
+R5_WIDE_B20_10_H24
+R6_WIDE_B15_10_H24
+R7_REV_MID_B10_075_H12
+R8_REV_STRICT_B10_075_H12
+```
+
+**کار فاز:**
+- target-familyهای جدید را فقط audit می‌کند؛ مدل نمی‌سازد.
+- payoff/hold/side mapping را عمداً تغییر می‌دهد:
+  - breakout vs reversal
+  - hold 12/24
+  - TP/SL 1.0/0.75، 1.2/0.8، 1.5/1.0، 2.0/1.0
+  - mid/strict/wide zone geometry
+- برای هر candidate، static split و walk-forward folds را با train-first gates می‌سنجد.
+- خروجی decision matrix همچنان training/paper/live را BLOCKED نگه می‌دارد.
+
+**خروجی‌ها:**
+```text
+run_logs\walkforward_target_family_redesign_candidates\latest.json
+latest.html
+latest_candidates.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_events_sample.csv
+latest_decision_matrix.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_walkforward_target_family_redesign_candidates.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_walkforward_target_family_redesign_candidates.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_walkforward_target_family_redesign_candidates.py tests/unit/ai/test_target_definition_walkforward_root_cause_redesign.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit walk-forward target-family redesign candidates
+Then send run_logs\walkforward_target_family_redesign_candidates\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+## 2026-10-01 — Phase177A result: no redesigned target-family candidate passed
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\walkforward_target_family_redesign_candidates\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+candidate_families                : 8
+ready_candidates                  : 0
+selected_family_id                : R3_STRICT_B15_10_H12
+selected_family_ready_gate        : 0
+selected_walkforward_pass_ratio   : 0.0
+target_family_redesign_ready_gate : 0
+recommendation                    : NO_TARGET_FAMILY_READY_REDESIGN_OR_PAUSE_REQUIRED
+```
+
+**Best failed diagnostic candidate:**
+```text
+R3_STRICT_B15_10_H12
+mapping                         : breakout
+TP/SL/hold                      : 1.5 / 1.0 / 12
+train_events / val / test       : 344 / 68 / 82
+train_positive_rate             : 0.4041
+validation_positive_rate        : 0.4853
+test_positive_rate              : 0.4878
+train PF                        : 0.9735
+validation PF                   : 1.4730
+test PF                         : 1.3051
+train_mean_atr_score            : -0.0154
+validation_ap_lift              : -0.0081
+test_ap_lift                    : +0.0733
+validation_balanced_accuracy    : 0.5043
+test_balanced_accuracy          : 0.5262
+walkforward_pass                : 0/6
+ready_gate                      : 0
+```
+
+**All candidate result:**
+```text
+R1_FAST_MID_B15_10_H12      : ready=0, WF=0/6, train PF=0.8181
+R2_FAST_MID_B12_08_H12      : ready=0, WF=0/6, train PF=0.7447
+R3_STRICT_B15_10_H12        : ready=0, WF=0/6, train PF=0.9735
+R4_STRICT_B10_075_H12       : ready=0, WF=0/6, train PF=0.8669
+R5_WIDE_B20_10_H24          : ready=0, WF=0/6, train PF=0.7778
+R6_WIDE_B15_10_H24          : ready=0, WF=0/6, train PF=0.7488
+R7_REV_MID_B10_075_H12      : ready=0, WF=0/6, train PF=0.7290
+R8_REV_STRICT_B10_075_H12   : ready=0, WF=0/6, train PF=0.5985
+```
+
+**تشخیص:**
+- تمام 8 redesign candidate شکست خوردند.
+- هیچ candidateای train economics، static learnability و walk-forward gates را همزمان پاس نکرد.
+- بهترین candidate هم train PF زیر 1، train expectancy منفی، validation AP lift منفی و bAcc زیر gate داشت.
+- reversal definitions هم rescue نکردند.
+
+**Decision matrix:**
+```text
+FREEZE_OLD_TARGETS           : MANDATORY, score=100.0
+NEW_TARGET_FAMILY_CANDIDATES : NOT_CONFIRMED, score=35.0
+TRAIN_MODEL_NOW              : BLOCKED, score=0.0
+PAPER_OR_LIVE                : BLOCKED, score=0.0
+```
+
+**تصمیم:**
+```text
+Phase177A failed.
+Do not train R1/R2/R3/R4/R5/R6/R7/R8.
+Keep old CA1/CA3/CA2 targets frozen.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE177A_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATE_AUDIT_RESULT.md` اضافه شد.
+- `docs/Phases/Phase177.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE177A_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATE_AUDIT_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی:**
+```text
+Stop/pause this 1H broker-cost-aware pivot target-family lane for manual review,
+or run a route-level research reset decision matrix before trying any new target family.
+```
+
+## 2026-10-01 — Phase178A: post-failure research route reset decision matrix built
+
+**درخواست اپراتور:** بعد از شکست Phase177A، فاز 178 ساخته شود.
+
+**زمینه:**
+```text
+Phase173A broad target learnability failed.
+Phase174A regime-first redesign failed.
+Phase175A failure attribution confirmed instability.
+Phase176A current target definitions rejected.
+Phase177A new target-family redesign candidates failed.
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_post_failure_research_route_reset.py` اضافه شد.
+- GUI command جدید: `Audit post-failure research route reset`.
+- CommandKind جدید: `AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET`.
+- تست unit جدید: `tests/unit/ai/test_post_failure_research_route_reset.py`.
+
+**کار فاز:**
+- مسیر فعلی 1H broker-cost-aware pivot target-family را freeze/stop تصمیم‌گذاری می‌کند.
+- run logهای Phase170 و Phase173A تا Phase177A را اگر موجود باشند می‌خواند.
+- اگر run_logs روی دیسک نباشند، با `--assume-documented-failures 1` از failureهای مستندشده استفاده می‌کند.
+- decision matrix برای routeهای بعدی می‌سازد.
+
+**Routes مقایسه‌شده:**
+```text
+FREEZE_CURRENT_1H_PIVOT_TARGET_ROUTE
+HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY
+NON_PIVOT_EVENT_TARGET_ROUTE
+BROKER_SESSION_COST_DATA_EXTENSION
+PAUSE_FOR_MANUAL_REVIEW
+TRAIN_CURRENT_TARGETS_OR_REGIMES
+PAPER_OR_LIVE
+```
+
+**خروجی‌ها:**
+```text
+run_logs\post_failure_research_route_reset\latest.json
+latest.html
+latest_phase_evidence.csv
+latest_route_decisions.csv
+latest_recommended_plan.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_post_failure_research_route_reset.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_post_failure_research_route_reset.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_post_failure_research_route_reset.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit post-failure research route reset
+Then send run_logs\post_failure_research_route_reset\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+## 2026-10-01 — Phase178A result: current 1H pivot lane frozen; 4H/1D feasibility selected
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\post_failure_research_route_reset\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+current_1h_pivot_target_lane_status : FROZEN_FAILED_DIAGNOSTIC
+route_reset_ready_gate              : 1
+selected_next_research_route_id     : HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY
+selected_next_research_route_name   : Audit higher-timeframe 4H/1D broker-cost feasibility
+selected_required_phase             : Phase179A — 4H/1D broker-cost feasibility and target pre-audit
+selected_route_score                : 88.0
+```
+
+**Broker cost context:**
+```text
+broker_spread_median : 0.39
+broker_spread_p90    : 0.40
+broker_spread_p99    : 0.41
+H1 spread/ATR        : 0.08347
+```
+
+**Phase gates used:**
+```text
+phase173_ready_gate             : 0
+phase174_ready_gate             : 0
+phase175_no_training_gate       : 1
+phase176_redesign_required_gate : 1
+phase177_ready_gate             : 0
+```
+
+**Decision matrix:**
+```text
+FREEZE_CURRENT_1H_PIVOT_TARGET_ROUTE    : MANDATORY, score=100.0
+HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY : RECOMMENDED_NEXT_RESEARCH, score=88.0
+NON_PIVOT_EVENT_TARGET_ROUTE            : SECONDARY_RESEARCH, score=73.0
+BROKER_SESSION_COST_DATA_EXTENSION      : SUPPORTING_RESEARCH, score=64.0
+PAUSE_FOR_MANUAL_REVIEW                 : VALID_OWNER_OPTION, score=60.0
+TRAIN_CURRENT_TARGETS_OR_REGIMES        : BLOCKED, score=0.0
+PAPER_OR_LIVE                           : BLOCKED, score=0.0
+```
+
+**نکتهٔ source logs:**
+```text
+Phase170A result path : MISSING, documented/manual broker values used
+Phase173A result path : MISSING, documented failure used
+Phase174A-177A        : LOADED
+```
+
+**تصمیم:**
+```text
+Freeze CA1/CA3/CA2 and R1-R8 targets as failed diagnostics.
+Do not train current targets or regimes.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE178A_POST_FAILURE_RESEARCH_ROUTE_RESET_RESULT.md` اضافه شد.
+- `docs/Phases/Phase178.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE178A_POST_FAILURE_RESEARCH_ROUTE_RESET_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی، فقط diagnostic:**
+```text
+Phase179A — 4H/1D broker-cost feasibility and target pre-audit
+```
+این فاز نباید model training باشد؛ فقط feasibility/target pre-audit روی 4H/1D با spread واقعی 0.4 و stress مناسب است.
+
+## 2026-10-01 — Phase179A: 4H/1D broker-cost feasibility and target pre-audit built
+
+**درخواست اپراتور:** بعد از Phase178A، فاز 179 ساخته شود.
+
+**زمینه:**
+```text
+Phase178A selected:
+HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY
+Required phase: Phase179A — 4H/1D broker-cost feasibility and target pre-audit
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_higher_timeframe_cost_feasibility.py` اضافه شد.
+- GUI command جدید: `Audit 4H/1D broker-cost feasibility`.
+- CommandKind جدید: `AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY`.
+- تست unit جدید: `tests/unit/ai/test_higher_timeframe_cost_feasibility.py`.
+
+**کار فاز:**
+- دیتای 4H و 1D را می‌خواند.
+- dataset health را audit می‌کند.
+- spread/ATR را با fixed spread=0.4 محاسبه می‌کند.
+- candidate target families برای 4H و 1D را pre-audit می‌کند.
+- event density، label stability، raw independent economics، centroid learnability و walk-forward target feasibility را می‌سنجد.
+- هیچ model/tensor/training artifact تولید نمی‌کند.
+
+**Candidate families پیش‌فرض:**
+```text
+4H:
+H4_R1_BK_MID_B15_10_H6
+H4_R2_BK_STRICT_B15_10_H6
+H4_R3_BK_WIDE_B20_10_H12
+H4_R4_REV_MID_B10_075_H6
+
+1D:
+D1_R1_BK_MID_B20_10_H5
+D1_R2_BK_STRICT_B15_10_H5
+D1_R3_BK_WIDE_B25_125_H10
+D1_R4_REV_MID_B10_075_H5
+```
+
+**خروجی‌ها:**
+```text
+run_logs\higher_timeframe_cost_feasibility\latest.json
+latest.html
+latest_health.csv
+latest_cost.csv
+latest_candidates.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_decision_matrix.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_higher_timeframe_cost_feasibility.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_higher_timeframe_cost_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_higher_timeframe_cost_feasibility.py tests/unit/ai/test_post_failure_research_route_reset.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit 4H/1D broker-cost feasibility
+Then send run_logs\higher_timeframe_cost_feasibility\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+## 2026-10-01 — Phase179A result: 4H/1D cost feasible but no target-ready candidate
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\higher_timeframe_cost_feasibility\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+evaluated_candidates              : 8
+ready_candidates                  : 0
+selected_family_id                : D1_R1_BK_MID_B20_10_H5
+selected_family_ready_gate        : 0
+selected_walkforward_pass_ratio   : 0.2
+higher_timeframe_feasibility_gate : 0
+recommendation                    : NO_HIGHER_TIMEFRAME_TARGET_READY
+```
+
+**Cost feasibility:**
+```text
+4H spread/ATR median:
+  train      : 0.068851
+  validation : 0.042461
+  test       : 0.027250
+
+1D spread/ATR median:
+  train      : 0.025361
+  validation : 0.016118
+  test       : 0.010327
+
+cost_feasible_gate = 1 for all splits
+```
+
+**Best failed candidate:**
+```text
+D1_R1_BK_MID_B20_10_H5
+train/validation/test events      : 150 / 34 / 50
+train/validation/test PF          : 1.1263 / 1.1464 / 1.4117
+train/validation/test mean ATR    : +0.0641 / +0.0669 / +0.1927
+validation/test AP lift           : +0.0309 / +0.0112
+validation/test balanced accuracy : 0.5243 / 0.5000
+walk-forward pass                 : 1/5
+ready gate                        : 0
+```
+
+**Why failed:**
+```text
+- test AP lift below gate: +0.0112 < 0.02
+- test balanced accuracy at chance: 0.5000 < 0.52
+- walk-forward pass ratio 0.2 < 0.5
+```
+
+**Best 4H candidate:**
+```text
+H4_R2_BK_STRICT_B15_10_H6
+train/validation/test PF          : 0.8249 / 1.2108 / 1.2700
+validation/test AP lift           : +0.0356 / +0.1428
+validation/test balanced accuracy : 0.4970 / 0.5400
+walk-forward pass                 : 0/5
+ready gate                        : 0
+```
+
+**تشخیص:**
+- higher timeframe از نظر cost بهتر است و spread مانع اصلی نیست.
+- اما target readiness هنوز fail شد.
+- 1D بهتر از 4H به نظر می‌رسد، اما هنوز training-ready نیست.
+- مسیر بعدی اگر ادامه دهیم باید failure attribution / redesign decision باشد، نه model training.
+
+**PowerShell/timeframe note:**
+```text
+در اجرای owner، daily timeframe به صورت "1" ثبت شد چون PowerShell می‌تواند 1D بدون کوتیشن را numeric 1 پاس کند.
+D1 flat path و D1 candidates درست استفاده شدند، ولی health expected_step برای daily در آن run label مشکل داشت.
+کد patch شد: canonical_timeframe() حالا "1"/"D1" را به "1D" و "4"/"H4" را به "4H" تبدیل می‌کند.
+Docs command هم به --timeframes "4H,1D" آپدیت شد.
+```
+
+**تصمیم:**
+```text
+Phase179A failed target-readiness gates.
+Do not train D1/H4 candidates.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE179A_HIGHER_TIMEFRAME_COST_FEASIBILITY_RESULT.md` اضافه شد.
+- `docs/Phases/Phase179.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE179A_HIGHER_TIMEFRAME_COST_FEASIBILITY_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی، فقط diagnostic:**
+```text
+Phase180A — Higher-timeframe target failure attribution / candidate redesign decision
+```
+
+## 2026-10-01 — Phase180A: higher-timeframe target failure attribution built
+
+**درخواست اپراتور:** بعد از Phase179A، فاز 180 ساخته شود.
+
+**زمینه:**
+```text
+Phase179A:
+4H/1D cost feasibility improved.
+ready_candidates=0
+selected candidate=D1_R1_BK_MID_B20_10_H5
+selected_walkforward_pass_ratio=0.2
+higher_timeframe_feasibility_gate=0
+```
+
+**پیاده‌سازی:**
+- `scripts/audit_higher_timeframe_target_failure_attribution.py` اضافه شد.
+- GUI command جدید: `Audit higher-timeframe target failures`.
+- CommandKind جدید: `AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES`.
+- تست unit جدید: `tests/unit/ai/test_higher_timeframe_target_failure_attribution.py`.
+
+**کار فاز:**
+- خروجی Phase179A را می‌خواند.
+- timeframe labels را canonical می‌کند: `1/D1/1D → 1D` و `4/H4/4H → 4H`.
+- failure را بر اساس timeframe، candidate، fold و near-missها attribute می‌کند.
+- cost-feasibility را از target-readiness جدا می‌کند.
+- decision matrix می‌سازد و training/paper/live را blocked نگه می‌دارد.
+
+**خروجی‌ها:**
+```text
+run_logs\higher_timeframe_target_failure_attribution\latest.json
+latest.html
+latest_candidate_failures.csv
+latest_timeframe_summary.csv
+latest_fold_failures.csv
+latest_failure_reasons.csv
+latest_decision_matrix.csv
+latest_next_plan.csv
+```
+
+**تست/تأیید در sandbox:**
+```text
+python -m py_compile scripts/audit_higher_timeframe_target_failure_attribution.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_higher_timeframe_target_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_higher_timeframe_target_failure_attribution.py tests/unit/ai/test_higher_timeframe_cost_feasibility.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**اقدام بعدی مالک:**
+```text
+Dashboard → AI → Audit higher-timeframe target failures
+Then send run_logs\higher_timeframe_target_failure_attribution\latest.json
+```
+
+**وضعیت:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```

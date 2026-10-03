@@ -6157,6 +6157,609 @@ CommandField("temporal_filters", "Temporal filters", "96", kind="number"),
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.REPLAY_PIVOT_1H_LOCKED_CANDIDATE_WALK_FORWARD,
+            label="Replay 1H locked candidate walk-forward",
+            description=(
+                "Phase166A: replay the locked 1H fixed-spread breakout candidate across "
+                "rolling chronological folds to check anti-overfit stability before model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("policy_key", "Policy key", "BRK_D1_FAST"),
+                CommandField("side_mapping", "Side mapping", "breakout"),
+                CommandField("entry_delay_bars", "Entry delay", "1", kind="number"),
+                CommandField("recent_window_bars", "Recent window", "24", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("bracket_id", "Bracket id", "B15_10"),
+                CommandField("tp_atr", "TP ATR", "1.5", kind="number"),
+                CommandField("sl_atr", "SL ATR", "1.0", kind="number"),
+                CommandField("hold_bars", "Hold bars", "24", kind="number"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.2", kind="number"),
+                CommandField("stress_spreads", "Stress spreads", "0.2,0.5"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("train_min_trades", "Train min trades", "50", kind="number"),
+                CommandField("train_min_profit_factor", "Train min PF", "1.00", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.10", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.10", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_positive_month_ratio", "Min positive month ratio", "0.50", kind="number"),
+                CommandField("max_worst_month_loss", "Max worst month loss", "12", kind="number"),
+                CommandField("min_folds", "Min folds", "5", kind="number"),
+                CommandField("min_fold_pass_ratio", "Min fold pass ratio", "0.55", kind="number"),
+                CommandField("min_test_pass_ratio", "Min test pass ratio", "0.60", kind="number"),
+                CommandField("min_median_test_profit_factor", "Min median test PF", "1.05", kind="number"),
+                CommandField("min_aggregate_test_cash_pnl", "Min aggregate test PnL", "0", kind="number"),
+                CommandField("max_worst_test_drawdown", "Max worst test drawdown", "25", kind="number"),
+                CommandField("require_stress_pass", "Require stress pass", "0", kind="select", options=("0", "1")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_locked_candidate_walk_forward"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_PIVOT_1H_LOCKED_CANDIDATE_REGIME_FAILURES,
+            label="Audit 1H locked candidate regime failures",
+            description=(
+                "Phase167A: attribute why the locked 1H candidate failed walk-forward "
+                "by fold, ATR/spread regime, side, month and pre-declared diagnostic filters."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("policy_key", "Policy key", "BRK_D1_FAST"),
+                CommandField("side_mapping", "Side mapping", "breakout"),
+                CommandField("entry_delay_bars", "Entry delay", "1", kind="number"),
+                CommandField("recent_window_bars", "Recent window", "24", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("bracket_id", "Bracket id", "B15_10"),
+                CommandField("tp_atr", "TP ATR", "1.5", kind="number"),
+                CommandField("sl_atr", "SL ATR", "1.0", kind="number"),
+                CommandField("hold_bars", "Hold bars", "24", kind="number"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.2", kind="number"),
+                CommandField("stress_spreads", "Stress spreads", "0.2,0.5"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("diagnostic_filters", "Diagnostic filters", "none,min_atr_q50,min_atr_q75,buy_leg_only,sell_leg_only,max_spread_atr_0.05,max_spread_atr_0.10"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("train_min_trades", "Train min trades", "50", kind="number"),
+                CommandField("train_min_profit_factor", "Train min PF", "1.00", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.10", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.10", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_positive_month_ratio", "Min positive month ratio", "0.50", kind="number"),
+                CommandField("max_worst_month_loss", "Max worst month loss", "12", kind="number"),
+                CommandField("require_stress_pass", "Require stress pass", "0", kind="select", options=("0", "1")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_locked_candidate_regime_failures"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.REPLAY_PIVOT_1H_PREDECLARED_FILTER_CONFIRMATION,
+            label="Replay 1H predeclared filter confirmation",
+            description=(
+                "Phase168A: confirmation-only replay for the locked 1H candidate using only "
+                "the predeclared filters from Phase167A; no grid search and no model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("policy_key", "Policy key", "BRK_D1_FAST"),
+                CommandField("side_mapping", "Side mapping", "breakout"),
+                CommandField("entry_delay_bars", "Entry delay", "1", kind="number"),
+                CommandField("recent_window_bars", "Recent window", "24", kind="number"),
+                CommandField("pivot_zone_atr", "Pivot zone ATR", "0.05", kind="number"),
+                CommandField("top_position_threshold", "Top threshold", "0.85", kind="number"),
+                CommandField("bottom_position_threshold", "Bottom threshold", "0.15", kind="number"),
+                CommandField("exclude_both_zones", "Exclude both zones", "1", kind="select", options=("1", "0")),
+                CommandField("min_range_width_atr", "Min range width ATR", "1.0", kind="number"),
+                CommandField("max_range_width_atr", "Max range width ATR", "0", kind="number"),
+                CommandField("bracket_id", "Bracket id", "B15_10"),
+                CommandField("tp_atr", "TP ATR", "1.5", kind="number"),
+                CommandField("sl_atr", "SL ATR", "1.0", kind="number"),
+                CommandField("hold_bars", "Hold bars", "24", kind="number"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.2", kind="number"),
+                CommandField("stress_spreads", "Stress spreads", "0.2,0.5"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("filters", "Predeclared filters", "none,max_spread_atr_0.10,buy_leg_only,buy_leg_only+max_spread_atr_0.10"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("train_min_trades", "Train min trades", "50", kind="number"),
+                CommandField("train_min_profit_factor", "Train min PF", "1.00", kind="number"),
+                CommandField("validation_min_trades", "Validation min trades", "20", kind="number"),
+                CommandField("validation_min_profit_factor", "Validation min PF", "1.10", kind="number"),
+                CommandField("test_min_trades", "Test min trades", "20", kind="number"),
+                CommandField("test_min_profit_factor", "Test min PF", "1.10", kind="number"),
+                CommandField("max_validation_event_rate", "Max validation event rate", "0.35", kind="number"),
+                CommandField("max_test_event_rate", "Max test event rate", "0.35", kind="number"),
+                CommandField("min_positive_month_ratio", "Min positive month ratio", "0.50", kind="number"),
+                CommandField("max_worst_month_loss", "Max worst month loss", "12", kind="number"),
+                CommandField("min_folds", "Min folds", "5", kind="number"),
+                CommandField("min_fold_pass_ratio", "Min fold pass ratio", "0.55", kind="number"),
+                CommandField("min_test_pass_ratio", "Min test pass ratio", "0.60", kind="number"),
+                CommandField("min_median_test_profit_factor", "Min median test PF", "1.05", kind="number"),
+                CommandField("min_aggregate_test_cash_pnl", "Min aggregate test PnL", "0", kind="number"),
+                CommandField("max_worst_test_drawdown", "Max worst test drawdown", "25", kind="number"),
+                CommandField("require_stress_pass", "Require stress pass", "0", kind="select", options=("0", "1")),
+                CommandField("output_dir", "Output dir", "run_logs/pivot_1h_predeclared_filter_confirmation"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_BROKER_COST_REALITY_RESEARCH_RESET,
+            label="Audit broker cost reality / research reset",
+            description=(
+                "Phase169A: reset rejected pivot research lanes, summarize route decisions, "
+                "and audit broker cost assumptions before any new model or paper/live work."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "5M,1H"),
+                CommandField("m5_flat_path", "5M flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("h1_flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("fixed_spreads", "Fixed spreads", "0.2,0.5,1.0,1.5,2.0"),
+                CommandField("pct_spreads", "Percent spreads", "0.01,0.02,0.03,0.06"),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.12", kind="number"),
+                CommandField("spread_sample_path", "Broker spread sample path", ""),
+                CommandField("run_logs_root", "Run logs root", "run_logs"),
+                CommandField("output_dir", "Output dir", "run_logs/research_lane_reset_cost_audit"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.CAPTURE_BROKER_SPREAD_COST_PIPELINE,
+            label="Capture broker spread / cost pipeline",
+            description=(
+                "Phase170A: capture or import real broker bid/ask spread samples and "
+                "summarize spread-by-session plus spread/ATR cost by timeframe."
+            ),
+            fields=[
+                CommandField("source_mode", "Source mode", "mt5", kind="select", options=("mt5", "csv")),
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("broker_symbol", "Broker symbol", ""),
+                CommandField("sample_path", "CSV/parquet sample path", ""),
+                CommandField("duration_seconds", "Capture duration seconds", "600", kind="number"),
+                CommandField("interval_seconds", "Interval seconds", "5", kind="number"),
+                CommandField("max_samples", "Max samples", "0", kind="number"),
+                CommandField("min_samples", "Min samples", "20", kind="number"),
+                CommandField("mt5_terminal_path", "MT5 terminal path", ""),
+                CommandField("mt5_login", "MT5 login", "0", kind="number"),
+                CommandField("mt5_server", "MT5 server", ""),
+                CommandField("mt5_password_env", "MT5 password env var", ""),
+                CommandField("point", "Point", "0.01", kind="number"),
+                CommandField("digits", "Digits", "2", kind="number"),
+                CommandField("timeframes", "Timeframes", "5M,1H"),
+                CommandField("m5_flat_path", "5M flat path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet"),
+                CommandField("h1_flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.12", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/broker_spread_capture"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "30", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX,
+            label="Audit research route redesign matrix",
+            description=(
+                "Phase171A: convert rejected pivot-lane evidence and broker-cost reality "
+                "into an owner-facing matrix for selecting the next research route."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("phase170_path", "Phase170 result path", "run_logs/broker_spread_capture/latest.json"),
+                CommandField("phase168_path", "Phase168 result path", "run_logs/pivot_1h_predeclared_filter_confirmation/latest.json"),
+                CommandField("phase166_path", "Phase166 result path", "run_logs/pivot_1h_locked_candidate_walk_forward/latest.json"),
+                CommandField("phase162_path", "Phase162 result path", "run_logs/pivot_bottom_buy_execution_gap/latest.json"),
+                CommandField("assume_documented_route_decisions", "Assume documented decisions", "1", kind="select", options=("1", "0")),
+                CommandField("manual_broker_spread_median", "Manual broker spread median", "0.39", kind="number"),
+                CommandField("manual_broker_spread_p90", "Manual broker spread p90", "0.40", kind="number"),
+                CommandField("manual_broker_spread_p99", "Manual broker spread p99", "0.41", kind="number"),
+                CommandField("manual_h1_median_spread_atr", "Manual 1H median spread/ATR", "0.08347", kind="number"),
+                CommandField("max_production_risk", "Risk strictness", "strict", kind="select", options=("strict", "normal")),
+                CommandField("output_dir", "Output dir", "run_logs/research_route_redesign_decision_matrix"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_FAMILY,
+            label="Audit broker-cost-aware 1H target family",
+            description=(
+                "Phase172A: audit new broker-cost-aware 1H target families under fixed spread "
+                "around the captured broker cost before any model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("families", "Target families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA4_REV_MID:cost_reversal_mid:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("stress_spread_value", "Stress spread value", "0.5", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("initial_capital", "Initial capital", "100", kind="number"),
+                CommandField("risk_per_trade", "Risk per trade", "0.01", kind="number"),
+                CommandField("min_train_events", "Min train events", "100", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "20", kind="number"),
+                CommandField("min_test_events", "Min test events", "20", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.10", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.70", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.20", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "5", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/broker_cost_aware_1h_target_family"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY,
+            label="Audit broker-cost-aware 1H target learnability",
+            description=(
+                "Phase173A: build broker-cost-aware 1H target datasets and test simple "
+                "learnability baselines before any model-training phase."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("families", "Target families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("min_train_events", "Min train events", "100", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "20", kind="number"),
+                CommandField("min_test_events", "Min test events", "20", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.10", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.70", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.20", kind="number"),
+                CommandField("min_ap_lift", "Min AP lift", "0.03", kind="number"),
+                CommandField("min_balanced_accuracy", "Min balanced acc", "0.53", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "5", kind="number"),
+                CommandField("max_dataset_rows", "Max dataset CSV rows", "20000", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/broker_cost_aware_1h_target_learnability"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_HYBRID_REGIME_FIRST_TARGET_REDESIGN,
+            label="Audit hybrid/regime-first target redesign",
+            description=(
+                "Phase174A: after Phase173A failed, test predeclared broker-cost-aware "
+                "1H regime/side/session target subsets before any model-training phase."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("families", "Target families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48"),
+                CommandField("regime_rules", "Regime rules", "ALL;BUY_ONLY;SELL_ONLY;TOP_ZONE;BOTTOM_ZONE;SPREAD_ATR_LE_008;SPREAD_ATR_LE_010;ATR_GE_Q50;ATR_GE_Q75;ATR_LE_Q50;WIDTH_GE_Q50;WIDTH_GE_Q75;ACTIVE_UTC_07_17;ASIA_UTC_00_06;RET24_POS;RET24_NEG;MOMENTUM_ALIGNED;MOMENTUM_COUNTER;BUY_MOMENTUM_ALIGNED;SELL_MOMENTUM_ALIGNED;BUY_SPREAD_ATR_LE_010;SELL_SPREAD_ATR_LE_010"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("min_train_events", "Min train events", "80", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "20", kind="number"),
+                CommandField("min_test_events", "Min test events", "20", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.10", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.70", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.20", kind="number"),
+                CommandField("min_ap_lift", "Min AP lift", "0.03", kind="number"),
+                CommandField("min_balanced_accuracy", "Min balanced acc", "0.53", kind="number"),
+                CommandField("min_train_independent_pf", "Min train independent PF", "0.95", kind="number"),
+                CommandField("min_validation_independent_pf", "Min validation independent PF", "1.00", kind="number"),
+                CommandField("min_test_independent_pf", "Min test independent PF", "1.00", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "5", kind="number"),
+                CommandField("max_dataset_rows", "Max dataset CSV rows", "20000", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/hybrid_regime_first_target_redesign"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_HYBRID_REGIME_WALKFORWARD_FAILURES,
+            label="Audit hybrid/regime walk-forward failures",
+            description=(
+                "Phase175A: consume Phase174A output and attribute why broker-cost-aware "
+                "1H regime candidates failed walk-forward before any redesign or training."
+            ),
+            fields=[
+                CommandField("phase174_path", "Phase174 result path", "run_logs/hybrid_regime_first_target_redesign/latest.json"),
+                CommandField("min_train_events", "Min train events", "80", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "20", kind="number"),
+                CommandField("min_test_events", "Min test events", "20", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.10", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.70", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.20", kind="number"),
+                CommandField("min_ap_lift", "Min AP lift", "0.03", kind="number"),
+                CommandField("min_balanced_accuracy", "Min balanced acc", "0.53", kind="number"),
+                CommandField("min_train_independent_pf", "Min train independent PF", "0.95", kind="number"),
+                CommandField("min_validation_independent_pf", "Min validation independent PF", "1.00", kind="number"),
+                CommandField("min_test_independent_pf", "Min test independent PF", "1.00", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "5", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/hybrid_regime_walkforward_failure_attribution"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE,
+            label="Audit target-definition walk-forward root cause",
+            description=(
+                "Phase176A: consume Phase174A/175A outputs and attribute target-definition "
+                "root causes before any future redesign or model-training phase."
+            ),
+            fields=[
+                CommandField("phase174_path", "Phase174 result path", "run_logs/hybrid_regime_first_target_redesign/latest.json"),
+                CommandField("phase175_path", "Phase175 result path", "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json"),
+                CommandField("output_dir", "Output dir", "run_logs/target_definition_walkforward_root_cause_redesign"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATES,
+            label="Audit walk-forward target-family redesign candidates",
+            description=(
+                "Phase177A: audit a predeclared set of broker-cost-aware 1H target-family "
+                "redesign candidates after current target definitions were rejected."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField(
+                    "dataset",
+                    "Dataset",
+                    "1H" if "1H" in datasets else (datasets[0] if datasets else "1H"),
+                    kind="select",
+                    options=tuple(datasets),
+                ),
+                CommandField("flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("families", "Redesign families", "R1_FAST_MID_B15_10_H12:fast_breakout_mid_12:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:12;R2_FAST_MID_B12_08_H12:fast_breakout_mid_compact:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.2:0.8:12;R3_STRICT_B15_10_H12:fast_breakout_strict_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.5:1.0:12;R4_STRICT_B10_075_H12:strict_asym_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12;R5_WIDE_B20_10_H24:wide_breakout_shorter_hold:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;R6_WIDE_B15_10_H24:wide_breakout_compact:breakout:1:48:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24;R7_REV_MID_B10_075_H12:reversal_mid_fast:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.0:0.75:12;R8_REV_STRICT_B10_075_H12:reversal_strict_fast:reversal:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "24", kind="number"),
+                CommandField("fold_train_bars", "Fold train bars", "18000", kind="number"),
+                CommandField("fold_validation_bars", "Fold validation bars", "4000", kind="number"),
+                CommandField("fold_test_bars", "Fold test bars", "4000", kind="number"),
+                CommandField("fold_step_bars", "Fold step bars", "4000", kind="number"),
+                CommandField("max_folds", "Max folds", "0", kind="number"),
+                CommandField("min_train_events", "Min train events", "100", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "25", kind="number"),
+                CommandField("min_test_events", "Min test events", "25", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.12", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.68", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.20", kind="number"),
+                CommandField("min_ap_lift", "Min AP lift", "0.03", kind="number"),
+                CommandField("min_balanced_accuracy", "Min balanced acc", "0.53", kind="number"),
+                CommandField("min_train_independent_pf", "Min train independent PF", "1.00", kind="number"),
+                CommandField("min_validation_independent_pf", "Min validation independent PF", "1.00", kind="number"),
+                CommandField("min_test_independent_pf", "Min test independent PF", "1.00", kind="number"),
+                CommandField("min_train_mean_atr_score", "Min train mean ATR score", "0", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "5", kind="number"),
+                CommandField("max_events_sample", "Max event sample rows", "20000", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/walkforward_target_family_redesign_candidates"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET,
+            label="Audit post-failure research route reset",
+            description=(
+                "Phase178A: freeze failed Phase173A-177A 1H pivot-target lane and build "
+                "an owner-facing decision matrix for the next research route."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("phase170_path", "Phase170 result path", "run_logs/broker_spread_capture/latest.json"),
+                CommandField("phase173_path", "Phase173 result path", "run_logs/broker_cost_aware_1h_target_learnability/latest.json"),
+                CommandField("phase174_path", "Phase174 result path", "run_logs/hybrid_regime_first_target_redesign/latest.json"),
+                CommandField("phase175_path", "Phase175 result path", "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json"),
+                CommandField("phase176_path", "Phase176 result path", "run_logs/target_definition_walkforward_root_cause_redesign/latest.json"),
+                CommandField("phase177_path", "Phase177 result path", "run_logs/walkforward_target_family_redesign_candidates/latest.json"),
+                CommandField("assume_documented_failures", "Assume documented failures", "1", kind="select", options=("1", "0")),
+                CommandField("manual_broker_spread_median", "Manual broker spread median", "0.39", kind="number"),
+                CommandField("manual_broker_spread_p90", "Manual broker spread p90", "0.40", kind="number"),
+                CommandField("manual_broker_spread_p99", "Manual broker spread p99", "0.41", kind="number"),
+                CommandField("manual_h1_median_spread_atr", "Manual 1H median spread/ATR", "0.08347", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/post_failure_research_route_reset"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY,
+            label="Audit 4H/1D broker-cost feasibility",
+            description=(
+                "Phase179A: audit higher-timeframe 4H/1D broker-cost feasibility and "
+                "target-family pre-audit before any model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "4H,1D"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "10", kind="number"),
+                CommandField("max_folds", "Max folds", "6", kind="number"),
+                CommandField("min_train_events", "Min train events", "80", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "15", kind="number"),
+                CommandField("min_test_events", "Min test events", "15", kind="number"),
+                CommandField("min_positive_rate", "Min positive rate", "0.10", kind="number"),
+                CommandField("max_positive_rate", "Max positive rate", "0.70", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.25", kind="number"),
+                CommandField("min_ap_lift", "Min AP lift", "0.02", kind="number"),
+                CommandField("min_balanced_accuracy", "Min balanced acc", "0.52", kind="number"),
+                CommandField("min_train_independent_pf", "Min train independent PF", "1.00", kind="number"),
+                CommandField("min_validation_independent_pf", "Min validation independent PF", "1.00", kind="number"),
+                CommandField("min_test_independent_pf", "Min test independent PF", "1.00", kind="number"),
+                CommandField("min_train_mean_atr_score", "Min train mean ATR score", "0", kind="number"),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.08", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "4", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/higher_timeframe_cost_feasibility"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES,
+            label="Audit higher-timeframe target failures",
+            description=(
+                "Phase180A: consume Phase179A output and attribute why higher-timeframe "
+                "4H/1D targets are cost-feasible but not ready for training."
+            ),
+            fields=[
+                CommandField("phase179_path", "Phase179 result path", "run_logs/higher_timeframe_cost_feasibility/latest.json"),
+                CommandField("output_dir", "Output dir", "run_logs/higher_timeframe_target_failure_attribution"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
             label="Validate production hybrid stack",
             description=(
@@ -6998,6 +7601,51 @@ class CommandHandlers:
                 ),
                 CommandKind.REPLAY_PIVOT_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN: (
                     accounts.replay_pivot_1h_fixed_spread_candidate_lockdown
+                ),
+                CommandKind.REPLAY_PIVOT_1H_LOCKED_CANDIDATE_WALK_FORWARD: (
+                    accounts.replay_pivot_1h_locked_candidate_walk_forward
+                ),
+                CommandKind.AUDIT_PIVOT_1H_LOCKED_CANDIDATE_REGIME_FAILURES: (
+                    accounts.audit_pivot_1h_locked_candidate_regime_failures
+                ),
+                CommandKind.REPLAY_PIVOT_1H_PREDECLARED_FILTER_CONFIRMATION: (
+                    accounts.replay_pivot_1h_predeclared_filter_confirmation
+                ),
+                CommandKind.AUDIT_BROKER_COST_REALITY_RESEARCH_RESET: (
+                    accounts.audit_broker_cost_reality_research_reset
+                ),
+                CommandKind.CAPTURE_BROKER_SPREAD_COST_PIPELINE: (
+                    accounts.capture_broker_spread_cost_pipeline
+                ),
+                CommandKind.AUDIT_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX: (
+                    accounts.audit_research_route_redesign_decision_matrix
+                ),
+                CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_FAMILY: (
+                    accounts.audit_broker_cost_aware_1h_target_family
+                ),
+                CommandKind.AUDIT_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY: (
+                    accounts.audit_broker_cost_aware_1h_target_learnability
+                ),
+                CommandKind.AUDIT_HYBRID_REGIME_FIRST_TARGET_REDESIGN: (
+                    accounts.audit_hybrid_regime_first_target_redesign
+                ),
+                CommandKind.AUDIT_HYBRID_REGIME_WALKFORWARD_FAILURES: (
+                    accounts.audit_hybrid_regime_walkforward_failures
+                ),
+                CommandKind.AUDIT_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE: (
+                    accounts.audit_target_definition_walkforward_root_cause
+                ),
+                CommandKind.AUDIT_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATES: (
+                    accounts.audit_walkforward_target_family_redesign_candidates
+                ),
+                CommandKind.AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET: (
+                    accounts.audit_post_failure_research_route_reset
+                ),
+                CommandKind.AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY: (
+                    accounts.audit_higher_timeframe_cost_feasibility
+                ),
+                CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES: (
+                    accounts.audit_higher_timeframe_target_failures
                 ),
                 CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
                     accounts.validate_production_hybrid_stack
@@ -13264,6 +13912,627 @@ class AccountCommandHandlers(CommandHandlers):
             "Ran Phase165A 1H fixed-spread candidate lockdown replay",
             started,
             timeout=max(command.integer("timeout_minutes", 120), 5) * 60,
+        )
+
+    def replay_pivot_1h_locked_candidate_walk_forward(self, command: Command) -> CommandResult:
+        """Run Phase166A 1H locked candidate walk-forward replay."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/replay_pivot_1h_locked_candidate_walk_forward.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--policy-key", command.text("policy_key", "BRK_D1_FAST").strip() or "BRK_D1_FAST",
+                "--side-mapping", command.text("side_mapping", "breakout").strip() or "breakout",
+                "--entry-delay-bars", str(max(command.integer("entry_delay_bars", 1), 0)),
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 24), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--bracket-id", command.text("bracket_id", "B15_10").strip() or "B15_10",
+                "--tp-atr", str(max(command.number("tp_atr", 1.5), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 1.0), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 24), 1)),
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.2), 0.0)),
+                "--stress-spreads", command.text("stress_spreads", "0.2,0.5").strip() or "0.2,0.5",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--train-min-trades", str(max(command.integer("train_min_trades", 50), 1)),
+                "--train-min-profit-factor", str(max(command.number("train_min_profit_factor", 1.0), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.10), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.10), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-positive-month-ratio", str(max(command.number("min_positive_month_ratio", 0.50), 0.0)),
+                "--max-worst-month-loss", str(max(command.number("max_worst_month_loss", 12.0), 0.0)),
+                "--min-folds", str(max(command.integer("min_folds", 5), 1)),
+                "--min-fold-pass-ratio", str(max(command.number("min_fold_pass_ratio", 0.55), 0.0)),
+                "--min-test-pass-ratio", str(max(command.number("min_test_pass_ratio", 0.60), 0.0)),
+                "--min-median-test-profit-factor", str(max(command.number("min_median_test_profit_factor", 1.05), 0.0)),
+                "--min-aggregate-test-cash-pnl", str(command.number("min_aggregate_test_cash_pnl", 0.0)),
+                "--max-worst-test-drawdown", str(max(command.number("max_worst_test_drawdown", 25.0), 0.0)),
+                "--require-stress-pass", "1" if command.text("require_stress_pass", "0").strip() == "1" else "0",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_locked_candidate_walk_forward").strip() or "run_logs/pivot_1h_locked_candidate_walk_forward",
+                "--report-title", command.text("report_title", "Phase166A 1H locked candidate walk-forward replay").strip() or "Phase166A 1H locked candidate walk-forward replay",
+            ],
+            "Ran Phase166A 1H locked candidate walk-forward replay",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_pivot_1h_locked_candidate_regime_failures(self, command: Command) -> CommandResult:
+        """Run Phase167A 1H locked candidate regime/failure attribution."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_pivot_1h_locked_candidate_regime_failures.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--policy-key", command.text("policy_key", "BRK_D1_FAST").strip() or "BRK_D1_FAST",
+                "--side-mapping", command.text("side_mapping", "breakout").strip() or "breakout",
+                "--entry-delay-bars", str(max(command.integer("entry_delay_bars", 1), 0)),
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 24), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--bracket-id", command.text("bracket_id", "B15_10").strip() or "B15_10",
+                "--tp-atr", str(max(command.number("tp_atr", 1.5), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 1.0), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 24), 1)),
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.2), 0.0)),
+                "--stress-spreads", command.text("stress_spreads", "0.2,0.5").strip() or "0.2,0.5",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--diagnostic-filters", command.text("diagnostic_filters", "none,min_atr_q50,min_atr_q75,buy_leg_only,sell_leg_only,max_spread_atr_0.05,max_spread_atr_0.10").strip() or "none,min_atr_q50,min_atr_q75,buy_leg_only,sell_leg_only,max_spread_atr_0.05,max_spread_atr_0.10",
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--train-min-trades", str(max(command.integer("train_min_trades", 50), 1)),
+                "--train-min-profit-factor", str(max(command.number("train_min_profit_factor", 1.0), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.10), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.10), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-positive-month-ratio", str(max(command.number("min_positive_month_ratio", 0.50), 0.0)),
+                "--max-worst-month-loss", str(max(command.number("max_worst_month_loss", 12.0), 0.0)),
+                "--require-stress-pass", "1" if command.text("require_stress_pass", "0").strip() == "1" else "0",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_locked_candidate_regime_failures").strip() or "run_logs/pivot_1h_locked_candidate_regime_failures",
+                "--report-title", command.text("report_title", "Phase167A 1H locked candidate regime failure attribution").strip() or "Phase167A 1H locked candidate regime failure attribution",
+            ],
+            "Audited Phase167A 1H locked candidate regime failures",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def replay_pivot_1h_predeclared_filter_confirmation(self, command: Command) -> CommandResult:
+        """Run Phase168A 1H predeclared filter confirmation replay."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/replay_pivot_1h_predeclared_filter_confirmation.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--policy-key", command.text("policy_key", "BRK_D1_FAST").strip() or "BRK_D1_FAST",
+                "--side-mapping", command.text("side_mapping", "breakout").strip() or "breakout",
+                "--entry-delay-bars", str(max(command.integer("entry_delay_bars", 1), 0)),
+                "--recent-window-bars", str(max(command.integer("recent_window_bars", 24), 1)),
+                "--pivot-zone-atr", str(max(command.number("pivot_zone_atr", 0.05), 0.0)),
+                "--top-position-threshold", str(command.number("top_position_threshold", 0.85)),
+                "--bottom-position-threshold", str(command.number("bottom_position_threshold", 0.15)),
+                "--exclude-both-zones", "1" if command.text("exclude_both_zones", "1").strip() != "0" else "0",
+                "--min-range-width-atr", str(max(command.number("min_range_width_atr", 1.0), 0.0)),
+                "--max-range-width-atr", str(max(command.number("max_range_width_atr", 0.0), 0.0)),
+                "--bracket-id", command.text("bracket_id", "B15_10").strip() or "B15_10",
+                "--tp-atr", str(max(command.number("tp_atr", 1.5), 0.01)),
+                "--sl-atr", str(max(command.number("sl_atr", 1.0), 0.01)),
+                "--hold-bars", str(max(command.integer("hold_bars", 24), 1)),
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.2), 0.0)),
+                "--stress-spreads", command.text("stress_spreads", "0.2,0.5").strip() or "0.2,0.5",
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--filters", command.text("filters", "none,max_spread_atr_0.10,buy_leg_only,buy_leg_only+max_spread_atr_0.10").strip() or "none,max_spread_atr_0.10,buy_leg_only,buy_leg_only+max_spread_atr_0.10",
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--train-min-trades", str(max(command.integer("train_min_trades", 50), 1)),
+                "--train-min-profit-factor", str(max(command.number("train_min_profit_factor", 1.0), 0.0)),
+                "--validation-min-trades", str(max(command.integer("validation_min_trades", 20), 1)),
+                "--validation-min-profit-factor", str(max(command.number("validation_min_profit_factor", 1.10), 0.0)),
+                "--test-min-trades", str(max(command.integer("test_min_trades", 20), 1)),
+                "--test-min-profit-factor", str(max(command.number("test_min_profit_factor", 1.10), 0.0)),
+                "--max-validation-event-rate", str(max(command.number("max_validation_event_rate", 0.35), 0.0)),
+                "--max-test-event-rate", str(max(command.number("max_test_event_rate", 0.35), 0.0)),
+                "--min-positive-month-ratio", str(max(command.number("min_positive_month_ratio", 0.50), 0.0)),
+                "--max-worst-month-loss", str(max(command.number("max_worst_month_loss", 12.0), 0.0)),
+                "--min-folds", str(max(command.integer("min_folds", 5), 1)),
+                "--min-fold-pass-ratio", str(max(command.number("min_fold_pass_ratio", 0.55), 0.0)),
+                "--min-test-pass-ratio", str(max(command.number("min_test_pass_ratio", 0.60), 0.0)),
+                "--min-median-test-profit-factor", str(max(command.number("min_median_test_profit_factor", 1.05), 0.0)),
+                "--min-aggregate-test-cash-pnl", str(command.number("min_aggregate_test_cash_pnl", 0.0)),
+                "--max-worst-test-drawdown", str(max(command.number("max_worst_test_drawdown", 25.0), 0.0)),
+                "--require-stress-pass", "1" if command.text("require_stress_pass", "0").strip() == "1" else "0",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/pivot_1h_predeclared_filter_confirmation").strip() or "run_logs/pivot_1h_predeclared_filter_confirmation",
+                "--report-title", command.text("report_title", "Phase168A 1H predeclared filter confirmation replay").strip() or "Phase168A 1H predeclared filter confirmation replay",
+            ],
+            "Ran Phase168A 1H predeclared filter confirmation replay",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_broker_cost_reality_research_reset(self, command: Command) -> CommandResult:
+        """Run Phase169A broker cost reality / research-lane reset audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        extra_args = []
+        spread_sample_path = command.text("spread_sample_path", "").strip()
+        if spread_sample_path:
+            extra_args.extend(["--spread-sample-path", spread_sample_path])
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_broker_cost_reality_research_reset.py",
+                "--symbol", symbol,
+                "--timeframes", command.text("timeframes", "5M,1H").strip() or "5M,1H",
+                "--m5-flat-path", command.text("m5_flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--h1-flat-path", command.text("h1_flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+                "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+                "--fixed-spreads", command.text("fixed_spreads", "0.2,0.5,1.0,1.5,2.0").strip() or "0.2,0.5,1.0,1.5,2.0",
+                "--pct-spreads", command.text("pct_spreads", "0.01,0.02,0.03,0.06").strip() or "0.01,0.02,0.03,0.06",
+                "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.12), 0.0)),
+                "--run-logs-root", command.text("run_logs_root", "run_logs").strip() or "run_logs",
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/research_lane_reset_cost_audit").strip() or "run_logs/research_lane_reset_cost_audit",
+                "--report-title", command.text("report_title", "Phase169A broker cost reality and research lane reset audit").strip() or "Phase169A broker cost reality and research lane reset audit",
+                *extra_args,
+            ],
+            "Audited Phase169A broker cost reality and research reset",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def capture_broker_spread_cost_pipeline(self, command: Command) -> CommandResult:
+        """Run Phase170A broker spread capture / cost data pipeline."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        extra_args = []
+        broker_symbol = command.text("broker_symbol", "").strip()
+        if broker_symbol:
+            extra_args.extend(["--broker-symbol", broker_symbol])
+        sample_path = command.text("sample_path", "").strip()
+        if sample_path:
+            extra_args.extend(["--sample-path", sample_path])
+        mt5_terminal_path = command.text("mt5_terminal_path", "").strip()
+        if mt5_terminal_path:
+            extra_args.extend(["--mt5-terminal-path", mt5_terminal_path])
+        mt5_server = command.text("mt5_server", "").strip()
+        if mt5_server:
+            extra_args.extend(["--mt5-server", mt5_server])
+        mt5_password_env = command.text("mt5_password_env", "").strip()
+        if mt5_password_env:
+            extra_args.extend(["--mt5-password-env", mt5_password_env])
+        return self._run_script(
+            command,
+            [
+                "scripts/capture_broker_spread_cost_pipeline.py",
+                "--source-mode", command.text("source_mode", "mt5").strip().lower() or "mt5",
+                "--symbol", symbol,
+                "--duration-seconds", str(max(command.number("duration_seconds", 600.0), 1.0)),
+                "--interval-seconds", str(max(command.number("interval_seconds", 5.0), 0.1)),
+                "--max-samples", str(max(command.integer("max_samples", 0), 0)),
+                "--min-samples", str(max(command.integer("min_samples", 20), 1)),
+                "--mt5-login", str(max(command.integer("mt5_login", 0), 0)),
+                "--point", str(max(command.number("point", 0.01), 0.00000001)),
+                "--digits", str(max(command.integer("digits", 2), 0)),
+                "--timeframes", command.text("timeframes", "5M,1H").strip() or "5M,1H",
+                "--m5-flat-path", command.text("m5_flat_path", "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet").strip() or "datasets/processed/XAUUSD/5M/pivot_pattern_sequence_flat_latest.parquet",
+                "--h1-flat-path", command.text("h1_flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+                "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+                "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.12), 0.0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/broker_spread_capture").strip() or "run_logs/broker_spread_capture",
+                "--report-title", command.text("report_title", "Phase170A broker spread capture / cost data pipeline").strip() or "Phase170A broker spread capture / cost data pipeline",
+                *extra_args,
+            ],
+            "Ran Phase170A broker spread capture / cost pipeline",
+            started,
+            timeout=max(command.integer("timeout_minutes", 30), 5) * 60,
+        )
+
+    def audit_research_route_redesign_decision_matrix(self, command: Command) -> CommandResult:
+        """Run Phase171A research route redesign decision matrix."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_research_route_redesign_decision_matrix.py",
+                "--symbol", symbol,
+                "--phase170-path", command.text("phase170_path", "run_logs/broker_spread_capture/latest.json").strip() or "run_logs/broker_spread_capture/latest.json",
+                "--phase168-path", command.text("phase168_path", "run_logs/pivot_1h_predeclared_filter_confirmation/latest.json").strip() or "run_logs/pivot_1h_predeclared_filter_confirmation/latest.json",
+                "--phase166-path", command.text("phase166_path", "run_logs/pivot_1h_locked_candidate_walk_forward/latest.json").strip() or "run_logs/pivot_1h_locked_candidate_walk_forward/latest.json",
+                "--phase162-path", command.text("phase162_path", "run_logs/pivot_bottom_buy_execution_gap/latest.json").strip() or "run_logs/pivot_bottom_buy_execution_gap/latest.json",
+                "--assume-documented-route-decisions", "1" if command.text("assume_documented_route_decisions", "1").strip() != "0" else "0",
+                "--manual-broker-spread-median", str(max(command.number("manual_broker_spread_median", 0.39), 0.0)),
+                "--manual-broker-spread-p90", str(max(command.number("manual_broker_spread_p90", 0.40), 0.0)),
+                "--manual-broker-spread-p99", str(max(command.number("manual_broker_spread_p99", 0.41), 0.0)),
+                "--manual-h1-median-spread-atr", str(max(command.number("manual_h1_median_spread_atr", 0.08347), 0.0)),
+                "--max-production-risk", command.text("max_production_risk", "strict").strip().lower() or "strict",
+                "--output-dir", command.text("output_dir", "run_logs/research_route_redesign_decision_matrix").strip() or "run_logs/research_route_redesign_decision_matrix",
+                "--report-title", command.text("report_title", "Phase171A research route redesign decision matrix").strip() or "Phase171A research route redesign decision matrix",
+            ],
+            "Audited Phase171A research route redesign decision matrix",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_broker_cost_aware_1h_target_family(self, command: Command) -> CommandResult:
+        """Run Phase172A broker-cost-aware 1H target-family audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_broker_cost_aware_1h_target_family.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--families", command.text("families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA4_REV_MID:cost_reversal_mid:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24").strip() or "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA4_REV_MID:cost_reversal_mid:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24",
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+                "--stress-spread-value", str(max(command.number("stress_spread_value", 0.5), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--initial-capital", str(max(command.number("initial_capital", 100.0), 0.01)),
+                "--risk-per-trade", str(max(command.number("risk_per_trade", 0.01), 0.0)),
+                "--min-train-events", str(max(command.integer("min_train_events", 100), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 20), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 20), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.10), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.70), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.20), 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 5), 1)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/broker_cost_aware_1h_target_family").strip() or "run_logs/broker_cost_aware_1h_target_family",
+                "--report-title", command.text("report_title", "Phase172A broker-cost-aware 1H target-family design audit").strip() or "Phase172A broker-cost-aware 1H target-family design audit",
+            ],
+            "Audited Phase172A broker-cost-aware 1H target family",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_broker_cost_aware_1h_target_learnability(self, command: Command) -> CommandResult:
+        """Run Phase173A broker-cost-aware 1H target learnability audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_broker_cost_aware_1h_target_learnability.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--families", command.text("families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48").strip() or "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48",
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--min-train-events", str(max(command.integer("min_train_events", 100), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 20), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 20), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.10), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.70), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.20), 0.0)),
+                "--min-ap-lift", str(max(command.number("min_ap_lift", 0.03), 0.0)),
+                "--min-balanced-accuracy", str(max(command.number("min_balanced_accuracy", 0.53), 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 5), 1)),
+                "--max-dataset-rows", str(max(command.integer("max_dataset_rows", 20000), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/broker_cost_aware_1h_target_learnability").strip() or "run_logs/broker_cost_aware_1h_target_learnability",
+                "--report-title", command.text("report_title", "Phase173A broker-cost-aware 1H target learnability audit").strip() or "Phase173A broker-cost-aware 1H target learnability audit",
+            ],
+            "Audited Phase173A broker-cost-aware 1H target learnability",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_hybrid_regime_first_target_redesign(self, command: Command) -> CommandResult:
+        """Run Phase174A hybrid/regime-first target redesign audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_hybrid_regime_first_target_redesign.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--families", command.text("families", "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48").strip() or "CA1_BRK_MID:cost_breakout_mid:breakout:1:24:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;CA3_BRK_STRICT:cost_breakout_strict:breakout:1:24:0.05:0.90:0.10:1:1.0:0:2.0:1.0:24;CA2_BRK_WIDE:cost_breakout_wide:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.5:1.25:48",
+                "--regime-rules", command.text("regime_rules", "ALL;BUY_ONLY;SELL_ONLY;TOP_ZONE;BOTTOM_ZONE;SPREAD_ATR_LE_008;SPREAD_ATR_LE_010;ATR_GE_Q50;ATR_GE_Q75;ATR_LE_Q50;WIDTH_GE_Q50;WIDTH_GE_Q75;ACTIVE_UTC_07_17;ASIA_UTC_00_06;RET24_POS;RET24_NEG;MOMENTUM_ALIGNED;MOMENTUM_COUNTER;BUY_MOMENTUM_ALIGNED;SELL_MOMENTUM_ALIGNED;BUY_SPREAD_ATR_LE_010;SELL_SPREAD_ATR_LE_010").strip() or "ALL;BUY_ONLY;SELL_ONLY;TOP_ZONE;BOTTOM_ZONE;SPREAD_ATR_LE_008;SPREAD_ATR_LE_010;ATR_GE_Q50;ATR_GE_Q75;ATR_LE_Q50;WIDTH_GE_Q50;WIDTH_GE_Q75;ACTIVE_UTC_07_17;ASIA_UTC_00_06;RET24_POS;RET24_NEG;MOMENTUM_ALIGNED;MOMENTUM_COUNTER;BUY_MOMENTUM_ALIGNED;SELL_MOMENTUM_ALIGNED;BUY_SPREAD_ATR_LE_010;SELL_SPREAD_ATR_LE_010",
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--min-train-events", str(max(command.integer("min_train_events", 80), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 20), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 20), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.10), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.70), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.20), 0.0)),
+                "--min-ap-lift", str(max(command.number("min_ap_lift", 0.03), 0.0)),
+                "--min-balanced-accuracy", str(max(command.number("min_balanced_accuracy", 0.53), 0.0)),
+                "--min-train-independent-pf", str(max(command.number("min_train_independent_pf", 0.95), 0.0)),
+                "--min-validation-independent-pf", str(max(command.number("min_validation_independent_pf", 1.00), 0.0)),
+                "--min-test-independent-pf", str(max(command.number("min_test_independent_pf", 1.00), 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 5), 1)),
+                "--max-dataset-rows", str(max(command.integer("max_dataset_rows", 20000), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/hybrid_regime_first_target_redesign").strip() or "run_logs/hybrid_regime_first_target_redesign",
+                "--report-title", command.text("report_title", "Phase174A hybrid/regime-first target redesign audit").strip() or "Phase174A hybrid/regime-first target redesign audit",
+            ],
+            "Audited Phase174A hybrid/regime-first target redesign",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_hybrid_regime_walkforward_failures(self, command: Command) -> CommandResult:
+        """Run Phase175A hybrid/regime walk-forward failure attribution audit."""
+        started = time.monotonic()
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_hybrid_regime_walkforward_failure_attribution.py",
+                "--phase174-path", command.text("phase174_path", "run_logs/hybrid_regime_first_target_redesign/latest.json").strip() or "run_logs/hybrid_regime_first_target_redesign/latest.json",
+                "--min-train-events", str(max(command.integer("min_train_events", 80), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 20), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 20), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.10), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.70), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.20), 0.0)),
+                "--min-ap-lift", str(max(command.number("min_ap_lift", 0.03), 0.0)),
+                "--min-balanced-accuracy", str(max(command.number("min_balanced_accuracy", 0.53), 0.0)),
+                "--min-train-independent-pf", str(max(command.number("min_train_independent_pf", 0.95), 0.0)),
+                "--min-validation-independent-pf", str(max(command.number("min_validation_independent_pf", 1.00), 0.0)),
+                "--min-test-independent-pf", str(max(command.number("min_test_independent_pf", 1.00), 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 5), 1)),
+                "--output-dir", command.text("output_dir", "run_logs/hybrid_regime_walkforward_failure_attribution").strip() or "run_logs/hybrid_regime_walkforward_failure_attribution",
+                "--report-title", command.text("report_title", "Phase175A hybrid/regime walk-forward failure attribution audit").strip() or "Phase175A hybrid/regime walk-forward failure attribution audit",
+            ],
+            "Audited Phase175A hybrid/regime walk-forward failures",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_target_definition_walkforward_root_cause(self, command: Command) -> CommandResult:
+        """Run Phase176A target-definition walk-forward root-cause audit."""
+        started = time.monotonic()
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_target_definition_walkforward_root_cause_redesign.py",
+                "--phase174-path", command.text("phase174_path", "run_logs/hybrid_regime_first_target_redesign/latest.json").strip() or "run_logs/hybrid_regime_first_target_redesign/latest.json",
+                "--phase175-path", command.text("phase175_path", "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json").strip() or "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json",
+                "--output-dir", command.text("output_dir", "run_logs/target_definition_walkforward_root_cause_redesign").strip() or "run_logs/target_definition_walkforward_root_cause_redesign",
+                "--report-title", command.text("report_title", "Phase176A target-definition walk-forward root-cause redesign audit").strip() or "Phase176A target-definition walk-forward root-cause redesign audit",
+            ],
+            "Audited Phase176A target-definition walk-forward root cause",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_walkforward_target_family_redesign_candidates(self, command: Command) -> CommandResult:
+        """Run Phase177A walk-forward target-family redesign candidate audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        dataset = command.text("dataset", "1H").strip().upper() or "1H"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_walkforward_target_family_redesign_candidates.py",
+                "--symbol", symbol,
+                "--timeframe", dataset,
+                "--flat-path", command.text("flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--families", command.text("families", "R1_FAST_MID_B15_10_H12:fast_breakout_mid_12:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:12;R2_FAST_MID_B12_08_H12:fast_breakout_mid_compact:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.2:0.8:12;R3_STRICT_B15_10_H12:fast_breakout_strict_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.5:1.0:12;R4_STRICT_B10_075_H12:strict_asym_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12;R5_WIDE_B20_10_H24:wide_breakout_shorter_hold:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;R6_WIDE_B15_10_H24:wide_breakout_compact:breakout:1:48:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24;R7_REV_MID_B10_075_H12:reversal_mid_fast:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.0:0.75:12;R8_REV_STRICT_B10_075_H12:reversal_strict_fast:reversal:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12").strip() or "R1_FAST_MID_B15_10_H12:fast_breakout_mid_12:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.5:1.0:12;R2_FAST_MID_B12_08_H12:fast_breakout_mid_compact:breakout:1:24:0.10:0.85:0.15:1:1.0:0:1.2:0.8:12;R3_STRICT_B15_10_H12:fast_breakout_strict_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.5:1.0:12;R4_STRICT_B10_075_H12:strict_asym_12:breakout:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12;R5_WIDE_B20_10_H24:wide_breakout_shorter_hold:breakout:1:48:0.10:0.85:0.15:1:1.0:0:2.0:1.0:24;R6_WIDE_B15_10_H24:wide_breakout_compact:breakout:1:48:0.10:0.85:0.15:1:1.0:0:1.5:1.0:24;R7_REV_MID_B10_075_H12:reversal_mid_fast:reversal:1:24:0.10:0.85:0.15:1:1.0:0:1.0:0.75:12;R8_REV_STRICT_B10_075_H12:reversal_strict_fast:reversal:1:24:0.05:0.90:0.10:1:1.0:0:1.0:0.75:12",
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 24), 0)),
+                "--fold-train-bars", str(max(command.integer("fold_train_bars", 18000), 1)),
+                "--fold-validation-bars", str(max(command.integer("fold_validation_bars", 4000), 1)),
+                "--fold-test-bars", str(max(command.integer("fold_test_bars", 4000), 1)),
+                "--fold-step-bars", str(max(command.integer("fold_step_bars", 4000), 1)),
+                "--max-folds", str(max(command.integer("max_folds", 0), 0)),
+                "--min-train-events", str(max(command.integer("min_train_events", 100), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 25), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 25), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.12), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.68), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.20), 0.0)),
+                "--min-ap-lift", str(max(command.number("min_ap_lift", 0.03), 0.0)),
+                "--min-balanced-accuracy", str(max(command.number("min_balanced_accuracy", 0.53), 0.0)),
+                "--min-train-independent-pf", str(max(command.number("min_train_independent_pf", 1.00), 0.0)),
+                "--min-validation-independent-pf", str(max(command.number("min_validation_independent_pf", 1.00), 0.0)),
+                "--min-test-independent-pf", str(max(command.number("min_test_independent_pf", 1.00), 0.0)),
+                "--min-train-mean-atr-score", str(command.number("min_train_mean_atr_score", 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 5), 1)),
+                "--max-events-sample", str(max(command.integer("max_events_sample", 20000), 0)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/walkforward_target_family_redesign_candidates").strip() or "run_logs/walkforward_target_family_redesign_candidates",
+                "--report-title", command.text("report_title", "Phase177A walk-forward target-family redesign candidate audit").strip() or "Phase177A walk-forward target-family redesign candidate audit",
+            ],
+            "Audited Phase177A walk-forward target-family redesign candidates",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_post_failure_research_route_reset(self, command: Command) -> CommandResult:
+        """Run Phase178A post-failure research route reset decision matrix."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_post_failure_research_route_reset.py",
+                "--symbol", symbol,
+                "--phase170-path", command.text("phase170_path", "run_logs/broker_spread_capture/latest.json").strip() or "run_logs/broker_spread_capture/latest.json",
+                "--phase173-path", command.text("phase173_path", "run_logs/broker_cost_aware_1h_target_learnability/latest.json").strip() or "run_logs/broker_cost_aware_1h_target_learnability/latest.json",
+                "--phase174-path", command.text("phase174_path", "run_logs/hybrid_regime_first_target_redesign/latest.json").strip() or "run_logs/hybrid_regime_first_target_redesign/latest.json",
+                "--phase175-path", command.text("phase175_path", "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json").strip() or "run_logs/hybrid_regime_walkforward_failure_attribution/latest.json",
+                "--phase176-path", command.text("phase176_path", "run_logs/target_definition_walkforward_root_cause_redesign/latest.json").strip() or "run_logs/target_definition_walkforward_root_cause_redesign/latest.json",
+                "--phase177-path", command.text("phase177_path", "run_logs/walkforward_target_family_redesign_candidates/latest.json").strip() or "run_logs/walkforward_target_family_redesign_candidates/latest.json",
+                "--assume-documented-failures", "1" if command.text("assume_documented_failures", "1").strip() != "0" else "0",
+                "--manual-broker-spread-median", str(max(command.number("manual_broker_spread_median", 0.39), 0.0)),
+                "--manual-broker-spread-p90", str(max(command.number("manual_broker_spread_p90", 0.40), 0.0)),
+                "--manual-broker-spread-p99", str(max(command.number("manual_broker_spread_p99", 0.41), 0.0)),
+                "--manual-h1-median-spread-atr", str(max(command.number("manual_h1_median_spread_atr", 0.08347), 0.0)),
+                "--output-dir", command.text("output_dir", "run_logs/post_failure_research_route_reset").strip() or "run_logs/post_failure_research_route_reset",
+                "--report-title", command.text("report_title", "Phase178A post-failure research route reset decision matrix").strip() or "Phase178A post-failure research route reset decision matrix",
+            ],
+            "Audited Phase178A post-failure research route reset",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_higher_timeframe_cost_feasibility(self, command: Command) -> CommandResult:
+        """Run Phase179A 4H/1D broker-cost feasibility pre-audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_higher_timeframe_cost_feasibility.py",
+                "--symbol", symbol,
+                "--timeframes", command.text("timeframes", "4H,1D").strip() or "4H,1D",
+                "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+                "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+                "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+                "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+                "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+                "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+                "--train-frac", str(command.number("train_frac", 0.70)),
+                "--val-frac", str(command.number("val_frac", 0.15)),
+                "--purge-gap", str(max(command.integer("purge_gap", 10), 0)),
+                "--max-folds", str(max(command.integer("max_folds", 6), 1)),
+                "--min-train-events", str(max(command.integer("min_train_events", 80), 1)),
+                "--min-validation-events", str(max(command.integer("min_validation_events", 15), 1)),
+                "--min-test-events", str(max(command.integer("min_test_events", 15), 1)),
+                "--min-positive-rate", str(max(command.number("min_positive_rate", 0.10), 0.0)),
+                "--max-positive-rate", str(max(command.number("max_positive_rate", 0.70), 0.0)),
+                "--max-label-psi", str(max(command.number("max_label_psi", 0.25), 0.0)),
+                "--min-ap-lift", str(max(command.number("min_ap_lift", 0.02), 0.0)),
+                "--min-balanced-accuracy", str(max(command.number("min_balanced_accuracy", 0.52), 0.0)),
+                "--min-train-independent-pf", str(max(command.number("min_train_independent_pf", 1.00), 0.0)),
+                "--min-validation-independent-pf", str(max(command.number("min_validation_independent_pf", 1.00), 0.0)),
+                "--min-test-independent-pf", str(max(command.number("min_test_independent_pf", 1.00), 0.0)),
+                "--min-train-mean-atr-score", str(command.number("min_train_mean_atr_score", 0.0)),
+                "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.08), 0.0)),
+                "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+                "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 4), 1)),
+                "--storage-root", str(self._storage_root),
+                "--output-dir", command.text("output_dir", "run_logs/higher_timeframe_cost_feasibility").strip() or "run_logs/higher_timeframe_cost_feasibility",
+                "--report-title", command.text("report_title", "Phase179A 4H/1D broker-cost feasibility and target pre-audit").strip() or "Phase179A 4H/1D broker-cost feasibility and target pre-audit",
+            ],
+            "Audited Phase179A 4H/1D broker-cost feasibility",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_higher_timeframe_target_failures(self, command: Command) -> CommandResult:
+        """Run Phase180A higher-timeframe target failure attribution."""
+        started = time.monotonic()
+        return self._run_script(
+            command,
+            [
+                "scripts/audit_higher_timeframe_target_failure_attribution.py",
+                "--phase179-path", command.text("phase179_path", "run_logs/higher_timeframe_cost_feasibility/latest.json").strip() or "run_logs/higher_timeframe_cost_feasibility/latest.json",
+                "--output-dir", command.text("output_dir", "run_logs/higher_timeframe_target_failure_attribution").strip() or "run_logs/higher_timeframe_target_failure_attribution",
+                "--report-title", command.text("report_title", "Phase180A higher-timeframe target failure attribution").strip() or "Phase180A higher-timeframe target failure attribution",
+            ],
+            "Audited Phase180A higher-timeframe target failures",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
         )
 
     def validate_production_hybrid_stack(self, command: Command) -> CommandResult:

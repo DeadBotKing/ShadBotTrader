@@ -168,3 +168,44 @@ No Phase134.
 No paper shadow.
 No live trading.
 ```
+
+## Owner execution result summary
+
+The owner ran Phase165A on the full local 1H dataset.
+
+```text
+lockdown_pass_gate     : 1
+transfer_pass_gate     : 1
+monthly_stability_gate : 1
+train_pass_gate        : 1
+validation_pass_gate   : 1
+test_pass_gate         : 1
+```
+
+Key split metrics:
+
+```text
+train      : 305 trades, PF=1.0607, PnL=+11.0742, positive_month_ratio=0.50
+validation : 61 trades,  PF=1.6360, PnL=+20.3189, positive_month_ratio=0.5714
+test       : 71 trades,  PF=1.3548, PnL=+14.3794, positive_month_ratio=0.50
+```
+
+Spread stress:
+
+```text
+fixed 0.2: transfer pass
+fixed 0.5: train fails
+fixed 1.0: train/test stability fails
+```
+
+Detailed result:
+
+```text
+docs/Report/PHASE165A_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN_RESULT.md
+```
+
+Recommended next phase:
+
+```text
+Phase166A — 1H Locked Candidate Walk-Forward / Anti-Overfit Replay
+```

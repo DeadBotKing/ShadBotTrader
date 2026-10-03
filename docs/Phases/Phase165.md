@@ -200,3 +200,76 @@ Full ruff/black unavailable in sandbox:
 python -m ruff ...  → No module named ruff
 python -m black ... → No module named black
 ```
+
+## Owner execution result
+
+The owner ran Phase165A on the full local 1H dataset.
+
+Top-level:
+
+```text
+train_pass_gate        : 1
+validation_pass_gate   : 1
+test_pass_gate         : 1
+transfer_pass_gate     : 1
+monthly_stability_gate : 1
+lockdown_pass_gate     : 1
+```
+
+Train:
+
+```text
+trades                 : 305
+PF                     : 1.060733745773545
+PnL                    : +11.074247798276177
+final_balance          : 111.07424779827605
+max_drawdown_cash      : 23.520721785388957
+positive_month_ratio   : 0.50
+worst_month_pnl        : -5.4897689726064005
+```
+
+Validation:
+
+```text
+trades                 : 61
+PF                     : 1.6359758199652334
+PnL                    : +20.318939484345947
+final_balance          : 120.31893948434596
+max_drawdown_cash      : 5.382938511517068
+positive_month_ratio   : 0.5714285714285714
+worst_month_pnl        : -3.262167302850812
+```
+
+Test:
+
+```text
+trades                 : 71
+PF                     : 1.3548137730296756
+PnL                    : +14.379353264011254
+final_balance          : 114.37935326401126
+max_drawdown_cash      : 4.691881753934851
+positive_month_ratio   : 0.50
+worst_month_pnl        : -3.5011694037553847
+```
+
+Stress:
+
+```text
+fixed spread 0.2 : transfer_pass_gate=1
+fixed spread 0.5 : transfer_pass_gate=0 because train fails
+fixed spread 1.0 : transfer_pass_gate=0 because train/test stability fails
+```
+
+Decision:
+
+```text
+Phase165A passed as a diagnostic lockdown.
+The locked 1H fixed-spread breakout candidate is now the leading research lane.
+No production/paper/live approval is granted.
+```
+
+Recommended next phase:
+
+```text
+Phase166A — 1H Locked Candidate Walk-Forward / Anti-Overfit Replay
+```
