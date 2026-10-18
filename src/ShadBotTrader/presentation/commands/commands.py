@@ -133,6 +133,13 @@ class CommandKind(str, Enum):
     AUDIT_POST_FAILURE_RESEARCH_ROUTE_RESET = "audit_post_failure_research_route_reset"
     AUDIT_HIGHER_TIMEFRAME_COST_FEASIBILITY = "audit_higher_timeframe_cost_feasibility"
     AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES = "audit_higher_timeframe_target_failures"
+    AUDIT_ENTRY_EVENT_DISCOVERY = "audit_entry_event_discovery"
+    AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION = "audit_entry_event_failure_attribution"
+    AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES = "audit_entry_quality_geometry_candidates"
+    AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE = "audit_entry_route_test_only_failure"
+    AUDIT_RANGE_MODEL_RELIABILITY = "audit_range_model_reliability"
+    AUDIT_RANGE_MULTISTEP_ACCURACY = "audit_range_multistep_accuracy"
+    TRAIN_RANGE_MULTISTEP = "train_range_multistep"
     VALIDATE_PRODUCTION_HYBRID_STACK = "validate_production_hybrid_stack"
     RUN_HYBRID_PAPER_SHADOW = "run_hybrid_paper_shadow"
 

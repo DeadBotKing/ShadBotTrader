@@ -3,7 +3,7 @@
 ## Status
 
 ```text
-IMPLEMENTED — awaiting owner run
+COMPLETED — owner run confirmed cost feasible but target not ready
 research/diagnostic only
 ```
 
@@ -15,6 +15,47 @@ No paper shadow.
 No live trading.
 No model training.
 No gate relaxation.
+```
+
+
+## Owner execution result — 2026-10-01
+
+Phase180A was run on the Phase179A output.
+
+Top-level result:
+
+```text
+cost_feasibility_confirmed_gate        : 1
+target_readiness_confirmed_failed_gate : 1
+selected_next_route_id                 : D1_TARGET_FAILURE_ATTRIBUTION_AND_REDESIGN_DECISION
+selected_next_phase                    : Phase181A — daily target failure attribution and redesign decision
+selected_focus_timeframe               : 1D
+selected_focus_family_id               : D1_R1_BK_MID_B20_10_H5
+no_training_gate                       : 1
+no_paper_live_gate                     : 1
+```
+
+Main diagnosis:
+
+```text
+Cost is feasible on 4H/1D, especially 1D.
+Target readiness still failed.
+D1_R1_BK_MID_B20_10_H5 is a near-miss, not a training-ready target.
+```
+
+Decision:
+
+```text
+Do not train 4H/1D models.
+Do not open Phase134.
+No paper shadow.
+No live trading.
+```
+
+Detailed result report:
+
+```text
+docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_RESULT.md
 ```
 
 ## Why this phase exists

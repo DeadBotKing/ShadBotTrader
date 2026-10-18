@@ -1,36 +1,195 @@
 # وضعیت فعلی پروژه — 2026-09-07
 
-## به‌روزرسانی فوری — 2026-10-01 / Phase180A
+## به‌روزرسانی فوری — 2026-10-07 / Phase187A built, not trained
 
-Phase180A ساخته شد؛ هنوز اجرا نشده است:
-
-```text
-Phase180A — Higher-timeframe Target Failure Attribution / Candidate Redesign Decision
-GUI: Audit higher-timeframe target failures
-script: scripts/audit_higher_timeframe_target_failure_attribution.py
-status: implemented; awaiting owner run
-```
-
-علت ساخت:
+مدل multistep با اسم جدا ساخته شد، ولی در این sandbox آموزش داده نشد. TensorFlow و دیتاست 4H اینجا نیستند، پس نتیجهٔ دقت اختراع نشده است.
 
 ```text
-Phase179A نشان داد 4H/1D از نظر cost بهتر است، اما target readiness هنوز fail شد.
-Best failed candidate = D1_R1_BK_MID_B20_10_H5 with WF=1/5.
+GUI: Train range multistep WaveNet
+script: scripts/train_range_multistep.py
+new ids: gold_range_multistep_4h, gold_range_multistep_1d
+old ids: gold_range_4h, gold_range_1d untouched
+architecture: existing range WaveNet seq2seq
+horizon: 5
+output width: 10
+Option B: not used
+status: implemented; awaiting owner training run
 ```
 
-Phase180A خروجی Phase179A را می‌خواند و failure را attribute می‌کند:
+دلیل رد Option B:
 
 ```text
-run_logs\higher_timeframe_cost_feasibility\latest.json
+Option B is a 5M pivot-sequence model with three input branches.
+Its target is pivot action/payoff, not candle high/low.
+That route already failed transfer.
+The current range model is already a causal WaveNet.
+The missing piece is horizon=5, not a new backbone.
 ```
 
-خروجی مورد انتظار مالک:
+فیچرهای causal که range از آن‌ها استفاده نمی‌کند فقط این ۶ تا هستند:
 
 ```text
-run_logs\higher_timeframe_target_failure_attribution\latest.json
+session_asian
+session_london
+session_ny
+session_overlap
+hour_sin
+hour_cos
 ```
 
-این فاز فقط diagnostic است:
+این‌ها به مدل جدید اضافه نشدند تا تنها تفاوت با مدل فعلی `horizon` باشد. فهرست کامل:
+
+```text
+docs/Report/CAUSAL_FEATURES_NOT_USED_IN_RANGE_TRAINING.md
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Train range multistep WaveNet
+```
+
+بعد از اتمام train:
+
+```text
+AI → Audit range multistep accuracy
+4H range model = gold_range_multistep_4h
+1D range model = gold_range_multistep_1d
+Requested future candles = 5
+```
+
+Paper/live همچنان blocked است.
+
+
+## به‌روزرسانی فوری — 2026-10-07 / Phase186A result
+
+Phase186A روی مدل‌های واقعی اجرا شد. candle-by-candle future forecast موجود نیست.
+
+```text
+Phase186A — Range Candle-by-Candle Forecast Accuracy Audit
+GUI: Audit range multistep accuracy
+script: scripts/audit_range_multistep_accuracy.py
+status: completed; candle_forecast_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes           : 2
+multistep_timeframes           : 0
+ready_timeframes               : 0
+selected_timeframe             : 4H
+candle_forecast_ready_gate     : 0
+recursive_rollout_used         : 0
+envelope_metric_used           : 0
+no_training_gate               : 1
+no_paper_live_gate             : 1
+```
+
+اثبات capability از tensor زنده، نه از فرض Phase185A:
+
+```text
+gold_range_4h v3   keras_output_shape=(None, 150, 2)   rows=33811
+gold_range_1d v2   keras_output_shape=(None, 150, 2)   rows=5483
+window_size=150
+last dimension=2
+model_output_horizon=1
+missing_steps=2,3,4,5
+production_contract_check=matched
+capability_verdict=STEP1_ONLY
+```
+
+`150` پنجرهٔ ورودی است، نه ۱۵۰ کندل آینده. عرض `2` یعنی فقط یک pair از high/low. برای ۵ کندل آینده عرض باید `10` می‌بود. آن عرض وجود ندارد.
+
+step 1، فقط کندل بعدی:
+
+```text
+4H median abs high/low error : 0.2196 / 0.2222 ATR
+4H high/low/width spearman   : 0.2740 / 0.3122 / 0.5897
+4H width_bias                : -0.2826 ATR
+4H candle_containment        : 0.1216
+4H step1_accuracy_gate       : 1
+4H primary_failure           : multistep_output_not_available
+
+1D median abs high/low error : 0.2269 / 0.2358 ATR
+1D high/low/width spearman   : 0.0008 / 0.0185 / 0.0186
+1D predicted high/low offset : constant +0.38531583547592 / -0.35862347483635 ATR
+1D width_bias                : -0.2649 ATR
+1D candle_containment        : 0.1012
+1D step1_accuracy_gate       : 0
+1D step failure              : high_spearman_failed
+```
+
+تصمیم:
+
+```text
+CANDLE_BY_CANDLE_FUTURE_STEPS : NOT_AVAILABLE
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+`CANDLE_STEP1_HIGH_LOW=MEASURED_PASS` فقط یعنی 4H آستانهٔ diagnostic را رد کرد. 1D رد شد. این مجوز معامله نیست. هر دو مدل کندل بعدی را باریک‌تر از واقعیت پیش‌بینی می‌کنند و فقط حدود 10–12% از کندل‌های بعدی کاملاً داخل باند پیش‌بینی می‌افتند.
+
+برداشت مجاز:
+
+```text
+Current artifacts do not forecast candles 2..5.
+4H is weak next-candle magnitude context only.
+1D is static ATR climatology.
+No training. No paper. No live.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE186A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-07 / Phase186A built
+
+Phase186A برای سنجش دقت candle-by-candle مدل‌های range ساخته شد. این فاز معامله، TP/SL، entry، یا training نیست.
+
+```text
+Phase186A — Range Candle-by-Candle Forecast Accuracy Audit
+GUI: Audit range multistep accuracy
+script: scripts/audit_range_multistep_accuracy.py
+status: implemented; awaiting owner run; no model training
+```
+
+سؤال این فاز:
+
+```text
+آیا مدل range برای هر کندل آینده، high/low همان کندل را emit می‌کند؟
+اگر بله، خطای هر step چقدر است؟
+اگر نه، کدام stepها اصلاً شواهد مدل ندارند؟
+```
+
+قرارداد سنجش:
+
+```text
+step k = candle t+k high/low
+not the horizon envelope max(high[t+1..t+H]) / min(low[t+1..t+H])
+no recursive rollout
+open/close are not model targets
+```
+
+اگر `model_output_horizon=1` باشد، فقط step 1 قابل سنجش است. steps بعدی ساخته نمی‌شوند. نتیجهٔ Phase185A می‌گفت هر دو مدل `horizon_bars=1` دارند، اما این فاز آن را hardcode نمی‌کند و از output tensor زنده می‌خواند.
+
+خروجی‌ها:
+
+```text
+run_logs/range_multistep_accuracy/latest.json
+run_logs/range_multistep_accuracy/latest.html
+run_logs/range_multistep_accuracy/latest_model_capability.csv
+run_logs/range_multistep_accuracy/latest_step_errors.csv
+run_logs/range_multistep_accuracy/latest_bias_by_step.csv
+run_logs/range_multistep_accuracy/latest_calibration_by_step.csv
+run_logs/range_multistep_accuracy/latest_degradation_curve.csv
+run_logs/range_multistep_accuracy/latest_regime_breakdown.csv
+```
+
+قوانین همچنان:
 
 ```text
 No model training.
@@ -38,6 +197,866 @@ No Phase134.
 No paper shadow.
 No live trading.
 No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit range multistep accuracy
+```
+
+سپس این فایل را بفرست:
+
+```text
+run_logs\range_multistep_accuracy\latest.json
+```
+
+
+## به‌روزرسانی فوری — 2026-10-06 / Phase185A result
+
+Phase185A اجرا شد و range modelهای 4H/1D برای reliability/calibration/decision utility بررسی شدند:
+
+```text
+Phase185A — Range Model Reliability / Calibration / Decision-Utility Audit
+GUI: Audit range model reliability
+script: scripts/audit_range_model_reliability.py
+status: completed; range_model_reliability_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes               : 2
+reliable_timeframes                : 0
+selected_timeframe                 : 4H
+selected_reliability_gate          : 0
+range_model_reliability_ready_gate : 0
+no_training_gate                   : 1
+no_paper_live_gate                 : 1
+```
+
+4H range:
+
+```text
+model_id                  : gold_range_4h v3
+target_units              : atr
+horizon_bars              : 1
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2196
+median_abs_low_error_atr  : 0.2222
+up_spearman               : 0.2740
+down_spearman             : 0.3122
+width_spearman            : 0.5897
+up/down monotonicity      : 1.0 / 1.0
+decision_proxy_trades     : 0
+reliability_gate          : 0
+primary_failure_reason    : decision_utility_gate_failed
+```
+
+1D range:
+
+```text
+model_id                  : gold_range_1d v2
+target_units              : atr
+horizon_bars              : 1
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2269
+median_abs_low_error_atr  : 0.2358
+up_spearman               : 0.0008
+down_spearman             : 0.0185
+width_spearman            : 0.0186
+decision_proxy_trades     : 0
+reliability_gate          : 0
+primary_failure_reason    : ranking_gate_failed
+```
+
+تصمیم:
+
+```text
+Do not use range as TP/SL engine.
+Do not use range as signal engine.
+Do not use range for paper/live decisions.
+```
+
+برداشت مجاز:
+
+```text
+4H range may be diagnostic context only.
+1D range behaves mostly like static ATR-climatology and is not dynamically reliable.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase185A performance hotfix
+
+مالک گزارش داد دستور PowerShell فاز 185 حدود 10 ساعت بدون خروجی اجرا شد و تمام نشد.
+
+تشخیص:
+
+```text
+logic مسیر audit درست بود، اما implementation عملیاتی source-mode=models کند بود.
+مسیر اولیه forecast را row-by-row اجرا می‌کرد و progress log نداشت.
+```
+
+اصلاح انجام شد:
+
+```text
+scripts/audit_range_model_reliability.py
+```
+
+تغییرات:
+
+```text
+- model برای هر timeframe فقط یک‌بار load می‌شود.
+- inference به صورت batch انجام می‌شود.
+- progress log اضافه شد.
+- GUI fields اضافه شد: batch_size و progress_every.
+```
+
+پارامترهای جدید:
+
+```text
+--batch-size 256
+--progress-every 2000
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase185A built
+
+Phase185A برای audit دقیق range modelهای 4H و 1D ساخته شد:
+
+```text
+Phase185A — Range Model Reliability / Calibration / Decision-Utility Audit
+GUI: Audit range model reliability
+script: scripts/audit_range_model_reliability.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Measure whether 4H/1D range forecasts are coherent, accurate, calibrated, directionally useful and decision-useful.
+```
+
+مدل‌های پیش‌فرض:
+
+```text
+4H range model : gold_range_4h
+1D range model : gold_range_1d
+version        : 0 = latest
+source mode    : models
+```
+
+خروجی‌ها:
+
+```text
+run_logs/range_model_reliability/latest.json
+run_logs/range_model_reliability/latest.html
+run_logs/range_model_reliability/latest_forecast_errors.csv
+run_logs/range_model_reliability/latest_summary.csv
+run_logs/range_model_reliability/latest_calibration_bins.csv
+run_logs/range_model_reliability/latest_regime_breakdown.csv
+run_logs/range_model_reliability/latest_decision_utility.csv
+run_logs/range_model_reliability/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit range model reliability
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\range_model_reliability\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase185A.md
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase184A result
+
+Phase184A اجرا شد و تصمیم closure را مشخص کرد:
+
+```text
+Phase184A — Entry Route Test-only Failure Attribution / Stop-or-Narrow Decision
+GUI: Audit entry route test-only failure
+script: scripts/audit_entry_route_test_only_failure_attribution.py
+status: completed; route freeze recommended
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_candidates       : 12
+ready_candidates           : 0
+test_only_candidates       : 8
+narrow_candidate_count     : 0
+selected_candidate_id      : Q7_H4_E2_B00_M10_A10
+selected_closure_verdict   : TEST_ONLY_NOT_TRANSFERRED
+selected_decision_route_id : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+selected_decision          : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+no_training_gate           : 1
+no_paper_live_gate         : 1
+```
+
+تشخیص:
+
+```text
+- Phase183A final-test pockets ساخت، اما validation و walk-forward transfer نداد.
+- 8/12 candidate صراحتاً TEST_ONLY_NOT_TRANSFERRED هستند.
+- هیچ narrow candidate قابل ادامه وجود ندارد.
+```
+
+dominant failures:
+
+```text
+walkforward_transfer_failed       : 12/12
+walkforward_transfer_gate_failed  : 12/12
+static_transfer_gate_failed       : 12/12
+test_only_not_transferred         : 8/12
+```
+
+selected Q7:
+
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test PF : 0.8996 / 1.5527
+WF pass            : 0/4
+verdict            : TEST_ONLY_NOT_TRANSFERRED
+```
+
+تصمیم فعلی:
+
+```text
+FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-04 / Phase184A built
+
+Phase184A برای closure / stop-or-narrow decision ساخته شد:
+
+```text
+Phase184A — Entry Route Test-only Failure Attribution / Stop-or-Narrow Decision
+GUI: Audit entry route test-only failure
+script: scripts/audit_entry_route_test_only_failure_attribution.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Determine whether Phase183A positives are test-only artifacts.
+Decide whether to freeze the current entry-geometry route or allow exactly one narrow diagnostic exception.
+```
+
+ورودی پیش‌فرض:
+
+```text
+run_logs/entry_quality_geometry_candidates/latest.json
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_route_test_only_failure_attribution/latest.json
+run_logs/entry_route_test_only_failure_attribution/latest.html
+run_logs/entry_route_test_only_failure_attribution/latest_candidate_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_split_transfer.csv
+run_logs/entry_route_test_only_failure_attribution/latest_walkforward_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_replay_months.csv
+run_logs/entry_route_test_only_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_route_test_only_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_route_test_only_failure_attribution/latest_next_plan.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+No broad parameter search.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry route test-only failure
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_route_test_only_failure_attribution\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase184A.md
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-04 / Phase183A result
+
+Phase183A اجرا شد و broad entry quality-geometry redesign را پاس نکرد:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+GUI: Audit entry quality-geometry candidates
+script: scripts/audit_entry_quality_geometry_candidates.py
+status: completed; quality_geometry_redesign_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_candidates                 : 12
+ready_candidates                     : 0
+selected_candidate_id                : Q7_H4_E2_B00_M10_A10
+selected_timeframe                   : 4H
+selected_family_type                 : pullback_rejection
+selected_side_filter                 : ALL
+selected_test_quality_pass_rate      : 0.5929203539823009
+selected_test_replay_profit_factor   : 1.5526937756187313
+selected_walkforward_pass_ratio      : 0.0
+quality_geometry_redesign_ready_gate : 0
+no_training_gate                     : 1
+no_paper_live_gate                   : 1
+```
+
+تشخیص:
+
+```text
+- چند candidate روی final test جذاب شدند.
+- اما train/validation هنوز ضعیف است.
+- همهٔ candidateها WF=0/4 دارند.
+- نتیجهٔ مثبت Q7 test-only است و transfer ندارد.
+```
+
+selected candidate:
+
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test PF      : 0.8996 / 1.5527
+validation/test quality : 0.4643 / 0.5929
+walk-forward pass       : 0/4
+verdict                 : TEST_ONLY_NOT_TRANSFERRED
+```
+
+تصمیم:
+
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام بعدی فقط با تصمیم مالک:
+
+```text
+Option A — stop/freeze current entry-quality geometry route.
+Option B — one narrower Phase184A attribution-only stop-or-narrow decision.
+```
+
+اگر ادامه داده شود، Phase184A باید فقط attribution باشد:
+
+```text
+Phase184A — Entry Geometry Test-only Failure Attribution / Stop-or-Narrow Decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase183A built
+
+Phase183A برای audit کاندیداهای quality-geometry ساخته شد:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+GUI: Audit entry quality-geometry candidates
+script: scripts/audit_entry_quality_geometry_candidates.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Test whether trigger placement, MFE target or MAE limit can be redesigned without relaxing readiness gates.
+```
+
+تمرکز پیش‌فرض:
+
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+1D | E2_PULLBACK_REJECTION | BUY-only diagnostic
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_quality_geometry_candidates/latest.json
+run_logs/entry_quality_geometry_candidates/latest.html
+run_logs/entry_quality_geometry_candidates/latest_candidates.csv
+run_logs/entry_quality_geometry_candidates/latest_splits.csv
+run_logs/entry_quality_geometry_candidates/latest_walkforward.csv
+run_logs/entry_quality_geometry_candidates/latest_events.csv
+run_logs/entry_quality_geometry_candidates/latest_replay.csv
+run_logs/entry_quality_geometry_candidates/latest_geometry_comparison.csv
+run_logs/entry_quality_geometry_candidates/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry quality-geometry candidates
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_quality_geometry_candidates\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase183A.md
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase182A result
+
+Phase182A اجرا شد و علت شکست Phase181B را attribute کرد:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+GUI: Audit entry-event failure attribution
+script: scripts/audit_entry_event_failure_attribution.py
+status: completed; failure attributed; no training
+```
+
+نتیجهٔ اصلی:
+
+```text
+family_rows                     : 9
+near_miss_families              : 3
+selected_focus_timeframe        : 1D
+selected_focus_family_id        : E3_CONTINUATION
+selected_focus_family_type      : continuation
+selected_primary_failure_reason : mfe_mae_gate_failed
+selected_next_route_id          : ENTRY_QUALITY_GEOMETRY_REDESIGN
+selected_next_phase             : Phase183A — entry quality-geometry candidate audit
+no_training_gate                : 1
+no_paper_live_gate              : 1
+```
+
+تشخیص اصلی:
+
+```text
+- health و cost مشکل اصلی نیستند.
+- entry events اغلب stable و feature-separable هستند.
+- شکست اصلی در MFE/MAE quality، replay economics و walk-forward transfer است.
+```
+
+dominant failures:
+
+```text
+mfe_mae_gate_failed              : 9/9
+walkforward_pass_ratio_failed    : 9/9
+entry_family_ready_gate_failed   : 9/9
+```
+
+selected focus:
+
+```text
+1D | E3_CONTINUATION
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+walk-forward pass                  : 0/4
+quality verdict                    : MAE_LIMIT_TOO_TIGHT_OR_ENTRY_LATE
+```
+
+تصمیم:
+
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+```
+
+تمرکز پیشنهادی:
+
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+optional side diagnostic: 1D | E2_PULLBACK_REJECTION | BUY-only
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase182A built
+
+Phase182A برای attribution شکست Phase181B ساخته شد:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+GUI: Audit entry-event failure attribution
+script: scripts/audit_entry_event_failure_attribution.py
+status: implemented; awaiting owner run; no model training
+```
+
+ورودی پیش‌فرض:
+
+```text
+run_logs/entry_event_discovery/latest.json
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_event_failure_attribution/latest.json
+run_logs/entry_event_failure_attribution/latest.html
+run_logs/entry_event_failure_attribution/latest_family_attribution.csv
+run_logs/entry_event_failure_attribution/latest_side_attribution.csv
+run_logs/entry_event_failure_attribution/latest_timeframe_attribution.csv
+run_logs/entry_event_failure_attribution/latest_quality_geometry.csv
+run_logs/entry_event_failure_attribution/latest_walkforward_attribution.csv
+run_logs/entry_event_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_event_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_event_failure_attribution/latest_next_plan.csv
+```
+
+هدف:
+
+```text
+Explain why Phase181B entries were stable/separable/cost-feasible but failed MFE/MAE, replay and walk-forward.
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry-event failure attribution
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_event_failure_attribution\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase182A.md
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase181B result
+
+Phase181B اجرا شد و هیچ entry-event family آماده نشد:
+
+```text
+Phase181B — Entry Event Discovery Framework
+GUI: Audit entry event discovery
+script: scripts/audit_entry_event_discovery.py
+status: completed; entry_event_discovery_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes             : 3
+evaluated_families               : 9
+ready_families                   : 0
+selected_timeframe               : 1D
+selected_family_id               : E3_CONTINUATION
+selected_family_type             : continuation
+selected_family_ready_gate       : 0
+entry_event_discovery_ready_gate : 0
+no_training_gate                 : 1
+no_paper_live_gate               : 1
+```
+
+نکتهٔ مثبت:
+
+```text
+- health_gate=1 برای 1H/4H/1D
+- cost_feasible_gate=1 برای همهٔ splitها
+- بسیاری از familyها temporal_stability و feature_separability را پاس کردند
+```
+
+اما blocker اصلی:
+
+```text
+- mfe_mae_gate برای همهٔ familyها fail شد
+- replay_gate در family-level fail شد
+- walkforward_pass_ratio برای همهٔ familyها 0 بود
+```
+
+بهترین ردیف شکست‌خورده:
+
+```text
+1D | E3_CONTINUATION
+train/validation/test events       : 301 / 65 / 74
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+walk-forward pass                  : 0/4
+ready_gate                         : 0
+```
+
+تصمیم:
+
+```text
+Do not train an entry-event model.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase181B
+
+با تأیید مالک، مسیر جدید research از tuning target سود به **Entry Event Discovery** تغییر کرد و Phase181B ساخته شد:
+
+```text
+Phase181B — Entry Event Discovery Framework
+GUI: Audit entry event discovery
+script: scripts/audit_entry_event_discovery.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف فاز:
+
+```text
+Entry Target != Profit Target
+
+Market State at t
+  -> Setup?
+  -> Trigger?
+  -> Spread-adjusted entry
+  -> MFE/MAE quality
+  -> Cost-aware replay
+  -> Walk-forward stability
+```
+
+خانواده‌های پیش‌فرض:
+
+```text
+E1_BREAKOUT
+E2_PULLBACK_REJECTION
+E3_CONTINUATION
+```
+
+تایم‌فریم‌های پیش‌فرض:
+
+```text
+1H,4H,1D
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_event_discovery/latest.json
+run_logs/entry_event_discovery/latest.html
+run_logs/entry_event_discovery/latest_families.csv
+run_logs/entry_event_discovery/latest_events.csv
+run_logs/entry_event_discovery/latest_replay.csv
+run_logs/entry_event_discovery/latest_splits.csv
+run_logs/entry_event_discovery/latest_walkforward.csv
+run_logs/entry_event_discovery/latest_mfe_mae.csv
+run_logs/entry_event_discovery/latest_cost.csv
+run_logs/entry_event_discovery/latest_feature_separability.csv
+run_logs/entry_event_discovery/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry event discovery
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_event_discovery\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase181B.md
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_FRAMEWORK_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase180A
+
+Phase180A اجرا شد و شکست target در higher timeframe را attribute کرد:
+
+```text
+Phase180A — Higher-timeframe Target Failure Attribution / Candidate Redesign Decision
+GUI: Audit higher-timeframe target failures
+script: scripts/audit_higher_timeframe_target_failure_attribution.py
+status: completed; cost feasible but target not ready
+```
+
+نتیجهٔ اصلی:
+
+```text
+cost_feasibility_confirmed_gate        : 1
+target_readiness_confirmed_failed_gate : 1
+selected_next_route_id                 : D1_TARGET_FAILURE_ATTRIBUTION_AND_REDESIGN_DECISION
+selected_next_phase                    : Phase181A — daily target failure attribution and redesign decision
+selected_focus_timeframe               : 1D
+selected_focus_family_id               : D1_R1_BK_MID_B20_10_H5
+no_training_gate                       : 1
+no_paper_live_gate                     : 1
+```
+
+تشخیص:
+
+```text
+- 4H/1D cost feasibility تأیید شد.
+- target readiness همچنان fail است.
+- D1_R1_BK_MID_B20_10_H5 near-miss است، نه training-ready.
+- دلیل اصلی: test AP lift پایین، test balanced accuracy در حد chance، و WF فقط 1/5.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train 4H/1D models.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase181A — daily target failure attribution and redesign decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_RESULT.md
 ```
 
 

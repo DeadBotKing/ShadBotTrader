@@ -18441,3 +18441,998 @@ No paper shadow.
 No live trading.
 No gate relaxation.
 ```
+
+## 2026-10-01 — Phase180A result: higher-timeframe cost feasible but target readiness failed
+
+**ورودی اپراتور:** اپراتور خروجی `run_logs\higher_timeframe_target_failure_attribution\latest.json` را ارسال کرد.
+
+**Top-level نتیجه:**
+```text
+cost_feasibility_confirmed_gate        : 1
+target_readiness_confirmed_failed_gate : 1
+selected_next_route_id                 : D1_TARGET_FAILURE_ATTRIBUTION_AND_REDESIGN_DECISION
+selected_next_phase                    : Phase181A — daily target failure attribution and redesign decision
+selected_focus_timeframe               : 1D
+selected_focus_family_id               : D1_R1_BK_MID_B20_10_H5
+no_training_gate                       : 1
+no_paper_live_gate                     : 1
+```
+
+**Timeframe summary:**
+```text
+1D:
+  health_gate                 : 1
+  ready_candidates            : 0/4
+  near_miss_candidates        : 1
+  cost_gate_pass_splits       : 3/3
+  best_family                 : D1_R1_BK_MID_B20_10_H5
+  best_walkforward_pass_ratio : 0.2
+  verdict                     : TARGET_NOT_READY_COST_FEASIBLE
+
+4H:
+  health_gate                 : 1
+  ready_candidates            : 0/4
+  near_miss_candidates        : 0
+  cost_gate_pass_splits       : 3/3
+  best_family                 : H4_R2_BK_STRICT_B15_10_H6
+  best_walkforward_pass_ratio : 0.0
+  verdict                     : TARGET_NOT_READY_COST_FEASIBLE
+```
+
+**Selected near-miss:**
+```text
+D1_R1_BK_MID_B20_10_H5
+train/validation/test PF       : 1.1263 / 1.1464 / 1.4117
+validation/test AP lift        : +0.03085 / +0.01122
+validation/test balanced acc   : 0.5243 / 0.5000
+walk-forward pass              : 1/5
+near_miss_gate                 : 1
+ready_gate                     : 0
+```
+
+**Failure reasons:**
+```text
+candidate-level:
+  static_learnability_gate_failed : 8/8
+  target_family_ready_gate_failed : 8/8
+  walkforward_gate_failed         : 8/8
+  walkforward_pass_ratio_failed   : 8/8
+  economic_gate_failed            : 7/8
+  train_expectancy_failed         : 6/8
+  test_balanced_accuracy_failed   : 5/8
+
+fold-level:
+  test_gate_failed       : 37/40
+  validation_gate_failed : 34/40
+  train_gate_failed      : 30/40
+```
+
+**Decision matrix:**
+```text
+HIGHER_TIMEFRAME_MODEL_TRAINING : BLOCKED
+D1_TARGET_REDESIGN_ATTRIBUTION  : RECOMMENDED_DIAGNOSTIC, score=82.0
+NON_PIVOT_EVENT_ROUTE           : SECONDARY_RESEARCH, score=70.0
+PAPER_OR_LIVE                   : BLOCKED
+```
+
+**تصمیم:**
+```text
+Do not train 4H/1D models.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**مستندسازی:**
+- `docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_RESULT.md` اضافه شد.
+- `docs/Phases/Phase180.md` با نتیجهٔ اجرای مالک آپدیت شد.
+- `docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_REPORT.md` با نتیجهٔ owner run آپدیت شد.
+- `docs/CURRENT_STATE.md` و `docs/PROJECT_OWNER_MAP.html` آپدیت شدند.
+
+**گام پیشنهادی بعدی، فقط diagnostic:**
+```text
+Phase181A — daily target failure attribution and redesign decision
+```
+
+## 2026-10-03 — Phase181B: Entry Event Discovery Framework built
+
+**Owner decision:** stop continuing the current profit-target tuning lane as the immediate next implementation, and add a diagnostic framework that separates entry events from profit targets.
+
+**Core rule:**
+```text
+Entry Target != Profit Target
+```
+
+**Implemented:**
+- `scripts/audit_entry_event_discovery.py`
+- `tests/unit/ai/test_entry_event_discovery.py`
+- GUI command: `Audit entry event discovery`
+- `CommandKind.AUDIT_ENTRY_EVENT_DISCOVERY`
+- Docs:
+  - `docs/Phases/Phase181B.md`
+  - `docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_FRAMEWORK_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Default entry families:**
+```text
+E1_BREAKOUT
+E2_PULLBACK_REJECTION
+E3_CONTINUATION
+```
+
+**Default timeframes:**
+```text
+1H,4H,1D
+```
+
+**Output directory:**
+```text
+run_logs/entry_event_discovery
+```
+
+**Output files:**
+```text
+latest.json
+latest.html
+latest_families.csv
+latest_events.csv
+latest_replay.csv
+latest_splits.csv
+latest_walkforward.csv
+latest_mfe_mae.csv
+latest_cost.csv
+latest_feature_separability.csv
+latest_decision_matrix.csv
+```
+
+**Gates:**
+```text
+Event density
+Direction balance
+Temporal stability
+MFE/MAE structure
+Replay
+Feature separability
+Broker cost
+Walk-forward
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_entry_event_discovery.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_entry_event_discovery.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_entry_event_discovery.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit entry event discovery
+```
+
+Then provide:
+```text
+run_logs\entry_event_discovery\latest.json
+```
+
+## 2026-10-03 — Phase181B owner result: no entry family passed
+
+**Owner run:** `Audit entry event discovery` on `1H,4H,1D` with fixed spread `0.4`.
+
+**Top-level result:**
+```text
+evaluated_timeframes             : 3
+evaluated_families               : 9
+ready_families                   : 0
+selected_timeframe               : 1D
+selected_family_id               : E3_CONTINUATION
+selected_family_type             : continuation
+entry_event_discovery_ready_gate : 0
+no_training_gate                 : 1
+no_paper_live_gate               : 1
+```
+
+**Positive diagnostics:**
+```text
+Data health      : PASS on 1H, 4H, 1D
+Cost feasibility : PASS on all splits under fixed spread 0.4
+Feature SMD      : often strong, especially continuation families
+Temporal PSI     : generally stable
+```
+
+**Dominant failure:**
+```text
+mfe_mae_gate_failed
+replay_gate_failed
+walkforward_pass_ratio_failed
+entry_family_ready_gate_failed
+```
+
+**Best failed row:**
+```text
+1D | E3_CONTINUATION
+train/validation/test events       : 301 / 65 / 74
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+walk-forward pass                  : 0/4
+```
+
+**Decision:**
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_RESULT.md
+docs/Phases/Phase181B.md
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_FRAMEWORK_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+**Recommended next diagnostic:**
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+```
+
+## 2026-10-03 — Phase182A: Entry-event failure attribution built
+
+**Request:** build Phase182A after Phase181B found no ready entry-event family.
+
+**Implemented:**
+- `scripts/audit_entry_event_failure_attribution.py`
+- `tests/unit/ai/test_entry_event_failure_attribution.py`
+- GUI command: `Audit entry-event failure attribution`
+- `CommandKind.AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION`
+- Docs:
+  - `docs/Phases/Phase182A.md`
+  - `docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Purpose:**
+```text
+Attribute why Phase181B entry events were stable/separable/cost-feasible but failed MFE/MAE, replay and walk-forward gates.
+```
+
+**Outputs:**
+```text
+run_logs/entry_event_failure_attribution/latest.json
+run_logs/entry_event_failure_attribution/latest.html
+run_logs/entry_event_failure_attribution/latest_family_attribution.csv
+run_logs/entry_event_failure_attribution/latest_side_attribution.csv
+run_logs/entry_event_failure_attribution/latest_timeframe_attribution.csv
+run_logs/entry_event_failure_attribution/latest_quality_geometry.csv
+run_logs/entry_event_failure_attribution/latest_walkforward_attribution.csv
+run_logs/entry_event_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_event_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_event_failure_attribution/latest_next_plan.csv
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_entry_event_failure_attribution.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_entry_event_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_entry_event_failure_attribution.py tests/unit/ai/test_entry_event_discovery.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit entry-event failure attribution
+```
+
+Then provide:
+```text
+run_logs\entry_event_failure_attribution\latest.json
+```
+
+## 2026-10-03 — Phase182A owner result: entry failure attributed
+
+**Owner run:** Phase182A consumed `run_logs\entry_event_discovery\latest.json`.
+
+**Top-level result:**
+```text
+family_rows                     : 9
+near_miss_families              : 3
+selected_focus                  : 1D|E3_CONTINUATION
+selected_primary_failure_reason : mfe_mae_gate_failed
+selected_next_route_id          : ENTRY_QUALITY_GEOMETRY_REDESIGN
+selected_next_phase             : Phase183A — entry quality-geometry candidate audit
+no_training_gate                : 1
+no_paper_live_gate              : 1
+```
+
+**Root cause:**
+```text
+Phase181B did not fail because of data health or broker cost.
+Entry events are often stable and feature-separable, but triggered entries fail MFE/MAE quality, replay economics and walk-forward transfer.
+```
+
+**Dominant failures:**
+```text
+mfe_mae_gate_failed              : 9/9
+walkforward_pass_ratio_failed    : 9/9
+entry_family_ready_gate_failed   : 9/9
+```
+
+**Selected focus:**
+```text
+1D | E3_CONTINUATION
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+walk-forward pass                  : 0/4
+quality verdict                    : MAE_LIMIT_TOO_TIGHT_OR_ENTRY_LATE
+```
+
+**Near-miss families:**
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+```
+
+**Decision:**
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_RESULT.md
+docs/Phases/Phase182A.md
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+**Recommended next diagnostic:**
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+```
+
+## 2026-10-03 — Phase183A: Entry quality-geometry candidate audit built
+
+**Request:** build Phase183A after Phase182A attributed failure to MFE/MAE, replay and walk-forward transfer.
+
+**Implemented:**
+- `scripts/audit_entry_quality_geometry_candidates.py`
+- `tests/unit/ai/test_entry_quality_geometry_candidates.py`
+- GUI command: `Audit entry quality-geometry candidates`
+- `CommandKind.AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES`
+- Docs:
+  - `docs/Phases/Phase183A.md`
+  - `docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Purpose:**
+```text
+Test whether trigger placement, MFE target or MAE limit can be redesigned without relaxing readiness gates.
+```
+
+**Default focus:**
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+1D | E2_PULLBACK_REJECTION | BUY-only diagnostic
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_entry_quality_geometry_candidates.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_entry_quality_geometry_candidates.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_entry_quality_geometry_candidates.py tests/unit/ai/test_entry_event_failure_attribution.py tests/unit/ai/test_entry_event_discovery.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit entry quality-geometry candidates
+```
+
+Then provide:
+```text
+run_logs\entry_quality_geometry_candidates\latest.json
+```
+
+## 2026-10-04 — Phase183A owner result: geometry redesign did not transfer
+
+**Owner run:** Phase183A consumed Phase182A and Phase181B outputs.
+
+**Top-level result:**
+```text
+evaluated_candidates                 : 12
+ready_candidates                     : 0
+selected_candidate_id                : Q7_H4_E2_B00_M10_A10
+selected_timeframe                   : 4H
+selected_family_type                 : pullback_rejection
+selected_test_quality_pass_rate      : 0.5929
+selected_test_replay_profit_factor   : 1.5527
+selected_walkforward_pass_ratio      : 0.0
+quality_geometry_redesign_ready_gate : 0
+```
+
+**Interpretation:**
+```text
+The broad quality-geometry redesign improved final-test pockets but did not transfer.
+The selected candidate Q7 is test-positive only: validation PF=0.8996 and WF=0/4.
+No candidate is training-ready.
+```
+
+**Best failed candidate:**
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test quality : 0.4643 / 0.5929
+validation/test PF      : 0.8996 / 1.5527
+WF                      : 0/4
+verdict                 : TEST_ONLY_NOT_TRANSFERRED
+```
+
+**Decision:**
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_RESULT.md
+docs/Phases/Phase183A.md
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+**Next owner decision:**
+```text
+Option A — stop/freeze current entry-quality geometry route.
+Option B — run one narrower Phase184A attribution-only stop-or-narrow decision.
+```
+
+## 2026-10-04 — Phase184A: Entry route test-only closure built
+
+**Request:** build Phase184A as a closure / stop-or-narrow decision after Phase183A produced test-only pockets and no ready candidate.
+
+**Implemented:**
+- `scripts/audit_entry_route_test_only_failure_attribution.py`
+- `tests/unit/ai/test_entry_route_test_only_failure_attribution.py`
+- GUI command: `Audit entry route test-only failure`
+- `CommandKind.AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE`
+- Docs:
+  - `docs/Phases/Phase184A.md`
+  - `docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Purpose:**
+```text
+Determine whether Phase183A positives are test-only artifacts.
+Decide FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE or allow exactly one narrow diagnostic exception.
+```
+
+**Outputs:**
+```text
+run_logs/entry_route_test_only_failure_attribution/latest.json
+run_logs/entry_route_test_only_failure_attribution/latest.html
+run_logs/entry_route_test_only_failure_attribution/latest_candidate_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_split_transfer.csv
+run_logs/entry_route_test_only_failure_attribution/latest_walkforward_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_replay_months.csv
+run_logs/entry_route_test_only_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_route_test_only_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_route_test_only_failure_attribution/latest_next_plan.csv
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_entry_route_test_only_failure_attribution.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_entry_route_test_only_failure_attribution.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_entry_route_test_only_failure_attribution.py tests/unit/ai/test_entry_quality_geometry_candidates.py tests/unit/ai/test_entry_event_failure_attribution.py tests/unit/ai/test_entry_event_discovery.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit entry route test-only failure
+```
+
+Then provide:
+```text
+run_logs\entry_route_test_only_failure_attribution\latest.json
+```
+
+## 2026-10-05 — Phase184A owner result: entry route freeze recommended
+
+**Owner run:** Phase184A consumed Phase183A output.
+
+**Top-level result:**
+```text
+evaluated_candidates       : 12
+ready_candidates           : 0
+test_only_candidates       : 8
+narrow_candidate_count     : 0
+selected_candidate_id      : Q7_H4_E2_B00_M10_A10
+selected_closure_verdict   : TEST_ONLY_NOT_TRANSFERRED
+selected_decision_route_id : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+selected_decision          : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+no_training_gate           : 1
+no_paper_live_gate         : 1
+```
+
+**Dominant failures:**
+```text
+walkforward_transfer_failed       : 12/12
+walkforward_transfer_gate_failed  : 12/12
+static_transfer_gate_failed       : 12/12
+test_only_not_transferred         : 8/12
+```
+
+**Selected candidate:**
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test PF : 0.8996 / 1.5527
+WF pass            : 0/4
+verdict            : TEST_ONLY_NOT_TRANSFERRED
+```
+
+**Decision:**
+```text
+FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_RESULT.md
+docs/Phases/Phase184A.md
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+## 2026-10-05 — Phase185A: Range model reliability audit built
+
+**Request:** precisely test the current 4H and 1D range models to determine whether they are trustworthy.
+
+**Implemented:**
+- `scripts/audit_range_model_reliability.py`
+- `tests/unit/ai/test_range_model_reliability.py`
+- GUI command: `Audit range model reliability`
+- `CommandKind.AUDIT_RANGE_MODEL_RELIABILITY`
+- Docs:
+  - `docs/Phases/Phase185A.md`
+  - `docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Audit dimensions:**
+```text
+forecast coherence
+forecast error in ATR units
+calibration bins
+directional Spearman ranking
+regime breakdown
+simple decision-utility proxy
+```
+
+**Default models:**
+```text
+gold_range_4h
+gold_range_1d
+version 0 = latest
+```
+
+**Outputs:**
+```text
+run_logs/range_model_reliability/latest.json
+run_logs/range_model_reliability/latest.html
+run_logs/range_model_reliability/latest_forecast_errors.csv
+run_logs/range_model_reliability/latest_summary.csv
+run_logs/range_model_reliability/latest_calibration_bins.csv
+run_logs/range_model_reliability/latest_regime_breakdown.csv
+run_logs/range_model_reliability/latest_decision_utility.csv
+run_logs/range_model_reliability/latest_decision_matrix.csv
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_range_model_reliability.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_range_model_reliability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_range_model_reliability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit range model reliability
+```
+
+Then provide:
+```text
+run_logs\range_model_reliability\latest.json
+```
+
+## 2026-10-05 — Phase185A performance hotfix
+
+**Issue reported by owner:** PowerShell command for Phase185A ran for roughly 10 hours with no output and did not finish.
+
+**Root cause:** `source-mode=models` initially used a row-by-row range-provider path that was operationally too slow for full 4H/1D history and had no progress logging.
+
+**Fix:**
+- `scripts/audit_range_model_reliability.py` now loads each range model once per timeframe.
+- Inference is batched with `--batch-size`.
+- Progress is printed with `--progress-every`.
+- GUI command gained fields `Batch size` and `Progress every`.
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_range_model_reliability.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_range_model_reliability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+**Status:** logic unchanged; operational execution fixed. Still no model training / no paper / no live.
+
+## 2026-10-06 — Phase185A owner result: range models not decision-ready
+
+**Owner run:** Phase185A range reliability audit on `gold_range_4h` and `gold_range_1d`.
+
+**Top-level result:**
+```text
+evaluated_timeframes               : 2
+reliable_timeframes                : 0
+selected_timeframe                 : 4H
+selected_reliability_gate          : 0
+range_model_reliability_ready_gate : 0
+no_training_gate                   : 1
+no_paper_live_gate                 : 1
+```
+
+**4H result:**
+```text
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2196
+median_abs_low_error_atr  : 0.2222
+up_spearman               : 0.2740
+down_spearman             : 0.3122
+width_spearman            : 0.5897
+monotonicity              : 1.0 / 1.0
+decision_proxy_trades     : 0
+primary_failure           : decision_utility_gate_failed
+```
+
+**1D result:**
+```text
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2269
+median_abs_low_error_atr  : 0.2358
+up_spearman               : 0.0008
+down_spearman             : 0.0185
+width_spearman            : 0.0186
+decision_proxy_trades     : 0
+primary_failure           : ranking_gate_failed
+```
+
+**Decision:**
+```text
+RANGE_AS_TP_SL_ENGINE : BLOCKED
+RANGE_AS_CONTEXT_FEATURE : DIAGNOSTIC_ONLY
+PAPER_OR_LIVE : BLOCKED
+```
+
+**Interpretation:**
+```text
+4H range is coherent and has range-magnitude ranking signal, but no decision utility.
+1D range behaves like near-static ATR climatology and has no useful ranking signal.
+Do not use either as TP/SL or signal engine.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_RESULT.md
+docs/Phases/Phase185A.md
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+## 2026-10-07 — Phase186A: range candle-by-candle forecast accuracy audit built
+
+**Request:** measure how accurately the range models predict future candles one by one, not only the horizon envelope or the next-candle high/low.
+
+**Implemented:**
+- `scripts/audit_range_multistep_accuracy.py`
+- `tests/unit/ai/test_range_multistep_accuracy.py`
+- GUI command: `Audit range multistep accuracy`
+- `CommandKind.AUDIT_RANGE_MULTISTEP_ACCURACY`
+- Docs:
+  - `docs/Phases/Phase186A.md`
+  - `docs/Report/PHASE186A_RANGE_MULTISTEP_ACCURACY_REPORT.md`
+- Updated owner visibility:
+  - `docs/CURRENT_STATE.md`
+  - `docs/PROJECT_OWNER_MAP.html`
+
+**Contract:**
+```text
+step k = candle t+k high/low
+seq2seq last timestep layout = [high_1, low_1, ..., high_H, low_H]
+scalar [high, low] = step 1 only
+missing steps are reported, not imputed
+no recursive rollout
+no horizon-envelope metric
+open/close are not model targets
+```
+
+**Default request:**
+```text
+models: gold_range_4h, gold_range_1d
+requested_steps: 5
+batch_size: 256
+progress_every: 2000
+```
+
+A horizon=1 model cannot pass `candle_forecast_ready_gate` under the default request. Step 1 is still measured. Paper/live stays blocked.
+
+**Outputs:**
+```text
+run_logs/range_multistep_accuracy/latest.json
+run_logs/range_multistep_accuracy/latest.html
+run_logs/range_multistep_accuracy/latest_model_capability.csv
+run_logs/range_multistep_accuracy/latest_step_errors.csv
+run_logs/range_multistep_accuracy/latest_bias_by_step.csv
+run_logs/range_multistep_accuracy/latest_calibration_by_step.csv
+run_logs/range_multistep_accuracy/latest_degradation_curve.csv
+run_logs/range_multistep_accuracy/latest_regime_breakdown.csv
+```
+
+**Verification:**
+```text
+python -m py_compile scripts/audit_range_multistep_accuracy.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py tests/unit/ai/test_range_multistep_accuracy.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py
+→ passed
+
+python -m pytest tests/unit/ai/test_range_multistep_accuracy.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 86 passed
+
+ruff/black/mypy
+→ unavailable in this sandbox
+```
+
+**Still blocked:**
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+**Next owner action:**
+```text
+AI → Audit range multistep accuracy
+```
+
+Then provide:
+```text
+run_logs\range_multistep_accuracy\latest.json
+```
+
+## 2026-10-07 — Phase186A owner result: no multi-step candle forecast
+
+**Owner run:** Phase186A on `gold_range_4h` v3 and `gold_range_1d` v2, `requested_steps=5`, `source_mode=models`.
+
+**Top-level result:**
+```text
+evaluated_timeframes           : 2
+multistep_timeframes           : 0
+ready_timeframes               : 0
+selected_timeframe             : 4H
+candle_forecast_ready_gate     : 0
+recursive_rollout_used         : 0
+envelope_metric_used           : 0
+no_training_gate               : 1
+no_paper_live_gate             : 1
+```
+
+**Capability, from the live tensor:**
+```text
+keras_output_shape    : (None, 150, 2)
+window_size           : 150
+model_output_horizon  : 1
+missing_steps         : 2,3,4,5
+production_contract_check : matched
+capability_verdict    : STEP1_ONLY
+4H rows               : 33811
+1D rows               : 5483
+rows_skipped          : 0
+```
+
+The 150 axis is the input window. Width 2 is one high/low pair. A 5-candle forecast would require width 10. It is not there.
+
+**4H step 1:**
+```text
+median_abs_high/low_error_atr : 0.2196 / 0.2222
+high/low/width spearman       : 0.2740 / 0.3122 / 0.5897
+width_bias_atr                : -0.2826
+candle_containment_rate       : 0.1216
+step1_accuracy_gate           : 1
+primary_failure               : multistep_output_not_available
+```
+
+**1D step 1:**
+```text
+median_abs_high/low_error_atr : 0.2269 / 0.2358
+high/low/width spearman       : 0.0008 / 0.0185 / 0.0186
+predicted offsets             : constant +0.38531583547592 / -0.35862347483635 ATR
+candle_containment_rate       : 0.1012
+step1_accuracy_gate           : 0
+step failure                  : high_spearman_failed
+primary_failure               : multistep_output_not_available
+```
+
+**Decision:**
+```text
+CANDLE_STEP1_HIGH_LOW         : MEASURED_PASS for 4H diagnostic thresholds only; 1D failed
+CANDLE_BY_CANDLE_FUTURE_STEPS : NOT_AVAILABLE
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+**Interpretation:**
+```text
+Current range models do not forecast future candles one by one.
+4H next-candle high/low has modest ranking but is systematically too narrow.
+1D next-candle output is static ATR climatology.
+Do not train a multi-step model unless training is explicitly authorized.
+Do not paper or live trade.
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE186A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+docs/Phases/Phase186A.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
+
+## 2026-10-07 — Phase187A: protected multistep range training command
+
+**Request:** build a multistep range model under a different name so `gold_range_4h` and `gold_range_1d` are not corrupted. Also answer whether the Option B WaveNet branch should be used, and list causal features not used in training.
+
+**Decision:**
+```text
+Option B is not used.
+It is a 5M pivot-sequence model with a different target and a failed transfer record.
+The range model is already a causal WaveNet.
+Phase187A changes only the save id and the horizon.
+```
+
+**Implemented:**
+```text
+scripts/train_range_multistep.py
+GUI: Train range multistep WaveNet
+CommandKind.TRAIN_RANGE_MULTISTEP
+save ids: gold_range_multistep_4h, gold_range_multistep_1d
+horizon: 5
+output width: 10
+layout: [high_1, low_1, ..., high_5, low_5]
+window: 150
+layers x blocks: 4 x 2
+protected ids refused: gold_range_4h, gold_range_1d, gold_range_1h, gold_range_5m, gold_range
+```
+
+**Not done here:**
+```text
+TensorFlow is not installed in this sandbox.
+The owner gold 4H dataset is not here.
+No training result was invented.
+```
+
+**Causal features excluded from range training:**
+```text
+session_asian
+session_london
+session_ny
+session_overlap
+hour_sin
+hour_cos
+```
+
+These were not added to the new model. Full catalogue note:
+
+```text
+docs/Report/CAUSAL_FEATURES_NOT_USED_IN_RANGE_TRAINING.md
+```
+
+**Verification:**
+```text
+python scripts/train_range_multistep.py --dry-run
+→ plan only; no artifact written
+
+python -m pytest tests/unit/ai/test_range_multistep_training.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 81 passed
+```
+
+**Next owner action:**
+```text
+AI → Train range multistep WaveNet
+then
+AI → Audit range multistep accuracy
+with model ids gold_range_multistep_4h and gold_range_multistep_1d
+```

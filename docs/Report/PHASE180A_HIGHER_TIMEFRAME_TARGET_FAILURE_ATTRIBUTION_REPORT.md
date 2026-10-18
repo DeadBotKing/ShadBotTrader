@@ -85,3 +85,33 @@ No paper shadow.
 No live trading.
 No model training.
 ```
+
+## Owner run result
+
+The owner ran Phase180A on the Phase179A output. The audit confirmed cost feasibility but rejected model training because target readiness failed:
+
+```text
+cost_feasibility_confirmed_gate        : 1
+target_readiness_confirmed_failed_gate : 1
+selected_next_route_id                 : D1_TARGET_FAILURE_ATTRIBUTION_AND_REDESIGN_DECISION
+selected_next_phase                    : Phase181A — daily target failure attribution and redesign decision
+selected_focus_timeframe               : 1D
+selected_focus_family_id               : D1_R1_BK_MID_B20_10_H5
+no_training_gate                       : 1
+no_paper_live_gate                     : 1
+```
+
+Detailed result report:
+
+```text
+docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+Decision:
+
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+```

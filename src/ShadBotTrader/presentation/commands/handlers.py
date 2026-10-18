@@ -6760,6 +6760,224 @@ CommandField("temporal_filters", "Temporal filters", "96", kind="number"),
             group="AI",
         ),
         CommandDescriptor(
+            kind=CommandKind.AUDIT_ENTRY_EVENT_DISCOVERY,
+            label="Audit entry event discovery",
+            description=(
+                "Phase181B: diagnostic-only entry-event discovery across breakout, "
+                "pullback/rejection and continuation families. No model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "1H,4H,1D"),
+                CommandField("h1_flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("families", "Entry families", ""),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "10", kind="number"),
+                CommandField("max_folds", "Max folds", "6", kind="number"),
+                CommandField("min_train_events", "Min train events", "30", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "8", kind="number"),
+                CommandField("min_test_events", "Min test events", "8", kind="number"),
+                CommandField("min_side_events", "Min side events", "3", kind="number"),
+                CommandField("max_event_rate", "Max event rate", "0.35", kind="number"),
+                CommandField("min_direction_balance", "Min direction balance", "0.20", kind="number"),
+                CommandField("max_label_psi", "Max label PSI", "0.30", kind="number"),
+                CommandField("min_quality_pass_rate", "Min quality pass rate", "0.45", kind="number"),
+                CommandField("min_mfe_mae_ratio", "Min MFE/MAE ratio", "1.10", kind="number"),
+                CommandField("min_replay_profit_factor", "Min replay PF", "1.05", kind="number"),
+                CommandField("min_feature_separability", "Min feature separability", "0.05", kind="number"),
+                CommandField("max_median_spread_atr", "Max median spread/ATR", "0.12", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "3", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/entry_event_discovery"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION,
+            label="Audit entry-event failure attribution",
+            description=(
+                "Phase182A: consume Phase181B outputs and attribute entry-event failures "
+                "by family, side, timeframe, quality geometry and walk-forward folds."
+            ),
+            fields=[
+                CommandField("phase181b_path", "Phase181B result path", "run_logs/entry_event_discovery/latest.json"),
+                CommandField("events_path", "Events CSV override", ""),
+                CommandField("replay_path", "Replay CSV override", ""),
+                CommandField("splits_path", "Splits CSV override", ""),
+                CommandField("walkforward_path", "Walk-forward CSV override", ""),
+                CommandField("min_near_miss_test_pf", "Near-miss min test PF", "1.0", kind="number"),
+                CommandField("min_near_miss_test_quality", "Near-miss min test quality", "0.35", kind="number"),
+                CommandField("min_near_miss_feature_smd", "Near-miss min feature SMD", "0.25", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/entry_event_failure_attribution"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES,
+            label="Audit entry quality-geometry candidates",
+            description=(
+                "Phase183A: diagnostic-only audit of redesigned entry quality geometry "
+                "candidates focused on trigger placement, MFE target and MAE limit."
+            ),
+            fields=[
+                CommandField("phase182a_path", "Phase182A result path", "run_logs/entry_event_failure_attribution/latest.json"),
+                CommandField("phase181b_path", "Phase181B result path", "run_logs/entry_event_discovery/latest.json"),
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("h1_flat_path", "1H flat path", "datasets/processed/XAUUSD/1H/v1.parquet"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("candidates", "Quality-geometry candidates", ""),
+                CommandField("spread_mode", "Spread mode", "fixed", kind="select", options=("fixed", "pct")),
+                CommandField("spread_value", "Spread value", "0.4", kind="number"),
+                CommandField("same_bar_policy", "Same-bar policy", "stop_first", kind="select", options=("stop_first", "tp_first")),
+                CommandField("train_frac", "Train fraction", "0.70", kind="number"),
+                CommandField("val_frac", "Validation fraction", "0.15", kind="number"),
+                CommandField("purge_gap", "Purge gap samples", "10", kind="number"),
+                CommandField("max_folds", "Max folds", "4", kind="number"),
+                CommandField("min_train_events", "Min train events", "30", kind="number"),
+                CommandField("min_validation_events", "Min validation events", "8", kind="number"),
+                CommandField("min_test_events", "Min test events", "8", kind="number"),
+                CommandField("min_quality_pass_rate", "Min quality pass rate", "0.45", kind="number"),
+                CommandField("min_replay_profit_factor", "Min replay PF", "1.05", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "3", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/entry_quality_geometry_candidates"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE,
+            label="Audit entry route test-only failure",
+            description=(
+                "Phase184A: closure attribution for Phase183A test-only pockets; "
+                "decide freeze versus one narrow diagnostic exception."
+            ),
+            fields=[
+                CommandField("phase183a_path", "Phase183A result path", "run_logs/entry_quality_geometry_candidates/latest.json"),
+                CommandField("candidates_path", "Candidates CSV override", ""),
+                CommandField("splits_path", "Splits CSV override", ""),
+                CommandField("walkforward_path", "Walk-forward CSV override", ""),
+                CommandField("replay_path", "Replay CSV override", ""),
+                CommandField("min_train_pf", "Min train PF", "1.0", kind="number"),
+                CommandField("min_validation_pf", "Min validation PF", "1.0", kind="number"),
+                CommandField("min_test_pf", "Min test PF", "1.0", kind="number"),
+                CommandField("min_quality_pass_rate", "Min quality pass rate", "0.45", kind="number"),
+                CommandField("min_walkforward_pass_ratio", "Min WF pass ratio", "0.50", kind="number"),
+                CommandField("min_walkforward_folds", "Min WF folds", "3", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/entry_route_test_only_failure_attribution"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "60", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_RANGE_MODEL_RELIABILITY,
+            label="Audit range model reliability",
+            description=(
+                "Phase185A: audit 4H/1D range model forecast accuracy, calibration, "
+                "directional ranking and decision utility. No model training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "4H,1D"),
+                CommandField("source_mode", "Source mode", "models", kind="select", options=("models", "predictions")),
+                CommandField("predictions_path", "Predictions file", ""),
+                CommandField("range_1d_model_id", "1D range model", "gold_range_1d"),
+                CommandField("range_1d_version", "1D range version", "0", kind="number"),
+                CommandField("range_4h_model_id", "4H range model", "gold_range_4h"),
+                CommandField("range_4h_version", "4H range version", "0", kind="number"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("h4_horizon", "4H horizon override", "0", kind="number"),
+                CommandField("d1_horizon", "1D horizon override", "0", kind="number"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("sample_stride", "Sample stride", "1", kind="number"),
+                CommandField("batch_size", "Batch size", "256", kind="number"),
+                CommandField("progress_every", "Progress every", "2000", kind="number"),
+                CommandField("calibration_bins", "Calibration bins", "5", kind="number"),
+                CommandField("decision_edge_atr", "Decision edge ATR", "0.25", kind="number"),
+                CommandField("decision_mfe_atr", "Decision MFE ATR", "1.0", kind="number"),
+                CommandField("decision_mae_atr", "Decision MAE ATR", "1.0", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/range_model_reliability"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.AUDIT_RANGE_MULTISTEP_ACCURACY,
+            label="Audit range multistep accuracy",
+            description=(
+                "Phase186A: measure candle-by-candle high/low forecast accuracy of the "
+                "4H/1D range models. Reports steps the model does not emit. No training."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "4H,1D"),
+                CommandField("source_mode", "Source mode", "models", kind="select", options=("models", "predictions")),
+                CommandField("predictions_path", "Predictions file", ""),
+                CommandField("range_4h_model_id", "4H range model", "gold_range_4h"),
+                CommandField("range_4h_version", "4H range version", "0", kind="number"),
+                CommandField("range_1d_model_id", "1D range model", "gold_range_1d"),
+                CommandField("range_1d_version", "1D range version", "0", kind="number"),
+                CommandField("h4_flat_path", "4H flat path", "datasets/processed/XAUUSD/4H/v1.parquet"),
+                CommandField("d1_flat_path", "1D flat path", "datasets/processed/XAUUSD/1D/v1.parquet"),
+                CommandField("requested_steps", "Requested future candles", "5", kind="number"),
+                CommandField("atr_period", "ATR period", "14", kind="number"),
+                CommandField("max_rows", "Max rows", "0", kind="number"),
+                CommandField("sample_stride", "Sample stride", "1", kind="number"),
+                CommandField("batch_size", "Batch size", "256", kind="number"),
+                CommandField("progress_every", "Progress every", "2000", kind="number"),
+                CommandField("calibration_bins", "Calibration bins", "5", kind="number"),
+                CommandField("min_rows", "Min rows", "30", kind="number"),
+                CommandField("max_median_abs_error_atr", "Max median abs error ATR", "0.50", kind="number"),
+                CommandField("min_spearman", "Min Spearman", "0.10", kind="number"),
+                CommandField("min_pair_coherent_rate", "Min pair coherent rate", "0.98", kind="number"),
+                CommandField("output_dir", "Output dir", "run_logs/range_multistep_accuracy"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "180", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
+            kind=CommandKind.TRAIN_RANGE_MULTISTEP,
+            label="Train range multistep WaveNet",
+            description=(
+                "Phase187A: train a new horizon=5 range WaveNet as gold_range_multistep_4h "
+                "and gold_range_multistep_1d. Does not overwrite gold_range_4h or gold_range_1d."
+            ),
+            fields=[
+                CommandField("symbol", "Symbol", "XAUUSD"),
+                CommandField("timeframes", "Timeframes", "4H,1D"),
+                CommandField("horizon", "Future candles", "5", kind="number"),
+                CommandField("window", "Window rows", "150", kind="number"),
+                CommandField("epochs", "Epochs", "50", kind="number"),
+                CommandField("folds", "Folds", "3", kind="number"),
+                CommandField("n_layers", "WaveNet layers per block", "4", kind="number"),
+                CommandField("n_blocks", "WaveNet blocks", "2", kind="number"),
+                CommandField("learning_rate", "Learning rate", "0.00015", kind="number"),
+                CommandField("model_id_prefix", "Model id prefix", "gold_range_multistep"),
+                CommandField("output_note", "Save ids", "gold_range_multistep_4h, gold_range_multistep_1d"),
+                CommandField("timeout_minutes", "Give up after (minutes)", "720", kind="number"),
+            ],
+            slow=True,
+            group="AI",
+        ),
+        CommandDescriptor(
             kind=CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK,
             label="Validate production hybrid stack",
             description=(
@@ -7647,6 +7865,19 @@ class CommandHandlers:
                 CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES: (
                     accounts.audit_higher_timeframe_target_failures
                 ),
+                CommandKind.AUDIT_ENTRY_EVENT_DISCOVERY: accounts.audit_entry_event_discovery,
+                CommandKind.AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION: (
+                    accounts.audit_entry_event_failure_attribution
+                ),
+                CommandKind.AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES: (
+                    accounts.audit_entry_quality_geometry_candidates
+                ),
+                CommandKind.AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE: (
+                    accounts.audit_entry_route_test_only_failure
+                ),
+                CommandKind.AUDIT_RANGE_MODEL_RELIABILITY: accounts.audit_range_model_reliability,
+                CommandKind.AUDIT_RANGE_MULTISTEP_ACCURACY: accounts.audit_range_multistep_accuracy,
+                CommandKind.TRAIN_RANGE_MULTISTEP: accounts.train_range_multistep,
                 CommandKind.VALIDATE_PRODUCTION_HYBRID_STACK: (
                     accounts.validate_production_hybrid_stack
                 ),
@@ -14533,6 +14764,334 @@ class AccountCommandHandlers(CommandHandlers):
             "Audited Phase180A higher-timeframe target failures",
             started,
             timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_entry_event_discovery(self, command: Command) -> CommandResult:
+        """Run Phase181B entry-event discovery framework."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        args = [
+            "scripts/audit_entry_event_discovery.py",
+            "--symbol", symbol,
+            "--timeframes", command.text("timeframes", "1H,4H,1D").strip() or "1H,4H,1D",
+            "--h1-flat-path", command.text("h1_flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip() or "datasets/processed/XAUUSD/1H/v1.parquet",
+            "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+            "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+            "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+            "--spread-mode", command.text("spread_mode", "fixed").strip().lower() or "fixed",
+            "--spread-value", str(max(command.number("spread_value", 0.4), 0.0)),
+            "--same-bar-policy", command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+            "--train-frac", str(command.number("train_frac", 0.70)),
+            "--val-frac", str(command.number("val_frac", 0.15)),
+            "--purge-gap", str(max(command.integer("purge_gap", 10), 0)),
+            "--max-folds", str(max(command.integer("max_folds", 6), 1)),
+            "--min-train-events", str(max(command.integer("min_train_events", 30), 1)),
+            "--min-validation-events", str(max(command.integer("min_validation_events", 8), 1)),
+            "--min-test-events", str(max(command.integer("min_test_events", 8), 1)),
+            "--min-side-events", str(max(command.integer("min_side_events", 3), 0)),
+            "--max-event-rate", str(max(command.number("max_event_rate", 0.35), 0.0)),
+            "--min-direction-balance", str(max(command.number("min_direction_balance", 0.20), 0.0)),
+            "--max-label-psi", str(max(command.number("max_label_psi", 0.30), 0.0)),
+            "--min-quality-pass-rate", str(max(command.number("min_quality_pass_rate", 0.45), 0.0)),
+            "--min-mfe-mae-ratio", str(max(command.number("min_mfe_mae_ratio", 1.10), 0.0)),
+            "--min-replay-profit-factor", str(max(command.number("min_replay_profit_factor", 1.05), 0.0)),
+            "--min-feature-separability", str(max(command.number("min_feature_separability", 0.05), 0.0)),
+            "--max-median-spread-atr", str(max(command.number("max_median_spread_atr", 0.12), 0.0)),
+            "--min-walkforward-pass-ratio", str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+            "--min-walkforward-folds", str(max(command.integer("min_walkforward_folds", 3), 1)),
+            "--storage-root", str(self._storage_root),
+            "--output-dir", command.text("output_dir", "run_logs/entry_event_discovery").strip() or "run_logs/entry_event_discovery",
+            "--report-title", command.text("report_title", "Phase181B entry-event discovery framework").strip() or "Phase181B entry-event discovery framework",
+        ]
+        custom_families = command.text("families", "").strip()
+        if custom_families:
+            args.extend(["--families", custom_families])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase181B entry-event discovery",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_entry_event_failure_attribution(self, command: Command) -> CommandResult:
+        """Run Phase182A entry-event failure attribution."""
+        started = time.monotonic()
+        args = [
+            "scripts/audit_entry_event_failure_attribution.py",
+            "--phase181b-path",
+            command.text("phase181b_path", "run_logs/entry_event_discovery/latest.json").strip()
+            or "run_logs/entry_event_discovery/latest.json",
+            "--min-near-miss-test-pf",
+            str(max(command.number("min_near_miss_test_pf", 1.0), 0.0)),
+            "--min-near-miss-test-quality",
+            str(max(command.number("min_near_miss_test_quality", 0.35), 0.0)),
+            "--min-near-miss-feature-smd",
+            str(max(command.number("min_near_miss_feature_smd", 0.25), 0.0)),
+            "--output-dir",
+            command.text("output_dir", "run_logs/entry_event_failure_attribution").strip()
+            or "run_logs/entry_event_failure_attribution",
+            "--report-title",
+            command.text("report_title", "Phase182A entry-event failure attribution").strip()
+            or "Phase182A entry-event failure attribution",
+        ]
+        optional_paths = {
+            "events_path": "--events-path",
+            "replay_path": "--replay-path",
+            "splits_path": "--splits-path",
+            "walkforward_path": "--walkforward-path",
+        }
+        for field, flag in optional_paths.items():
+            value = command.text(field, "").strip()
+            if value:
+                args.extend([flag, value])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase182A entry-event failures",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_entry_quality_geometry_candidates(self, command: Command) -> CommandResult:
+        """Run Phase183A entry quality-geometry candidate audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        args = [
+            "scripts/audit_entry_quality_geometry_candidates.py",
+            "--phase182a-path",
+            command.text("phase182a_path", "run_logs/entry_event_failure_attribution/latest.json").strip()
+            or "run_logs/entry_event_failure_attribution/latest.json",
+            "--phase181b-path",
+            command.text("phase181b_path", "run_logs/entry_event_discovery/latest.json").strip()
+            or "run_logs/entry_event_discovery/latest.json",
+            "--symbol",
+            symbol,
+            "--h1-flat-path",
+            command.text("h1_flat_path", "datasets/processed/XAUUSD/1H/v1.parquet").strip()
+            or "datasets/processed/XAUUSD/1H/v1.parquet",
+            "--h4-flat-path",
+            command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip()
+            or "datasets/processed/XAUUSD/4H/v1.parquet",
+            "--d1-flat-path",
+            command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip()
+            or "datasets/processed/XAUUSD/1D/v1.parquet",
+            "--max-rows",
+            str(max(command.integer("max_rows", 0), 0)),
+            "--spread-mode",
+            command.text("spread_mode", "fixed").strip().lower() or "fixed",
+            "--spread-value",
+            str(max(command.number("spread_value", 0.4), 0.0)),
+            "--same-bar-policy",
+            command.text("same_bar_policy", "stop_first").strip().lower() or "stop_first",
+            "--train-frac",
+            str(command.number("train_frac", 0.70)),
+            "--val-frac",
+            str(command.number("val_frac", 0.15)),
+            "--purge-gap",
+            str(max(command.integer("purge_gap", 10), 0)),
+            "--max-folds",
+            str(max(command.integer("max_folds", 4), 1)),
+            "--min-train-events",
+            str(max(command.integer("min_train_events", 30), 1)),
+            "--min-validation-events",
+            str(max(command.integer("min_validation_events", 8), 1)),
+            "--min-test-events",
+            str(max(command.integer("min_test_events", 8), 1)),
+            "--min-quality-pass-rate",
+            str(max(command.number("min_quality_pass_rate", 0.45), 0.0)),
+            "--min-replay-profit-factor",
+            str(max(command.number("min_replay_profit_factor", 1.05), 0.0)),
+            "--min-walkforward-pass-ratio",
+            str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+            "--min-walkforward-folds",
+            str(max(command.integer("min_walkforward_folds", 3), 1)),
+            "--storage-root",
+            str(self._storage_root),
+            "--output-dir",
+            command.text("output_dir", "run_logs/entry_quality_geometry_candidates").strip()
+            or "run_logs/entry_quality_geometry_candidates",
+            "--report-title",
+            command.text("report_title", "Phase183A entry quality-geometry candidate audit").strip()
+            or "Phase183A entry quality-geometry candidate audit",
+        ]
+        custom_candidates = command.text("candidates", "").strip()
+        if custom_candidates:
+            args.extend(["--candidates", custom_candidates])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase183A entry quality-geometry candidates",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_entry_route_test_only_failure(self, command: Command) -> CommandResult:
+        """Run Phase184A entry route test-only failure attribution."""
+        started = time.monotonic()
+        args = [
+            "scripts/audit_entry_route_test_only_failure_attribution.py",
+            "--phase183a-path",
+            command.text("phase183a_path", "run_logs/entry_quality_geometry_candidates/latest.json").strip()
+            or "run_logs/entry_quality_geometry_candidates/latest.json",
+            "--min-train-pf",
+            str(max(command.number("min_train_pf", 1.0), 0.0)),
+            "--min-validation-pf",
+            str(max(command.number("min_validation_pf", 1.0), 0.0)),
+            "--min-test-pf",
+            str(max(command.number("min_test_pf", 1.0), 0.0)),
+            "--min-quality-pass-rate",
+            str(max(command.number("min_quality_pass_rate", 0.45), 0.0)),
+            "--min-walkforward-pass-ratio",
+            str(max(command.number("min_walkforward_pass_ratio", 0.50), 0.0)),
+            "--min-walkforward-folds",
+            str(max(command.integer("min_walkforward_folds", 3), 1)),
+            "--output-dir",
+            command.text("output_dir", "run_logs/entry_route_test_only_failure_attribution").strip()
+            or "run_logs/entry_route_test_only_failure_attribution",
+            "--report-title",
+            command.text("report_title", "Phase184A entry route test-only failure attribution").strip()
+            or "Phase184A entry route test-only failure attribution",
+        ]
+        optional_paths = {
+            "candidates_path": "--candidates-path",
+            "splits_path": "--splits-path",
+            "walkforward_path": "--walkforward-path",
+            "replay_path": "--replay-path",
+        }
+        for field, flag in optional_paths.items():
+            value = command.text(field, "").strip()
+            if value:
+                args.extend([flag, value])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase184A entry route test-only failures",
+            started,
+            timeout=max(command.integer("timeout_minutes", 60), 5) * 60,
+        )
+
+    def audit_range_model_reliability(self, command: Command) -> CommandResult:
+        """Run Phase185A range model reliability audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        args = [
+            "scripts/audit_range_model_reliability.py",
+            "--symbol", symbol,
+            "--timeframes", command.text("timeframes", "4H,1D").strip() or "4H,1D",
+            "--source-mode", command.text("source_mode", "models").strip().lower() or "models",
+            "--range-1d-model-id", command.text("range_1d_model_id", "gold_range_1d").strip() or "gold_range_1d",
+            "--range-1d-version", str(max(command.integer("range_1d_version", 0), 0)),
+            "--range-4h-model-id", command.text("range_4h_model_id", "gold_range_4h").strip() or "gold_range_4h",
+            "--range-4h-version", str(max(command.integer("range_4h_version", 0), 0)),
+            "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+            "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+            "--h4-horizon", str(max(command.integer("h4_horizon", 0), 0)),
+            "--d1-horizon", str(max(command.integer("d1_horizon", 0), 0)),
+            "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+            "--sample-stride", str(max(command.integer("sample_stride", 1), 1)),
+            "--batch-size", str(max(command.integer("batch_size", 256), 1)),
+            "--progress-every", str(max(command.integer("progress_every", 2000), 0)),
+            "--calibration-bins", str(max(command.integer("calibration_bins", 5), 2)),
+            "--decision-edge-atr", str(max(command.number("decision_edge_atr", 0.25), 0.0)),
+            "--decision-mfe-atr", str(max(command.number("decision_mfe_atr", 1.0), 0.01)),
+            "--decision-mae-atr", str(max(command.number("decision_mae_atr", 1.0), 0.01)),
+            "--storage-root", str(self._storage_root),
+            "--output-dir", command.text("output_dir", "run_logs/range_model_reliability").strip() or "run_logs/range_model_reliability",
+            "--report-title", command.text("report_title", "Phase185A range model reliability audit").strip() or "Phase185A range model reliability audit",
+        ]
+        predictions_path = command.text("predictions_path", "").strip()
+        if predictions_path:
+            args.extend(["--predictions-path", predictions_path])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase185A range model reliability",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def audit_range_multistep_accuracy(self, command: Command) -> CommandResult:
+        """Run Phase186A range candle-by-candle forecast accuracy audit."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        args = [
+            "scripts/audit_range_multistep_accuracy.py",
+            "--symbol", symbol,
+            "--timeframes", command.text("timeframes", "4H,1D").strip() or "4H,1D",
+            "--source-mode", command.text("source_mode", "models").strip().lower() or "models",
+            "--range-4h-model-id", command.text("range_4h_model_id", "gold_range_4h").strip() or "gold_range_4h",
+            "--range-4h-version", str(max(command.integer("range_4h_version", 0), 0)),
+            "--range-1d-model-id", command.text("range_1d_model_id", "gold_range_1d").strip() or "gold_range_1d",
+            "--range-1d-version", str(max(command.integer("range_1d_version", 0), 0)),
+            "--h4-flat-path", command.text("h4_flat_path", "datasets/processed/XAUUSD/4H/v1.parquet").strip() or "datasets/processed/XAUUSD/4H/v1.parquet",
+            "--d1-flat-path", command.text("d1_flat_path", "datasets/processed/XAUUSD/1D/v1.parquet").strip() or "datasets/processed/XAUUSD/1D/v1.parquet",
+            "--requested-steps", str(min(max(command.integer("requested_steps", 5), 1), 64)),
+            "--atr-period", str(max(command.integer("atr_period", 14), 1)),
+            "--max-rows", str(max(command.integer("max_rows", 0), 0)),
+            "--sample-stride", str(max(command.integer("sample_stride", 1), 1)),
+            "--batch-size", str(max(command.integer("batch_size", 256), 1)),
+            "--progress-every", str(max(command.integer("progress_every", 2000), 0)),
+            "--calibration-bins", str(max(command.integer("calibration_bins", 5), 2)),
+            "--min-rows", str(max(command.integer("min_rows", 30), 1)),
+            "--max-median-abs-error-atr", str(max(command.number("max_median_abs_error_atr", 0.50), 0.0)),
+            "--min-spearman", str(command.number("min_spearman", 0.10)),
+            "--min-pair-coherent-rate", str(min(max(command.number("min_pair_coherent_rate", 0.98), 0.0), 1.0)),
+            "--storage-root", str(self._storage_root),
+            "--output-dir", command.text("output_dir", "run_logs/range_multistep_accuracy").strip() or "run_logs/range_multistep_accuracy",
+            "--report-title", command.text("report_title", "Phase186A range candle-by-candle forecast accuracy audit").strip() or "Phase186A range candle-by-candle forecast accuracy audit",
+        ]
+        predictions_path = command.text("predictions_path", "").strip()
+        if predictions_path:
+            args.extend(["--predictions-path", predictions_path])
+        return self._run_script(
+            command,
+            args,
+            "Audited Phase186A range candle-by-candle forecast accuracy",
+            started,
+            timeout=max(command.integer("timeout_minutes", 180), 5) * 60,
+        )
+
+    def train_range_multistep(self, command: Command) -> CommandResult:
+        """Train Phase187A multistep range models under new ids only."""
+        started = time.monotonic()
+        symbol = command.text("symbol", "XAUUSD").strip().upper() or "XAUUSD"
+        prefix = command.text("model_id_prefix", "gold_range_multistep").strip().lower() or "gold_range_multistep"
+        if "multistep" not in prefix:
+            return CommandResult.rejected(
+                command.kind,
+                "Model id prefix must contain 'multistep' so gold_range_4h and gold_range_1d are not overwritten.",
+            )
+        return self._run_script(
+            command,
+            [
+                "scripts/train_range_multistep.py",
+                "--symbol",
+                symbol,
+                "--timeframes",
+                command.text("timeframes", "4H,1D").strip() or "4H,1D",
+                "--horizon",
+                str(max(command.integer("horizon", 5), 2)),
+                "--window",
+                str(max(command.integer("window", 150), 2)),
+                "--epochs",
+                str(max(command.integer("epochs", 50), 1)),
+                "--folds",
+                str(max(command.integer("folds", 3), 1)),
+                "--n-layers",
+                str(max(command.integer("n_layers", 4), 1)),
+                "--n-blocks",
+                str(max(command.integer("n_blocks", 2), 1)),
+                "--learning-rate",
+                str(max(command.number("learning_rate", 0.00015), 1e-8)),
+                "--model-id-prefix",
+                prefix,
+                "--storage-root",
+                str(self._storage_root),
+            ],
+            "Started Phase187A multistep range training under new model ids",
+            started,
+            timeout=max(command.integer("timeout_minutes", 720), 5) * 60,
         )
 
     def validate_production_hybrid_stack(self, command: Command) -> CommandResult:

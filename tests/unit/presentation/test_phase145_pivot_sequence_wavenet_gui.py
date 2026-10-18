@@ -177,6 +177,34 @@ def test_phase145_descriptors_exist():
         descriptor_for(CommandKind.AUDIT_HIGHER_TIMEFRAME_TARGET_FAILURES).label
         == "Audit higher-timeframe target failures"
     )
+    assert (
+        descriptor_for(CommandKind.AUDIT_ENTRY_EVENT_DISCOVERY).label
+        == "Audit entry event discovery"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION).label
+        == "Audit entry-event failure attribution"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES).label
+        == "Audit entry quality-geometry candidates"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE).label
+        == "Audit entry route test-only failure"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_RANGE_MODEL_RELIABILITY).label
+        == "Audit range model reliability"
+    )
+    assert (
+        descriptor_for(CommandKind.AUDIT_RANGE_MULTISTEP_ACCURACY).label
+        == "Audit range multistep accuracy"
+    )
+    assert (
+        descriptor_for(CommandKind.TRAIN_RANGE_MULTISTEP).label
+        == "Train range multistep WaveNet"
+    )
 
 
 def test_build_sequence_tensor_passes_option_a_args(gui, monkeypatch):
@@ -1185,3 +1213,187 @@ def test_higher_timeframe_target_failures_passes_gui_args(gui, monkeypatch):
     assert args[0] == "scripts/audit_higher_timeframe_target_failure_attribution.py"
     assert args[args.index("--phase179-path") + 1] == "phase179.json"
     assert args[args.index("--output-dir") + 1] == "out_phase180"
+
+
+def test_entry_event_discovery_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_entry_event_discovery(
+        Command(
+            CommandKind.AUDIT_ENTRY_EVENT_DISCOVERY,
+            {
+                "timeframes": "1H,4H,1D",
+                "h1_flat_path": "h1.parquet",
+                "h4_flat_path": "h4.parquet",
+                "d1_flat_path": "d1.parquet",
+                "families": "CUSTOM:entry:breakout:12:0.05:0:0:2:8:1:0.5:12:8:0.1:1:0.45",
+                "spread_value": "0.4",
+                "output_dir": "out_phase181b",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_entry_event_discovery.py"
+    assert args[args.index("--timeframes") + 1] == "1H,4H,1D"
+    assert args[args.index("--h1-flat-path") + 1] == "h1.parquet"
+    assert args[args.index("--h4-flat-path") + 1] == "h4.parquet"
+    assert args[args.index("--d1-flat-path") + 1] == "d1.parquet"
+    assert args[args.index("--families") + 1].startswith("CUSTOM:entry:breakout")
+    assert args[args.index("--output-dir") + 1] == "out_phase181b"
+
+
+def test_entry_event_failure_attribution_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_entry_event_failure_attribution(
+        Command(
+            CommandKind.AUDIT_ENTRY_EVENT_FAILURE_ATTRIBUTION,
+            {
+                "phase181b_path": "phase181b.json",
+                "replay_path": "replay.csv",
+                "output_dir": "out_phase182a",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_entry_event_failure_attribution.py"
+    assert args[args.index("--phase181b-path") + 1] == "phase181b.json"
+    assert args[args.index("--replay-path") + 1] == "replay.csv"
+    assert args[args.index("--output-dir") + 1] == "out_phase182a"
+
+
+def test_entry_quality_geometry_candidates_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_entry_quality_geometry_candidates(
+        Command(
+            CommandKind.AUDIT_ENTRY_QUALITY_GEOMETRY_CANDIDATES,
+            {
+                "phase182a_path": "phase182a.json",
+                "phase181b_path": "phase181b.json",
+                "h4_flat_path": "h4.parquet",
+                "d1_flat_path": "d1.parquet",
+                "candidates": "Q:entry:1D:continuation:12:0.03:0:0:2:10:1:1:20:12:0.4:1.2:0.5:ALL",
+                "output_dir": "out_phase183a",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_entry_quality_geometry_candidates.py"
+    assert args[args.index("--phase182a-path") + 1] == "phase182a.json"
+    assert args[args.index("--phase181b-path") + 1] == "phase181b.json"
+    assert args[args.index("--h4-flat-path") + 1] == "h4.parquet"
+    assert args[args.index("--d1-flat-path") + 1] == "d1.parquet"
+    assert args[args.index("--candidates") + 1].startswith("Q:entry:1D")
+    assert args[args.index("--output-dir") + 1] == "out_phase183a"
+
+
+def test_entry_route_test_only_failure_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_entry_route_test_only_failure(
+        Command(
+            CommandKind.AUDIT_ENTRY_ROUTE_TEST_ONLY_FAILURE,
+            {
+                "phase183a_path": "phase183a.json",
+                "replay_path": "replay.csv",
+                "output_dir": "out_phase184a",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_entry_route_test_only_failure_attribution.py"
+    assert args[args.index("--phase183a-path") + 1] == "phase183a.json"
+    assert args[args.index("--replay-path") + 1] == "replay.csv"
+    assert args[args.index("--output-dir") + 1] == "out_phase184a"
+
+
+def test_range_model_reliability_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_range_model_reliability(
+        Command(
+            CommandKind.AUDIT_RANGE_MODEL_RELIABILITY,
+            {
+                "source_mode": "predictions",
+                "predictions_path": "pred.parquet",
+                "timeframes": "4H,1D",
+                "range_4h_model_id": "r4h",
+                "range_1d_model_id": "r1d",
+                "h4_flat_path": "h4.parquet",
+                "d1_flat_path": "d1.parquet",
+                "output_dir": "out_phase185a",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_range_model_reliability.py"
+    assert args[args.index("--source-mode") + 1] == "predictions"
+    assert args[args.index("--predictions-path") + 1] == "pred.parquet"
+    assert args[args.index("--range-4h-model-id") + 1] == "r4h"
+    assert args[args.index("--range-1d-model-id") + 1] == "r1d"
+    assert args[args.index("--h4-flat-path") + 1] == "h4.parquet"
+    assert args[args.index("--d1-flat-path") + 1] == "d1.parquet"
+    assert args[args.index("--output-dir") + 1] == "out_phase185a"
+
+
+def test_range_multistep_accuracy_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.audit_range_multistep_accuracy(
+        Command(
+            CommandKind.AUDIT_RANGE_MULTISTEP_ACCURACY,
+            {
+                "source_mode": "predictions",
+                "predictions_path": "pred.parquet",
+                "timeframes": "4H,1D",
+                "range_4h_model_id": "r4h",
+                "range_1d_model_id": "r1d",
+                "requested_steps": "5",
+                "h4_flat_path": "h4.parquet",
+                "d1_flat_path": "d1.parquet",
+                "output_dir": "out_phase186a",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/audit_range_multistep_accuracy.py"
+    assert args[args.index("--source-mode") + 1] == "predictions"
+    assert args[args.index("--predictions-path") + 1] == "pred.parquet"
+    assert args[args.index("--range-4h-model-id") + 1] == "r4h"
+    assert args[args.index("--range-1d-model-id") + 1] == "r1d"
+    assert args[args.index("--requested-steps") + 1] == "5"
+    assert args[args.index("--h4-flat-path") + 1] == "h4.parquet"
+    assert args[args.index("--d1-flat-path") + 1] == "d1.parquet"
+    assert args[args.index("--output-dir") + 1] == "out_phase186a"
+
+
+def test_range_multistep_training_passes_gui_args(gui, monkeypatch):
+    captured = capture(monkeypatch, gui)
+
+    gui.train_range_multistep(
+        Command(
+            CommandKind.TRAIN_RANGE_MULTISTEP,
+            {
+                "timeframes": "4H,1D",
+                "horizon": "5",
+                "model_id_prefix": "gold_range_multistep",
+                "window": "150",
+            },
+        )
+    )
+
+    args = captured["args"]
+    assert args[0] == "scripts/train_range_multistep.py"
+    assert args[args.index("--timeframes") + 1] == "4H,1D"
+    assert args[args.index("--horizon") + 1] == "5"
+    assert args[args.index("--model-id-prefix") + 1] == "gold_range_multistep"
+    assert args[args.index("--window") + 1] == "150"
+    assert "gold_range_4h" not in args
+    assert "gold_range_1d" not in args
