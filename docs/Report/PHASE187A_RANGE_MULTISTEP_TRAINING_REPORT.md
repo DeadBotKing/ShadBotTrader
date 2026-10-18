@@ -2,7 +2,15 @@
 
 ## Summary
 
-A training command now exists for a new multistep range WaveNet. It has not been executed on the gold dataset in this sandbox.
+The owner trained and audited the new models. The accuracy result is in `docs/Report/PHASE187A_RANGE_MULTISTEP_ACCURACY_RESULT.md`.
+
+```text
+model_output_horizon=5 on both new ids
+keras_output_shape=(None, 150, 10)
+candle_forecast_ready_gate=0
+every step is a near-constant ATR offset
+do not replace gold_range_4h or gold_range_1d
+```
 
 ```text
 No overwrite of gold_range_4h or gold_range_1d.

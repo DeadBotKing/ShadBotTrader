@@ -3,9 +3,17 @@
 ## Status
 
 ```text
-IMPLEMENTED — awaiting owner training run
+COMPLETED — owner trained and audited
+Result: horizon=5 is emitted, but every step is a near-constant ATR offset
+candle_forecast_ready_gate=0
 Production — BLOCKED
 No paper. No live.
+```
+
+Owner accuracy result:
+
+```text
+docs/Report/PHASE187A_RANGE_MULTISTEP_ACCURACY_RESULT.md
 ```
 
 This phase trains a new range model that emits high/low for each of the next 5 candles. It does not overwrite the current production range artifacts.

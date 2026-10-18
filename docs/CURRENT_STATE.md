@@ -1,5 +1,55 @@
 # وضعیت فعلی پروژه — 2026-09-07
 
+## به‌روزرسانی فوری — 2026-10-08 / Phase187A accuracy result
+
+مدل‌های جدید train و audit شدند. پنج کندل را emit می‌کنند، اما پیش‌بینی نمی‌کنند.
+
+```text
+gold_range_multistep_4h v1  keras_output_shape=(None, 150, 10)  rows=33807
+gold_range_multistep_1d v1  keras_output_shape=(None, 150, 10)  rows=5479
+model_output_horizon=5
+missing_steps=none
+candle_forecast_ready_gate=0
+recursive_rollout_used=0
+```
+
+هر step یک offset ثابت ATR است. اختلاف binها حدود `1e-14` است، یعنی نویز float، نه پیش‌بینی متغیر.
+
+```text
+4H step1 constant : +0.275652647018 / -0.271353125572 ATR
+4H step1 spearman : 0.0033 / 0.0031 / 0.0044
+4H median abs error step1→5 : 0.2066 → 0.4312 → 0.6006 → 0.7437 → 0.8942 ATR
+4H containment step1→5      : 0.0734 → 0.0239 → 0.0132 → 0.0074 → 0.0055
+
+1D step1 constant : +0.292148411274 / -0.278036683798 ATR
+1D step1 spearman : -0.0255 / -0.0035 / 0.0080
+1D median abs error step1→5 : 0.2125 → 0.5038 → 0.6831 → 0.8157 → 0.9474 ATR
+1D containment step5        : 0.000365
+```
+
+مقایسه با مدل قدیمی 4H:
+
+```text
+gold_range_4h v3 step1 spearman : 0.2740 / 0.3122 / 0.5897
+gold_range_multistep_4h step1   : 0.0033 / 0.0031 / 0.0044
+```
+
+خطای میانه کمی کمتر شده، اما ranking از بین رفته و باند باریک‌تر شده. مدل جدید نباید جایگزین `gold_range_4h` یا `gold_range_1d` شود.
+
+```text
+CANDLE_STEP1_HIGH_LOW         : MEASURED_FAIL
+CANDLE_BY_CANDLE_FUTURE_STEPS : PARTIAL_OR_FAILED
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+گزارش:
+
+```text
+docs/Report/PHASE187A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+```
+
+
 ## به‌روزرسانی فوری — 2026-10-07 / Phase187A built, not trained
 
 مدل multistep با اسم جدا ساخته شد، ولی در این sandbox آموزش داده نشد. TensorFlow و دیتاست 4H اینجا نیستند، پس نتیجهٔ دقت اختراع نشده است.

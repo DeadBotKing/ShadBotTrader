@@ -19436,3 +19436,51 @@ then
 AI → Audit range multistep accuracy
 with model ids gold_range_multistep_4h and gold_range_multistep_1d
 ```
+
+## 2026-10-08 — Phase187A owner result: five steps emitted, no forecast skill
+
+**Owner run:** trained `gold_range_multistep_4h` v1 and `gold_range_multistep_1d` v1, then audited them with `requested_steps=5`.
+
+**Capability:**
+```text
+keras_output_shape       : (None, 150, 10)
+model_output_horizon     : 5
+missing_steps            : none
+production_contract_check: matched
+4H rows                  : 33807
+1D rows                  : 5479
+candle_forecast_ready_gate: 0
+```
+
+**Accuracy:**
+```text
+Every step is a near-constant ATR offset.
+4H step1 spearman : 0.0033 / 0.0031 / 0.0044
+1D step1 spearman : -0.0255 / -0.0035 / 0.0080
+4H median abs high error : 0.2066, 0.4312, 0.6006, 0.7437, 0.8942
+1D median abs high error : 0.2125, 0.5038, 0.6831, 0.8157, 0.9474
+```
+
+**Comparison:**
+```text
+Old gold_range_4h step1 width spearman : 0.5897
+New multistep 4H step1 width spearman  : 0.0044
+Do not replace the old range artifacts.
+```
+
+**Decision:**
+```text
+CANDLE_STEP1_HIGH_LOW         : MEASURED_FAIL
+CANDLE_BY_CANDLE_FUTURE_STEPS : PARTIAL_OR_FAILED
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+**Documentation added/updated:**
+```text
+docs/Report/PHASE187A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+docs/Phases/Phase187A.md
+docs/Report/PHASE187A_RANGE_MULTISTEP_TRAINING_REPORT.md
+docs/CURRENT_STATE.md
+docs/PROJECT_OWNER_MAP.html
+```
