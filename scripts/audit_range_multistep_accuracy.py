@@ -464,21 +464,27 @@ def parse_range_steps(raw: np.ndarray) -> tuple[list[tuple[float, float]], str]:
 
 
 def range_raw_pair(raw: np.ndarray) -> tuple[float, float]:
-    """Production collapse used by Phase185A / RangePredictor: one high and one low."""
+    """Production band used by RangePredictor: one high and one low.
+
+    More than one pair becomes max(high), min(low). A ``[1, width]`` row
+    uses that same reduction. It does not keep only the first pair.
+    """
+    from ShadBotTrader.infrastructure.ai.dual_predictor import (
+        reduce_range_band,
+        split_range_pairs,
+    )
+
     arr = np.asarray(raw, dtype=np.float64)
     if arr.ndim == 2 and arr.shape[-1] >= 2 and arr.shape[0] > 2:
-        last_step = arr[-1]
-        pairs = len(last_step) // 2
-        if pairs <= 1:
-            return float(last_step[0]), float(last_step[1])
-        highs = [float(last_step[k * 2]) for k in range(pairs)]
-        lows = [float(last_step[k * 2 + 1]) for k in range(pairs)]
-        return max(highs), min(lows)
-    if arr.ndim == 1 and len(arr) >= 2:
-        return float(arr[0]), float(arr[1])
-    if arr.ndim == 2 and arr.shape[0] == 1 and arr.shape[1] >= 2:
-        return float(arr[0, 0]), float(arr[0, 1])
-    raise RuntimeError(f"Unexpected range model output shape: {arr.shape}")
+        vector = arr[-1]
+    elif arr.ndim == 1 and len(arr) >= 2:
+        vector = arr
+    elif arr.ndim == 2 and arr.shape[0] == 1 and arr.shape[1] >= 2:
+        vector = arr[0]
+    else:
+        raise RuntimeError(f"Unexpected range model output shape: {arr.shape}")
+    high, low, _reduction = reduce_range_band(split_range_pairs(vector))
+    return high, low
 
 
 def production_contract_matches(raw: np.ndarray) -> bool:
@@ -596,6 +602,20 @@ def assign_regimes(rows: Sequence[StepErrorRow]) -> list[StepErrorRow]:
     return output
 
 
+def prediction_is_effectively_constant(values: pd.Series, abs_tol: float = 1e-8, rel_tol: float = 1e-6) -> bool:
+    """True when qcut would only be splitting float noise.
+
+    A collapsed range model can emit 0.27565264701843 and 0.27565264701846.
+    ``nunique()`` treats those as different forecasts. They are not.
+    """
+    data = pd.to_numeric(values, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+    if len(data) < 2:
+        return True
+    span = float(data.max() - data.min())
+    scale = max(abs(float(data.median())), 1e-12)
+    return span <= abs_tol or span / scale <= rel_tol
+
+
 def calibration_bins(timeframe: str, step: int, rows: Sequence[StepErrorRow], bins: int) -> list[CalibrationBinRow]:
     if not rows:
         return []
@@ -607,7 +627,7 @@ def calibration_bins(timeframe: str, step: int, rows: Sequence[StepErrorRow], bi
         ("low", "predicted_low_offset_atr", "realized_low_offset_atr"),
     ):
         data = frame[[pred_col, real_col]].replace([np.inf, -np.inf], np.nan).dropna()
-        if len(data) < 2 or data[pred_col].nunique() < 2:
+        if len(data) < 2 or prediction_is_effectively_constant(data[pred_col]):
             continue
         try:
             data = data.copy()

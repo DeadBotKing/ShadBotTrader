@@ -596,6 +596,16 @@ def assign_regimes(rows: Sequence[ForecastRow]) -> list[ForecastRow]:
     return output
 
 
+def prediction_is_effectively_constant(values: pd.Series, abs_tol: float = 1e-8, rel_tol: float = 1e-6) -> bool:
+    """True when binning would only split float noise, not a real forecast."""
+    data = pd.to_numeric(values, errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+    if len(data) < 2:
+        return True
+    span = float(data.max() - data.min())
+    scale = max(abs(float(data.median())), 1e-12)
+    return span <= abs_tol or span / scale <= rel_tol
+
+
 def calibration_bins(timeframe: str, rows: Sequence[ForecastRow], bins: int) -> list[CalibrationBinRow]:
     output: list[CalibrationBinRow] = []
     frame = pd.DataFrame([asdict(row) for row in rows])
@@ -606,7 +616,7 @@ def calibration_bins(timeframe: str, rows: Sequence[ForecastRow], bins: int) -> 
         ("down", "predicted_down_atr", "realized_down_atr"),
     ):
         values = pd.to_numeric(frame[pred_col], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
-        if values.nunique() < 2:
+        if prediction_is_effectively_constant(values):
             continue
         try:
             frame["_bin"] = pd.qcut(frame[pred_col], q=max(int(bins), 2), labels=False, duplicates="drop")

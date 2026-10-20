@@ -1,0 +1,11245 @@
+# وضعیت فعلی پروژه — 2026-09-07
+
+## به‌روزرسانی فوری — 2026-10-18 / range contract bugfix
+
+باگ‌های ثابت‌شده اصلاح شد. train جدید اجرا نشد.
+
+```text
+docs/Report/RANGE_CONTRACT_BUGFIX.md
+```
+
+```text
+build_range_labels docstring     : envelope، نه high[t+k]
+range_model_role description     : per-candle؛ باند تولیدی جداست
+RangePredictor                   : pairها حفظ می‌شوند
+band n_pairs==1                  : همان pair؛ اعداد horizon=1 عوض نشد
+band n_pairs>1                   : هنوز max(high)/min(low)، با نام envelope_max_min
+Huber delta جدید                 : pct=0.005 ، atr=1.0
+مدل ذخیره‌شده                    : delta سریال‌شدهٔ خودش را نگه می‌دارد
+inspector                        : horizon رکورد دیگر IndexError نمی‌سازد
+Phase181B-185A headers           : دیگر awaiting owner run نیستند
+```
+
+عمداً عوض نشد: وزن‌های `3*Huber + 6*MAE + 1*MSE`، وزن `40/60` روی آخرین ردیف، و ستون‌های ورودی. میانگین pair-MAE با MAE تخت یکی است؛ آن را به‌عنوان اصلاح جا نزدیم.
+
+```text
+FREEZE_RANGE_MULTISTEP_ROUTE
+FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+gold_range_4h / gold_range_1d : untouched
+PAPER_OR_LIVE : BLOCKED
+No rerun authorized.
+```
+
+## به‌روزرسانی فوری — 2026-10-14 / mistake review
+
+بازبینی کد، بدون training جدید:
+
+```text
+docs/Report/PROJECT_MISTAKE_REVIEW.md
+```
+
+اشتباه اصلی این است که envelope، پیش‌بینی هر کندل، و collapse تولیدی `max/min` سه سؤال متفاوت‌اند. در زمان این یادداشت Loss هنوز `Huber delta=0.005` دوران target درصدی بود. آموزش `horizon=5` با همان loss میانگینِ horizon=1 انجام شد و ranking مدل 4H را از بین برد. Paper/live همچنان blocked است. تصحیح 2026-10-18: compile جدید ATR از `delta=1.0` استفاده می‌کند؛ مدل ذخیره‌شده عوض نشده و rerun مجاز نیست.
+
+
+## به‌روزرسانی فوری — 2026-10-08 / Phase187A accuracy result
+
+مدل‌های جدید train و audit شدند. پنج کندل را emit می‌کنند، اما پیش‌بینی نمی‌کنند.
+
+```text
+gold_range_multistep_4h v1  keras_output_shape=(None, 150, 10)  rows=33807
+gold_range_multistep_1d v1  keras_output_shape=(None, 150, 10)  rows=5479
+model_output_horizon=5
+missing_steps=none
+candle_forecast_ready_gate=0
+recursive_rollout_used=0
+```
+
+هر step یک offset ثابت ATR است. اختلاف binها حدود `1e-14` است، یعنی نویز float، نه پیش‌بینی متغیر.
+
+```text
+4H step1 constant : +0.275652647018 / -0.271353125572 ATR
+4H step1 spearman : 0.0033 / 0.0031 / 0.0044
+4H median abs error step1→5 : 0.2066 → 0.4312 → 0.6006 → 0.7437 → 0.8942 ATR
+4H containment step1→5      : 0.0734 → 0.0239 → 0.0132 → 0.0074 → 0.0055
+
+1D step1 constant : +0.292148411274 / -0.278036683798 ATR
+1D step1 spearman : -0.0255 / -0.0035 / 0.0080
+1D median abs error step1→5 : 0.2125 → 0.5038 → 0.6831 → 0.8157 → 0.9474 ATR
+1D containment step5        : 0.000365
+```
+
+مقایسه با مدل قدیمی 4H:
+
+```text
+gold_range_4h v3 step1 spearman : 0.2740 / 0.3122 / 0.5897
+gold_range_multistep_4h step1   : 0.0033 / 0.0031 / 0.0044
+```
+
+خطای میانه کمی کمتر شده، اما ranking از بین رفته و باند باریک‌تر شده. مدل جدید نباید جایگزین `gold_range_4h` یا `gold_range_1d` شود.
+
+```text
+CANDLE_STEP1_HIGH_LOW         : MEASURED_FAIL
+CANDLE_BY_CANDLE_FUTURE_STEPS : PARTIAL_OR_FAILED
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+گزارش:
+
+```text
+docs/Report/PHASE187A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-07 / Phase187A built, not trained
+
+مدل multistep با اسم جدا ساخته شد، ولی در این sandbox آموزش داده نشد. TensorFlow و دیتاست 4H اینجا نیستند، پس نتیجهٔ دقت اختراع نشده است.
+
+```text
+GUI: Train range multistep WaveNet
+script: scripts/train_range_multistep.py
+new ids: gold_range_multistep_4h, gold_range_multistep_1d
+old ids: gold_range_4h, gold_range_1d untouched
+architecture: existing range WaveNet seq2seq
+horizon: 5
+output width: 10
+Option B: not used
+status: implemented; awaiting owner training run
+```
+
+دلیل رد Option B:
+
+```text
+Option B is a 5M pivot-sequence model with three input branches.
+Its target is pivot action/payoff, not candle high/low.
+That route already failed transfer.
+The current range model is already a causal WaveNet.
+The missing piece is horizon=5, not a new backbone.
+```
+
+فیچرهای causal که range از آن‌ها استفاده نمی‌کند فقط این ۶ تا هستند:
+
+```text
+session_asian
+session_london
+session_ny
+session_overlap
+hour_sin
+hour_cos
+```
+
+این‌ها به مدل جدید اضافه نشدند تا تنها تفاوت با مدل فعلی `horizon` باشد. فهرست کامل:
+
+```text
+docs/Report/CAUSAL_FEATURES_NOT_USED_IN_RANGE_TRAINING.md
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Train range multistep WaveNet
+```
+
+بعد از اتمام train:
+
+```text
+AI → Audit range multistep accuracy
+4H range model = gold_range_multistep_4h
+1D range model = gold_range_multistep_1d
+Requested future candles = 5
+```
+
+Paper/live همچنان blocked است.
+
+
+## به‌روزرسانی فوری — 2026-10-07 / Phase186A result
+
+Phase186A روی مدل‌های واقعی اجرا شد. candle-by-candle future forecast موجود نیست.
+
+```text
+Phase186A — Range Candle-by-Candle Forecast Accuracy Audit
+GUI: Audit range multistep accuracy
+script: scripts/audit_range_multistep_accuracy.py
+status: completed; candle_forecast_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes           : 2
+multistep_timeframes           : 0
+ready_timeframes               : 0
+selected_timeframe             : 4H
+candle_forecast_ready_gate     : 0
+recursive_rollout_used         : 0
+envelope_metric_used           : 0
+no_training_gate               : 1
+no_paper_live_gate             : 1
+```
+
+اثبات capability از tensor زنده، نه از فرض Phase185A:
+
+```text
+gold_range_4h v3   keras_output_shape=(None, 150, 2)   rows=33811
+gold_range_1d v2   keras_output_shape=(None, 150, 2)   rows=5483
+window_size=150
+last dimension=2
+model_output_horizon=1
+missing_steps=2,3,4,5
+production_contract_check=matched
+capability_verdict=STEP1_ONLY
+```
+
+`150` پنجرهٔ ورودی است، نه ۱۵۰ کندل آینده. عرض `2` یعنی فقط یک pair از high/low. برای ۵ کندل آینده عرض باید `10` می‌بود. آن عرض وجود ندارد.
+
+step 1، فقط کندل بعدی:
+
+```text
+4H median abs high/low error : 0.2196 / 0.2222 ATR
+4H high/low/width spearman   : 0.2740 / 0.3122 / 0.5897
+4H width_bias                : -0.2826 ATR
+4H candle_containment        : 0.1216
+4H step1_accuracy_gate       : 1
+4H primary_failure           : multistep_output_not_available
+
+1D median abs high/low error : 0.2269 / 0.2358 ATR
+1D high/low/width spearman   : 0.0008 / 0.0185 / 0.0186
+1D predicted high/low offset : constant +0.38531583547592 / -0.35862347483635 ATR
+1D width_bias                : -0.2649 ATR
+1D candle_containment        : 0.1012
+1D step1_accuracy_gate       : 0
+1D step failure              : high_spearman_failed
+```
+
+تصمیم:
+
+```text
+CANDLE_BY_CANDLE_FUTURE_STEPS : NOT_AVAILABLE
+RANGE_AS_FUTURE_PRICE_ENGINE  : BLOCKED
+PAPER_OR_LIVE                 : BLOCKED
+```
+
+`CANDLE_STEP1_HIGH_LOW=MEASURED_PASS` فقط یعنی 4H آستانهٔ diagnostic را رد کرد. 1D رد شد. این مجوز معامله نیست. هر دو مدل کندل بعدی را باریک‌تر از واقعیت پیش‌بینی می‌کنند و فقط حدود 10–12% از کندل‌های بعدی کاملاً داخل باند پیش‌بینی می‌افتند.
+
+برداشت مجاز:
+
+```text
+Current artifacts do not forecast candles 2..5.
+4H is weak next-candle magnitude context only.
+1D is static ATR climatology.
+No training. No paper. No live.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE186A_RANGE_MULTISTEP_ACCURACY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-07 / Phase186A built
+
+Phase186A برای سنجش دقت candle-by-candle مدل‌های range ساخته شد. این فاز معامله، TP/SL، entry، یا training نیست.
+
+```text
+Phase186A — Range Candle-by-Candle Forecast Accuracy Audit
+GUI: Audit range multistep accuracy
+script: scripts/audit_range_multistep_accuracy.py
+status: implemented; awaiting owner run; no model training
+```
+
+سؤال این فاز:
+
+```text
+آیا مدل range برای هر کندل آینده، high/low همان کندل را emit می‌کند؟
+اگر بله، خطای هر step چقدر است؟
+اگر نه، کدام stepها اصلاً شواهد مدل ندارند؟
+```
+
+قرارداد سنجش:
+
+```text
+step k = candle t+k high/low
+not the horizon envelope max(high[t+1..t+H]) / min(low[t+1..t+H])
+no recursive rollout
+open/close are not model targets
+```
+
+اگر `model_output_horizon=1` باشد، فقط step 1 قابل سنجش است. steps بعدی ساخته نمی‌شوند. نتیجهٔ Phase185A می‌گفت هر دو مدل `horizon_bars=1` دارند، اما این فاز آن را hardcode نمی‌کند و از output tensor زنده می‌خواند.
+
+خروجی‌ها:
+
+```text
+run_logs/range_multistep_accuracy/latest.json
+run_logs/range_multistep_accuracy/latest.html
+run_logs/range_multistep_accuracy/latest_model_capability.csv
+run_logs/range_multistep_accuracy/latest_step_errors.csv
+run_logs/range_multistep_accuracy/latest_bias_by_step.csv
+run_logs/range_multistep_accuracy/latest_calibration_by_step.csv
+run_logs/range_multistep_accuracy/latest_degradation_curve.csv
+run_logs/range_multistep_accuracy/latest_regime_breakdown.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit range multistep accuracy
+```
+
+سپس این فایل را بفرست:
+
+```text
+run_logs\range_multistep_accuracy\latest.json
+```
+
+
+## به‌روزرسانی فوری — 2026-10-06 / Phase185A result
+
+Phase185A اجرا شد و range modelهای 4H/1D برای reliability/calibration/decision utility بررسی شدند:
+
+```text
+Phase185A — Range Model Reliability / Calibration / Decision-Utility Audit
+GUI: Audit range model reliability
+script: scripts/audit_range_model_reliability.py
+status: completed; range_model_reliability_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes               : 2
+reliable_timeframes                : 0
+selected_timeframe                 : 4H
+selected_reliability_gate          : 0
+range_model_reliability_ready_gate : 0
+no_training_gate                   : 1
+no_paper_live_gate                 : 1
+```
+
+4H range:
+
+```text
+model_id                  : gold_range_4h v3
+target_units              : atr
+horizon_bars              : 1
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2196
+median_abs_low_error_atr  : 0.2222
+up_spearman               : 0.2740
+down_spearman             : 0.3122
+width_spearman            : 0.5897
+up/down monotonicity      : 1.0 / 1.0
+decision_proxy_trades     : 0
+reliability_gate          : 0
+primary_failure_reason    : decision_utility_gate_failed
+```
+
+1D range:
+
+```text
+model_id                  : gold_range_1d v2
+target_units              : atr
+horizon_bars              : 1
+coherent_rate             : 1.0
+median_abs_high_error_atr : 0.2269
+median_abs_low_error_atr  : 0.2358
+up_spearman               : 0.0008
+down_spearman             : 0.0185
+width_spearman            : 0.0186
+decision_proxy_trades     : 0
+reliability_gate          : 0
+primary_failure_reason    : ranking_gate_failed
+```
+
+تصمیم:
+
+```text
+Do not use range as TP/SL engine.
+Do not use range as signal engine.
+Do not use range for paper/live decisions.
+```
+
+برداشت مجاز:
+
+```text
+4H range may be diagnostic context only.
+1D range behaves mostly like static ATR-climatology and is not dynamically reliable.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase185A performance hotfix
+
+مالک گزارش داد دستور PowerShell فاز 185 حدود 10 ساعت بدون خروجی اجرا شد و تمام نشد.
+
+تشخیص:
+
+```text
+logic مسیر audit درست بود، اما implementation عملیاتی source-mode=models کند بود.
+مسیر اولیه forecast را row-by-row اجرا می‌کرد و progress log نداشت.
+```
+
+اصلاح انجام شد:
+
+```text
+scripts/audit_range_model_reliability.py
+```
+
+تغییرات:
+
+```text
+- model برای هر timeframe فقط یک‌بار load می‌شود.
+- inference به صورت batch انجام می‌شود.
+- progress log اضافه شد.
+- GUI fields اضافه شد: batch_size و progress_every.
+```
+
+پارامترهای جدید:
+
+```text
+--batch-size 256
+--progress-every 2000
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase185A built
+
+Phase185A برای audit دقیق range modelهای 4H و 1D ساخته شد:
+
+```text
+Phase185A — Range Model Reliability / Calibration / Decision-Utility Audit
+GUI: Audit range model reliability
+script: scripts/audit_range_model_reliability.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Measure whether 4H/1D range forecasts are coherent, accurate, calibrated, directionally useful and decision-useful.
+```
+
+مدل‌های پیش‌فرض:
+
+```text
+4H range model : gold_range_4h
+1D range model : gold_range_1d
+version        : 0 = latest
+source mode    : models
+```
+
+خروجی‌ها:
+
+```text
+run_logs/range_model_reliability/latest.json
+run_logs/range_model_reliability/latest.html
+run_logs/range_model_reliability/latest_forecast_errors.csv
+run_logs/range_model_reliability/latest_summary.csv
+run_logs/range_model_reliability/latest_calibration_bins.csv
+run_logs/range_model_reliability/latest_regime_breakdown.csv
+run_logs/range_model_reliability/latest_decision_utility.csv
+run_logs/range_model_reliability/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit range model reliability
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\range_model_reliability\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase185A.md
+docs/Report/PHASE185A_RANGE_MODEL_RELIABILITY_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-05 / Phase184A result
+
+Phase184A اجرا شد و تصمیم closure را مشخص کرد:
+
+```text
+Phase184A — Entry Route Test-only Failure Attribution / Stop-or-Narrow Decision
+GUI: Audit entry route test-only failure
+script: scripts/audit_entry_route_test_only_failure_attribution.py
+status: completed; route freeze recommended
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_candidates       : 12
+ready_candidates           : 0
+test_only_candidates       : 8
+narrow_candidate_count     : 0
+selected_candidate_id      : Q7_H4_E2_B00_M10_A10
+selected_closure_verdict   : TEST_ONLY_NOT_TRANSFERRED
+selected_decision_route_id : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+selected_decision          : FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+no_training_gate           : 1
+no_paper_live_gate         : 1
+```
+
+تشخیص:
+
+```text
+- Phase183A final-test pockets ساخت، اما validation و walk-forward transfer نداد.
+- 8/12 candidate صراحتاً TEST_ONLY_NOT_TRANSFERRED هستند.
+- هیچ narrow candidate قابل ادامه وجود ندارد.
+```
+
+dominant failures:
+
+```text
+walkforward_transfer_failed       : 12/12
+walkforward_transfer_gate_failed  : 12/12
+static_transfer_gate_failed       : 12/12
+test_only_not_transferred         : 8/12
+```
+
+selected Q7:
+
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test PF : 0.8996 / 1.5527
+WF pass            : 0/4
+verdict            : TEST_ONLY_NOT_TRANSFERRED
+```
+
+تصمیم فعلی:
+
+```text
+FREEZE_ENTRY_EVENT_GEOMETRY_ROUTE
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-04 / Phase184A built
+
+Phase184A برای closure / stop-or-narrow decision ساخته شد:
+
+```text
+Phase184A — Entry Route Test-only Failure Attribution / Stop-or-Narrow Decision
+GUI: Audit entry route test-only failure
+script: scripts/audit_entry_route_test_only_failure_attribution.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Determine whether Phase183A positives are test-only artifacts.
+Decide whether to freeze the current entry-geometry route or allow exactly one narrow diagnostic exception.
+```
+
+ورودی پیش‌فرض:
+
+```text
+run_logs/entry_quality_geometry_candidates/latest.json
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_route_test_only_failure_attribution/latest.json
+run_logs/entry_route_test_only_failure_attribution/latest.html
+run_logs/entry_route_test_only_failure_attribution/latest_candidate_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_split_transfer.csv
+run_logs/entry_route_test_only_failure_attribution/latest_walkforward_closure.csv
+run_logs/entry_route_test_only_failure_attribution/latest_replay_months.csv
+run_logs/entry_route_test_only_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_route_test_only_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_route_test_only_failure_attribution/latest_next_plan.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+No broad parameter search.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry route test-only failure
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_route_test_only_failure_attribution\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase184A.md
+docs/Report/PHASE184A_ENTRY_ROUTE_TEST_ONLY_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-04 / Phase183A result
+
+Phase183A اجرا شد و broad entry quality-geometry redesign را پاس نکرد:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+GUI: Audit entry quality-geometry candidates
+script: scripts/audit_entry_quality_geometry_candidates.py
+status: completed; quality_geometry_redesign_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_candidates                 : 12
+ready_candidates                     : 0
+selected_candidate_id                : Q7_H4_E2_B00_M10_A10
+selected_timeframe                   : 4H
+selected_family_type                 : pullback_rejection
+selected_side_filter                 : ALL
+selected_test_quality_pass_rate      : 0.5929203539823009
+selected_test_replay_profit_factor   : 1.5526937756187313
+selected_walkforward_pass_ratio      : 0.0
+quality_geometry_redesign_ready_gate : 0
+no_training_gate                     : 1
+no_paper_live_gate                   : 1
+```
+
+تشخیص:
+
+```text
+- چند candidate روی final test جذاب شدند.
+- اما train/validation هنوز ضعیف است.
+- همهٔ candidateها WF=0/4 دارند.
+- نتیجهٔ مثبت Q7 test-only است و transfer ندارد.
+```
+
+selected candidate:
+
+```text
+Q7_H4_E2_B00_M10_A10
+validation/test PF      : 0.8996 / 1.5527
+validation/test quality : 0.4643 / 0.5929
+walk-forward pass       : 0/4
+verdict                 : TEST_ONLY_NOT_TRANSFERRED
+```
+
+تصمیم:
+
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام بعدی فقط با تصمیم مالک:
+
+```text
+Option A — stop/freeze current entry-quality geometry route.
+Option B — one narrower Phase184A attribution-only stop-or-narrow decision.
+```
+
+اگر ادامه داده شود، Phase184A باید فقط attribution باشد:
+
+```text
+Phase184A — Entry Geometry Test-only Failure Attribution / Stop-or-Narrow Decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase183A built
+
+Phase183A برای audit کاندیداهای quality-geometry ساخته شد:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+GUI: Audit entry quality-geometry candidates
+script: scripts/audit_entry_quality_geometry_candidates.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف:
+
+```text
+Test whether trigger placement, MFE target or MAE limit can be redesigned without relaxing readiness gates.
+```
+
+تمرکز پیش‌فرض:
+
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+1D | E2_PULLBACK_REJECTION | BUY-only diagnostic
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_quality_geometry_candidates/latest.json
+run_logs/entry_quality_geometry_candidates/latest.html
+run_logs/entry_quality_geometry_candidates/latest_candidates.csv
+run_logs/entry_quality_geometry_candidates/latest_splits.csv
+run_logs/entry_quality_geometry_candidates/latest_walkforward.csv
+run_logs/entry_quality_geometry_candidates/latest_events.csv
+run_logs/entry_quality_geometry_candidates/latest_replay.csv
+run_logs/entry_quality_geometry_candidates/latest_geometry_comparison.csv
+run_logs/entry_quality_geometry_candidates/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry quality-geometry candidates
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_quality_geometry_candidates\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase183A.md
+docs/Report/PHASE183A_ENTRY_QUALITY_GEOMETRY_CANDIDATE_AUDIT_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase182A result
+
+Phase182A اجرا شد و علت شکست Phase181B را attribute کرد:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+GUI: Audit entry-event failure attribution
+script: scripts/audit_entry_event_failure_attribution.py
+status: completed; failure attributed; no training
+```
+
+نتیجهٔ اصلی:
+
+```text
+family_rows                     : 9
+near_miss_families              : 3
+selected_focus_timeframe        : 1D
+selected_focus_family_id        : E3_CONTINUATION
+selected_focus_family_type      : continuation
+selected_primary_failure_reason : mfe_mae_gate_failed
+selected_next_route_id          : ENTRY_QUALITY_GEOMETRY_REDESIGN
+selected_next_phase             : Phase183A — entry quality-geometry candidate audit
+no_training_gate                : 1
+no_paper_live_gate              : 1
+```
+
+تشخیص اصلی:
+
+```text
+- health و cost مشکل اصلی نیستند.
+- entry events اغلب stable و feature-separable هستند.
+- شکست اصلی در MFE/MAE quality، replay economics و walk-forward transfer است.
+```
+
+dominant failures:
+
+```text
+mfe_mae_gate_failed              : 9/9
+walkforward_pass_ratio_failed    : 9/9
+entry_family_ready_gate_failed   : 9/9
+```
+
+selected focus:
+
+```text
+1D | E3_CONTINUATION
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+walk-forward pass                  : 0/4
+quality verdict                    : MAE_LIMIT_TOO_TIGHT_OR_ENTRY_LATE
+```
+
+تصمیم:
+
+```text
+Do not train.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase183A — Entry Quality-Geometry Candidate Audit
+```
+
+تمرکز پیشنهادی:
+
+```text
+1D | E3_CONTINUATION
+4H | E2_PULLBACK_REJECTION
+4H | E3_CONTINUATION
+optional side diagnostic: 1D | E2_PULLBACK_REJECTION | BUY-only
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase182A built
+
+Phase182A برای attribution شکست Phase181B ساخته شد:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+GUI: Audit entry-event failure attribution
+script: scripts/audit_entry_event_failure_attribution.py
+status: implemented; awaiting owner run; no model training
+```
+
+ورودی پیش‌فرض:
+
+```text
+run_logs/entry_event_discovery/latest.json
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_event_failure_attribution/latest.json
+run_logs/entry_event_failure_attribution/latest.html
+run_logs/entry_event_failure_attribution/latest_family_attribution.csv
+run_logs/entry_event_failure_attribution/latest_side_attribution.csv
+run_logs/entry_event_failure_attribution/latest_timeframe_attribution.csv
+run_logs/entry_event_failure_attribution/latest_quality_geometry.csv
+run_logs/entry_event_failure_attribution/latest_walkforward_attribution.csv
+run_logs/entry_event_failure_attribution/latest_failure_reasons.csv
+run_logs/entry_event_failure_attribution/latest_decision_matrix.csv
+run_logs/entry_event_failure_attribution/latest_next_plan.csv
+```
+
+هدف:
+
+```text
+Explain why Phase181B entries were stable/separable/cost-feasible but failed MFE/MAE, replay and walk-forward.
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry-event failure attribution
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_event_failure_attribution\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase182A.md
+docs/Report/PHASE182A_ENTRY_EVENT_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase181B result
+
+Phase181B اجرا شد و هیچ entry-event family آماده نشد:
+
+```text
+Phase181B — Entry Event Discovery Framework
+GUI: Audit entry event discovery
+script: scripts/audit_entry_event_discovery.py
+status: completed; entry_event_discovery_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_timeframes             : 3
+evaluated_families               : 9
+ready_families                   : 0
+selected_timeframe               : 1D
+selected_family_id               : E3_CONTINUATION
+selected_family_type             : continuation
+selected_family_ready_gate       : 0
+entry_event_discovery_ready_gate : 0
+no_training_gate                 : 1
+no_paper_live_gate               : 1
+```
+
+نکتهٔ مثبت:
+
+```text
+- health_gate=1 برای 1H/4H/1D
+- cost_feasible_gate=1 برای همهٔ splitها
+- بسیاری از familyها temporal_stability و feature_separability را پاس کردند
+```
+
+اما blocker اصلی:
+
+```text
+- mfe_mae_gate برای همهٔ familyها fail شد
+- replay_gate در family-level fail شد
+- walkforward_pass_ratio برای همهٔ familyها 0 بود
+```
+
+بهترین ردیف شکست‌خورده:
+
+```text
+1D | E3_CONTINUATION
+train/validation/test events       : 301 / 65 / 74
+train/validation/test quality pass : 0.3189 / 0.2923 / 0.4459
+train/validation/test replay PF    : 0.7631 / 0.6793 / 1.2878
+walk-forward pass                  : 0/4
+ready_gate                         : 0
+```
+
+تصمیم:
+
+```text
+Do not train an entry-event model.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase182A — Entry Event Failure Attribution / Quality Geometry Redesign Decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-03 / Phase181B
+
+با تأیید مالک، مسیر جدید research از tuning target سود به **Entry Event Discovery** تغییر کرد و Phase181B ساخته شد:
+
+```text
+Phase181B — Entry Event Discovery Framework
+GUI: Audit entry event discovery
+script: scripts/audit_entry_event_discovery.py
+status: implemented; awaiting owner run; no model training
+```
+
+هدف فاز:
+
+```text
+Entry Target != Profit Target
+
+Market State at t
+  -> Setup?
+  -> Trigger?
+  -> Spread-adjusted entry
+  -> MFE/MAE quality
+  -> Cost-aware replay
+  -> Walk-forward stability
+```
+
+خانواده‌های پیش‌فرض:
+
+```text
+E1_BREAKOUT
+E2_PULLBACK_REJECTION
+E3_CONTINUATION
+```
+
+تایم‌فریم‌های پیش‌فرض:
+
+```text
+1H,4H,1D
+```
+
+خروجی‌ها:
+
+```text
+run_logs/entry_event_discovery/latest.json
+run_logs/entry_event_discovery/latest.html
+run_logs/entry_event_discovery/latest_families.csv
+run_logs/entry_event_discovery/latest_events.csv
+run_logs/entry_event_discovery/latest_replay.csv
+run_logs/entry_event_discovery/latest_splits.csv
+run_logs/entry_event_discovery/latest_walkforward.csv
+run_logs/entry_event_discovery/latest_mfe_mae.csv
+run_logs/entry_event_discovery/latest_cost.csv
+run_logs/entry_event_discovery/latest_feature_separability.csv
+run_logs/entry_event_discovery/latest_decision_matrix.csv
+```
+
+قوانین همچنان:
+
+```text
+No model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+اقدام بعدی مالک:
+
+```text
+AI → Audit entry event discovery
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs\entry_event_discovery\latest.json
+```
+
+گزارش implementation:
+
+```text
+docs/Phases/Phase181B.md
+docs/Report/PHASE181B_ENTRY_EVENT_DISCOVERY_FRAMEWORK_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase180A
+
+Phase180A اجرا شد و شکست target در higher timeframe را attribute کرد:
+
+```text
+Phase180A — Higher-timeframe Target Failure Attribution / Candidate Redesign Decision
+GUI: Audit higher-timeframe target failures
+script: scripts/audit_higher_timeframe_target_failure_attribution.py
+status: completed; cost feasible but target not ready
+```
+
+نتیجهٔ اصلی:
+
+```text
+cost_feasibility_confirmed_gate        : 1
+target_readiness_confirmed_failed_gate : 1
+selected_next_route_id                 : D1_TARGET_FAILURE_ATTRIBUTION_AND_REDESIGN_DECISION
+selected_next_phase                    : Phase181A — daily target failure attribution and redesign decision
+selected_focus_timeframe               : 1D
+selected_focus_family_id               : D1_R1_BK_MID_B20_10_H5
+no_training_gate                       : 1
+no_paper_live_gate                     : 1
+```
+
+تشخیص:
+
+```text
+- 4H/1D cost feasibility تأیید شد.
+- target readiness همچنان fail است.
+- D1_R1_BK_MID_B20_10_H5 near-miss است، نه training-ready.
+- دلیل اصلی: test AP lift پایین، test balanced accuracy در حد chance، و WF فقط 1/5.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train 4H/1D models.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase181A — daily target failure attribution and redesign decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_RESULT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase179A
+
+Phase179A اجرا شد. نتیجه: cost feasibility در 4H/1D بهتر شد، اما target readiness هنوز پاس نشد:
+
+```text
+Phase179A — 4H/1D Broker-cost Feasibility and Target Pre-audit
+GUI: Audit 4H/1D broker-cost feasibility
+script: scripts/audit_higher_timeframe_cost_feasibility.py
+status: completed; higher_timeframe_feasibility_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_candidates              : 8
+ready_candidates                  : 0
+selected_family_id                : D1_R1_BK_MID_B20_10_H5
+selected_family_ready_gate        : 0
+selected_walkforward_pass_ratio   : 0.2
+higher_timeframe_feasibility_gate : 0
+recommendation                    : NO_HIGHER_TIMEFRAME_TARGET_READY
+```
+
+یافتهٔ مثبت cost:
+
+```text
+4H median spread/ATR train/validation/test : 0.06885 / 0.04246 / 0.02725
+1D median spread/ATR train/validation/test : 0.02536 / 0.01612 / 0.01033
+cost_feasible_gate=1 برای همهٔ splitها
+```
+
+بهترین candidate شکست‌خورده:
+
+```text
+D1_R1_BK_MID_B20_10_H5
+train/validation/test PF       : 1.1263 / 1.1464 / 1.4117
+validation/test AP lift        : +0.0309 / +0.0112
+validation/test balanced acc   : 0.5243 / 0.5000
+walk-forward pass              : 1/5
+ready gate                     : 0
+```
+
+تشخیص:
+
+```text
+- higher timeframe هزینه را بهتر کرد.
+- اما target learnability و walk-forward transfer هنوز کافی نیست.
+- هیچ 4H/1D candidate آمادهٔ training نیست.
+```
+
+نکتهٔ اجرای PowerShell:
+
+```text
+در خروجی owner، daily timeframe به شکل "1" چاپ شد چون PowerShell ممکن است 1D بدون کوتیشن را numeric 1 پاس کند.
+کد patch شد تا "1"/"D1" را به "1D" canonical کند و در commandهای بعدی --timeframes "4H,1D" کوتیشن‌دار شود.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train D1/H4 candidates.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase180A — Higher-timeframe target failure attribution / candidate redesign decision
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE179A_HIGHER_TIMEFRAME_COST_FEASIBILITY_RESULT.md
+docs/Report/PHASE180A_HIGHER_TIMEFRAME_TARGET_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase178A
+
+Phase178A اجرا شد و مسیر فعلی 1H pivot target-family را freeze کرد:
+
+```text
+Phase178A — Post-failure Research Route Reset / Decision Matrix
+GUI: Audit post-failure research route reset
+script: scripts/audit_post_failure_research_route_reset.py
+status: completed; route_reset_ready_gate=1
+```
+
+نتیجهٔ اصلی:
+
+```text
+current_1h_pivot_target_lane_status : FROZEN_FAILED_DIAGNOSTIC
+route_reset_ready_gate              : 1
+selected_next_research_route_id     : HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY
+selected_next_research_route_name   : Audit higher-timeframe 4H/1D broker-cost feasibility
+selected_required_phase             : Phase179A — 4H/1D broker-cost feasibility and target pre-audit
+selected_route_score                : 88.0
+```
+
+تصمیم routeها:
+
+```text
+FREEZE_CURRENT_1H_PIVOT_TARGET_ROUTE    : MANDATORY, score=100
+HIGHER_TIMEFRAME_4H_1D_COST_FEASIBILITY : RECOMMENDED_NEXT_RESEARCH, score=88
+NON_PIVOT_EVENT_TARGET_ROUTE            : SECONDARY_RESEARCH, score=73
+BROKER_SESSION_COST_DATA_EXTENSION      : SUPPORTING_RESEARCH, score=64
+PAUSE_FOR_MANUAL_REVIEW                 : VALID_OWNER_OPTION, score=60
+TRAIN_CURRENT_TARGETS_OR_REGIMES        : BLOCKED, score=0
+PAPER_OR_LIVE                           : BLOCKED, score=0
+```
+
+تصمیم فعلی:
+
+```text
+Freeze CA1/CA3/CA2 and R1-R8 targets as failed diagnostics.
+Do not train current targets or regimes.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+گام پیشنهادی بعدی، فقط diagnostic:
+
+```text
+Phase179A — 4H/1D broker-cost feasibility and target pre-audit
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE178A_POST_FAILURE_RESEARCH_ROUTE_RESET_RESULT.md
+docs/Report/PHASE179A_HIGHER_TIMEFRAME_COST_FEASIBILITY_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase177A
+
+Phase177A اجرا شد و هیچ target-family redesign candidateای آماده نشد:
+
+```text
+Phase177A — Walk-forward Target-family Redesign Candidate Audit
+GUI: Audit walk-forward target-family redesign candidates
+script: scripts/audit_walkforward_target_family_redesign_candidates.py
+status: completed; target_family_redesign_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+candidate_families                : 8
+ready_candidates                  : 0
+selected_family_id                : R3_STRICT_B15_10_H12
+selected_family_ready_gate        : 0
+selected_walkforward_pass_ratio   : 0.0
+target_family_redesign_ready_gate : 0
+recommendation                    : NO_TARGET_FAMILY_READY_REDESIGN_OR_PAUSE_REQUIRED
+```
+
+بهترین ردیف diagnostic:
+
+```text
+R3_STRICT_B15_10_H12
+TP/SL/hold                   : 1.5 / 1.0 / 12
+train PF                     : 0.9735
+validation/test PF           : 1.4730 / 1.3051
+validation/test AP lift      : -0.0081 / +0.0733
+validation/test balanced acc : 0.5043 / 0.5262
+walk-forward pass            : 0/6
+ready_gate                   : 0
+```
+
+تشخیص:
+
+```text
+- همهٔ 8 candidate جدید walk-forward را 0/6 کردند.
+- هیچ candidateای economic + static + walk-forward gates را همزمان پاس نکرد.
+- حتی بهترین candidate train PF<1، train expectancy منفی، validation AP lift منفی و bAcc زیر gate داشت.
+- reversal candidates هم PFهای train/validation/test زیر 1 و WF=0/6 داشتند.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train R1/R2/R3/R4/R5/R6/R7/R8.
+Keep old CA1/CA3/CA2 targets frozen.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation.
+```
+
+جمع‌بندی route:
+
+```text
+Phase173A broad target learnability failed.
+Phase174A regime-first redesign failed.
+Phase175A failure attribution confirmed instability.
+Phase176A current target definitions rejected.
+Phase177A new redesign candidates also failed.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE177A_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATE_AUDIT_RESULT.md
+docs/Report/PHASE178A_POST_FAILURE_RESEARCH_ROUTE_RESET_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase176A
+
+Phase176A اجرا شد و target definitions فعلی را رد کرد:
+
+```text
+Phase176A — Target-definition Walk-forward Root-cause Redesign Audit
+GUI: Audit target-definition walk-forward root cause
+script: scripts/audit_target_definition_walkforward_root_cause_redesign.py
+status: completed; current target definitions rejected
+```
+
+نتیجهٔ اصلی:
+
+```text
+root_cause_confirmed_gate                : 1
+target_definition_redesign_required_gate : 1
+direct_training_blocked_gate             : 1
+paper_live_blocked_gate                  : 1
+route_decision                           : CURRENT_TARGET_DEFINITIONS_REJECTED_REDESIGN_DIAGNOSTIC_ONLY
+recommended_next_phase                   : Phase177A — walk-forward target-family redesign candidate audit
+```
+
+Target definitions فعلی:
+
+```text
+CA1_BRK_MID    : rejected; static_pass=0; walkforward_pass=0; root_failure=static_learnability_gate_failed
+CA3_BRK_STRICT : rejected; static_pass=0; walkforward_pass=0; root_failure=static_learnability_gate_failed
+CA2_BRK_WIDE   : rejected; static_pass=0; walkforward_pass=0; root_failure=economic_gate_failed
+```
+
+همهٔ محورهای target-definition رد شدند:
+
+```text
+family / geometry_profile / hold_bars / TP-SL / regime_axis / regime_rule
+verdict = REJECTED_WALKFORWARD_ZERO
+```
+
+فرضیه‌های redesign که پشتیبانی شدند:
+
+```text
+H1_TARGET_DEFINITION_MISMATCH
+H2_TRAIN_EXPECTANCY_INSTABILITY
+H3_CLASSIFIER_SIGNAL_NOT_STABLE
+H4_RAW_ECONOMICS_DO_NOT_TRANSFER_BY_FOLD
+H5_DENSITY_IS_SECONDARY_NOT_PRIMARY
+H6_SESSION_FILTERS_NOT_ENOUGH
+```
+
+تصمیم فعلی:
+
+```text
+Freeze CA1_BRK_MID / CA3_BRK_STRICT / CA2_BRK_WIDE as failed diagnostics.
+Do not train.
+Do not relax gates.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+اگر ادامه بدهیم، قدم بعدی فقط diagnostic است:
+
+```text
+Phase177A — walk-forward target-family redesign candidate audit
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE176A_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE_REDESIGN_RESULT.md
+docs/Report/PHASE177A_WALKFORWARD_TARGET_FAMILY_REDESIGN_CANDIDATE_AUDIT_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase175A
+
+Phase175A اجرا شد و علت شکست Phase174A را دقیق‌تر مشخص کرد:
+
+```text
+Phase175A — Hybrid/regime Walk-forward Failure Attribution Audit
+GUI: Audit hybrid/regime walk-forward failures
+script: scripts/audit_hybrid_regime_walkforward_failure_attribution.py
+status: completed; route remains blocked
+```
+
+نتیجهٔ اصلی:
+
+```text
+candidate_rows                      : 66
+walkforward_rows                    : 396
+walkforward_pass_rows               : 0
+walkforward_global_pass_ratio       : 0.0
+candidates_with_class_balance_gate  : 53
+candidates_with_economic_gate       : 4
+candidates_with_static_learnability : 0
+candidates_with_walkforward_gate    : 0
+candidates_with_ready_gate          : 0
+```
+
+علت‌های غالب candidate-level:
+
+```text
+static_learnability_gate_failed      : 66/66
+walkforward_learnability_gate_failed : 66/66
+walkforward_pass_ratio_failed        : 66/66
+test_balanced_accuracy_failed        : 63/66
+economic_gate_failed                 : 62/66
+train_negative_expectancy_failed     : 57/66
+train_raw_economics_failed           : 55/66
+```
+
+علت‌های غالب walk-forward fold-level:
+
+```text
+fold_pass_gate_failed               : 396/396
+test_balanced_accuracy_failed       : 292/396
+validation_balanced_accuracy_failed : 292/396
+validation_raw_economics_failed     : 253/396
+test_raw_economics_failed           : 241/396
+```
+
+Near-miss منتخب:
+
+```text
+CA1_BRK_MID + WIDTH_GE_Q75
+ready_gate=0
+primary_failure_reason=static_learnability_gate_failed
+validation_ap_lift=+0.1417
+test_ap_lift=+0.1991
+test_balanced_accuracy=0.5000
+walkforward_pass=0/6
+```
+
+تصمیم فعلی:
+
+```text
+Phase173A/174A targets are frozen as failed diagnostics.
+Do not train.
+Do not relax gates.
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+اگر ادامه بدهیم، قدم بعدی فقط diagnostic است:
+
+```text
+Phase176A — target-definition walk-forward root-cause redesign audit
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE175A_HYBRID_REGIME_WALKFORWARD_FAILURE_ATTRIBUTION_RESULT.md
+docs/Report/PHASE176A_TARGET_DEFINITION_WALKFORWARD_ROOT_CAUSE_REDESIGN_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase174A
+
+Phase174A اجرا شد و hybrid/regime-first route را تأیید نکرد:
+
+```text
+Phase174A — Hybrid/regime-first Target Redesign Decision Audit
+GUI: Audit hybrid/regime-first target redesign
+script: scripts/audit_hybrid_regime_first_target_redesign.py
+status: completed; hybrid_regime_first_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+evaluated_regime_candidates    : 66
+ready_regime_candidates        : 0
+selected_family_id             : CA2_BRK_WIDE
+selected_regime_rule_id        : ASIA_UTC_00_06
+selected_regime_ready_gate     : 0
+hybrid_regime_first_ready_gate : 0
+recommendation                 : STOP_OR_REDESIGN_REQUIRED_NO_MODEL_TRAINING
+```
+
+تشخیص دقیق:
+
+```text
+- هیچ family × regime candidate همهٔ gateها را پاس نکرد.
+- بهترین ردیف diagnostic یعنی CA2_BRK_WIDE + ASIA_UTC_00_06 روی validation/test جذاب بود:
+  validation_ap_lift=+0.1977، test_ap_lift=+0.0900
+  validation/test PF=1.7000/1.2174
+- اما همان ردیف train PF=0.7416 و train_mean_atr_score=-0.2349 داشت و walk-forward pass=0/6 شد.
+- Near-missهای CA1 WIDTH_GE_Q75 و CA3 ACTIVE_UTC_07_17 هم walk-forward را 0/6 کردند.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train any CA1/CA3/CA2 regime candidate.
+Do not proceed to Phase175 model training.
+No Phase134.
+No paper shadow.
+No live trading.
+No gate relaxation to force a pass.
+```
+
+مسیر فعلی 1H broker-cost-aware target/regime تأیید نشده است. قدم بعدی فقط با اجازهٔ صریح مالک باید یکی از این‌ها باشد:
+
+```text
+Option A: توقف/pause و review دستی route.
+Option B: diagnostic-only redesign جدید برای بررسی علت walk-forward=0/6 و تغییر target definition/features.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE174A_HYBRID_REGIME_FIRST_TARGET_REDESIGN_RESULT.md
+docs/Report/PHASE175A_HYBRID_REGIME_WALKFORWARD_FAILURE_ATTRIBUTION_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-10-01 / Phase173A
+
+مسیر فعلی پروژه همچنان **research/diagnostic only** است:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+Production remains BLOCKED.
+```
+
+Phase173A اجرا شد و target learnability را پاس نکرد:
+
+```text
+Phase173A — Broker-cost-aware 1H Target Learnability / Dataset Build Audit
+GUI: Audit broker-cost-aware 1H target learnability
+script: scripts/audit_broker_cost_aware_1h_target_learnability.py
+status: completed; target_learnability_ready_gate=0
+```
+
+نتیجهٔ اصلی:
+
+```text
+candidate_families             : 3
+learnable_families             : 0
+selected_family_id             : CA3_BRK_STRICT
+selected_family_ready_gate     : 0
+target_learnability_ready_gate : 0
+spread                         : fixed 0.4
+```
+
+تشخیص دقیق:
+
+```text
+- class balance و label PSI برای CA1/CA3/CA2 قابل قبول بود.
+- اما validation AP lift برای هر سه خانواده منفی شد:
+  CA3=-0.0460، CA1=-0.0397، CA2=-0.0208
+- balanced accuracy حوالی chance بود یا بدتر:
+  CA3=0.500/0.500، CA1=0.445/0.502، CA2=0.502/0.500
+- walk-forward learnability برای هر سه خانواده 0/6 بود.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train CA1_BRK_MID.
+Do not train CA3_BRK_STRICT.
+Do not train CA2_BRK_WIDE.
+Do not proceed to model training from Phase173A.
+```
+
+توضیح مهم:
+
+```text
+selected_family_id=CA3_BRK_STRICT فقط best diagnostic among failed families است.
+چون selected_family_ready_gate=0 است، این انتخاب training-ready نیست.
+```
+
+قدم بعدی پیشنهادی در همان لحظه نیاز به اجازهٔ صریح مالک داشت؛ مالک اجازه داد و این گزینه به Phase174A diagnostic-only تبدیل شد:
+
+```text
+Phase174A — HYBRID_REGIME_FIRST_REDESIGN audit built; awaiting owner run.
+```
+
+گزارش نتیجه:
+
+```text
+docs/Report/PHASE173A_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY_RESULT.md
+docs/Report/PHASE174A_HYBRID_REGIME_FIRST_TARGET_REDESIGN_REPORT.md
+```
+
+
+## به‌روزرسانی فوری — 2026-09-30 / Phase162A
+
+مسیر فعلی پروژه همچنان **research/diagnostic only** است:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+Production remains BLOCKED.
+```
+
+آخرین وضعیت pivot/top-bottom route:
+
+```text
+Phase160A: event scoring برای B2 bottom_buy مثبت شد.
+Phase161A: همان قانون در chronological replay شکست خورد:
+  validation PF=0.7156
+  test PF=0.6853
+  transfer_pass_gate=0
+Phase162A: execution-gap audit اجرا شد و هیچ configای transfer نکرد:
+  evaluated_configs=16
+  validation_pass_configs=4
+  transfer_pass_configs=0
+  selected no-spread validation PF=1.2030 ولی test PF=0.9105
+  realistic spread=0.06 همان شکست Phase161A را تأیید کرد: validation PF=0.7156 / test PF=0.6853
+```
+
+تشخیص Phase162A:
+
+```text
+- spread=0.06 لبهٔ کوچک event-score را می‌کُشد و BUY gap را تقریباً همیشه adverse می‌کند.
+- در test، single-position replay تعداد زیادی winner را skip می‌کند و subset اجراشده منفی می‌شود.
+- same_bar_policy علت شکست نیست؛ event_ambiguous=0 و stop_first/tp_first یکسان بودند.
+```
+
+تصمیم فعلی:
+
+```text
+Strict B2 bottom-buy rejected as a trading candidate.
+Do not keep optimizing this bottom-buy rule.
+Do not train a model around this rule.
+```
+
+مسیر 1H پیشنهادی اپراتور بررسی شد:
+
+```text
+Phase163A — 1H Pivot / Entry Feasibility Audit
+GUI: Audit 1H pivot entry feasibility
+script: scripts/audit_pivot_1h_entry_feasibility.py
+status: completed; route_feasible_gate=0 under spread=0.06%
+```
+
+نتیجه Phase163A:
+
+```text
+flat_rows                : 50000
+validation_pass_configs  : 0
+transfer_pass_configs    : 0
+spread_feasible_gate     : 0
+route_feasible_gate      : 0
+selected realistic row   : 1H breakout d=1 rw=48 zone=0.05 spread=0.06
+selected validation PF   : 0.9876
+selected test PF         : 0.9567
+```
+
+تشخیص Phase163A:
+
+```text
+- دیتای 1H از نظر OHLC/ATR سالم است.
+- no-spread 1H چندین transfer مثبت نشان داد؛ پس raw 1H structure ممکن است signal داشته باشد.
+- اما spread=0.06% خیلی سنگین است:
+  train median spread/ATR      = 0.2712
+  validation median spread/ATR = 0.2358
+  test median spread/ATR       = 0.1598
+- با spread=0.06 هیچ config validation را پاس نکرد.
+```
+
+تصمیم فعلی:
+
+```text
+Do not train a 1H pivot model yet.
+Do not reject 1H completely; first calibrate the real Alpari spread/cost units.
+```
+
+Phase164A اجرا شد و نتیجه مثبت diagnostic داد:
+
+```text
+Phase164A — 1H Spread Unit / Bracket Cost Sensitivity Audit
+GUI: Audit 1H spread/bracket sensitivity
+script: scripts/audit_pivot_1h_spread_bracket_sensitivity.py
+status: completed; route_feasible_gate=1 diagnostic
+```
+
+نتیجه Phase164A:
+
+```text
+evaluated_configs           : 352
+validation_pass_configs     : 244
+transfer_pass_configs       : 131
+fixed_transfer_pass_configs : 69
+pct_transfer_pass_configs   : 62
+route_feasible_gate         : 1
+```
+
+تفسیر دقیق:
+
+```text
+- 1H route را نباید رد کنیم.
+- Phase163A با spread=0.06% و bracket محدود بیش از حد pessimistic بود.
+- fixed spread 0.2 اقتصادی‌تر و plausibleتر از percent spread 0.06 است.
+- هنوز no paper/live/model-training؛ باید یک nonzero-cost candidate قفل شود.
+```
+
+کاندیدای nonzero-cost پیشنهادی برای lockdown:
+
+```text
+policy_key       : BRK_D1_FAST
+side_mapping     : breakout
+entry_delay      : 1
+recent_window    : 24
+zone             : 0.05
+bracket          : B15_10 = TP 1.5 ATR / SL 1.0 ATR
+hold_bars        : 24
+spread_mode      : fixed
+spread_value     : 0.2
+train PF/PnL     : 1.0607 / +11.0742
+validation PF/PnL: 1.6360 / +20.3189
+test PF/PnL      : 1.3548 / +14.3794
+```
+
+Phase165A اجرا شد و diagnostic lockdown را پاس کرد:
+
+```text
+Phase165A — 1H Fixed-Spread Candidate Lockdown / Stability Replay
+GUI: Replay 1H fixed-spread candidate lockdown
+script: scripts/replay_pivot_1h_fixed_spread_candidate_lockdown.py
+status: completed; lockdown_pass_gate=1
+```
+
+Candidate قفل‌شده:
+
+```text
+policy_key       : BRK_D1_FAST
+side_mapping     : breakout
+entry_delay      : 1
+recent_window    : 24
+pivot_zone_atr   : 0.05
+bracket          : B15_10 = TP 1.5 ATR / SL 1.0 ATR
+hold_bars        : 24
+spread_mode      : fixed
+spread_value     : 0.2
+```
+
+نتیجه:
+
+```text
+train PF/PnL      : 1.0607 / +11.0742
+validation PF/PnL : 1.6360 / +20.3189
+test PF/PnL       : 1.3548 / +14.3794
+transfer_pass_gate: 1
+monthly_gate      : 1
+lockdown_gate     : 1
+```
+
+ریسک‌ها:
+
+```text
+train PF weak = 1.0607
+train maxDD high = 23.52
+train/test positive_month_ratio exactly 0.50
+stress fails above fixed spread=0.2
+```
+
+تصمیم فعلی:
+
+```text
+1H fixed-spread breakout is the leading research lane.
+No paper/live/model-training yet.
+```
+
+Phase166A اجرا شد و anti-overfit walk-forward را پاس نکرد:
+
+```text
+Phase166A — 1H Locked Candidate Walk-Forward / Anti-Overfit Replay
+GUI: Replay 1H locked candidate walk-forward
+script: scripts/replay_pivot_1h_locked_candidate_walk_forward.py
+status: completed; walk_forward_pass_gate=0
+```
+
+نتیجه Phase166A:
+
+```text
+folds                     : 6
+fold_pass_count           : 0
+fold_pass_ratio           : 0.0
+test_pass_count           : 4
+test_pass_ratio           : 0.6667
+aggregate_test_cash_pnl   : +38.6401
+median_test_profit_factor : 1.3836
+walk_forward_pass_gate    : 0
+```
+
+تفسیر:
+
+```text
+- test side امیدوارکننده است: 4/6 test folds پاس شدند.
+- اما train/validation/monthly stability پایدار نیست.
+- 0/6 fold کامل پاس شد.
+- بنابراین هنوز model training مجاز نیست.
+```
+
+Phase167A اجرا شد و filter rescue قوی پیدا نکرد:
+
+```text
+Phase167A — 1H Locked Candidate Regime / Failure Attribution Audit
+GUI: Audit 1H locked candidate regime failures
+script: scripts/audit_pivot_1h_locked_candidate_regime_failures.py
+status: completed; no strong rescue filter
+```
+
+نتیجه:
+
+```text
+dominant_failure_reason     : monthly_stability_failed
+baseline_fold_pass_count    : 0/6
+baseline_test_pass_count    : 4/6
+baseline_aggregate_test_pnl : +38.6401
+best_filter_name            : buy_leg_only
+best_filter_fold_pass_ratio : 1/6
+recommendation              : REGIME_FILTER_CONFIRMATION_REQUIRED_NO_TRAINING
+```
+
+تفسیر:
+
+```text
+- buy_leg_only فقط fold pass را از 0/6 به 1/6 رساند ولی test pass را از 4/6 به 2/6 کم کرد.
+- max_spread_atr_0.10 aggregate test PnL را بهتر کرد اما fold pass همچنان 0/6 بود.
+- بنابراین هنوز model training مجاز نیست.
+```
+
+Phase168A اجرا شد و confirmation را پاس نکرد:
+
+```text
+Phase168A — 1H Predeclared Filter Confirmation Replay
+GUI: Replay 1H predeclared filter confirmation
+script: scripts/replay_pivot_1h_predeclared_filter_confirmation.py
+status: completed; confirmation_pass_gate=0
+```
+
+نتیجه Phase168A:
+
+```text
+selected_filter_name       : buy_leg_only
+selected_filter_pass_gate  : 0
+selected_fold_pass_ratio   : 1/6
+selected_test_pass_ratio   : 2/6
+confirmation_pass_gate     : 0
+recommendation             : STOP_1H_LOCKED_FILTER_ROUTE_OR_REDESIGN
+```
+
+فیلترهای مقایسه‌شده:
+
+```text
+none                         : fold_pass=0/6, test_pass=4/6, aggregate_test_pnl=+38.6401
+max_spread_atr_0.10          : fold_pass=0/6, test_pass=4/6, aggregate_test_pnl=+41.8019
+buy_leg_only                 : fold_pass=1/6, test_pass=2/6, aggregate_test_pnl=+31.8855
+buy_leg_only+max_spread_atr_0.10: fold_pass=1/6, test_pass=2/6, aggregate_test_pnl=+31.8855
+```
+
+تصمیم فعلی:
+
+```text
+Stop the current 1H locked-candidate route.
+Do not train a model around this rule/filter set.
+No Phase134 / no paper / no live.
+```
+
+Phase169A اجرا شد:
+
+```text
+Phase169A — Broker Cost Reality + Research Lane Reset Audit
+GUI: Audit broker cost reality / research reset
+script: scripts/audit_broker_cost_reality_research_reset.py
+status: completed; cost audit useful, route logs missing
+```
+
+نتیجه:
+
+```text
+route_decision             : INSUFFICIENT_ROUTE_EVIDENCE
+broker_cost_reality_status : BROKER_SPREAD_SAMPLE_MISSING_OR_UNVERIFIED
+```
+
+علت:
+
+```text
+run_logs مربوط به Phase162A–Phase168A روی دیسک پیدا نشدند.
+این نتیجه docs قبلی را باطل نمی‌کند؛ فقط یعنی script نتوانست route decision را خودکار از run_logs بسازد.
+```
+
+Cost audit:
+
+```text
+5M dataset PASS
+1H dataset PASS
+1H fixed 0.2 median spread/ATR = 0.0428 -> feasible
+1H fixed 0.5 median spread/ATR = 0.1070 -> feasible
+1H fixed 1.0 median spread/ATR = 0.2140 -> not feasible
+1H pct 0.06 median spread/ATR  = 0.2478 -> not feasible
+```
+
+تصمیم عملی فعلی همچنان:
+
+```text
+5M bottom-buy rejected.
+1H locked-candidate route rejected after Phase168A.
+No training/paper/live.
+```
+
+Phase170A اجرا شد و broker spread واقعی نمونه‌گیری شد:
+
+```text
+Phase170A — Broker Spread Capture / Cost Data Pipeline
+GUI: Capture broker spread / cost pipeline
+script: scripts/capture_broker_spread_cost_pipeline.py
+status: completed; broker_cost_reality_gate=1
+```
+
+نتیجه Alpari / XAUUSD_i:
+
+```text
+samples              : 121
+spread_price_median  : 0.3900
+spread_price_p90     : 0.4000
+spread_price_p99     : 0.4100
+spread_points_median : 39 points
+5M median spread/ATR : 0.00988
+1H median spread/ATR : 0.08347
+```
+
+نکته مهم:
+
+```text
+یک tick نامعتبر 1970 با spread=0 دیده شد؛ script patch شد تا در captureهای بعدی tickهای epoch نامعتبر را حذف کند.
+```
+
+تصمیم عملی:
+
+```text
+برای research بعدی از fixed spread حدود 0.4 یا stress 0.4/0.5 استفاده شود.
+کاندیدای 1H قبلی که فقط با fixed 0.2 پاس شد نباید revive شود.
+```
+
+Phase171A اجرا شد و مسیر بعدی research را مشخص کرد:
+
+```text
+Phase171A — Research Route Redesign Decision Matrix
+GUI: Audit research route redesign matrix
+script: scripts/audit_research_route_redesign_decision_matrix.py
+status: completed; selected route = NEW_1H_COST_AWARE_TARGET_FAMILY
+```
+
+Phase172A اجرا شد و target-family structural gates را پاس کرد:
+
+```text
+Phase172A — Broker-cost-aware 1H target-family design audit
+GUI: Audit broker-cost-aware 1H target family
+script: scripts/audit_broker_cost_aware_1h_target_family.py
+status: completed; target_family_ready_for_training_gate=1
+```
+
+نتیجه:
+
+```text
+candidate_families : 4
+ready_families     : 3
+selected_family_id : CA1_BRK_MID
+primary spread     : fixed 0.4
+stress spread      : fixed 0.5
+```
+
+Phase173A اجرا شد و learnability gates را پاس نکرد:
+
+```text
+Phase173A — Broker-cost-aware 1H Target Learnability / Dataset Build Audit
+GUI: Audit broker-cost-aware 1H target learnability
+script: scripts/audit_broker_cost_aware_1h_target_learnability.py
+status: completed; target_learnability_ready_gate=0
+learnable_families=0; selected_family_id=CA3_BRK_STRICT but selected_family_ready_gate=0
+```
+
+Phase173A ثابت کرد targetهای CA1/CA3/CA2 با baseline causal event-level فعلاً learnable نیستند. بنابراین model training/paper/live همچنان ممنوع است.
+
+گزارش‌ها:
+
+```text
+docs/Report/PHASE162A_PIVOT_BOTTOM_BUY_EXECUTION_GAP_RESULT.md
+docs/Report/PHASE163A_1H_PIVOT_ENTRY_FEASIBILITY_RESULT.md
+docs/Report/PHASE164A_1H_SPREAD_BRACKET_SENSITIVITY_RESULT.md
+docs/Report/PHASE165A_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN_REPORT.md
+docs/Report/PHASE165A_1H_FIXED_SPREAD_CANDIDATE_LOCKDOWN_RESULT.md
+docs/Report/PHASE166A_1H_LOCKED_CANDIDATE_WALK_FORWARD_REPORT.md
+docs/Report/PHASE166A_1H_LOCKED_CANDIDATE_WALK_FORWARD_RESULT.md
+docs/Report/PHASE167A_1H_LOCKED_CANDIDATE_REGIME_FAILURES_REPORT.md
+docs/Report/PHASE167A_1H_LOCKED_CANDIDATE_REGIME_FAILURES_RESULT.md
+docs/Report/PHASE168A_1H_PREDECLARED_FILTER_CONFIRMATION_REPORT.md
+docs/Report/PHASE168A_1H_PREDECLARED_FILTER_CONFIRMATION_RESULT.md
+docs/Report/PHASE169A_BROKER_COST_REALITY_RESEARCH_RESET_REPORT.md
+docs/Report/PHASE169A_BROKER_COST_REALITY_RESEARCH_RESET_RESULT.md
+docs/Report/PHASE170A_BROKER_SPREAD_CAPTURE_COST_PIPELINE_REPORT.md
+docs/Report/PHASE170A_BROKER_SPREAD_CAPTURE_COST_PIPELINE_RESULT.md
+docs/Report/PHASE171A_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX_REPORT.md
+docs/Report/PHASE171A_RESEARCH_ROUTE_REDESIGN_DECISION_MATRIX_RESULT.md
+docs/Report/PHASE172A_BROKER_COST_AWARE_1H_TARGET_FAMILY_REPORT.md
+docs/Report/PHASE172A_BROKER_COST_AWARE_1H_TARGET_FAMILY_RESULT.md
+docs/Report/PHASE173A_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY_REPORT.md
+docs/Report/PHASE173A_BROKER_COST_AWARE_1H_TARGET_LEARNABILITY_RESULT.md
+docs/Report/PHASE174A_HYBRID_REGIME_FIRST_TARGET_REDESIGN_REPORT.md
+```
+
+## سیستم
+
+ShadBotTrader — Dual/Triple Model Trading System
+- Signal model: 5M candles → BUY/SELL
+- Range model: 1D/1H/4H candles → High/Low فردا → TP/SL (ATR-normalized)
+- Trend model: 1D/4H candles → GREEN/RED رنگ کندل بعدی
+- Trend-signal model: 5M candles → BUY/HOLD/SELL (rolling 288)
+- Trend-score model: 5M candles → score روند (−1..+1) رگرسیون
+- Strategy: Triple (5M signal · 4H bracket · 1D trend)
+- Broker: Alpari / XAUUSD_i; captured spread≈0.39–0.41, research cost fixed 0.4 with stress 0.5
+
+## مدل‌های AI
+
+| مدل | تایم‌فریم | نوع | تارگت | وضعیت |
+|-----|-----------|------|--------|--------|
+| gold_signal_5m | 5M | 2-class | first-passage ±0.6% | آموزش‌دیده (77.1%) — قدیمی، نیاز به ریترین |
+| gold_range_1d | 1D | رگرسیون | High/Low ATR-normalized | قدیمی (pct) — ریترین لازم |
+| gold_range_4h | 4H | رگرسیون | High/Low ATR-normalized | v3 — BEATS baseline 4% |
+| gold_trend_1d | 1D | 2-class | رنگ کندل بعدی | v1 — BEATS baseline 57% vs 53.2% |
+| gold_trend_score_5m | 5M | رگرسیون | score=(C−O)/(H−L) ∈(−1,+1) | در حال آموزش (window=288, 4×3) |
+| gold_trend_signal_5m | 5M | 3-class | first ±0.5×ATR(1D) | نیاز به ریترین (بعد از فیکس مانع روزانه) |
+
+## استراتژی Triple (فاز ۹۷)
+
+```
+مجوز ۱: سیگنال 5M احتمال > آستانهٔ GUI
+مجوز ۲: شیب روزانه — مدل رنج 1D پیش‌بینی D1 → شیب High/Low نسبت به D0
+         حالت‌ها: both | either | high | low (GUI)
+مجوز ۳: سمت TP (خرید: TP > ورود)
+مجوز ۴: نزدیکی ورود به سطح روزانه ≤ max_entry_distance_atr × ATR14(1D)
+مجوز ۵ (آینده): رنگ ترند از gold_trend_<tf>
+براکت: TP/SL از مدل رنج 4H با fallback: D0 → 5M-امروز
+SL نهایی: ≥ min_sl_distance (GUI) و ≥ 2×spread
+اسپرد: درصدی (GUI) — برخورد TP/SL روی BID/ASK
+```
+
+## گیت‌های فیلتر
+
+| فیلتر | توضیح |
+|-------|-------|
+| EMA50 daily | SHORT ممنوع وقتی قیمت بالای EMA50، LONG وقتی زیر |
+| Session filter | فقط ساعت‌های مشخص UTC |
+| Min SL dist | حداقل فاصلهٔ SL از ورود (بعد از fallback) |
+| 0-bar filter | حذف ترید‌های بسته‌شده در همان کندل ورود |
+
+## زیرساخت MT5
+
+- Session-first: اول اتصال به ترمینال (بدون credential) — اکانت‌های OTP کار می‌کنند
+- symbol_select: قبل از هر fetch — خطای قابل‌فهم برای نمونه غلط/حساس به حروف
+- mapping: XAUUSD → XAUUSD_i (Alpari)
+
+## مدل‌های score (فاز ۹۸-ب + فاز ۱۰۰)
+
+```
+gold_trend_score_5m: رگرسیون خالص — تارگت مصنوعی 288×5M (قدیمی)
+gold_trend_score_1d: فاز ۱۰۰ — تارگت از کندل واقعی 1D فردا:
+  score = (close[D1]−open[D1])/(high[D1]−low[D1]) ∈ (−1,+1)
+خروجی: Dense(1, tanh) | loss: Huber | window=150×1D
+پیش‌فرض خودکار: --label-horizon خالی → 1D:1 (واقعی)، بقیه: 288
+معنی: +0.9 = صعود قوی، −0.9 = نزول قوی، ~0 = بی‌رون
+
+v1 سندباکس (2026-09-06): آموزش روی 2,513 کندل واقعی Yahoo GC=F (10 سال):
+بدون لبه (skill −0.2% vs ثابت) — رانش یک‌روزه از فیچر قیمتی خالص
+غیرقابل‌پیش‌بینی است؛ دقیقاً انتظار مستند TREND_SCORE_1D_PROPOSAL.
+لبه فقط از فیچر رژیم‌محور (DOW/vol-regime) یا فیلترهای session می‌آید.
+gold_trend_1d v1 سندباکس (همان دیتا): val_acc 55.7% vs 54.3% (+1.4pp) —
+سازگار با لبهٔ اثبات‌شدهٔ اپراتور (+3.8%)؛ kept در epoch 12.
+
+## دستورات کلیدی
+
+```bash
+# آموزش trend_score — حالت کندل واقعی 1D (فاز ۱۰۰؛ label-horizon خودکار=1)
+# فاز ۱۰۲: monitor خودکار score = val_mae؛ برای تست MAE خالص فلگ آخر را بگذار
+python scripts/run_dual_models.py --with-features --symbol XAUUSD \
+  --model trend_score --signal-timeframe 1D \
+  --epochs 50 --folds 3 --window 150 \
+  --learning-rate 0.0008 --trend-score-loss mae \
+  --storage-root datasets
+
+# ماشین کم‌رم (سندباکس/کانتینر 1GB): استریم اجباری
+SHADBOT_STREAM_THRESHOLD_BYTES=1000000  # اختیاری
+
+# audit trend_signal قبل از آموزش سنگین (فاز ۱۰۷)
+python scripts/evaluate_trend_signal_5m.py --symbol XAUUSD \
+  --timeframe 5M --window 288 --label-horizon 288 \
+  --atr-mult 0.5 --folds 3 --storage-root datasets
+
+# آموزش trend_signal (سه‌کلاسه)
+python scripts/run_dual_models.py --with-features --symbol XAUUSD \
+  --model trend_signal --range-timeframes 5M --signal-timeframe 5M \
+  --epochs 50 --folds 3 --window 288 --learning-rate 0.0008 \
+  --storage-root datasets
+
+# آموزش trend رنگ (1D)
+python scripts/run_dual_models.py --with-features --symbol XAUUSD \
+  --model trend --range-timeframes 1D --signal-timeframe 1D \
+  --epochs 50 --folds 3 --window 150 --learning-rate 0.0008 \
+  --storage-root datasets
+
+# بکتست triple
+# GUI: strategy=triple | range_timeframe=4H | trend_filter=ema50
+#      min_sl_dist=6 | atr_mult=0.5 | max_entry_distance_atr=0.25
+```
+
+## Phase roadmap handoff (به‌روزرسانی 2026-09-08)
+
+- فازهای جدید در `docs/Phases` خرد شدند: `Phase100.md` تا `Phase119.md`.
+- index سریع همچنان برای سازگاری در این مسیر است: `docs/Phases/README_PHASE100_115.md`، اما محتوایش تا فاز ۱۱۹ به‌روزرسانی شده است.
+- گزارش سرچ عمیق معماری/مدل‌های بهتر: `docs/Report/PHASE116_DEEP_MODEL_ARCHITECTURE_RESEARCH_AND_ROADMAP.md`.
+- handoff کامل جلسه قبلی: `docs/SESSION_HANDOFF_2026-09-07.md`.
+- `Phase107` انجام شد: script و GUI جدید `Audit trend-signal labels` برای audit کامل
+  `trend_signal_5m` اضافه شد.
+- `Phase108` از نظر کد انجام شد و روی سیستم اپراتور تست عملیاتی شد. نتیجهٔ WaveNet
+  برای `gold_trend_signal_5m` قابل قبول نبود: با `class_weight=auto` به uniform نزدیک شد و
+  با `class_weight=off` به always-BUY/SELL collapse کرد. بنابراین WaveNet فعلاً core مسیر نیست.
+- `Phase109` از نظر کد انجام شد، اما calibration اصلی WaveNet به دلیل no-edge/collapse اجرا/استفاده
+  نشد. مسیر عملیاتی به booster-specialist calibration در فاز ۱۲۲ منتقل شد.
+- `Phase119` انجام شد: GUI خلوت شد؛ پارامترهای کم‌مصرف/حرفه‌ای زیر `Advanced options`
+  رفتند، بدون اینکه field یا قابلیت حذف شود.
+- `Phase120` انجام شد: metricهای ضد-collapse اضافه شدند (`val_action_min_f1_supported`,
+  `val_action_collapse`, predicted class counts) تا always-BUY/SELL گول‌زننده رد شود.
+- `Phase121` انجام شد: branch مستقل `Train trend-signal booster` برای LightGBM/XGBoost/CatBoost
+  روی خلاصهٔ causal پنجرهٔ 288 کندلی اضافه شد. اجرای واقعی نیازمند نصب optional dependencies است:
+  `pip install -r requirements-boosters.txt`.
+- `Phase122` انجام شد: script و GUI جدید `Calibrate booster specialists` برای کالیبراسیون مشترک
+  BUY/SELL specialistها اضافه شد و threshold مشترک را در model record ذخیره می‌کند.
+- `Phase123` انجام شد: script و GUI جدید `Build hybrid XGBoost matrix` ساخته شد. این ماتریس
+  خروجی‌های BUY/SELL booster، multiclass booster، WaveNet اختیاری و پیش‌بینی‌های range_1d/range_4h
+  را به featureهای آمادهٔ XGBoost/LightGBM تبدیل می‌کند.
+- `Phase124` انجام شد: script جدید `train_hybrid_xgboost_head.py` برای آموزش head نهایی
+  روی ماتریس فاز ۱۲۳ اضافه شد. خروجی هدف فعلاً SELL/HOLD/BUY است و HOLD نقش NO_TRADE دارد.
+- قدم اجرایی بعدی: اول `Build hybrid XGBoost matrix` را اجرا کن تا فایل
+  `datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet` ساخته شود؛ سپس `train_hybrid_xgboost_head.py` را اجرا کن.
+
+## External TensorFlow/algo-trading references (فاز ۱۰۶)
+
+- بررسی کامل سه منبع جدید در گزارش `docs/Report/PHASE106_ALPACA_ARI99_ONEPAGECODE_REVIEW_AND_SHADBOT_PLAN.md` ثبت شد.
+- repo `ari99/algorithmic_trading` موقتاً برای بررسی clone شد (commit `c8479f3`) و بعد از ثبت گزارش برای خلوت‌کردن workspace حذف شد.
+- نتیجهٔ roadmap: تمرکز بعدی باید روی `trend_signal` و event/action classification باشد: class weights، F1/PR-AUC، threshold calibration، feature selection، POS/NEG models و significance checks.
+- کپی مستقیم کد توصیه نمی‌شود: Alpaca/Onepagecode آموزشی و TF1 هستند؛ ari99 وابسته به `vectorbtpro` و بدون license واضح است.
+
+## External reference review: Leci37 (فاز ۱۰۵)
+
+- repo مرجع Leci37 موقتاً برای بررسی clone شد (commit `7520351`) و بعد از ثبت گزارش برای خلوت‌کردن workspace حذف شد.
+- گزارش کامل: `docs/Report/PHASE105_LECI37_CODE_REVIEW_AND_ADOPTION_PLAN.md`.
+- نتیجهٔ تصمیم فنی: از پروژهٔ Leci37 کد را مستقیم وارد production نمی‌کنیم؛ ایده‌های
+  event-based GT، POS/NEG binary models، feature selection، class weights/F1،
+  threshold calibration، ensemble و profit-aware evaluation قابل استفاده‌اند.
+- اولویت بعدی پیشنهادی: تقویت `trend_signal` به جای تکیه روی `trend_score` regression.
+
+## trend_score input scaling (فاز ۱۰۴)
+
+- مدل‌های range/signal/trend همان min-max قدیمی `[-2,+2]` را حفظ می‌کنند.
+- `gold_trend_score_*` از این فاز input featureها را per-window به `[-1,+1]`
+  scale می‌کند تا بازهٔ ورودی با target bounded score هماهنگ‌تر باشد.
+- `input_scale_range` در `ModelRole` و `ModelRecord` ذخیره می‌شود؛ inference،
+  `/data` و evaluation همان scale ذخیره‌شده را مصرف می‌کنند.
+- resume از checkpoint قدیمی با scale متفاوت برای score رد می‌شود؛ بعد از این
+  تغییر trend_score را از صفر train کن، نه resume از مدل `[-2,+2]`.
+
+## trend_score target-integrity audit (فاز ۱۰۳)
+
+- محاسبهٔ score و نرمال‌سازی بررسی شد: target از کندل واقعی بعدی ساخته می‌شود،
+  featureها per-window به `[-2,+2]` scale می‌شوند، target داخل input نیست و خودش
+  در `[-1,+1]` باقی می‌ماند.
+- باگ tail fix شد: ردیف‌های بدون کندل آینده دیگر با `0.0` پر نمی‌شوند؛ با
+  `attach_targets` حذف می‌شوند. این پاک‌سازی integrity است، نه ادعای edge جدید.
+
+## trend_score MAE option (فاز ۱۰۲)
+
+- `trend_score` حالا دو objective دارد: `composite` یعنی loss قبلی
+  `3*Huber+6*MAE+1*MSE`، و `mae` یعنی MAE خالص.
+- برای `trend_score`، monitor خودکار `val_mae` است؛ checkpoint/best epoch،
+  EarlyStopping و ReduceLR روی همان MAE تصمیم می‌گیرند.
+- GUI فیلد `Trend-score loss` دارد؛ فقط روی model=`trend_score` اثر دارد و
+  range/signal/trend را تغییر نمی‌دهد.
+- معیار نهایی همچنان باید با baseline ثابت، sign accuracy، corr و stdev خروجی
+  سنجیده شود؛ MAE کمتر به‌تنهایی edge معاملاتی را ثابت نمی‌کند.
+
+## GUI / لاگ زنده
+
+- فاز ۱۰۱: Train a model از داخل Dashboard روی Windows دوباره live-log قابل‌اعتماد دارد.
+- علت فیکس: `dispatch_async` قبل از redirect وضعیت busy را رزرو می‌کند؛ `_run_script`
+  child را با `python -u` و UTF-8 اجباری اجرا می‌کند و فایل `run_logs/train_dual_models.log`
+  را با appendهای کوتاه می‌نویسد تا `/api/log` بتواند وسط آموزش بخواند.
+- فاز ۱۱۹: فرم‌های طولانی GUI خلوت شدند؛ fieldهای کم‌مصرف/حرفه‌ای حذف نشدند، فقط زیر
+  `Advanced options` رفتند. این شامل Train/Retrain/Optimise/Backtest/Replay/Audit/Calibration است.
+- اگر آموزش از GUI شروع شود، پنل live output باید ظرف چند ثانیه حداقل خط command،
+  سربرگ TRAINING و batch/epoch progress را نشان دهد. اجرای دستی PowerShell همچنان
+  جداست و لاگ Dashboard را پر نمی‌کند.
+
+## مسائل شناخته‌شده
+
+- trend_signal مانع باید از ATR(1D) باشد نه ATR(5M) — فیکس شد (فاز ۹۸-ب) ولی مدل باید ریترین شود
+- score نزدیک صفر در random walk طبیعی است — لبه واقعی از فیچرها می‌آید
+- gold_signal_5m فقط 10 epoch آموزش دیده — ریترین جدی لازم دارد
+- ES patience=400 عملاً خاموش است — 15-30 کافی است
+
+## نقشهٔ مدل ترکیبی فعلی
+
+دارایی‌های فعلی که باید محور سیستم باشند:
+
+```text
+gold_range_1d  → سقف/کف فردا و daily envelope
+gold_range_4h  → سقف/کف چهار ساعت آینده برای TP/SL محلی
+gold_trend_signal_lightgbm_basic_5m → multiclass booster SELL/HOLD/BUY
+gold_buy_lightgbm_basic_5m → BUY specialist
+gold_sell_lightgbm_basic_5m → SELL specialist
+gold_trend_signal_5m → WaveNet optional/diagnostic، نه core فعلی
+```
+
+مسیر عملیاتی فعلی:
+
+```text
+Boosters/Specialists + optional WaveNet + range_1d/range_4h
+→ Phase123 hybrid_xgboost_matrix_latest.parquet
+→ Phase124 final hybrid XGBoost/LightGBM head
+→ Phase125 calibration/backtest با TP/SL واقعی
+→ Phase113 significance checks
+→ Phase116 live/range-aware integration
+```
+
+## آخرین اجرای عملیاتی ثبت‌شده
+
+### Booster multiclass فاز ۱۲۱
+
+```text
+model      : gold_trend_signal_lightgbm_basic_5m v1
+best strict score : val_action_min_f1_supported = 0.436703
+collapse   : 0
+```
+
+### BUY/SELL specialists
+
+```text
+gold_buy_lightgbm_basic_5m v1:
+  best F1=0.612355 · precision=51.98% · recall=74.51%
+
+gold_sell_lightgbm_basic_5m v1:
+  best F1=0.680203 · precision=61.03% · recall=76.82%
+```
+
+### Phase122 booster-specialist calibration روی holdout
+
+```text
+samples=8000
+best buy_threshold=0.35
+best sell_threshold=0.35
+trades=7791
+coverage=97.39%
+action_precision=48.65%
+action_recall=61.02%
+action_f1=0.541351
+```
+
+نتیجه: threshold خام 0.35/0.35 برای trading نهایی بیش از حد aggressive است؛ نیاز به head نهایی/precision-aware calibration باقی است.
+
+### Phase123 hybrid matrix
+
+```text
+path latest : datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows        : 8000
+columns     : 45
+scope       : holdout
+labels      : sell=2687, hold=1789, buy=3524
+warnings    : []
+```
+
+## آخرین اجرای عملیاتی فاز ۱۲۴
+
+```text
+model_id      : gold_hybrid_lightgbm_head_5m v1
+matrix        : datasets/processed/XAUUSD/5M/hybrid_xgboost_matrix_latest.parquet
+rows/features : 8000 / 36
+train/val     : 5600 / 2400
+val_accuracy  : 43.79%
+balanced_acc  : 46.23%
+macro_f1      : 0.4380
+buy_sell_f1   : 0.4570
+action_min_f1 : 0.4517
+action_collapse: 0
+predicted classes: 3
+SELL P/R/F1   : 48.68% / 44.02% / 0.4623
+HOLD P/R/F1   : 30.93% / 56.59% / 0.4000
+BUY  P/R/F1   : 55.49% / 38.09% / 0.4517
+```
+
+برداشت: مدل hybrid head collapse نکرد و هر سه کلاس را predict کرد. نسبت به booster-only strict score قبلی `0.4367`، معیار ضد-collapse به `0.4517` رسید. این بهبود بزرگ نیست، ولی مسیر hybrid را زنده نگه می‌دارد.
+
+## گام بعدی
+
+1. فاز ۱۲۵ را بسازیم/اجرا کنیم: calibration آستانه‌های hybrid head و backtest با TP/SL واقعی.
+2. معیار فاز ۱۲۵ باید trading-aware باشد، نه فقط accuracy/F1:
+   `action_precision`, `coverage`, `PnL`, `max_drawdown`, `range_4h TP/SL`, `range_1d envelope`.
+3. اگر فاز ۱۲۵ نتیجهٔ مثبت داد، بعد فاز ۱۱۳ significance/random baseline و سپس اتصال production فاز ۱۱۶ انجام شود.
+
+## Phase125 status
+
+فاز ۱۲۵ پیاده‌سازی شد:
+
+```text
+scripts/backtest_hybrid_xgboost_head.py
+GUI: Backtest hybrid XGBoost head
+```
+
+این فاز `gold_hybrid_lightgbm_head_5m` را با threshold grid و TP/SL مبتنی بر `range_4h` و فیلتر room مبتنی بر `range_1d` backtest می‌کند.
+
+گام اجرایی بعدی:
+
+```powershell
+python -u scripts/backtest_hybrid_xgboost_head.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --eval-frac 0.30 `
+  --threshold-min 0.35 `
+  --threshold-max 0.95 `
+  --threshold-step 0.05 `
+  --min-margin 0 `
+  --min-trades 30 `
+  --score-metric total_pnl `
+  --max-hold-bars 48 `
+  --min-4h-room 0 `
+  --min-1d-room 0 `
+  --min-tp-distance 1 `
+  --min-sl-distance 1 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+بعد از اجرا، فایل زیر باید ارسال شود:
+
+```text
+run_logs/hybrid_head_backtest/latest.json
+```
+
+
+## آخرین اجرای عملیاتی فاز ۱۲۵
+
+### اجرای پایه با `score_metric=total_pnl`
+
+```text
+model      : gold_hybrid_lightgbm_head_5m v1
+samples    : 2400
+best th    : buy=0.80 sell=0.65 margin=0.00
+trades     : 344 (coverage=14.33%)
+buy/sell   : 170 / 174
+wins/losses: 172 / 172
+label_precision: 66.57%
+total_pnl  : +266.03
+avg_pnl    : +0.7733
+profit_factor: 1.2199
+max_drawdown : 355.58
+```
+
+### اجرای محافظه‌کارانه با room filters
+
+تنظیمات:
+
+```text
+min_margin=0.05
+min_4h_room=2
+min_1d_room=5
+min_tp_distance=2
+min_sl_distance=2
+precision_floor=0.55
+```
+
+اگر معیار انتخاب فقط `precision_then_pnl` باشد، بهترین منتخب precision بالا ولی PnL کمی منفی داشت:
+
+```text
+buy=0.95 sell=0.75
+trades=90
+label_precision=83.33%
+total_pnl=-8.52
+profit_factor=0.9719
+```
+
+اما بهترین ردیف معاملاتی مثبت در همان grid:
+
+```text
+buy=0.80 sell=0.65 margin=0.05
+trades=325
+win_rate=51.69%
+label_precision=65.85%
+total_pnl=+291.15
+profit_factor=1.2472
+max_drawdown=347.04
+coverage=13.54%
+```
+
+برداشت فعلی: فاز ۱۲۵ edge اولیه نشان داده، اما قبل از live باید threshold مثبت با قیود precision/profit-factor ذخیره شود و سپس significance check اجرا شود.
+
+گام اجرایی پیشنهادی بعدی:
+
+```powershell
+python -u scripts/backtest_hybrid_xgboost_head.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --eval-frac 0.30 `
+  --threshold-min 0.45 `
+  --threshold-max 0.95 `
+  --threshold-step 0.05 `
+  --min-margin 0.05 `
+  --min-trades 100 `
+  --precision-floor 0.60 `
+  --min-profit-factor 1.05 `
+  --score-metric total_pnl `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --save-record 1 `
+  --storage-root datasets
+```
+
+## Phase125B saved threshold + Phase113 implementation status
+
+کاربر rerun فاز ۱۲۵ را با قیود سخت‌تر اجرا کرد و خروجی نشان می‌دهد threshold سودده در رکورد مدل ذخیره شده است:
+
+```text
+model_id        : gold_hybrid_lightgbm_head_5m
+model_version   : 1
+matrix_rows     : 8000
+eval_rows       : 2400
+buy_threshold   : 0.80
+sell_threshold  : 0.65
+min_margin      : 0.05
+trades          : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+total_pnl       : +291.154987683185
+avg_pnl         : +0.8958615005636462
+profit_factor   : 1.2471739846573604
+max_drawdown    : 347.044035279524
+coverage        : 13.5417%
+record_path     : datasets\models\gold_hybrid_lightgbm_head_5m\v1_training.json
+```
+
+فاز ۱۱۳ اکنون برای همین مسیر پیاده‌سازی شده است:
+
+```text
+scripts/backtest_significance_check.py
+GUI: Check hybrid significance
+outputs:
+  run_logs/significance_checks/latest.json
+  run_logs/significance_checks/latest.csv
+```
+
+گام اجرایی فعلی روی ماشین کاربر:
+
+```powershell
+python -u scripts/backtest_significance_check.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --trials 1000 `
+  --seed 42 `
+  --white-check 1 `
+  --candidate-rows-path run_logs/hybrid_head_backtest/latest.json `
+  --storage-root datasets
+```
+
+بعد از اجرا باید `run_logs\significance_checks\latest.json` بررسی شود. اگر p-value بالا باشد، نتیجهٔ فاز ۱۲۵ هنوز فقط exploratory است؛ اگر p-value پایین باشد، قدم بعدی integration/paper در مسیر Phase116 است.
+
+## Phase113 result — significance passed strongly
+
+فاز ۱۱۳ روی threshold ذخیره‌شدهٔ مدل hybrid اجرا شد و نتیجه از random baseline و White-style max check عبور کرد:
+
+```text
+threshold_source: model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold       : buy=0.80 sell=0.65 margin=0.05
+observed_pnl    : +291.154987683185
+observed_pf     : 1.2471739846573604
+observed_trades : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+random_mean     : -944.2369557544658
+random_p95      : -665.0864972670641
+random_p99      : -529.5757005996354
+random_max      : -317.02241025066814
+random_p_value  : 0.000999000999000999
+white_candidates: 23
+white_p99       : -128.05536537052174
+white_max       : -28.658925889975762
+white_p_value   : 0.000999000999000999
+```
+
+تصمیم فعلی:
+
+```text
+Phase113 برای این holdout پاس شد. گام بعدی مجاز: Phase116 integration برای hybrid range-aware decision path.
+هنوز live واقعی مجاز نیست؛ بعد از integration باید Phase115 decision audit و paper/live shadow اجرا شود.
+```
+
+## Phase116 status — hybrid range-aware decision integration built
+
+Phase116 v1 پیاده‌سازی شد. مسیر hybrid دیگر فقط research/backtest script نیست و وارد pipeline استاندارد trading decision شده است:
+
+```text
+HybridHeadPredictor
+→ HybridHeadForecast
+→ HybridRangeAwareStrategy
+→ PositionAwareDecisionEngine
+→ PolicyRiskGate
+→ DefaultIntentFactory
+→ audit JSON/CSV
+```
+
+فایل‌های مهم:
+
+```text
+src/ShadBotTrader/domain/ai/prediction_target.py
+src/ShadBotTrader/infrastructure/ai/hybrid_head_predictor.py
+src/ShadBotTrader/infrastructure/trading/hybrid_range_aware_strategy.py
+scripts/audit_hybrid_range_aware_decisions.py
+```
+
+GUI command جدید:
+
+```text
+Audit hybrid range-aware decisions
+```
+
+دستور اجرای sanity audit روی ماشین کاربر:
+
+```powershell
+python -u scripts/audit_hybrid_range_aware_decisions.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --capital 10000 `
+  --base-quantity 1 `
+  --storage-root datasets
+```
+
+خروجی مورد انتظار اگر integration با Phase125 هم‌خوان باشد:
+
+```text
+trade_intents حدود 325
+buy/sell حدود 160/165
+label_precision حدود 65.85%
+coverage حدود 13.54%
+```
+
+بعد از تأیید این audit، قدم بعدی Phase115 live decision audit / paper shadow است. live واقعی هنوز مجاز نیست.
+
+## Phase116 audit result — matched Phase125 exactly
+
+کاربر `scripts/audit_hybrid_range_aware_decisions.py` را اجرا کرد. خروجی runtime integration با Phase125 کاملاً هم‌خوان بود:
+
+```text
+threshold_source: model_record:gold_hybrid_lightgbm_head_5m:v1
+threshold       : buy=0.80 sell=0.65 margin=0.05
+rows            : 2400
+trade_intents   : 325
+no_trade        : 2075
+buy/sell intents: 160 / 165
+label_correct   : 214
+label_precision : 0.6584615384615384
+coverage        : 0.13541666666666666
+```
+
+این دقیقاً با بهترین candidate فاز ۱۲۵ یکی است:
+
+```text
+Phase125 trades/coverage/precision = 325 / 0.13541666666666666 / 0.6584615384615384
+Phase116 intents/coverage/precision = 325 / 0.13541666666666666 / 0.6584615384615384
+```
+
+تصمیم فعلی:
+
+```text
+Phase116 PASS.
+اکنون مسیر hybrid range-aware وارد pipeline واقعی تصمیم شده است.
+قدم بعدی Phase115 live decision audit / paper shadow است؛ ارسال order واقعی هنوز مجاز نیست.
+```
+
+## Full 5M hybrid backtest report GUI
+
+برای مشاهدهٔ کامل‌تر قبل از Phase115، command/script جدید اضافه شد:
+
+```text
+GUI: Full hybrid 5M backtest report
+CLI: scripts/report_hybrid_full_backtest.py
+outputs:
+  run_logs/hybrid_full_backtest/latest.html
+  run_logs/hybrid_full_backtest/latest.json
+  run_logs/hybrid_full_backtest/latest.csv
+```
+
+این script threshold search نمی‌کند؛ threshold ذخیره‌شدهٔ فاز ۱۲۵ را fixed اجرا می‌کند. برای بک‌تست واقعی روی کل دیتای 5M، ابتدا matrix کامل باید ساخته شود:
+
+```text
+scripts/build_hybrid_xgboost_matrix.py --scope all --max-windows 0 --output-name hybrid_xgboost_matrix_all_5m
+```
+
+سپس report با:
+
+```text
+scripts/report_hybrid_full_backtest.py --matrix-path datasets\processed\XAUUSD\5M\hybrid_xgboost_matrix_all_5m.parquet --eval-frac 1.0
+```
+
+توجه: full-history report ممکن است in-sample باشد؛ برای تصمیم live، Phase125 holdout + Phase113 significance همچنان معیار اصلی‌اند.
+
+## Full hybrid report now includes candle replay + account balance
+
+`Full hybrid 5M backtest report` فقط summary نیست؛ اکنون در `latest.html` یک replay کندل‌به‌کندل دارد:
+
+```text
+slider candle-by-candle
+entry marker = circle
+exit marker = square
+entry line = yellow
+TP line = green
+SL line = red
+balance after closed trades
+active trade details
+```
+
+پارامترهای سرمایه:
+
+```text
+--initial-capital 100
+--units 1
+```
+
+محاسبه:
+
+```text
+final_balance = initial_capital + total_pnl * units
+```
+
+برای اکانت 100 دلاری، `units=1` احتمالاً بزرگ است چون max drawdown فاز ۱۲۵ حدود 347 دلار per unit بود. پیشنهاد تست نمایشی امن‌تر:
+
+```text
+--units 0.1
+```
+
+دستور پیشنهادی برای همان holdout معتبر 325 trade:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 0.30 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+خروجی:
+
+```text
+run_logs\hybrid_full_backtest\latest.html
+run_logs\hybrid_full_backtest\latest.json
+```
+
+## Latest hybrid replay result — holdout visual backtest
+
+کاربر HTML replay/full-report را با `initial_capital=100` و `units=0.1` اجرا کرد. این اجرا روی matrix موجود 8000-row و `eval_frac=0.30` بود؛ بنابراین همان holdout 2400-row معتبر است، نه کل تاریخ 5M.
+
+نتیجه:
+
+```text
+trades          : 325
+buy/sell        : 160 / 165
+win_rate        : 51.6923%
+label_precision : 65.8462%
+total_pnl       : +291.154987683185
+profit_factor   : 1.2471739846573604
+max_drawdown    : 347.044035279524
+coverage        : 13.5417%
+```
+
+با capital sizing:
+
+```text
+initial_capital   : 100
+units             : 0.1
+final_balance     : 129.1154987683185
+net_profit        : +29.115498768318503
+return_percent    : +29.115498768318504%
+max_drawdown_cash : 34.7044035279524
+would_breach_zero : false
+```
+
+خروجی replay:
+
+```text
+run_logs\hybrid_full_backtest\latest.html
+replay.candles = 2440
+replay.trades  = 325
+```
+
+تصمیم فعلی:
+
+```text
+برای مشاهده و sanity-check، replay holdout خوب است و با Phase125/116 match دارد.
+برای بک‌تست کامل کل دیتای 5M، باید نسخهٔ memory-safe/chunked ساخته شود؛ نباید دوباره --scope all --max-windows 0 بدون chunk اجرا شود.
+```
+
+## Hybrid replay UI fixed + streamed full 5M mode
+
+Replay HTML سیاه می‌شد چون JSON داخل script با `html.escape` نوشته شده بود و `JSON.parse` در مرورگر fail می‌کرد. رفع شد:
+
+```text
+scripts/report_hybrid_full_backtest.py
+  script_json() without &quot;
+  fallback loading/error SVG
+  candle replay slider remains inline/offline
+```
+
+برای بک‌تست کامل 5M دیگر نباید matrix کامل با دستور سنگین ساخته شود. حالت stream اضافه شد:
+
+```powershell
+python -u scripts/report_hybrid_full_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 1000 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+تفاوت مهم:
+
+```text
+source-mode=matrix  → report روی matrix موجود
+source-mode=stream  → ساخت/score/backtest chunked روی کل scope انتخابی، بدون ذخیرهٔ matrix عظیم
+stream-wavenet=neutral → RAM-safe، WaveNet features = neutral 1/3 چون WaveNet قبلاً no-edge/collapse بود
+stream-wavenet=batch   → دقیق‌تر نسبت به WaveNet، اما کندتر و ممکن است سنگین‌تر باشد
+```
+
+## Full streamed 5M result — robustness failed
+
+کاربر full 5M streamed replay/backtest را اجرا کرد:
+
+```text
+source_mode=stream
+stream_scope=all
+stream_chunk_size=500
+stream_wavenet=neutral
+matrix/evaluated rows=52832/52832
+threshold=buy 0.80 / sell 0.65 / margin 0.05
+```
+
+نتیجه:
+
+```text
+trades          : 13757
+buy/sell        : 8583 / 5174
+win_rate        : 41.2663%
+label_precision : 51.1085%
+total_pnl       : -43309.811277104236
+profit_factor   : 0.6215092452818565
+max_drawdown    : 45887.011698256094
+coverage        : 26.0391%
+```
+
+با capital=100 و units=0.1:
+
+```text
+final_balance     : -4230.981127710424
+net_profit        : -4330.981127710424
+max_drawdown_cash : 4588.701169825609
+would_breach_zero : true
+```
+
+Monthly فقط 2026-07 مثبت بود:
+
+```text
+2026-07 pnl=+2319.21 PF=1.3863
+all other months negative
+```
+
+تصمیم فعلی:
+
+```text
+Fixed threshold/head روی کل تاریخ robustness ندارد.
+نباید مدل را روی کل دیتاست train و روی همان data backtest کنیم؛ این leakage است.
+گام بعدی درست: Phase126 walk-forward/out-of-time hybrid validation.
+```
+
+## Phase126A status — chronological single-position replay built
+
+بعد از اینکه full streamed independent-trade test روی کل 5M شکست خورد، Phase126A پیاده‌سازی شد:
+
+```text
+scripts/replay_hybrid_chronological_backtest.py
+GUI: Chronological hybrid replay
+```
+
+این نسخه با بک‌تست قبلی فرق دارد:
+
+```text
+قبلی: هر سیگنال به‌صورت trade مستقل حساب می‌شد.
+جدید: کندل‌به‌کندل جلو می‌رود و فقط یک پوزیشن هم‌زمان باز است.
+```
+
+قانون:
+
+```text
+اگر پوزیشن باز است:
+  سیگنال‌های بعدی skip می‌شوند و در chronological.skipped_while_open ثبت می‌شوند.
+اگر پوزیشن بسته است:
+  hybrid head + range_1d/4h gate ارزیابی می‌شود و در صورت عبور trade باز می‌شود.
+```
+
+دستور اجرای کامل memory-safe:
+
+```powershell
+python -u scripts/replay_hybrid_chronological_backtest.py `
+  --source-mode stream `
+  --stream-scope all `
+  --stream-chunk-size 500 `
+  --stream-wavenet neutral `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --model-id gold_hybrid_lightgbm_head_5m `
+  --model-version 0 `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --min-4h-room 2 `
+  --min-1d-room 5 `
+  --min-tp-distance 2 `
+  --min-sl-distance 2 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --slippage 0 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+بعد از اجرا باید بررسی شود:
+
+```text
+run_logs\hybrid_chronological_backtest\latest.json
+run_logs\hybrid_chronological_backtest\latest.html
+```
+
+اگر این هم روی کل تاریخ شکست بخورد، گام بعدی Phase126B walk-forward/out-of-time validation است.
+
+## Roadmap locked before Phase127 implementation
+
+ایدهٔ جدید کاربر به فازهای جداگانه تبدیل و ثبت شد تا چیزی گم نشود. مسیر آینده:
+
+```text
+Phase126A — chronological single-position replay   [implemented]
+Phase127  — causal 3D telemetry tensor with Target C
+Phase128  — LightGBM/CatBoost meta-labeler baseline
+Phase129  — WaveNet/TCN on telemetry tensor
+Phase130  — TSMixer benchmark
+Phase131  — PatchTST benchmark
+Phase132  — meta-filtered chronological backtest comparison
+Phase133  — walk-forward/out-of-time validation
+Phase134  — production consolidation / online bot assembly
+Phase115  — live decision audit / paper shadow after consolidation
+```
+
+Key decisions:
+
+```text
+safe_lag = 48 bars
+Target C = target_trade_win + target_trade_score_r + target_trade_pnl
+3D tensor = [samples, tensor_window, channels]
+4H/1D features enter as aligned channels, using only closed higher-timeframe candles
+WaveNet phase exists as Phase129, but it is a new telemetry-target WaveNet/TCN, not the old collapsed trend_signal model
+```
+
+Production complexity concern:
+
+```text
+Phase134 is explicitly reserved for simplifying/consolidating the final online bot path. If a model stack passes validation, live code must be one narrow service/config path, not a pile of research scripts.
+```
+
+## GUI execution rule for all upcoming executable phases
+
+از این نقطه به بعد، CLI-only برای فازهای اجرایی قابل قبول نیست. هر فاز آینده که نیاز به اجرای اپراتور دارد باید Dashboard/GUI command داشته باشد.
+
+ثبت‌شده در:
+
+```text
+Phase115
+Phase126
+Phase127
+Phase128
+Phase129
+Phase130
+Phase131
+Phase132
+Phase133
+Phase134
+```
+
+حداقل الزامات هر فاز اجرایی:
+
+```text
+CommandKind
+CommandDescriptor
+Handler
+advanced fields برای پارامترهای تخصصی
+unit/integration GUI tests
+```
+
+این قانون برای جلوگیری از پیچیده‌شدن workflow و وابستگی به دستورهای دستی ثبت شد.
+
+## Phase127A built — causal telemetry tensor builder
+
+Phase127A پیاده‌سازی شد:
+
+```text
+scripts/build_hybrid_telemetry_tensor.py
+GUI: Build hybrid telemetry tensor
+```
+
+خروجی‌ها:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_v1.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+ویژگی‌ها:
+
+```text
+Target C: target_trade_win + target_trade_score_r + target_trade_pnl
+safe_lag_bars=48
+3D tensor: X=[samples, tensor_window, channels]
+source-mode matrix|stream
+max_tensor_mb guard
+GUI command موجود است
+```
+
+اولین اجرای پیشنهادی کاربر باید matrix-mode باشد. بعد از دیدن `latest.json`، اگر shape/candidate/target stats درست بود، اجرای stream full با stride/max_samples انجام شود.
+
+راهنمای کامل ترتیب اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase128A built — hybrid meta-labeler baseline
+
+Phase128A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_meta_labeler.py
+scripts/backtest_hybrid_meta_labeler.py
+GUI: Train hybrid meta-labeler
+GUI: Backtest hybrid meta-labeler
+```
+
+پیش‌نیاز:
+
+```text
+Phase127A باید hybrid_telemetry_flat_latest.parquet را ساخته باشد.
+```
+
+مدل پیشنهادی اول:
+
+```text
+gold_hybrid_meta_lightgbm_5m
+```
+
+Target اول:
+
+```text
+target_trade_win
+```
+
+بعد از train، backtest meta-filtered روی telemetry candidates اجرا می‌شود و خروجی‌ها:
+
+```text
+run_logs\hybrid_meta_labeler\latest.json
+run_logs\hybrid_meta_backtest\latest.json
+run_logs\hybrid_meta_backtest\latest.html
+run_logs\hybrid_meta_backtest\latest.csv
+```
+
+راهنمای اجرای ترتیب فردا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase129A built — telemetry WaveNet/TCN
+
+Phase129A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_wavenet.py
+scripts/backtest_hybrid_telemetry_wavenet.py
+GUI: Train telemetry WaveNet/TCN
+GUI: Backtest telemetry WaveNet/TCN
+```
+
+این فاز تکرار WaveNet قبلی نیست. ورودی آن Phase127 tensor است:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+causal dilated Conv1D/TCN
+train-only scaler
+purge_gap default=336
+artifact format=pickle_keras with scaler metadata
+backtest decision_mode=meta|score|both
+```
+
+برای اجرا باید TensorFlow نصب باشد:
+
+```powershell
+python -m pip install -r requirements-ai.txt
+```
+
+بعد از train/backtest باید این فایل‌ها ارسال شوند:
+
+```text
+run_logs\hybrid_telemetry_wavenet\latest.json
+run_logs\hybrid_telemetry_wavenet_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase130A built — telemetry TSMixer benchmark
+
+Phase130A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_tsmixer.py
+scripts/backtest_hybrid_telemetry_tsmixer.py
+GUI: Train telemetry TSMixer
+GUI: Backtest telemetry TSMixer
+```
+
+ورودی:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+TSMixer time-mixing + feature-mixing blocks
+train-only scaler
+purge_gap default=336
+backtest decision_mode=meta|score|both
+```
+
+بعد از train/backtest باید ارسال شود:
+
+```text
+run_logs\hybrid_telemetry_tsmixer\latest.json
+run_logs\hybrid_telemetry_tsmixer_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase131A built — telemetry PatchTST benchmark
+
+Phase131A پیاده‌سازی شد:
+
+```text
+scripts/train_hybrid_telemetry_patchtst.py
+scripts/backtest_hybrid_telemetry_patchtst.py
+GUI: Train telemetry PatchTST
+GUI: Backtest telemetry PatchTST
+```
+
+ورودی:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+```
+
+قابلیت‌ها:
+
+```text
+task=classifier|regressor|multihead
+PatchTST temporal patches + Transformer encoder
+train-only scaler
+purge_gap default=336
+backtest decision_mode=meta|score|both
+```
+
+بعد از train/backtest باید ارسال شود:
+
+```text
+run_logs\hybrid_telemetry_patchtst\latest.json
+run_logs\hybrid_telemetry_patchtst_backtest\latest.json
+```
+
+راهنمای کامل اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase132A built — meta-filtered hybrid comparison
+
+Phase132A پیاده‌سازی شد:
+
+```text
+scripts/backtest_meta_filtered_hybrid.py
+GUI: Backtest meta-filtered hybrid
+```
+
+کاربرد:
+
+```text
+مقایسه base hybrid candidates با meta-filterهای Phase128/129/130/131 روی همان chronological replay.
+```
+
+خروجی‌ها:
+
+```text
+run_logs\hybrid_meta_comparison\latest.json
+run_logs\hybrid_meta_comparison\latest.csv
+run_logs\hybrid_meta_comparison\latest.html
+run_logs\hybrid_meta_comparison\best_replay.html
+```
+
+ویژگی مهم:
+
+```text
+skip_missing=1 پیش‌فرض است، پس اگر هنوز بعضی مدل‌ها train نشده باشند comparison فقط آن‌ها را skipped ثبت می‌کند.
+```
+
+راهنمای اجرا:
+
+```text
+docs/Phases/PHASE127_134_EXECUTION_ORDER.md
+```
+
+## Phase133A built — flat meta-labeler walk-forward validation
+
+Phase133A پیاده‌سازی شد:
+
+```text
+scripts/run_hybrid_walk_forward_validation.py
+GUI: Run hybrid walk-forward validation
+```
+
+کاربرد:
+
+```text
+برای هر test month، فقط گذشته train می‌شود، فقط validation گذشته threshold انتخاب می‌کند، و ماه آینده test می‌شود.
+```
+
+محدودهٔ فعلی:
+
+```text
+flat telemetry booster meta-labeler از Phase128
+```
+
+خروجی:
+
+```text
+run_logs\hybrid_walk_forward_validation\latest.json
+run_logs\hybrid_walk_forward_validation\latest.csv
+run_logs\hybrid_walk_forward_validation\latest.html
+```
+
+اگر این مرحله شکست بخورد، Phase134/production نباید اجرا شود. باید برگردیم به feature/regime/threshold/model اصلاحی.
+
+## Phase134A built — production validation + paper shadow scaffold
+
+Phase134A پیاده‌سازی شد:
+
+```text
+src/ShadBotTrader/application/services/hybrid_production_service.py
+scripts/validate_production_hybrid_stack.py
+scripts/run_hybrid_paper_shadow.py
+GUI: Validate production hybrid stack
+GUI: Run hybrid paper shadow
+```
+
+خروجی validation:
+
+```text
+run_logs\hybrid_production_validation\latest.json
+configs\hybrid_production_stack.json
+```
+
+خروجی paper shadow:
+
+```text
+run_logs\hybrid_paper_shadow\latest.json
+run_logs\hybrid_paper_shadow\latest.csv
+run_logs\hybrid_paper_shadow\latest.html
+```
+
+ایمنی:
+
+```text
+run_hybrid_paper_shadow.py هیچ order واقعی نمی‌فرستد و اگر config.mode=live باشد اجرا را رد می‌کند.
+Live واقعی همچنان تا بعد از Phase115 ممنوع است.
+```
+
+Phase134A فعلاً scaffold است. بعد از Phase133 اگر یک candidate واقعاً قبول شود، همین config با مدل منتخب freeze می‌شود و سپس Phase115 live decision audit/paper shadow انجام می‌شود.
+
+## Latest execution result — Phase126A failed; Phase127 timestamp bug fixed
+
+Phase126A chronological full 5M result from user:
+
+```text
+rows            : 52832
+trades          : 1693
+buy/sell        : 1118 / 575
+win_rate        : 30.2422%
+label_precision : 47.6669%
+total_pnl       : -4590.797210656048
+profit_factor   : 0.5787103197097719
+max_drawdown    : 4590.797210656047
+coverage        : 3.2045%
+final_balance   : -359.0797210656049  # initial=100, units=0.1
+would_breach_zero: true
+```
+
+Conclusion:
+
+```text
+Base hybrid fixed-threshold fails full chronological replay. Continue with telemetry/meta-filter/walk-forward; do not go live.
+```
+
+Phase127A first matrix-mode run failed with:
+
+```text
+TypeError: '<' not supported between instances of 'str' and 'datetime.datetime'
+```
+
+Fix committed in `scripts/build_hybrid_telemetry_tensor.py`:
+
+```text
+matrix timestamp strings are converted to UTC pandas Timestamp before latest-closed 4H/1D lookup.
+```
+
+Next user action:
+
+```text
+rerun Phase127A matrix-mode command exactly as before.
+Then send run_logs\hybrid_telemetry_tensor\latest.json
+```
+
+## Phase127A matrix-mode execution succeeded
+
+کاربر Phase127A را با `source_mode=matrix` اجرا کرد و خروجی ساختاراً سالم بود:
+
+```text
+rows               : 8000
+tensor_samples     : 7851
+tensor_shape       : [7851, 150, 94]
+channels           : 94
+candidate_rows     : 2307
+candidate_rate     : 28.8375%
+target_win_rate    : 57.2605%
+target_score_r_mean: +0.07910706847906113
+target_pnl_sum     : +3714.10546875
+warnings           : []
+```
+
+فایل‌های ساخته‌شده:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+```
+
+تفسیر:
+
+```text
+Phase127A PASS از نظر data build. اما این matrix-mode فقط 8000 ردیف دارد و validation نیست. گام بعدی Phase128A است.
+```
+
+## Latest Phase128A train result — LightGBM meta-labeler v1
+
+کاربر Phase128A classifier را train کرد:
+
+```text
+model_id       : gold_hybrid_meta_lightgbm_5m
+version        : 1
+rows           : 2307 candidate rows
+features       : 94
+train/val/test : 1614 / 346 / 347
+record_path    : datasets\models\gold_hybrid_meta_lightgbm_5m\v1_training.json
+```
+
+نتیجه:
+
+```text
+validation AP  : 0.7864 vs base_rate 0.6445
+validation precision/recall/F1 @0.55: 0.6572 / 0.9372 / 0.7726
+validation positive_rate @0.55: 91.91%
+
+test AP        : 0.6190 vs base_rate 0.4841
+test precision/recall/F1 @0.55: 0.4955 / 0.9940 / 0.6614
+test positive_rate @0.55: 97.12%
+```
+
+Interpretation:
+
+```text
+Ranking signal exists (AP > base_rate), but threshold=0.55 is too permissive and almost does not filter on test.
+```
+
+Next action:
+
+```text
+Run Phase128A backtest with saved threshold first, then Phase132A threshold grid.
+```
+
+## Latest Phase128A backtest result — positive but month-concentrated
+
+کاربر Phase128A backtest را اجرا کرد:
+
+```text
+model              : gold_hybrid_meta_lightgbm_5m v1
+threshold          : meta=0.55 from model_record
+rows/evaluated     : 8000 / 8000
+trades             : 143
+buy/sell           : 74 / 69
+win_rate           : 65.7343%
+total_pnl          : +509.5359231829643
+profit_factor      : 2.608242691826868
+max_drawdown       : 91.44515466690063
+coverage           : 1.7875%
+final_balance      : 150.95359231829644  # initial=100, units=0.1
+max_drawdown_cash  : 9.144515466690065
+would_breach_zero  : false
+```
+
+Monthly:
+
+```text
+2026-07: +526.1065, 60/60 wins, PF=999
+2026-08: -16.5706, 34/83 wins, PF=0.9477
+```
+
+Interpretation:
+
+```text
+Meta-filter is clearly useful on this 8000-row matrix, but profit is highly concentrated in July. Need Phase132 threshold grid and Phase133 walk-forward before trusting it.
+```
+
+Next action:
+
+```text
+Run Phase132A comparison/threshold grid.
+```
+
+## Phase132A best replay bug fixed
+
+کاربر Phase132A را با candidates `base,gold_hybrid_meta_lightgbm_5m` اجرا کرد و خطا گرفت:
+
+```text
+AttributeError: 'ComparisonRow' object has no attribute 'label_correct'
+```
+
+رفع شد:
+
+```text
+BestReplay now stores the original FixedBacktestSummary.
+best_replay.html uses replay.summary instead of reconstructing summary from ComparisonRow.
+```
+
+کاربر باید همان Phase132A command قبلی را دوباره اجرا کند و ارسال کند:
+
+```text
+run_logs\hybrid_meta_comparison\latest.json
+```
+
+## Latest Phase132A result — meta-filter strongly improves 8000-row replay
+
+Phase132A threshold grid نتیجه داد:
+
+```text
+Base:
+trades=219, win_rate=42.47%, total_pnl=+55.1465, PF=1.0678, DD=98.2513
+
+Best meta:
+candidate=gold_hybrid_meta_lightgbm_5m:meta:meta=record:score=0.0
+threshold=0.55
+trades=142, win_rate=65.49%, total_pnl=+502.8292, PF=2.5871, DD=91.4452
+final_balance=150.2829 with initial=100 and units=0.1
+```
+
+Grid summary:
+
+```text
+0.55: +502.83 PF=2.587 trades=142
+0.60: +488.53 PF=2.552 trades=140
+0.65: +481.79 PF=2.541 trades=138
+0.70: +467.51 PF=2.507 trades=136
+0.75: +446.61 PF=2.450 trades=131
+0.80: +420.53 PF=2.365 trades=130
+```
+
+Interpretation:
+
+```text
+Meta-filter works on the 8000-row matrix, but this is not final validation because it is not full-history walk-forward. Next build full stream telemetry, retrain meta, then run Phase133A walk-forward.
+```
+
+## Latest implementation fix — Phase127A stream same-bar-policy — 2026-09-12
+
+The operator's full stream Phase127A run stopped after the first chunk:
+
+```text
+stream rows : 500/52,832
+[X] AttributeError: 'Namespace' object has no attribute 'same_bar_policy'
+```
+
+Implemented fix:
+
+```text
+scripts/build_hybrid_telemetry_tensor.py
+  added --same-bar-policy {stop_first,tp_first}, default=stop_first
+
+Dashboard / GUI
+  Build hybrid telemetry tensor now exposes Same-bar policy and forwards --same-bar-policy
+```
+
+Additional stream consistency correction:
+
+```text
+stream-mode lagged trade telemetry is recomputed globally after all chunks are concatenated,
+so lagged_trade_count and rolling win-rate features do not reset every stream_chunk_size rows.
+```
+
+Verification status:
+
+```text
+Targeted ruff/black: PASS
+Targeted tests: 65 passed
+Full pytest: 1760 passed, 54 skipped
+Full ruff/black/mypy: still fail from pre-existing repo debt.
+```
+
+Next required operator action remains:
+
+```text
+Rerun Phase127A full stream telemetry with the same command.
+Optional explicit addition: --same-bar-policy stop_first
+```
+
+## Latest execution result — full stream telemetry + Phase133 walk-forward — 2026-09-12
+
+Phase127A full stream telemetry succeeded:
+
+```text
+rows                : 52832
+tensor_samples      : 10537
+tensor_shape        : [10537, 150, 94]
+candidate_rows      : 13757
+candidate_rate      : 26.0391%
+target_win_rate     : 41.2663%
+target_score_r_mean : -0.23007889091968536
+target_pnl_sum      : -43309.8125
+warnings            : []
+```
+
+Phase128A retrain on full stream telemetry produced:
+
+```text
+model_id         : gold_hybrid_meta_lightgbm_5m
+version          : 2
+rows             : 13757
+train/val/test   : 9629 / 2064 / 2064
+val AP/base      : 0.6117950637217242 / 0.4806201550387597
+test AP/base     : 0.7147311817866087 / 0.5184108527131783
+test precision   : 0.6214614878209348
+test recall      : 0.8822429906542056
+```
+
+Phase133A walk-forward result:
+
+```text
+folds                  : 6
+positive_months        : 1
+negative_months        : 4
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : -387.9482191801071
+meta_profit_factor     : 0.764435361497561
+meta_max_drawdown      : 460.49957263469696
+meta_trades            : 288
+meta_final_balance     : 61.20517808198929
+meta_would_breach_zero : false
+```
+
+Current decision:
+
+```text
+Phase133A FAILED. The full-stream flat LightGBM meta-filter reduces losses versus base but does not generalize into a profitable out-of-time strategy.
+No Phase134 paper shadow, no live trading, and no production acceptance from this candidate.
+```
+
+Recommended next research direction:
+
+```text
+1) Run a full-stream Phase132A comparison for v2 to confirm in-sample full-history behaviour.
+2) Run Phase133A diagnostic variants with stricter meta_thresholds, class_weight=off, and drawdown_adjusted scoring.
+3) If flat model still fails, evaluate Phase129/130/131 telemetry tensor models only in walk-forward mode before any deployment discussion.
+```
+
+## Latest implementation fix — negative score-threshold argv parsing — 2026-09-12
+
+The first Phase133A regressor command failed before execution because the score-threshold grid started with a negative value:
+
+```text
+--score-thresholds -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+error: argument --score-thresholds: expected one argument
+```
+
+Fix implemented:
+
+```text
+scripts/run_hybrid_walk_forward_validation.py
+scripts/backtest_meta_filtered_hybrid.py
+```
+
+Both scripts now normalize `--score-thresholds` / `--meta-thresholds` before argparse, so negative comma-separated threshold grids work in both CLI and Dashboard execution.
+
+Immediate workaround for any checkout without this patch:
+
+```powershell
+--score-thresholds=-0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+```
+
+## Latest execution result — Phase133A regressor walk-forward — 2026-09-12
+
+The operator ran the next diagnostic Phase133A variant:
+
+```text
+task             : regressor
+target           : target_trade_score_r
+score_thresholds : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50
+score_metric     : total_pnl
+```
+
+Aggregate result:
+
+```text
+folds                  : 6
+positive_months        : 2
+negative_months        : 3
+base_total_pnl         : -1288.8456037938595
+meta_total_pnl         : +8.10892242193222
+meta_profit_factor     : 1.0127550914970576
+meta_max_drawdown      : 183.82112050056458
+meta_trades            : 120
+meta_avg_pnl           : +0.06757435351610183
+meta_final_balance     : 100.81089224219322
+meta_return_percent    : +0.8108922421932221%
+meta_would_breach_zero : false
+```
+
+Decision:
+
+```text
+Phase133A regressor is materially better than the classifier and base hybrid, but it is still NOT accepted. It is near break-even, PF is only 1.0128, and month stability is weak.
+No Phase134 paper shadow/live trading is allowed.
+```
+
+Owner-control documentation added:
+
+```text
+docs/PROJECT_OWNER_MAP.html
+```
+
+This is now the mandatory graphical owner-facing project map and must be updated after every meaningful code/result/phase/decision change.
+
+## Latest implementation update — tensor visual inspector and full-window build command — 2026-09-12
+
+A visual inspector was added so the owner can understand the Phase127A 3D telemetry tensor without reading raw `.npz` arrays:
+
+```text
+scripts/inspect_hybrid_telemetry_tensor.py
+GUI: Inspect hybrid telemetry tensor
+Output: run_logs\hybrid_tensor_inspector\latest.html
+```
+
+The inspector shows:
+
+```text
+- tensor shape / dtype / estimated uncompressed size
+- axis meanings: samples × 150-candle time window × 94 channels
+- channel groups
+- selected samples as heatmap slices
+- target values for each selected sample
+```
+
+Important tensor status clarification:
+
+```text
+The current tensor with shape [10537, 150, 94] spans all 52,832 5M rows, but it samples every fifth possible window because sample_stride=5.
+A complete every-window tensor requires sample_stride=1 and max_samples=0, producing approximately [52683, 150, 94].
+```
+
+## Current tensor-to-WaveNet clarification — 2026-09-12
+
+The full 3D telemetry tensor has now been built and inspected:
+
+```text
+X shape                  : [52683, 150, 94]
+dtype                    : float16
+estimated X size          : 1416.8363571166992 MiB
+source rows               : 52832
+sample_stride             : 1
+max_samples               : 0
+warnings                  : []
+visual inspector output   : run_logs\hybrid_tensor_inspector\latest.html
+```
+
+The WaveNet model intended to consume this tensor is Phase129A:
+
+```text
+trainer      : scripts/train_hybrid_telemetry_wavenet.py
+backtester   : scripts/backtest_hybrid_telemetry_wavenet.py
+GUI train    : Train telemetry WaveNet/TCN
+GUI backtest : Backtest telemetry WaveNet/TCN
+model id     : gold_hybrid_telemetry_wavenet_5m
+```
+
+Target design:
+
+```text
+Recommended first task: multihead
+head meta_win -> predicts target_trade_win
+head score_r  -> predicts target_trade_score_r
+```
+
+Trading interpretation:
+
+```text
+target_trade_score_r is the more important target for execution quality because win-only classification failed Phase133A, while score_r regression reached near break-even. WaveNet should be trained multihead first, then backtested with decision_mode=score and decision_mode=both.
+```
+
+## Current WaveNet training status clarification — 2026-09-12
+
+The operator started Phase129A WaveNet/TCN training on the full tensor with:
+
+```text
+tensor shape before candidate filter : [52683, 150, 94]
+task                                 : multihead
+candidate_only                        : 1
+epochs                                : 500
+early_stopping_patience               : 8
+monitor                               : val_loss
+observed model input shape             : [13692, 150, 94]
+split                                 : 9584 / 1718 / 1718
+```
+
+Interpretation:
+
+```text
+The observed [13692, 150, 94] input shape is expected because candidate_only=1 keeps only trade-candidate windows from the full tensor.
+The script is not monthly roll-forward. It is a chronological train/validation/test split with purge_gap=336.
+This is acceptable for first artifact training, but not sufficient for production acceptance.
+```
+
+Required validation if initial WaveNet looks promising:
+
+```text
+Run backtest_hybrid_telemetry_wavenet.py first, then build/run tensor-model walk-forward validation before any Phase134/paper/live discussion.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v1 — 2026-09-12
+
+The operator trained the Phase129A telemetry WaveNet/TCN on the full 3D tensor:
+
+```text
+model_id       : gold_hybrid_telemetry_wavenet_5m
+version        : 1
+task           : multihead
+tensor_path    : datasets\processed\XAUUSD\5M\hybrid_telemetry_tensor_latest.npz
+selected rows  : 13692 candidate tensor windows
+tensor_window  : 150
+channels       : 94
+train/val/test : 9584 / 1718 / 1718
+purge_gap      : 336
+epochs arg     : 500
+early stopping : 8
+```
+
+Key training metrics:
+
+```text
+val_meta_ap              : 0.5189458439202039
+test_meta_ap             : 0.5377916962550442
+val_meta_prob_stdev      : 0.2892801567904343
+test_meta_prob_stdev     : 0.2399177476745701
+val_meta_collapse        : 0.0
+test_meta_collapse       : 0.0
+val_score_mae            : 0.8421052456884921
+test_score_mae           : 0.8726781023827808
+val_score_pred_stdev     : 0.47359669000282073
+test_score_pred_stdev    : 0.37248512880185
+val_score_collapse       : 0.0
+test_score_collapse      : 0.0
+test_score_selected_rate : 0.27648428405122233
+test_score_selected_target_mean : +0.1913444548845291
+```
+
+Initial score-mode full replay:
+
+```text
+script        : scripts/backtest_hybrid_telemetry_wavenet.py
+decision_mode : score
+score_threshold : 0
+eval_frac     : 1.0
+rows          : 52683 / 52683
+trades        : 384
+coverage      : 0.73%
+skipped_nn    : 9520
+total_pnl     : +1914.66
+profit_factor : 2.604
+final_balance : 291.47 with initial=100 and units=0.1
+```
+
+Interpretation:
+
+```text
+This is the first strong result from the 3D tensor path. The WaveNet did not collapse and the score head appears useful.
+However, this is not final production proof because the replay used eval_frac=1.0 and therefore includes in-sample training-era windows. The next validation must isolate out-of-time windows and then implement tensor-model walk-forward validation if still promising.
+```
+
+## Latest execution result — WaveNet v1 full and last-15% replays — 2026-09-12
+
+The operator sent the full JSON for Phase129A WaveNet/TCN v1 score-mode replay and a last-15% replay.
+
+Full replay (`eval_frac=1.0`):
+
+```text
+rows/evaluated  : 52683 / 52683
+trades          : 384
+buy/sell        : 215 / 169
+wins/losses     : 242 / 142
+win_rate        : 63.0208%
+total_pnl       : +1914.6646151691675
+avg_pnl         : +4.986105768669707
+profit_factor   : 2.603926956615171
+max_drawdown    : 192.19346404075623
+coverage        : 0.7289%
+final_balance   : 291.46646151691675 at initial=100, units=0.1
+```
+
+Full replay monthly distribution:
+
+```text
+2025-12: +205.6134 PF=4.4145 trades=51
+2026-01: +257.9868 PF=3.5067 trades=44
+2026-02: +463.7281 PF=2.5933 trades=46
+2026-03: +668.7947 PF=7.0685 trades=49
+2026-04: +328.4646 PF=9.8534 trades=36
+2026-05:   -4.2993 PF=0.9819 trades=63
+2026-06:  -49.7058 PF=0.6996 trades=38
+2026-07:  +78.6255 PF=1.5753 trades=48
+2026-08:  -34.5435 PF=0.3365 trades=9
+```
+
+Last-15% replay (`eval_frac=0.15`):
+
+```text
+rows/evaluated  : 52683 / 7902
+trades          : 29
+buy/sell        : 6 / 23
+wins/losses     : 16 / 13
+win_rate        : 55.1724%
+total_pnl       : +29.590763092041016
+avg_pnl         : +1.0203711411048626
+profit_factor   : 1.316544651614474
+max_drawdown    : 52.06632328033447
+coverage        : 0.3670%
+final_balance   : 102.95907630920411 at initial=100, units=0.1
+```
+
+Last-15% monthly distribution:
+
+```text
+2026-07: +64.1343 PF=2.5486 trades=20
+2026-08: -34.5435 PF=0.3365 trades=9
+```
+
+Interpretation:
+
+```text
+WaveNet v1 is promising: it did not collapse and the last-15% proxy remains positive with PF=1.3165. But it is fragile: only 29 trades, August is negative, and the full replay profit is heavily concentrated in the earlier train-era months. Production/paper remains blocked until threshold robustness and tensor walk-forward validation pass.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v2 long train — 2026-09-13
+
+The operator ran a longer score-focused WaveNet/TCN configuration:
+
+```text
+model_id             : gold_hybrid_telemetry_wavenet_5m
+version              : 2
+task                 : multihead
+rows                 : 13692 candidate tensor windows
+train/val/test        : 9584 / 1718 / 1718
+filters              : 64
+n_layers             : 6
+n_blocks             : 2
+dense_units          : 96
+dropout              : 0.25
+learning_rate        : 0.0005
+score_loss_weight    : 1.0
+monitor_metric       : val_score_r_mae
+early_stopping       : 25
+```
+
+Comparison against v1 key metrics:
+
+```text
+v1 test_meta_ap                      : 0.5377916962550442
+v2 test_meta_ap                      : 0.4581884952337111
+
+v1 test_score_mae                    : 0.8726781023827808
+v2 test_score_mae                    : 0.9537305706318867
+
+v1 test_score_selected_rate          : 0.27648428405122233
+v2 test_score_selected_rate          : 0.459837019790454
+
+v1 test_score_selected_target_mean   : +0.1913444548845291
+v2 test_score_selected_target_mean   : -0.13298217952251434
+```
+
+Decision:
+
+```text
+v2 is worse than v1 on the test split. It did not collapse, but the score-selected test subset became negative and selected too many candidates. Treat as overfit/regime-mismatch until a threshold backtest proves otherwise. Do not replace v1 as the preferred WaveNet candidate.
+```
+
+Operator command error:
+
+```text
+backtest_hybrid_telemetry_wavenet.py: error: unrecognized arguments: -u scripts/backtest_hybrid_telemetry_wavenet.py
+```
+
+Cause:
+
+```text
+The second `python -u scripts/backtest_hybrid_telemetry_wavenet.py` command was accidentally pasted directly after `--storage-root datasets`, so argparse received it as extra arguments to the first script.
+```
+
+Correct action:
+
+```text
+Run one command at a time. To backtest v2 explicitly, use --model-version 2. To preserve the stronger v1 baseline, use --model-version 1 instead of --model-version 0, because 0 now resolves to latest=v2.
+```
+
+## Latest execution result — Phase129A WaveNet/TCN v2 last-15% backtest — 2026-09-13
+
+The operator explicitly backtested `gold_hybrid_telemetry_wavenet_5m v2` on the last 15% of the tensor with score-mode:
+
+```text
+model_version  : 2
+decision_mode  : score
+score_threshold: 0.0
+eval_frac      : 0.15
+rows/evaluated : 52683 / 7902
+```
+
+Result:
+
+```text
+trades          : 89
+buy/sell        : 58 / 31
+wins/losses     : 29 / 60
+timeouts        : 2
+win_rate        : 32.5843%
+total_pnl       : -178.49363827705383
+avg_pnl         : -2.005546497494987
+profit_factor   : 0.5542918793438448
+max_drawdown    : 212.62753653526306
+coverage        : 1.1263%
+final_balance   : 82.15063617229461 at initial=100, units=0.1
+```
+
+Monthly:
+
+```text
+2026-07:   -3.3839 PF=0.9646 trades=31
+2026-08: -168.3904 PF=0.4355 trades=56
+2026-09:   -6.7193 PF=0.0000 trades=2
+```
+
+Comparison to v1 last-15%:
+
+```text
+v1 last-15%: +29.5908 raw PnL, PF=1.3165, trades=29, maxDD=52.0663
+v2 last-15%: -178.4936 raw PnL, PF=0.5543, trades=89, maxDD=212.6275
+```
+
+Decision:
+
+```text
+REJECT v2 as the active WaveNet candidate. v2 overtrades and fails the out-of-time proxy. v1 remains the better WaveNet candidate, but still needs threshold robustness and tensor walk-forward validation before any production/paper step.
+```
+
+## Latest execution result — Phase132A WaveNet v1 threshold grid on last-15% — 2026-09-13
+
+The operator ran Phase132A comparison on the last 15% tensor universe with:
+
+```text
+candidates          : base,gold_hybrid_telemetry_wavenet_5m
+candidate_versions  : 0,1
+decision_modes      : score,both
+meta_thresholds     : record,0.55,0.60,0.65,0.70
+score_thresholds    : -0.25,-0.10,0,0.05,0.10,0.20,0.35,0.50,0.75,1.00
+eval_frac           : 0.15
+samples             : 7902
+score_metric        : total_pnl
+```
+
+Base result on the same last-15% universe:
+
+```text
+trades          : 195
+buy/sell        : 127 / 68
+wins/losses     : 67 / 128
+win_rate        : 34.35897435897436%
+total_pnl       : -247.1424761712551
+profit_factor   : 0.70282875694799
+max_drawdown    : 272.11317190527916
+coverage        : 2.4677296886864084%
+final_balance   : 75.28575238287449
+```
+
+Best WaveNet v1 threshold-grid result:
+
+```text
+candidate        : gold_hybrid_telemetry_wavenet_5m:score:meta=record:score=0.05
+version          : 1
+model_type       : tensor
+decision_mode    : score
+score_threshold  : 0.05
+trades           : 22
+buy/sell         : 5 / 17
+wins/losses      : 14 / 8
+win_rate         : 63.63636363636364%
+total_pnl        : +42.78727626800537
+avg_pnl          : +1.9448761940002441
+profit_factor    : 1.6478747062665267
+max_drawdown     : 32.968711853027344
+coverage         : 0.27841052898000505%
+final_balance    : 104.27872762680053
+```
+
+Threshold shape:
+
+```text
+score=-0.25 -> -117.3837, PF=0.6991, trades=91
+score=-0.10 ->  -55.0679, PF=0.7756, trades=56
+score= 0.00 ->  +29.5908, PF=1.3165, trades=29
+score= 0.05 ->  +42.7873, PF=1.6479, trades=22  BEST
+score= 0.10 ->  +35.4562, PF=1.7217, trades=18
+score= 0.20 ->   +8.3745, PF=2.2427, trades=5   below min_trades
+score>=0.35 -> too few trades / negative or zero
+```
+
+Interpretation:
+
+```text
+WaveNet v1 score filtering materially improves the base hybrid on the last-15% diagnostic window. The useful threshold region is narrow but intuitive: score_threshold around 0.00-0.10, with 0.05 best by total PnL and 0.10 lower drawdown.
+```
+
+Important caveats:
+
+```text
+- In decision_mode=score, meta_threshold is ignored by design; repeated score-mode rows across meta thresholds are expected duplicates.
+- The best threshold was selected on the last-15% evaluation window, so this is a diagnostic threshold grid, not production validation.
+- Only 22 trades at the best threshold; sample size is still small.
+- Phase134 paper/live remains blocked until tensor walk-forward validation selects thresholds only from past validation data and passes out-of-time test months.
+```
+
+## Latest implementation update — Phase133B tensor walk-forward validation — 2026-09-13
+
+Implemented the missing tensor-model walk-forward validation phase:
+
+```text
+scripts/run_hybrid_tensor_walk_forward_validation.py
+GUI: Run tensor walk-forward validation
+```
+
+Why:
+
+```text
+WaveNet v1 on the 3D telemetry tensor produced a strong diagnostic last-15% threshold-grid result, but the threshold was selected on the same evaluation slice. A true production gate needs threshold selection on past validation only and testing on unseen future months.
+```
+
+Current model family implemented:
+
+```text
+model_family=wavenet
+```
+
+Protocol:
+
+```text
+train fresh WaveNet/TCN per test month
+train rows = only months before validation block
+validation rows = immediate month(s) before test month
+test rows = next unseen month
+purge_gap_bars = 336
+threshold grid selected only on validation replay
+selected threshold evaluated on test replay
+```
+
+Outputs:
+
+```text
+run_logs\hybrid_tensor_walk_forward_validation\latest.json
+run_logs\hybrid_tensor_walk_forward_validation\latest.csv
+run_logs\hybrid_tensor_walk_forward_validation\latest.html
+```
+
+Phase134 remains blocked until this passes.
+
+## Latest execution result — Phase133B tensor WaveNet walk-forward FAILED — 2026-09-13
+
+The operator ran the new tensor-model walk-forward validation:
+
+```text
+script             : scripts/run_hybrid_tensor_walk_forward_validation.py
+model_family       : wavenet
+task               : multihead
+candidate_only     : 1
+train_months_min   : 3
+validation_months  : 1
+purge_gap_bars     : 336
+decision_modes     : score,both
+score_thresholds   : -0.10,0,0.05,0.10,0.20
+score_metric       : total_pnl
+```
+
+Aggregate result:
+
+```text
+folds                  : 6
+test_months            : 6
+positive_months        : 2
+negative_months        : 3
+base_total_pnl         : -1288.8456037938595
+tensor_total_pnl       : -409.51990616321564
+tensor_gross_profit    : 608.841717839241
+tensor_gross_loss      : 1018.3616240024567
+tensor_profit_factor   : 0.5978639645181408
+tensor_max_drawdown    : 464.1122056245804
+tensor_trades          : 200
+tensor_avg_pnl         : -2.047599530816078
+tensor_final_balance   : 59.04800938367843
+tensor_return_percent  : -40.951990616321565%
+tensor_would_breach_zero : false
+best_month             : 2026-08
+worst_month            : 2026-05
+```
+
+Fold results:
+
+```text
+2026-04: selected score 0.05, val=-102.5548, tensor=-144.8683, PF=0.3253, trades=35
+2026-05: selected score -0.10, val= -42.2108, tensor=-270.3103, PF=0.5553, trades=115
+2026-06: selected both meta=0.70 score=0.20, val=-107.0676, tensor= +7.8459, PF=1.0769, trades=25
+2026-07: selected both meta=0.65 score=0.05, val= +26.0419, tensor=-23.4140, PF=0.4207, trades=8
+2026-08: selected both meta=0.65 score=-0.10, val= +44.9376, tensor=+21.2268, PF=1.3981, trades=17
+2026-09: selected score 0.20, val= +44.3921, tensor= +0.0000, PF=0.0000, trades=0
+```
+
+Decision:
+
+```text
+FAIL. The 3D tensor WaveNet v1 diagnostic signal did not generalize under true walk-forward retraining and validation-selected thresholds.
+```
+
+Interpretation:
+
+```text
+- The tensor model reduced base loss (-409.52 vs -1288.85), but remained strongly negative.
+- It is worse than the flat LightGBM score_r walk-forward result (+8.11 raw, PF=1.0128).
+- Several folds selected the least-bad threshold even when validation score was negative, then lost out-of-time.
+- Fold 5 (2026-08) is the only meaningful positive transfer; fold 6 has only 7 candidates and zero trades.
+- Phase134 paper/live remains blocked.
+```
+
+Immediate research implication:
+
+```text
+Do not train larger WaveNet blindly. The next possible research change is a validation no-trade/risk gate: if best validation score/PF is not good enough, the fold should select NO TRADE rather than forcing a threshold.
+```
+
+## Latest implementation update — Phase133C validation no-trade/risk gate — 2026-09-13
+
+Implemented Phase133C as an extension of the tensor walk-forward validator:
+
+```text
+scripts/run_hybrid_tensor_walk_forward_validation.py
+GUI: Run tensor walk-forward validation
+```
+
+New flags:
+
+```text
+--allow-no-trade {0,1}
+--min-validation-score FLOAT
+--min-validation-profit-factor FLOAT
+--max-validation-drawdown FLOAT
+```
+
+Purpose:
+
+```text
+If the best validation threshold is still weak, the fold can select NO_TRADE instead of forcing the least-bad trading threshold into the next test month.
+```
+
+Recommended Phase133C risk-gate settings:
+
+```text
+allow_no_trade                 : 1
+min_validation_score           : 0
+min_validation_profit_factor   : 1.10
+max_validation_drawdown        : 120
+```
+
+Result schema now includes:
+
+```text
+selected_validation_profit_factor
+selected_validation_max_drawdown
+no_trade_selected
+aggregate.no_trade_months
+```
+
+Phase134 remains blocked until a Phase133C run passes the out-of-time gates.
+
+## Latest execution result — Phase133C validation no-trade gate FAILED as strategy — 2026-09-13
+
+The operator ran Phase133C with the validation no-trade/risk gates enabled:
+
+```text
+allow_no_trade                 : 1
+min_validation_score           : 0.0
+min_validation_profit_factor   : 1.10
+max_validation_drawdown        : 120.0
+decision_modes                 : score,both
+score_thresholds               : -0.10,0,0.05,0.10,0.20
+```
+
+Aggregate result:
+
+```text
+folds                    : 6
+test_months              : 6
+positive_months          : 0
+negative_months          : 1
+no_trade_months          : 3
+base_total_pnl           : -1288.8456037938595
+tensor_total_pnl         : -32.83297738432884
+tensor_gross_profit      : 107.19759202003479
+tensor_gross_loss        : 140.03056940436363
+tensor_profit_factor     : 0.7655299301860462
+tensor_max_drawdown      : 86.88896641135216
+tensor_trades            : 35
+tensor_avg_pnl           : -0.9380850681236812
+tensor_final_balance     : 96.71670226156712
+tensor_return_percent    : -3.283297738432878%
+tensor_would_breach_zero : false
+```
+
+Fold decisions:
+
+```text
+2026-04: validation OK, selected both meta=0.55 score=0.05, test trades=0, tensor_pnl=0
+2026-05: NO_TRADE because validation_score=-36.3806 < 0, tensor_pnl=0
+2026-06: NO_TRADE because validation_score=-107.9652 < 0, tensor_pnl=0
+2026-07: NO_TRADE because validation PF=1.0427 < 1.10, tensor_pnl=0
+2026-08: validation OK, selected both meta=0.70 score=-0.10, test=-32.8330, PF=0.7655, trades=35
+2026-09: validation OK, selected score=-0.10, test trades=0, tensor_pnl=0
+```
+
+Comparison:
+
+```text
+Phase133B tensor WF without no-trade gate : -409.5199 raw, PF=0.5979, trades=200
+Phase133C tensor WF with no-trade gate    :  -32.8330 raw, PF=0.7655, trades=35
+Base over same WF months                  : -1288.8456 raw
+```
+
+Decision:
+
+```text
+FAIL as a deployable strategy. The no-trade gate is useful damage control, but it did not create a profitable or stable walk-forward edge.
+```
+
+Important interpretation:
+
+```text
+Phase133C reduced losses by about 92% versus Phase133B and about 97% versus the base hybrid, but it still has negative total PnL, PF below 1, zero positive trading months, and only one month with trades. No Phase134 paper/live is allowed.
+```
+
+Recommended next research:
+
+```text
+Stop bigger WaveNet training. Build failure/regime diagnostics to identify why validation-positive folds fail in the next month and which side/session/range contexts drive losses.
+```
+
+## Latest implementation update — Phase136A tensor failure/regime diagnostics — 2026-09-14
+
+Implemented Phase136A:
+
+```text
+scripts/analyze_tensor_failure_regimes.py
+GUI: Analyze tensor failure regimes
+```
+
+Purpose:
+
+```text
+Analyze why Phase133B/C tensor WaveNet validation failed instead of training bigger models blindly.
+```
+
+Inputs:
+
+```text
+datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+run_logs\hybrid_tensor_walk_forward_validation\latest.json
+```
+
+Outputs:
+
+```text
+run_logs\tensor_failure_regimes\latest.json
+run_logs\tensor_failure_regimes\latest.html
+run_logs\tensor_failure_regimes\latest_regimes.csv
+run_logs\tensor_failure_regimes\latest_transfer.csv
+```
+
+Diagnostics:
+
+```text
+validation-to-test transfer table
+per-month candidate outcomes
+per-side BUY/SELL outcomes
+month × side outcomes
+session/hour outcomes
+range room bins
+candidate confidence bins
+candidate reward/risk bins
+specialist conflict buckets
+booster entropy/margin bins
+worst/best candidate regimes
+```
+
+Current production status remains:
+
+```text
+No paper shadow
+No live trading
+No production acceptance
+```
+
+## Latest execution result — Phase136A tensor failure/regime diagnostics — 2026-09-14
+
+The operator ran Phase136A:
+
+```text
+script            : scripts/analyze_tensor_failure_regimes.py
+flat_path         : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+walk_forward_json : run_logs\hybrid_tensor_walk_forward_validation\latest.json
+candidate_only    : 1
+candidate_rows    : 13757
+```
+
+Top-level candidate distribution:
+
+```text
+candidate_rows : 13757
+months         : 10
+total_pnl      : -43309.811259036884
+win_rate       : 41.26626444719052%
+profit_factor  : 0.6215092452270718
+worst_month    : 2026-02
+best_month     : 2026-07
+```
+
+Validation-to-test transfer from Phase133C:
+
+```text
+transfer_rows         : 6
+transfer_total_pnl    : -32.83297738432884
+transfer_profit_factor: 0.7655299301860462
+no_trade_months       : 3
+```
+
+Risk flags:
+
+```text
+1 fold had positive validation quality but negative test PnL.
+3 folds were blocked by validation no-trade gates.
+1 active trading fold still lost money after gates.
+Side BUY is negative in candidate distribution: -39003.71 raw PnL.
+Side SELL is negative in candidate distribution: -4306.10 raw PnL.
+```
+
+Most important regime finding:
+
+```text
+BUY side is the main damage source:
+BUY  rows=8583, win_rate=35.7917%, total_pnl=-39003.7073, PF=0.5106
+SELL rows=5174, total_pnl=-4306.10
+```
+
+Worst candidate regimes:
+
+```text
+stop_loss outcome: rows=7256, share=52.7441%, total_pnl=-106988.0392
+2026-02 month: rows=1945, win_rate=25.1414%, total_pnl=-21573.3665, PF=0.3872
+wide/large SL-distance bin (23.56,124.647]: total_pnl=-22248.0623
+range_1d_width (126.848,168.247]: total_pnl=-19492.4818
+range_4h_width (33.305,46.57]: total_pnl=-18473.0694
+range_4h_width (46.57,136.906]: total_pnl=-16979.6279
+high candidate_confidence (0.938,0.973]: total_pnl=-14063.6031
+```
+
+Positive pockets found in candidate diagnostics:
+
+```text
+2026-04 / SELL: rows=568, win_rate=66.3732%, total_pnl=+2682.8371, PF=2.1863
+2026-03 / SELL: rows=398, win_rate=53.0151%, total_pnl=+2308.4453, PF=1.8384
+2026-07 / SELL: rows=1185, win_rate=59.5781%, total_pnl=+1963.2321, PF=1.4834
+2026-06 / SELL: rows=571, win_rate=62.3468%, total_pnl=+669.4895, PF=1.2756
+2026-08 / SELL: rows=256, win_rate=57.4219%, total_pnl=+469.5280, PF=1.6627
+SELL / hour=9: rows=235, win_rate=54.0426%, total_pnl=+901.0482, PF=1.8986
+SELL / hour=8: rows=348, win_rate=56.0345%, total_pnl=+640.0451, PF=1.3392
+```
+
+Interpretation:
+
+```text
+Phase136A does not approve a strategy. It shows that the current hybrid candidate generator is structurally bad on BUYs and stop-loss-heavy regimes. SELL has positive pockets, especially in certain months/hours, but these are candidate-outcome diagnostics, not chronological replay. The next valid research step is to build a regime-filtered replay/walk-forward phase that tests SELL-only and live-safe filters under chronological rules.
+```
+
+Production decision remains:
+
+```text
+No paper shadow.
+No live trading.
+No Phase134 acceptance.
+```
+
+## Latest implementation update — Phase137A regime-filtered hybrid replay — 2026-09-14
+
+Implemented Phase137A:
+
+```text
+scripts/backtest_regime_filtered_hybrid.py
+GUI: Backtest regime-filtered hybrid
+```
+
+Purpose:
+
+```text
+Test Phase136A hypotheses through chronological replay, including SELL-only, BUY-only, mixed, and stricter-BUY filters.
+```
+
+Important project decision:
+
+```text
+BUY is not removed from the project. Phase137A default is allowed_sides=BUY,SELL. SELL-only is only a diagnostic hypothesis, and BUY can be kept with stricter side-specific gates.
+```
+
+Outputs:
+
+```text
+run_logs\regime_filtered_hybrid\latest.json
+run_logs\regime_filtered_hybrid\latest.html
+run_logs\regime_filtered_hybrid\latest.csv
+```
+
+Recommended first diagnostic commands:
+
+```text
+1) SELL-only replay.
+2) BUY,SELL replay with strict BUY gates.
+```
+
+No Phase134/paper/live permission is implied.
+
+## Latest execution result — Phase137A regime-filtered replay diagnostics — 2026-09-14
+
+The operator ran two Phase137A diagnostic replays.
+
+### 1) SELL-only diagnostic replay
+
+Configuration:
+
+```text
+allowed_sides : SELL
+eval_frac     : 1.0
+```
+
+Result:
+
+```text
+source_candidates    : 13757
+kept_candidates      : 5174
+removed_candidates   : 8583
+base_total_pnl       : -4590.797205492854
+filtered_total_pnl   : -848.8386568725109
+filtered_profit_factor : 0.7290926647116155
+filtered_max_drawdown  : 1040.8391872644424
+filtered_trades        : 581
+filtered_win_rate      : 35.28399311531842%
+filtered_final_balance : 15.116134312748898
+would_breach_zero      : true
+```
+
+Monthly:
+
+```text
+2026-01:   -0.8822 PF=0.9943 trades=20
+2026-02: -430.7218 PF=0.3631 trades=62
+2026-03:  -53.4108 PF=0.8580 trades=61
+2026-04:  +40.9952 PF=1.1149 trades=83
+2026-05: -423.1884 PF=0.5078 trades=162
+2026-06:  -16.2552 PF=0.9340 trades=61
+2026-07:  +87.4448 PF=1.2510 trades=103
+2026-08:  -52.8203 PF=0.5398 trades=29
+```
+
+Interpretation:
+
+```text
+SELL-only greatly reduces damage versus base, but is still a failed strategy. The main damage remains concentrated in 2026-02 and 2026-05. It is not enough to simply block BUY.
+```
+
+### 2) Mixed BUY,SELL with initial strict BUY gates
+
+Configuration:
+
+```text
+allowed_sides          : BUY,SELL
+buy_min_confidence     : 0.98
+buy_min_side_4h_room   : 5.0
+buy_min_side_1d_room   : 10.0
+buy_max_sl_distance    : 20.0
+```
+
+Result:
+
+```text
+source_candidates      : 13757
+kept_candidates        : 6360
+removed_candidates     : 7397
+base_total_pnl         : -4590.797205492854
+filtered_total_pnl     : -2018.1994965970516
+filtered_profit_factor : 0.585046282276268
+filtered_max_drawdown  : 2100.639673948288
+filtered_trades        : 883
+filtered_win_rate      : 27.18006795016987%
+filtered_final_balance : -101.81994965970517
+would_breach_zero      : true
+```
+
+Interpretation:
+
+```text
+The first strict-BUY configuration is not sufficient and is worse than SELL-only. BUY is not removed from the architecture, but current BUY gates are not robust. BUY needs separate analysis/rework, not blind inclusion.
+```
+
+Current decision:
+
+```text
+No Phase134/paper/live. Next diagnostic should test focused SELL pockets from Phase136A, especially SELL hours 8 and 9, and possibly month-range restrictions, through chronological replay.
+```
+
+## Latest execution result — Phase137A SELL hours 8/9 focused replay — 2026-09-14
+
+The operator ran the focused SELL-hours replay suggested by Phase136A:
+
+```text
+allowed_sides      : SELL
+sell_allowed_hours : 8,9
+eval_frac          : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 583
+removed_candidates      : 13174
+kept_rate               : 4.237842552882169%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : +16.920441061258316
+filtered_profit_factor  : 1.037288325923403
+filtered_max_drawdown   : 89.34972810745239
+filtered_trades         : 77
+filtered_win_rate       : 38.961038961038966%
+filtered_final_balance  : 101.69204410612583
+would_breach_zero       : false
+```
+
+Monthly:
+
+```text
+2026-01: +18.0882 PF=2.1592 trades=5
+2026-02: -44.2072 PF=0.5853 trades=7
+2026-03: +38.7940 PF=1.7817 trades=8
+2026-04: +52.3129 PF=2.5081 trades=9
+2026-05: -71.4458 PF=0.5502 trades=24
+2026-06: +21.1881 PF=1.5779 trades=11
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+This is the first manual regime-filtered replay that is positive on full history, but it is weak and not accepted. PF=1.037 is below the 1.10 guideline, total PnL is small, and losses remain concentrated in 2026-02 and 2026-05. It is a useful hypothesis, not a deployable strategy.
+```
+
+Next diagnostic:
+
+```text
+Keep SELL h8/9 and add live-safe loss-control filters, starting with max SL distance or range width filters. Do not use month exclusion as a production rule.
+```
+
+## Latest execution result — Phase137A SELL h8/9 + max SL distance — 2026-09-14
+
+The operator added a live-safe SL-distance cap to the weak-positive SELL h8/9 replay:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 503
+removed_candidates      : 13254
+kept_rate               : 3.656320418695937%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : +23.147499471902847
+filtered_profit_factor  : 1.0608648649692447
+filtered_max_drawdown   : 89.64815473556519
+filtered_trades         : 73
+filtered_win_rate       : 36.98630136986301%
+filtered_final_balance  : 102.31474994719028
+would_breach_zero       : false
+```
+
+Comparison against previous SELL h8/9:
+
+```text
+SELL h8/9 only       : +16.9204 raw, PF=1.0373, trades=77, maxDD=89.3497
+SELL h8/9 + SL<=23.56: +23.1475 raw, PF=1.0609, trades=73, maxDD=89.6482
+```
+
+Monthly:
+
+```text
+2026-01: +18.0882 PF=2.1592 trades=5
+2026-02: -51.4716 PF=0.0000 trades=5
+2026-03: +53.9956 PF=2.4144 trades=7
+2026-04: +46.0941 PF=2.4267 trades=8
+2026-05: -66.9372 PF=0.5663 trades=24
+2026-06: +21.1881 PF=1.5779 trades=11
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+The SL-distance cap improved total PnL and PF, but the result is still below the PF>1.10 acceptance guideline and remains too weak for any production/paper discussion. Losses still concentrate in 2026-02 and 2026-05. Next diagnostic should add a 4H range-width cap while keeping SELL h8/9 and SL<=23.56.
+```
+
+## Latest execution result — Phase137A SELL h8/9 + SL cap + 4H width cap worsened — 2026-09-14
+
+The operator tested the next live-safe filter combination:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+max_range_4h_width   : 33.305
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates       : 13757
+kept_candidates         : 428
+removed_candidates      : 13329
+kept_rate               : 3.1111434178963438%
+base_total_pnl          : -4590.797205492854
+filtered_total_pnl      : -26.330932468175888
+filtered_profit_factor  : 0.8915300951853891
+filtered_max_drawdown   : 89.88325047492981
+filtered_trades         : 50
+filtered_win_rate       : 42.0%
+filtered_final_balance  : 97.3669067531824
+would_breach_zero       : false
+```
+
+Comparison:
+
+```text
+SELL h8/9 only                  : +16.9204 raw, PF=1.0373, trades=77
+SELL h8/9 + SL<=23.56           : +23.1475 raw, PF=1.0609, trades=73
+SELL h8/9 + SL<=23.56 + 4H<=33.305: -26.3309 raw, PF=0.8915, trades=50
+```
+
+Monthly:
+
+```text
+2026-04: +34.4846 PF=999.0 trades=3
+2026-05: -66.9372 PF=0.5663 trades=24
+2026-06:  +3.9314 PF=1.1072 trades=10
+2026-07:  +0.1820 PF=1.0035 trades=11
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Interpretation:
+
+```text
+The broad max_range_4h_width=33.305 cap is rejected. It removed profitable January/March exposure but did not remove the main May loss. The current best manual filter remains SELL h8/9 + SL<=23.56, although it is still below acceptance.
+```
+
+Next diagnostic:
+
+```text
+Do not use the broad 4H width cap. If testing 4H width, test the exact positive Phase136A pocket: min_range_4h_width=21.741 and max_range_4h_width=26.928, while keeping SELL h8/9 and SL<=23.56.
+```
+
+## Latest execution result — Phase137A exact 4H width pocket — 2026-09-14
+
+The operator tested the exact positive 4H width pocket from Phase136A while keeping the current SELL h8/9 + SL cap hypothesis:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+min_range_4h_width   : 21.741
+max_range_4h_width   : 26.928
+eval_frac            : 1.0
+```
+
+Result:
+
+```text
+source_candidates      : 13757
+kept_candidates        : 166
+removed_candidates     : 13591
+kept_rate              : 1.2066584284364324%
+base_total_pnl         : -4590.797205492854
+filtered_total_pnl     : +11.376214891672134
+filtered_profit_factor : 1.1828907946231388
+filtered_max_drawdown  : 19.283453941345215
+filtered_trades        : 14
+filtered_win_rate      : 57.14285714285714%
+filtered_final_balance : 101.13762148916722
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-04:  +6.8169 PF=999.0 trades=1
+2026-05:  +6.6403 PF=1.3561 trades=3
+2026-06: +12.7187 PF=1.8103 trades=4
+2026-07: -16.8079 PF=0.3891 trades=4
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Comparison:
+
+```text
+SELL h8/9 + SL<=23.56                       : +23.1475 raw, PF=1.0609, trades=73, maxDD=89.6482
+SELL h8/9 + SL<=23.56 + exact 4H pocket     : +11.3762 raw, PF=1.1829, trades=14, maxDD=19.2835
+```
+
+Interpretation:
+
+```text
+The exact 4H pocket improves quality and drawdown, and PF finally exceeds 1.10. However, trade count is very small and total PnL is low. This is a promising micro-regime, not a deployable strategy. It needs recent-holdout and walk-forward validation.
+```
+
+Next diagnostic:
+
+```text
+Run the exact same filter with eval_frac=0.15. If the recent holdout fails, the micro-regime is not robust enough. If it remains positive, build a Phase137B/138 walk-forward filter-validation step.
+```
+
+## Latest execution result — Phase137A exact 4H pocket recent holdout FAILED — 2026-09-14
+
+The operator reran the exact 4H pocket filter on the recent 15% slice:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+min_range_4h_width   : 21.741
+max_range_4h_width   : 26.928
+eval_frac            : 0.15
+```
+
+Result:
+
+```text
+evaluated_rows         : 7924
+source_candidates      : 1445
+kept_candidates        : 70
+kept_rate              : 4.844290657439446%
+base_total_pnl         : -241.5674167573452
+filtered_total_pnl     : -17.275230020284653
+filtered_profit_factor : 0.11992036742639664
+filtered_max_drawdown  : 19.283453941345215
+filtered_trades        : 4
+filtered_win_rate      : 25.0%
+filtered_final_balance : 98.27247699797154
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-07: -19.2835 PF=0.0 trades=2
+2026-08:  +2.0082 PF=6.8089 trades=2
+```
+
+Decision:
+
+```text
+Reject the exact 4H pocket as a robust filter. It looked acceptable on full history but failed the recent holdout with only 4 trades and negative PnL.
+```
+
+Current best manual regime remains:
+
+```text
+SELL h8/9 + sell_max_sl_distance=23.56
+full-history: +23.1475 raw, PF=1.0609, trades=73
+```
+
+Next final sanity check:
+
+```text
+Run the current best manual regime on eval_frac=0.15. If it also fails or is only near-zero, stop manual filtering and move to formal walk-forward filter validation / BUY-side rework.
+```
+
+## Latest execution result — Phase137A current-best SELL filter recent holdout FAILED — 2026-09-14
+
+The operator tested the current best less-restrictive manual filter on the recent 15% slice:
+
+```text
+allowed_sides        : SELL
+sell_allowed_hours   : 8,9
+sell_max_sl_distance : 23.56
+eval_frac            : 0.15
+```
+
+Result:
+
+```text
+evaluated_rows         : 7924
+source_candidates      : 1445
+kept_candidates        : 104
+kept_rate              : 7.197231833910035%
+base_total_pnl         : -241.5674167573452
+filtered_total_pnl     : -22.4049571454525
+filtered_profit_factor : 0.40983705655862596
+filtered_max_drawdown  : 37.618305921554565
+filtered_trades        : 8
+filtered_win_rate      : 25.0%
+filtered_final_balance : 97.75950428545475
+would_breach_zero      : false
+```
+
+Monthly:
+
+```text
+2026-07: -24.41318106651306 PF=0.3510 trades=6
+2026-08:  +2.008223921060562 PF=6.8089 trades=2
+```
+
+Comparison with full-history current-best manual filter:
+
+```text
+Full history SELL h8/9 + SL<=23.56 : +23.1475 raw, PF=1.0609, trades=73
+Recent 15% same filter              : -22.4050 raw, PF=0.4098, trades=8
+```
+
+Decision:
+
+```text
+Reject the current-best manual SELL regime as robust. Manual SELL h8/9 filtering does not survive recent holdout.
+```
+
+Interpretation:
+
+```text
+Phase137A manual filters are useful diagnostics but not deployable. The apparent full-history SELL pocket does not persist in the recent slice. Do not continue blindly adding hand filters. The next work should shift to TP/SL and trade anatomy diagnostics, especially BUY-side damage and stop-loss concentration.
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase138A trade anatomy / TP-SL failure analysis — 2026-09-14
+
+Implemented Phase138A:
+
+```text
+scripts/analyze_trade_anatomy.py
+GUI: Analyze trade anatomy
+```
+
+Why:
+
+```text
+Phase137A manual regime filters failed recent holdout. The next issue to inspect is trade construction: TP/SL placement, bracket width, stop-loss concentration, BUY/SELL asymmetry and hold-time behavior.
+```
+
+Outputs:
+
+```text
+run_logs\trade_anatomy\latest.json
+run_logs\trade_anatomy\latest.html
+run_logs\trade_anatomy\latest_anatomy.csv
+```
+
+The report analyzes:
+
+```text
+side/outcome/month/hour buckets
+TP and SL distance bins
+reward/risk bins
+hold bars
+action-side 4H/1D room
+range width
+candidate confidence
+stop-loss and timeout rates
+```
+
+No production/paper permission is implied.
+
+## Latest execution result — Phase138A trade anatomy / TP-SL failure analysis — 2026-09-15
+
+The operator ran Phase138A on the full candidate telemetry matrix:
+
+```text
+candidate_rows : 13757
+months         : 10
+total_pnl      : -43309.811259036884
+win_rate       : 41.26626444719052%
+profit_factor  : 0.6215092452270718
+max_drawdown   : 45887.01167863794
+```
+
+Core outcome anatomy:
+
+```text
+take_profit_rate : 37.38460420149742%
+stop_loss_rate   : 52.74405757069128%
+timeout_rate     : 9.871338227811297%
+```
+
+Side anatomy:
+
+```text
+BUY rows              : 8583
+BUY total_pnl         : -39003.70734734554
+BUY profit_factor     : 0.5106436955011304
+BUY stop_loss_rate    : 59.07025515554002%
+BUY avg_sl_distance   : 17.62240083711894
+
+SELL rows             : 5174
+SELL total_pnl        : -4306.103911691345
+SELL profit_factor    : 0.8759889582324059
+SELL stop_loss_rate   : 42.24971008890607%
+SELL avg_sl_distance  : 17.539608476089555
+```
+
+Worst anatomy findings:
+
+```text
+stop_loss outcome       : rows=7256, total_pnl=-106988.03918242455, avg_hold_bars=12.2172
+BUY / stop_loss         : rows=5070, total_pnl=-75934.2055940628
+SELL / stop_loss        : rows=2186, total_pnl=-31053.83358836174
+SL distance high bin    : (23.56,124.647], rows=2752, total_pnl=-22248.062289144844, PF=0.5144
+Worst month             : 2026-02, total_pnl=-21573.36649065558, stop_loss_rate=66.4267%
+Worst month_side buckets: 2026-02 / BUY and 2026-03 / BUY
+```
+
+Important TP/SL insight:
+
+```text
+Stop-loss candidates have avg_tp_distance=22.5691 and avg_sl_distance=14.7448 with avg_reward_risk=2.8001.
+Take-profit candidates have avg_tp_distance=13.0167 and avg_sl_distance=20.5877 with avg_reward_risk=0.8209.
+```
+
+Interpretation:
+
+```text
+Higher nominal reward/risk is not helping; it is associated with stop-loss failures. The current bracket appears to often set TP too far relative to market path, while SL is hit quickly. Average stop-loss hold time is only ~12 bars. This points to TP/SL bracket construction and side-specific bracket policy, not just classifier/model quality.
+```
+
+Decision:
+
+```text
+No Phase134 / no paper / no live. Manual filters are not robust and Phase138A indicates the next engineering work should be TP/SL bracket recalibration replay, not another bigger model.
+```
+
+Recommended next phase:
+
+```text
+Phase139A — TP/SL Bracket Recalibration Replay
+```
+
+Scope:
+
+```text
+- simulate alternative TP/SL policies on the same candidate stream
+- cap TP distance / cap SL distance
+- side-specific BUY/SELL TP/SL caps
+- test lower reward/risk caps rather than only minimum reward/risk
+- compare same_bar_policy sensitivity
+- chronological replay and recent-holdout report
+```
+
+## Latest implementation update — Phase139A TP/SL bracket recalibration replay — 2026-09-15
+
+Implemented Phase139A:
+
+```text
+scripts/backtest_bracket_recalibration.py
+GUI: Backtest bracket recalibration
+```
+
+Purpose:
+
+```text
+Re-simulate alternative TP/SL geometry on the existing candidate stream without training a model.
+```
+
+Why:
+
+```text
+Phase138A showed high nominal reward/risk and far TP candidates are often stop-loss failures. Bracket geometry must be tested directly.
+```
+
+Supported caps:
+
+```text
+--max-tp-distances
+--max-sl-distances
+--max-reward-risks
+--buy-max-tp-distance / --sell-max-tp-distance
+--buy-max-sl-distance / --sell-max-sl-distance
+--buy-max-reward-risk / --sell-max-reward-risk
+```
+
+Outputs:
+
+```text
+run_logs\bracket_recalibration\latest.json
+run_logs\bracket_recalibration\latest.html
+run_logs\bracket_recalibration\latest.csv
+run_logs\bracket_recalibration\best_trades.csv
+```
+
+No Phase134/paper/live permission is implied.
+
+## Latest execution result — Phase139A global TP/SL bracket recalibration FAILED — 2026-09-15
+
+The operator ran Phase139A on the full candidate stream:
+
+```text
+allowed_sides      : BUY,SELL
+max_tp_distances   : original,12,14,16,18
+max_sl_distances   : original,20,23.56,30
+max_reward_risks   : original,1,1.5,2
+eval_frac          : 1.0
+same_bar_policy    : stop_first
+```
+
+Best selected policy:
+
+```text
+policy              : tp=original:sl=original:rr=original
+trades              : 1693
+buy/sell            : 1118 / 575
+wins/losses         : 512 / 1181
+win_rate            : 30.2422%
+total_pnl           : -4590.797210656048
+profit_factor       : 0.5787103197097719
+max_drawdown        : 4590.797210656047
+final_balance       : -359.0797210656049
+would_breach_zero   : true
+```
+
+Interpretation:
+
+```text
+All tested global TP/SL/RR caps were worse than the original bracket. Simple global bracket caps do not solve the edge problem. Capping TP or SL often shortened trade duration and allowed more low-quality candidates to enter, increasing total loss.
+```
+
+Important conclusion:
+
+```text
+The issue is not fixed by naive TP/SL cap recalibration. Candidate direction/entry quality and side-specific bracket geometry remain the likely problems, especially BUY-side behavior.
+```
+
+Next diagnostic if continuing:
+
+```text
+Run Phase139A side-specific grids separately:
+1) SELL-only bracket recalibration
+2) BUY-only bracket recalibration
+
+If both fail, stop bracket tweaking and move to candidate-generation / target-definition rework.
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest execution result — Phase139A side-specific bracket grids FAILED — 2026-09-15
+
+The operator ran side-specific Phase139A bracket recalibration grids after the global grid failed.
+
+### SELL-only bracket recalibration
+
+Configuration:
+
+```text
+allowed_sides    : SELL
+max_tp_distances : original,10,12,14,16
+max_sl_distances : original,16,20,23.56
+max_reward_risks : original,0.8,1,1.5
+eval_frac        : 1.0
+```
+
+Best SELL-only policy:
+
+```text
+policy            : tp=14:sl=original:rr=original
+trades            : 633
+buy/sell          : 0 / 633
+wins/losses       : 262 / 371
+win_rate          : 41.3902%
+total_pnl         : -664.0531247957406
+avg_pnl           : -1.0490570691875838
+profit_factor     : 0.7939690496760271
+max_drawdown      : 846.2230220278584
+final_balance     : 33.594687520425936
+would_breach_zero : false
+```
+
+Comparison to original SELL-only:
+
+```text
+original SELL-only : -848.8387 raw, PF=0.7291, trades=581
+best SELL policy   : -664.0531 raw, PF=0.7940, trades=633
+```
+
+SELL monthly under best policy:
+
+```text
+2026-01:   +2.3453 PF=1.0152 trades=24
+2026-02: -330.3915 PF=0.5612 trades=80
+2026-03:  +35.8600 PF=1.1081 trades=72
+2026-04:  +12.4742 PF=1.0345 trades=87
+2026-05: -414.8800 PF=0.5398 trades=172
+2026-06:   -6.3987 PF=0.9736 trades=61
+2026-07:  +89.8878 PF=1.2475 trades=108
+2026-08:  -52.9502 PF=0.5387 trades=29
+```
+
+Decision:
+
+```text
+SELL bracket caps reduce loss but do not create an edge. SELL remains below PF=1 and far below deployable quality.
+```
+
+### BUY-only bracket recalibration
+
+Configuration:
+
+```text
+allowed_sides    : BUY
+max_tp_distances : original,8,10,12,14
+max_sl_distances : original,12,16,20
+max_reward_risks : original,0.8,1,1.5
+eval_frac        : 1.0
+```
+
+Best BUY-only policy:
+
+```text
+policy            : tp=original:sl=16:rr=original
+trades            : 1253
+buy/sell          : 1253 / 0
+wins/losses       : 305 / 948
+win_rate          : 24.3416%
+total_pnl         : -3667.8429958516326
+avg_pnl           : -2.9272489990835058
+profit_factor     : 0.5476443218994678
+max_drawdown      : 3668.8183342898155
+final_balance     : -266.7842995851633
+would_breach_zero : true
+```
+
+Comparison to original BUY-only:
+
+```text
+original BUY-only : -3838.3925 raw, PF=0.5142, trades=1129
+best BUY policy   : -3667.8430 raw, PF=0.5476, trades=1253
+```
+
+BUY monthly under best policy:
+
+```text
+Every reported month is negative.
+Worst months include 2026-03 (-1016.33), 2026-02 (-669.01), 2025-12 (-584.76), 2026-01 (-448.75), 2026-06 (-338.13), 2026-04 (-261.77), 2026-08 (-170.76).
+```
+
+Decision:
+
+```text
+BUY is not fixed by the tested TP/SL caps. BUY should not be deleted from the architecture, but the current BUY candidate generation/entry direction is not tradeable.
+```
+
+Overall conclusion:
+
+```text
+Phase139A side-specific grids failed. Simple bracket caps cannot rescue the current candidate stream. The next diagnostic should test candidate direction/entry quality directly, including counterfactual side flip and entry-delay analysis.
+```
+
+Recommended next phase:
+
+```text
+Phase140A — Candidate Direction / Counterfactual Entry Audit
+```
+
+Production remains blocked.
+
+## Latest implementation update — Phase140A candidate direction / counterfactual entry audit — 2026-09-16
+
+Implemented Phase140A after Phase139A failed to rescue the candidate stream with TP/SL caps.
+
+```text
+scripts/audit_candidate_direction_entry.py
+GUI: Audit candidate direction/entry
+```
+
+Purpose:
+
+```text
+Audit whether current hybrid candidates are failing because direction is inverted/contrarian, because entry is too early, or because candidate generation has no stable edge.
+```
+
+The audit tests:
+
+```text
+side_mode        : original, flipped
+entry_delay_bars : 0,1,2,3
+execution_mode   : independent, chronological
+```
+
+Output files:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+run_logs\candidate_direction_entry_audit\latest.html
+run_logs\candidate_direction_entry_audit\latest.csv
+run_logs\candidate_direction_entry_audit\latest_groups.csv
+run_logs\candidate_direction_entry_audit\best_chronological_trades.csv
+```
+
+First command to run:
+
+```powershell
+python -u scripts/audit_candidate_direction_entry.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --flat-path datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet `
+  --candidate-only 1 `
+  --allowed-sides BUY,SELL `
+  --entry-delays 0,1,2,3 `
+  --side-modes original,flipped `
+  --execution-modes independent,chronological `
+  --eval-frac 1.0 `
+  --max-windows 0 `
+  --max-hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --units 0.1 `
+  --storage-root datasets
+```
+
+Send back:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+```
+
+Interpretation:
+
+```text
+If flipped side improves materially, direction/target sign may be contrarian or inverted.
+If entry delay improves materially, entry timing may be too early.
+If neither helps, current candidate generation is probably no-edge and target/candidate definitions need rework.
+```
+
+BUY is not removed. Phase140A explicitly compares BUY original vs BUY flipped-to-SELL as a diagnostic, not as a permanent deletion of BUY.
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest execution result — Phase140A candidate direction / entry audit FAILED as strategy — 2026-09-16
+
+The operator ran Phase140A and provided:
+
+```text
+run_logs\candidate_direction_entry_audit\latest.json
+```
+
+Configuration:
+
+```text
+evaluated_rows  : 52,832
+candidate_rows  : 13,757
+side_modes      : original,flipped
+entry_delays    : 0,1,2,3
+execution_modes : independent,chronological
+```
+
+Top-level result:
+
+```text
+best_independent_scenario        : independent:flipped:delay=0
+best_independent_total_pnl       : -37,742.8296
+best_independent_profit_factor   : 0.6561
+
+best_chronological_scenario      : chronological:original:delay=3
+best_chronological_total_pnl     : -3,123.7836
+best_chronological_profit_factor : 0.6512
+```
+
+Original vs flipped:
+
+```text
+independent original delay=0    : -43,309.8113
+independent flipped delay=0     : -37,742.8296
+chronological original delay=0  : -4,590.7972
+chronological flipped delay=0   : -4,113.8428
+```
+
+Entry delay effect in chronological original mode:
+
+```text
+delay=0  -4590.7972  PF=0.5787
+delay=1  -4245.3885  PF=0.5962
+delay=2  -3921.5867  PF=0.5985
+delay=3  -3123.7836  PF=0.6512
+```
+
+Side diagnosis:
+
+```text
+BUY original      : -39,003.7074  PF=0.5106
+BUY flipped→SELL  : -15,831.0041  PF=0.7545
+SELL original     : -4,306.1039   PF=0.8760
+SELL flipped→BUY  : -21,911.8255  PF=0.5157
+```
+
+Decision:
+
+```text
+Phase140A failed as a strategy. No scenario is profitable. However, it produced useful diagnosis:
+- global flip is not the solution
+- BUY candidates show strong contrarian/inversion symptoms but flipped BUY is still negative
+- SELL direction is not inverted and should not be flipped globally
+- entry delay helps materially but does not create edge
+```
+
+Recommended next diagnostic:
+
+```text
+Phase141A — Side-Transform / Delay Policy Grid
+```
+
+Purpose:
+
+```text
+Test side-specific actions chronologically:
+BUY action  = original, flipped_to_sell, skip
+SELL action = original, flipped_to_buy, skip
+BUY delay   = 0,1,2,3
+SELL delay  = 0,1,2,3
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation/result — Phase141A pivot pattern recognition built and failed first real walk-forward — 2026-09-16
+
+The owner requested a new model that performs Pattern Recognition for gold top/bottom reversal zones:
+
+```text
+Detect approximate tops before downside.
+Detect approximate bottoms before upside.
+Use 5M patterns with 4H/1D context.
+Train, select useful features, then backtest/walk-forward.
+```
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_recognition.py
+GUI: Train pivot pattern recognition
+```
+
+The model target is:
+
+```text
+SELL = top_zone reversal pattern
+HOLD = no actionable pivot zone
+BUY  = bottom_zone reversal pattern
+```
+
+Real-data run used public Yahoo data:
+
+```text
+market_symbol : GC=F
+note          : public COMEX gold futures proxy, not broker-perfect Alpari XAUUSD
+1D rows       : 1,258
+4H rows       : 3,721, resampled from 1H
+5M rows       : 13,509
+```
+
+Feature engineering/selection:
+
+```text
+feature_columns_total : 57
+selected_features     : 38 per fold
+target_counts         : SELL=1,368 / HOLD=10,764 / BUY=1,376
+model_kind_used       : sklearn_hgb
+```
+
+Top selected feature families were mostly 5M structure/pattern features:
+
+```text
+m5_pos_in_range_48
+m5_dist_high_48_atr
+m5_dist_low_48_atr
+m5_fast_mid_dist_atr
+m5_price_z_96
+m5_pos_in_range_24
+m5_ret48
+m5_close_mid_dist_atr
+m5_ret24
+m5_dist_high_24_atr
+```
+
+Walk-forward result:
+
+```text
+folds             : 6
+trades            : 102
+BUY / SELL trades : 40 / 62
+wins / losses     : 45 / 57
+win_rate          : 44.1176%
+initial_balance   : $100.00
+final_balance     : $86.7906
+net_profit        : -$13.2094
+return            : -13.2094%
+profit_factor     : 0.6738
+max_drawdown_cash : $15.0879
+positive_folds    : 0
+negative_folds    : 6
+```
+
+Decision:
+
+```text
+Phase141A built the requested model and produced a real walk-forward report, but it failed as a trading strategy.
+```
+
+Artifacts:
+
+```text
+run_logs\pivot_pattern_recognition\latest.json
+run_logs\pivot_pattern_recognition\latest.html
+run_logs\pivot_pattern_recognition\latest_folds.csv
+run_logs\pivot_pattern_recognition\latest_trades.csv
+run_logs\pivot_pattern_recognition\latest_features.csv
+
+datasets\models\gold_pivot_pattern_recognition_5m\v1_model.pkl
+datasets\models\gold_pivot_pattern_recognition_5m\v1_training.json
+```
+
+Production decision remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+Next useful direction:
+
+```text
+Run Phase141A on broker-quality multi-year Alpari XAUUSD data, then test stricter pivot labels/no-trade gates before moving to heavier sequence/CNN pattern models.
+```
+
+## Latest operator rerun — Phase141A Yahoo GC=F confirms failure — 2026-09-16
+
+The operator reran Phase141A on Windows with `source_mode=yahoo` and `yahoo_symbol=GC=F`.
+
+Result:
+
+```text
+1D rows              : 1,258
+4H rows              : 3,722
+5M rows              : 13,555
+feature_rows         : 13,555
+target_counts        : SELL=1,385 / HOLD=10,782 / BUY=1,387
+model_kind_used      : sklearn_hgb
+folds                : 6
+trades               : 92
+BUY / SELL trades    : 39 / 53
+wins / losses        : 33 / 59
+win_rate             : 35.8696%
+initial_balance      : $100.00
+final_balance        : $79.0053
+net_profit           : -$20.9947
+return               : -20.9947%
+profit_factor        : 0.5344
+max_drawdown_cash    : $23.1522
+positive_folds       : 0
+negative_folds       : 6
+```
+
+Decision:
+
+```text
+The operator rerun confirms Phase141A fails as a strategy on public Yahoo/GC=F data.
+No production/paper/live permission.
+```
+
+The operator then tried broker-file mode:
+
+```powershell
+--source-mode files
+--daily-path datasets\external\XAUUSD_1D.csv
+--hourly-path datasets\external\XAUUSD_1H.csv
+--five-path datasets\external\XAUUSD_5M.csv
+```
+
+Error:
+
+```text
+[X] RuntimeError: Input file does not exist: datasets\external\XAUUSD_1D.csv
+```
+
+Interpretation:
+
+```text
+This is only a missing-file error. The Alpari/XAUUSD CSV files must be exported/copied into datasets\external before files mode can run.
+```
+
+## Latest implementation correction — Phase141A reads project storage directly — 2026-09-16
+
+The owner correctly pointed out that Phase141A should read the project's existing datasets instead of requiring files to be copied into `datasets\external`.
+
+Correction implemented:
+
+```text
+scripts/train_pivot_pattern_recognition.py
+--source-mode storage
+```
+
+Storage mode reads from the canonical project layout:
+
+```text
+datasets\processed\XAUUSD\5M\v*.parquet
+datasets\processed\XAUUSD\1D\v*.parquet
+```
+
+For 4H context:
+
+```text
+1. Use datasets\processed\XAUUSD\4H\v*.parquet if it exists.
+2. Otherwise use datasets\processed\XAUUSD\1H\v*.parquet and resample it to 4H.
+```
+
+Project parquet schema is now handled:
+
+```text
+open_time -> timestamp
+```
+
+GUI default changed:
+
+```text
+Train pivot pattern recognition
+source_mode default = storage
+```
+
+This fixes the earlier missing-file confusion:
+
+```text
+datasets\external\XAUUSD_1D.csv is no longer required for normal project runs.
+```
+
+Correct next command uses `--source-mode storage`, not `--source-mode files`.
+
+## Latest implementation update — Phase142A/142B 3D Pivot Tensor + Keras WaveNet — 2026-09-16
+
+The owner clarified that the intended pattern model must be a true 3D TensorFlow/Keras WaveNet model, not a flat sklearn baseline.
+
+Shape clarification:
+
+```text
+Stored tensor X shape       : [samples, 288, channels]
+Keras runtime batch X shape : [batch, 288, channels]
+```
+
+Implemented:
+
+```text
+scripts/build_pivot_pattern_tensor.py
+scripts/train_pivot_pattern_wavenet.py
+scripts/backtest_pivot_pattern_wavenet.py
+scripts/run_pivot_pattern_wavenet_walk_forward.py
+```
+
+GUI commands added:
+
+```text
+Build pivot pattern tensor
+Train pivot WaveNet pattern model
+Backtest pivot WaveNet pattern model
+Run pivot WaveNet walk-forward
+```
+
+Tensor outputs:
+
+```text
+datasets\processed\XAUUSD\5M\pivot_pattern_tensor_latest.npz
+datasets\processed\XAUUSD\5M\pivot_pattern_flat_latest.parquet
+run_logs\pivot_pattern_tensor\latest.json
+run_logs\pivot_pattern_tensor\latest.html
+```
+
+WaveNet training outputs:
+
+```text
+datasets\models\gold_pivot_pattern_wavenet_5m\v*_model.keras
+datasets\models\gold_pivot_pattern_wavenet_5m\v*_training.json
+run_logs\pivot_pattern_wavenet\latest.json
+run_logs\pivot_pattern_wavenet\latest.html
+```
+
+Backtest/walk-forward outputs:
+
+```text
+run_logs\pivot_pattern_wavenet_backtest\latest.json
+run_logs\pivot_pattern_wavenet_walk_forward\latest.json
+```
+
+Important execution note:
+
+```text
+TensorFlow/Keras is required for training/backtest/walk-forward.
+Install with: python -m pip install -r requirements-ai.txt
+```
+
+Implementation verification:
+
+```text
+targeted ruff  → passed
+targeted black → passed
+targeted tests → passed
+```
+
+Full real XAUUSD WaveNet training was not executed in this sandbox because the complete XAUUSD 5M/1H project-storage dataset and TensorFlow runtime are on the operator machine. The operator should run the commands in docs/Phases/Phase142.md.
+
+Production status remains:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest correction — Phase143A 4D Pivot Image Tensor for Conv2D/Conv3D — 2026-09-16
+
+The owner clarified that the intended dataset should be 4D for Conv2D/Conv3D, not the previous 3D sequence tensor.
+
+Implemented:
+
+```text
+scripts/build_pivot_pattern_image_tensor.py
+scripts/train_pivot_pattern_image_cnn.py
+```
+
+GUI commands:
+
+```text
+Build pivot image tensor
+Train pivot image CNN
+```
+
+Correct layout:
+
+```text
+Stored X      : [samples, WindowSize, Features_5M, Features_4H_1D]
+Conv2D batch  : [batch, WindowSize, Features_5M, Features_4H_1D]
+Conv3D batch  : [batch, WindowSize, Features_5M, Features_4H_1D, 1]
+```
+
+Default rolling setup:
+
+```text
+WindowSize = 100
+sample_stride = 1
+```
+
+Tensor cell semantics:
+
+```text
+X[t, f5, htf] = feature_5M[t, f5] * feature_4H_1D[t, htf]
+```
+
+Bias features preserve pure 5M and pure HTF information.
+
+Smoke result:
+
+```text
+TESTSYM stored X      : [160, 20, 5, 4]
+TESTSYM Conv2D batch  : [batch, 20, 5, 4]
+TESTSYM Conv3D batch  : [batch, 20, 5, 4, 1]
+```
+
+Production remains blocked until real training/backtest/walk-forward proves edge.
+
+## Latest correction — Phase143A feature-axis budget increased — 2026-09-17
+
+The owner correctly objected that the first 4D image tensor defaults were too small:
+
+```text
+13 5M-axis entries including bias
+9 HTF-axis entries including bias
+```
+
+Defaults were increased for serious pattern-recognition training:
+
+```text
+max_5m_features  : 24 + bias = 25
+max_htf_features : 16 + bias = 17
+max_tensor_mb    : 8192
+```
+
+Approximate full-size tensor if XAUUSD 5M has ~53,198 rows and `WindowSize=100`:
+
+```text
+samples ≈ 53,099
+shape   ≈ [53,099, 100, 25, 17]
+size    ≈ 4.3 GB float16
+```
+
+The operator can still increase the feature axes manually if hardware allows.
+
+## Latest operator result — Phase143A Conv2D sanity training selected no trades — 2026-09-17
+
+The operator trained the Phase143A Conv2D image CNN on a 12,000-sample subset of the 4D tensor.
+
+```text
+stored_x_shape  : [12,000, 100, 32, 23]
+keras_batch     : [batch, 100, 32, 23]
+train/val/test  : 8,400 / 1,464 / 1,464
+epochs          : 10
+```
+
+Metrics:
+
+```text
+val_action_accuracy  : 0.1441
+test_action_accuracy : 0.3743
+val_top_ap           : 0.1158
+test_top_ap          : 0.1217
+val_bottom_ap        : 0.0777
+test_bottom_ap       : 0.1012
+val_selected_rate    : 0.0000
+test_selected_rate   : 0.0000
+```
+
+Decision:
+
+```text
+Phase143A Conv2D sanity training ran, but failed as an actionable model.
+The default gate selected zero trades. No paper/live permission.
+```
+
+Next action:
+
+```text
+Do not run full training blindly yet. First run a lower-threshold diagnostic / probability-distribution diagnostic to see whether the model has usable probability spread or is collapsing to HOLD/low-confidence outputs.
+```
+
+## Latest correction — Phase143A tensor overflow/scaler NaN fixed — 2026-09-17
+
+The operator inspected `gold_pivot_pattern_image_cnn_5m v1_training.json` and found:
+
+```text
+scaler_mean contains Infinity
+scaler_std contains NaN
+```
+
+Root cause:
+
+```text
+Raw 5M × 4H/1D interaction products overflowed when cast to float16.
+The trainer then fitted scaler statistics on an already poisoned tensor.
+```
+
+Decision:
+
+```text
+gold_pivot_pattern_image_cnn_5m v1 is invalid/rejected.
+Do not backtest or continue training v1.
+```
+
+Fix implemented:
+
+```text
+build_pivot_pattern_image_tensor.py:
+  --axis-normalization robust
+  --feature-clip 8
+  --interaction-clip 32
+  stores nonfinite diagnostics in latest.json/meta
+
+train_pivot_pattern_image_cnn.py:
+  sanitizes old tensor nonfinite values before scaler fitting
+  saves finite scaler_mean/scaler_std
+  saves model architecture and summary files
+```
+
+Architecture output paths:
+
+```text
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_architecture.json
+datasets\models\gold_pivot_pattern_image_cnn_5m\v*_summary.txt
+run_logs\pivot_pattern_image_cnn\latest_architecture.json
+run_logs\pivot_pattern_image_cnn\latest_summary.txt
+```
+
+Next required action:
+
+```text
+Rebuild the 4D image tensor with sanitization, then retrain Conv2D v2+.
+```
+
+## Latest implementation update — Phase143A official tensor-health audit added — 2026-09-17
+
+The manual dataset-health test was promoted into project code:
+
+```text
+scripts/audit_pivot_pattern_image_tensor.py
+GUI: Audit pivot image tensor health
+```
+
+The audit validates the 4D tensor before training:
+
+```text
+shape/rank
+metadata alignment
+sample_indices/timestamps
+target arrays
+axis scaler arrays
+full finite scan
+interaction clip bounds
+builder diagnostics
+```
+
+Output:
+
+```text
+run_logs\pivot_pattern_image_tensor_health\latest.json
+run_logs\pivot_pattern_image_tensor_health\latest.html
+```
+
+Operator statement:
+
+```text
+The dataset health test was run and the dataset was healthy.
+```
+
+Next action:
+
+```text
+Train a new sanitized Conv2D model version. Do not use v1 because v1 had Infinity/NaN scaler values.
+```
+
+## Latest implementation correction — Phase143A image CNN epoch checkpoints — 2026-09-17
+
+The operator reported that one epoch completed but no model appeared in `datasets\models`.
+
+Explanation:
+
+```text
+The old trainer saved final model artifacts only after all epochs completed.
+```
+
+Fix:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+--checkpoint-each-epoch 1
+```
+
+Now training creates the model directory before the first epoch and saves:
+
+```text
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_architecture.json
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_summary.txt
+datasets\models\gold_pivot_pattern_image_cnn_5m\vN_epoch_checkpoint.keras
+```
+
+Final artifacts still appear only when training finishes:
+
+```text
+vN_model.keras
+vN_training.json
+```
+
+## Latest implementation update — Phase144A advanced 4D Pivot Image WaveNet — 2026-09-17
+
+The owner rejected the simple Conv2D baseline as insufficient and requested the real architecture with:
+
+```text
+Residual connections
+SE/Attention blocks
+dilated conv over time
+separate 5M/HTF branches
+temporal attention
+multi-scale kernels
+activation=tanh
+```
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_image_wavenet.py
+GUI: Train advanced pivot image WaveNet
+```
+
+Architecture:
+
+```text
+Input [WindowSize, Features_5M, Features_4H_1D]
+→ separate pure 5M branch
+→ separate pure 4H/1D branch
+→ TimeDistributed spatial multi-scale Conv2D over feature interaction image
+→ branch fusion
+→ gated tanh-sigmoid causal dilated WaveNet residual blocks
+→ squeeze-excitation channel attention
+→ temporal MultiHeadAttention
+→ avg/max/last-state pooling
+→ action/top/bottom/buy_r/sell_r heads
+```
+
+Tanh decision:
+
+```text
+Uses WaveNet-style tanh(filter) * sigmoid(gate).
+Default --activation tanh.
+```
+
+Output paths:
+
+```text
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_model.keras
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_training.json
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_architecture.json
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_summary.txt
+datasets\models\gold_pivot_pattern_image_wavenet_5m\vN_epoch_checkpoint.keras
+run_logs\pivot_pattern_image_wavenet\latest.json
+run_logs\pivot_pattern_image_wavenet\latest_summary.txt
+```
+
+Production remains blocked until real train/backtest/walk-forward proves edge.
+
+## Latest implementation correction — RAM-safe stream loader for 4D image trainers — 2026-09-17
+
+The operator reported RAM usage around 27GB on a 32GB system. The issue was caused by loading the selected 4D tensor subset into RAM and creating a second normalized copy.
+
+Fix:
+
+```text
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+Applies to:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+```
+
+Effect:
+
+```text
+Dataset stays on disk as .npy memmap.
+Scaler is computed chunk-by-chunk.
+Only the current batch is loaded and normalized.
+The dataset/model are not made smaller.
+```
+
+## Latest implementation update — Stream loader prevents full tensor RAM copy — 2026-09-17
+
+Both 4D image trainers now default to RAM-safe streaming:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+--loader-mode stream
+--stream-chunk-size 256
+```
+
+This keeps the `.npy` tensor memory-mapped on disk and only loads/normalizes the current batch. It does not reduce dataset size or model architecture.
+
+Full pytest remains passing:
+
+```text
+python -m pytest -q → passed
+python -m pytest --collect-only → 1909 tests collected
+```
+
+## Latest implementation update — batch-level training logs for long 4D training — 2026-09-17
+
+The operator requested visibility during long epochs. Both 4D image trainers now support per-batch logging:
+
+```text
+scripts/train_pivot_pattern_image_cnn.py
+scripts/train_pivot_pattern_image_wavenet.py
+--batch-log-every N
+--batch-log-file PATH
+```
+
+Default JSONL outputs:
+
+```text
+run_logs\pivot_pattern_image_cnn\latest_batch_log.jsonl
+run_logs\pivot_pattern_image_wavenet\latest_batch_log.jsonl
+```
+
+Use:
+
+```text
+--batch-log-every 1
+```
+
+to print every batch to console and write every batch metric to the JSONL file.
+
+## Latest implementation update — Phase145A Pivot Sequence Tensor + Advanced Conv1D WaveNet — 2026-09-17
+
+Implemented Option A proposed by the owner:
+
+```text
+Stored tensor X = [samples, WindowSize, Features]
+Keras batch     = [batch, WindowSize, Features]
+```
+
+Implemented files:
+
+```text
+scripts/build_pivot_pattern_sequence_tensor.py
+scripts/train_pivot_pattern_sequence_wavenet.py
+```
+
+GUI commands:
+
+```text
+Build pivot sequence tensor
+Train pivot sequence WaveNet
+```
+
+Feature policy:
+
+```text
+Features = generated 5M + closed 4H + closed 1D + session/time + optional source 5M numeric features.
+```
+
+Source 5M numeric features are included with prefix:
+
+```text
+src5m_
+```
+
+This allows the operator's larger historical 5M feature set to be preserved without the 4D feature-interaction explosion.
+
+Architecture:
+
+```text
+Input [WindowSize, Features]
+→ separate 5M branch
+→ separate HTF branch
+→ all-feature branch
+→ multi-scale temporal Conv1D kernels
+→ gated tanh-sigmoid dilated WaveNet residual blocks
+→ SE/channel attention
+→ temporal self-attention
+→ avg/max/last pooling
+→ action/top/bottom/buy_r/sell_r heads
+```
+
+Default training mode:
+
+```text
+--loader-mode stream
+```
+
+Smoke result on TESTSYM:
+
+```text
+X shape     : [160, 20, 57]
+Keras batch : [batch, 20, 57]
+```
+
+Production remains blocked until real train/backtest/walk-forward proves edge.
+
+## Phase144A operator result — advanced 4D Image WaveNet v1 — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_image_wavenet\latest.json` for the first full operator-machine run of the advanced 4D Image WaveNet.
+
+Run configuration summary:
+
+```text
+model_id          : gold_pivot_pattern_image_wavenet_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest_meta.npz
+stored_x_shape    : [12000, 100, 32, 23]
+keras_batch_shape : [batch, 100, 32, 23]
+loader_mode       : stream
+batch_size        : 8
+epochs requested  : 20
+learning_rate     : 0.0005
+nonfinite_input_values : 0
+```
+
+Validation metrics:
+
+```text
+val_action_accuracy : 0.5628415301
+val_top_ap          : 0.2038051024
+val_bottom_ap       : 0.1501470022
+val_buy_r_mae       : 0.6300964952
+val_sell_r_mae      : 0.6807333231
+val_selected_rate   : 0.4187158470
+```
+
+Test metrics:
+
+```text
+test_action_accuracy : 0.5969945355
+test_top_ap          : 0.2327647696
+test_bottom_ap       : 0.2356605000
+test_buy_r_mae       : 0.6400972009
+test_sell_r_mae      : 0.6506559253
+test_selected_rate   : 0.4009562842
+```
+
+Interpretation:
+
+```text
+GOOD:
+- The sanitized/streamed 4D pipeline is numerically healthy: nonfinite_input_values=0.
+- The advanced WaveNet is not a dead/no-trade model: selected_rate is ~41.87% validation and ~40.10% test.
+- Action/top/bottom heads materially improved versus the rejected simple Conv2D sanity run.
+
+LIMITS:
+- This is still a research classifier/pattern model, not a trading system.
+- No PnL, spread/slippage, TP/SL, max-hold, or walk-forward trading validation is present in this report.
+- The gate is intentionally loose: buy_threshold=0.34, sell_threshold=0.34, min_margin=0, min_buy_r=-999, min_sell_r=-999.
+- R-head MAE did not materially improve; buy_r/sell_r heads are not yet reliable as trading filters.
+- The run uses max_samples=12000, not the full tensor.
+```
+
+Decision:
+
+```text
+Phase144A v1 is a useful research improvement over the simple Conv2D baseline, but production remains BLOCKED.
+Next required evidence is backtest/walk-forward or comparison against Phase145A Option A sequence WaveNet.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase145A operator result — Option A sequence WaveNet v1 — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet\latest.json` for the first operator-machine run of Phase145A Option A.
+
+Run configuration summary:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+stored_x_shape    : [24000, 100, 57]
+keras_batch_shape : [batch, 100, 57]
+feature_count     : 57
+m5_feature_count  : 35
+htf_feature_count : 22
+other_feature_count : 0
+loader_mode       : stream
+batch_size        : 16
+epochs requested  : 80
+learning_rate     : 0.0005
+nonfinite_input_values : 0
+```
+
+Validation metrics:
+
+```text
+val_action_accuracy : 0.4604779412
+val_top_ap          : 0.2414809241
+val_bottom_ap       : 0.1344216114
+val_buy_r_mae       : 0.6942731142
+val_sell_r_mae      : 0.6847920418
+val_selected_rate   : 0.5836397059
+```
+
+Test metrics:
+
+```text
+test_action_accuracy : 0.4791666667
+test_top_ap          : 0.2453369099
+test_bottom_ap       : 0.1816515898
+test_buy_r_mae       : 0.6652074456
+test_sell_r_mae      : 0.6756162643
+test_selected_rate   : 0.5719975490
+```
+
+Comparison against Phase144A 4D Image WaveNet v1 supplied earlier:
+
+```text
+Action accuracy:
+  4D Image WaveNet      : val=0.5628, test=0.5970
+  Option A Sequence     : val=0.4605, test=0.4792
+  Current read          : 4D is stronger on action classification.
+
+Top AP:
+  4D Image WaveNet      : val=0.2038, test=0.2328
+  Option A Sequence     : val=0.2415, test=0.2453
+  Current read          : Option A is slightly stronger on top-zone ranking.
+
+Bottom AP:
+  4D Image WaveNet      : val=0.1501, test=0.2357
+  Option A Sequence     : val=0.1344, test=0.1817
+  Current read          : 4D is stronger on bottom-zone ranking.
+
+Selected rate:
+  4D Image WaveNet      : val=0.4187, test=0.4010
+  Option A Sequence     : val=0.5836, test=0.5720
+  Current read          : Option A is much more aggressive and may over-select.
+```
+
+Interpretation:
+
+```text
+GOOD:
+- Numerically healthy: nonfinite_input_values=0.
+- Option A built the intended WaveNet-native tensor: [samples, WindowSize, Features].
+- Memory pressure is lower than the 4D interaction tensor.
+- Top-zone ranking is slightly better than 4D in this run.
+
+LIMITS:
+- Action accuracy is materially lower than the Phase144A 4D Image WaveNet result.
+- Bottom-zone AP is lower than 4D.
+- selected_rate around 57% is high under the loose diagnostic gate.
+- buy_r/sell_r MAE did not improve; R-heads are not yet reliable trading gates.
+- The report has no PnL, profit factor, drawdown, spread/slippage, or walk-forward trading validation.
+- This is not an apples-to-apples comparison because Phase144A used 12000 samples while Phase145A used 24000 samples and a different feature layout/capacity.
+- Feature count is 57. If the owner expected the large historical 5M feature set, the Phase145A tensor build report must be checked for `source_5m_feature_count`.
+```
+
+Decision:
+
+```text
+Phase145A Option A v1 is technically healthy but not better overall than Phase144A 4D v1 on classifier metrics.
+It remains useful as a lower-dimensional research lane, especially for top-zone ranking and RAM efficiency.
+Production remains BLOCKED until backtest/walk-forward proves trading edge.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase145A source-feature discovery fix — 2026-09-19
+
+The owner supplied the Phase145A sequence tensor build report. It confirmed:
+
+```text
+features                  : 57
+generated_feature_count   : 57
+source_5m_feature_count   : 0
+source_5m_feature_path    : not previously reported
+```
+
+Interpretation:
+
+```text
+The first Option A tensor was technically valid, but it did not include the larger historical 5M feature set.
+It was therefore an Option A generated-feature run, not the intended full-source-feature Option A run.
+```
+
+Root cause fixed in the builder:
+
+```text
+scripts/build_pivot_pattern_sequence_tensor.py
+```
+
+New behavior:
+
+```text
+--include-source-5m-features 1
+```
+
+now auto-probes, in storage mode, before falling back to the plain OHLCV `v*.parquet` file:
+
+```text
+datasets\processed\<SYMBOL>\<TF>\hybrid_telemetry_flat_latest.parquet
+datasets\processed\<SYMBOL>\<TF>\hybrid_xgboost_matrix_latest.parquet
+datasets\processed\<SYMBOL>\<TF>\hybrid_xgboost_matrix_all_5m.parquet
+hybrid_*flat*.parquet
+hybrid_*matrix*.parquet
+plain storage OHLCV v*.parquet
+```
+
+Added explicit override:
+
+```text
+--source-5m-feature-path PATH
+```
+
+GUI update:
+
+```text
+Build pivot sequence tensor → Optional source 5M feature parquet/csv
+```
+
+Leakage/metadata safeguards:
+
+```text
+Blocked source columns include OHLCV identifiers, source_index/tensor_index/sample_index/row_id, target_*, future_*, candidate_*, prediction_*, pred_*, prob_*.
+```
+
+The build report now records:
+
+```text
+source_5m_feature_path
+source_5m_total_columns
+source_5m_numeric_candidate_count
+source_5m_feature_count
+```
+
+Required rerun:
+
+```powershell
+python -u scripts\build_pivot_pattern_sequence_tensor.py `
+  --source-mode storage `
+  --symbol XAUUSD `
+  --five-timeframe 5M `
+  --hourly-timeframe 1H `
+  --h4-timeframe 4H `
+  --daily-timeframe 1D `
+  --lookahead-bars 48 `
+  --pivot-move-atr 0.75 `
+  --pivot-zone-atr 0.35 `
+  --recent-window-bars 48 `
+  --min-direction-edge 1.10 `
+  --window-size 100 `
+  --sample-stride 1 `
+  --max-samples 0 `
+  --include-source-5m-features 1 `
+  --max-features 0 `
+  --dtype float16 `
+  --axis-normalization robust `
+  --feature-clip 8 `
+  --chunk-size 512 `
+  --max-tensor-mb 8192 `
+  --output-name pivot_pattern_sequence_tensor_latest `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_tensor
+```
+
+If `source_5m_feature_count` remains `0`, then the large 5M feature file is not in the auto-probed project-storage locations and the operator must provide its exact path through the new GUI field or `--source-5m-feature-path`.
+
+Decision:
+
+```text
+The previous Phase145A v1 model result should be treated as underfed / generated-feature-only.
+Do not compare it as the final full-feature Option A result until the tensor is rebuilt with source_5m_feature_count > 0.
+Production remains BLOCKED.
+```
+
+Verification in sandbox:
+
+```text
+python -m py_compile scripts/build_pivot_pattern_sequence_tensor.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 41 passed
+
+python -m pytest -q
+→ blocked in sandbox collection because optional dependencies pyarrow/pywt are not installed here.
+
+python -m ruff / python -m black
+→ unavailable in this sandbox image.
+```
+
+## Phase145A PowerShell empty optional path fix — 2026-09-19
+
+The owner ran the new Phase145A tensor build command in PowerShell with:
+
+```text
+--source-5m-feature-path "" `
+```
+
+PowerShell/native argv handling dropped the empty string, so `argparse` saw `--source-5m-feature-path` without a value and failed:
+
+```text
+build_pivot_pattern_sequence_tensor.py: error: argument --source-5m-feature-path: expected one argument
+```
+
+Fix implemented:
+
+```text
+scripts/build_pivot_pattern_sequence_tensor.py
+```
+
+The argument now uses:
+
+```text
+nargs="?"
+const=""
+default=""
+```
+
+So both forms are safe:
+
+```powershell
+# recommended: omit the optional path for auto-probe
+--include-source-5m-features 1
+
+# also accepted now if a shell drops the empty value
+--source-5m-feature-path
+```
+
+Documentation command snippets were updated to omit `--source-5m-feature-path ""` unless an explicit path is actually needed.
+
+Recommended rerun is the same tensor build command, but without the empty path line. If auto-probe still reports `source_5m_feature_count=0`, rerun with an actual feature parquet/csv path.
+
+## Phase143A 4D image tensor health PASS — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_image_tensor_health\latest.json` after running the official tensor health audit for the rebuilt 4D pivot image tensor.
+
+Audit command inputs:
+
+```text
+tensor_path    : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest.npy
+meta_path      : datasets\processed\XAUUSD\5M\pivot_pattern_image_tensor_latest_meta.npz
+flat_path      : datasets\processed\XAUUSD\5M\pivot_pattern_image_flat_latest.parquet
+builder_report : run_logs\pivot_pattern_image_tensor\latest.json
+full_scan      : 1
+chunk_size     : 256
+```
+
+Result:
+
+```text
+status       : PASS
+tensor_shape : [53098, 100, 32, 23]
+dtype        : float16
+flat_rows    : 53197
+sample index : min=99 max=53196 step=1
+first time   : 2025-11-28 17:05:00+00:00
+last time    : 2026-09-02 10:25:00+00:00
+```
+
+Full tensor scan:
+
+```text
+scanned_cells     : 3,908,012,800
+chunks            : 208
+nonfinite_cells   : 0
+min_value         : -32.0
+max_value         : 32.0
+max_abs           : 32.0
+interaction_clip  : 32.0
+warnings          : []
+errors            : []
+```
+
+Target counts on sampled windows:
+
+```text
+SELL : 5,384
+HOLD : 43,252
+BUY  : 4,462
+```
+
+Interpretation:
+
+```text
+- The 4D image tensor is structurally healthy.
+- The full tensor scan found no NaN/Inf cells.
+- max_abs equals interaction_clip, so clipping is active and within the configured bound.
+- sample_indices are strictly contiguous with stride=1 from 99 to 53196.
+- feature_5m_names length matches axis 2: 32.
+- feature_htf_names length matches axis 3: 23.
+```
+
+Note on target-count difference versus builder report:
+
+```text
+Builder target_counts were computed on the flat frame after target availability.
+Health-audit target_counts are computed on the sampled tensor windows.
+Because window_size=100, the first 99 flat rows are not tensor samples, so small count differences are expected and not an error.
+```
+
+Decision:
+
+```text
+Phase143A rebuilt 4D pivot image tensor is accepted as healthy for research training.
+It is safe to train Phase144A advanced 4D Image WaveNet on this tensor.
+Production remains BLOCKED until model backtest/walk-forward proves trading edge.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase145A full-source sequence tensor build + health audit command — 2026-09-19
+
+The owner rebuilt the Option A sequence tensor after the source-feature discovery fix. The new build report confirms the intended 3D tensor layout:
+
+```text
+stored_x_shape      : [53098, 100, 140]
+keras_batch_shape   : [batch, 100, 140]
+dtype               : float16
+estimated_size_mb   : 1417.8696
+samples             : 53098
+window_size         : 100
+features            : 140
+generated_features  : 57
+source_5m_features  : 83
+source_5m_path      : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+source_total_cols   : 105
+source_numeric_candidates : 83
+nonfinite_feature_values  : 0
+```
+
+Target counts on the flat target-available frame:
+
+```text
+SELL : 5,392
+HOLD : 43,342
+BUY  : 4,463
+```
+
+Interpretation:
+
+```text
+- This is the intended Option A tensor: [X, Y, Z] = [samples, WindowSize, Features].
+- Source 5M features are now included: source_5m_feature_count=83.
+- Total feature count is 140 = 57 generated/context features + 83 source 5M features.
+- The tensor is much smaller than the 4D interaction tensor: about 1.42 GB float16 versus about 7.45 GB for [53098,100,32,23].
+```
+
+Implemented official health audit for the Option A tensor:
+
+```text
+scripts/audit_pivot_pattern_sequence_tensor.py
+GUI: Audit pivot sequence tensor health
+```
+
+The audit checks:
+
+```text
+3D rank/shape: [samples, window, features]
+metadata/sample alignment
+sample_indices monotonicity
+timestamp monotonicity
+target array presence/length/finite values
+feature_names and feature_groups alignment
+source_5m feature count consistency
+feature scaler finite checks
+full tensor NaN/Inf scan
+max_abs <= feature_clip
+builder report shape/count consistency
+```
+
+Command to run on the operator machine:
+
+```powershell
+python -u scripts\audit_pivot_pattern_sequence_tensor.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --builder-report run_logs\pivot_pattern_sequence_tensor\latest.json `
+  --chunk-size 512 `
+  --full-scan 1 `
+  --max-scan-samples 0 `
+  --fail-on-reported-feature-nonfinite 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_tensor_health
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_tensor_health\latest.json
+run_logs\pivot_pattern_sequence_tensor_health\latest.html
+```
+
+Verification in sandbox:
+
+```text
+python -m py_compile scripts/audit_pivot_pattern_sequence_tensor.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 45 passed
+```
+
+Decision:
+
+```text
+The full-source Option A sequence tensor build is structurally correct from the builder report.
+Run the new health audit before retraining gold_pivot_pattern_sequence_wavenet_5m.
+Previous Sequence WaveNet v1 trained on [24000,100,57] remains underfed and should not be treated as final Option A.
+Production remains BLOCKED.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase145A full-source sequence tensor health PASS — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_tensor_health\latest.json` after running the official Phase145A Option A sequence tensor health audit.
+
+Audit command inputs:
+
+```text
+tensor_path    : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta_path      : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+flat_path      : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet
+builder_report : run_logs\pivot_pattern_sequence_tensor\latest.json
+full_scan      : 1
+chunk_size     : 512
+```
+
+Result:
+
+```text
+status            : PASS
+tensor_shape      : [53098, 100, 140]
+keras_batch_shape : [batch, 100, 140]
+dtype             : float16
+samples           : 53098
+window_size       : 100
+features          : 140
+flat_rows         : 53197
+sample index      : min=99 max=53196 step=1
+first time        : 2025-11-28 17:05:00+00:00
+last time         : 2026-09-02 10:25:00+00:00
+```
+
+Feature composition:
+
+```text
+generated_5m_feature_count : 31
+source_5m_feature_count    : 83
+session_feature_count      : 4
+htf_feature_count          : 22
+other_feature_count        : 0
+source_5m_feature_path     : datasets\processed\XAUUSD\5M\hybrid_telemetry_flat_latest.parquet
+source_5m_numeric_candidates : 83
+```
+
+Full tensor scan:
+
+```text
+scanned_cells   : 743,372,000
+chunks          : 104
+nonfinite_cells : 0
+min_value       : -8.0
+max_value       : 8.0
+max_abs         : 8.0
+feature_clip    : 8.0
+warnings        : []
+errors          : []
+```
+
+Target counts on sampled tensor windows:
+
+```text
+SELL : 5,384
+HOLD : 43,252
+BUY  : 4,462
+```
+
+Interpretation:
+
+```text
+- This is the intended Option A tensor layout: [X, Y, Z] = [samples, WindowSize, Features].
+- The full-source tensor is healthy: rank=3, shape=[53098,100,140], source_5m=83, no NaN/Inf cells.
+- max_abs equals feature_clip, so robust normalization/clipping is active and within configured bounds.
+- sample_indices are contiguous with stride=1 from 99 to 53196.
+- The previous Sequence WaveNet v1 trained on [24000,100,57] is underfed and should not be treated as the final Option A result.
+```
+
+Decision:
+
+```text
+Phase145A full-source sequence tensor is accepted as healthy for research training.
+Next valid training should use this tensor [samples,100,140], not the old [samples,100,57] tensor.
+Production remains BLOCKED until backtest/walk-forward proves trading edge.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Gitignore heavy artifact guard — 2026-09-19
+
+The owner asked to prevent heavy local research artifacts from entering git. `.gitignore` was updated and the malformed `config.inirun_logs/` line was corrected to `config.ini`.
+
+New/confirmed ignore coverage includes:
+
+```text
+*.npy
+*.keras
+*.ckpt
+*.weights.h5
+*.pkl / *.pickle / *.joblib
+*.onnx / *.pb / *.tflite
+*.feather / *.arrow / *.orc / *.avro / *.zarr/
+*.zip / *.7z / *.rar / *.tar / *.tar.gz / *.tgz / *.xz
+datasets/raw/
+datasets/external/
+datasets/processed/
+datasets/models/
+run_logs/
+logs/
+```
+
+Verification examples:
+
+```text
+datasets/processed/XAUUSD/5M/pivot_pattern_sequence_tensor_latest.npy → ignored
+datasets/models/gold_pivot_pattern_sequence_wavenet_5m/v1_model.keras → ignored
+run_logs/pivot_pattern_sequence_wavenet/latest.json → ignored
+*.zip project snapshots → ignored
+```
+
+Note:
+
+```text
+Already-tracked small legacy artifacts are not automatically removed by .gitignore.
+New heavy tensors/models/run logs will stay out of git.
+```
+
+## Phase145A full-source sequence WaveNet training result — 2026-09-19
+
+The owner supplied the completed `run_logs\pivot_pattern_sequence_wavenet\latest.json`, model summary, and batch/epoch logs for the first full-source Option A training run.
+
+Training input:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+stored_x_shape    : [24000, 100, 140]
+keras_batch_shape : [batch, 100, 140]
+feature_count     : 140
+m5_feature_count  : 118
+htf_feature_count : 22
+other_feature_count : 0
+loader_mode       : stream
+batch_size        : 16
+epochs requested  : 80
+early_stopping_patience : 8
+nonfinite_input_values  : 0
+```
+
+Final report metrics, after Keras restored the best `val_loss` weights:
+
+```text
+val_action_accuracy : 0.7239583333
+val_top_ap          : 0.3654971900
+val_bottom_ap       : 0.3324869559
+val_buy_r_mae       : 0.6672694683
+val_sell_r_mae      : 0.6664603949
+val_selected_rate   : 0.2821691176
+
+test_action_accuracy : 0.6200980392
+test_top_ap          : 0.2709324875
+test_bottom_ap       : 0.3336111266
+test_buy_r_mae       : 0.7359182239
+test_sell_r_mae      : 0.7348573208
+test_selected_rate   : 0.3609068627
+```
+
+Important epoch-end observations from `latest_batch_log.jsonl`:
+
+```text
+epoch 1 : val_loss=1.9548627, val_action_acc=0.4316789
+epoch 2 : val_loss=1.6995431, val_action_acc=0.5508578
+epoch 3 : val_loss=1.8116363, val_action_acc=0.5713848
+epoch 4 : val_loss=1.6853775, val_action_acc=0.6583946
+epoch 5 : val_loss=1.4642649, val_action_acc=0.7239583  ← best val_loss / restored final weights
+epoch 6 : val_loss=1.5603150, val_action_acc=0.7110907
+epoch 7 : val_loss=1.8318611, val_action_acc=0.6522672
+epoch 8 : val_loss=2.0280118, val_action_acc=0.6197917
+epoch 9 : val_loss=1.9110000, val_action_acc=0.6666667
+epoch 10: val_loss=1.8384161, val_action_acc=0.6727941
+epoch 11: val_loss=1.8083678, val_action_acc=0.7086397
+epoch 12: val_loss=1.7787350, val_action_acc=0.7037377
+epoch 13: val_loss=1.6534641, val_action_acc=0.7414216
+```
+
+Architecture confirmation from the model summary:
+
+```text
+Input                  : [batch, 100, 140]
+5M branch              : [batch, 100, 118]
+HTF branch             : [batch, 100, 22]
+All-feature branch     : [batch, 100, 140]
+Branch fusion          : [batch, 100, 432]
+WaveNet temporal core  : 2 residual blocks × dilations 1,2,4,8,16,32
+Attention              : temporal_self_attention
+Pooling                : avg + max + last
+Heads                  : action/top/bottom/buy_r/sell_r
+Trainable params       : 1,256,435
+Total params reported  : 3,769,307 including optimizer slots
+```
+
+Comparison to the underfed Sequence WaveNet v1 `[24000,100,57]`:
+
+```text
+Action accuracy:
+  underfed sequence : val=0.4605, test=0.4792
+  full-source seq   : val=0.7240, test=0.6201
+
+Top AP:
+  underfed sequence : val=0.2415, test=0.2453
+  full-source seq   : val=0.3655, test=0.2709
+
+Bottom AP:
+  underfed sequence : val=0.1344, test=0.1817
+  full-source seq   : val=0.3325, test=0.3336
+
+Selected rate:
+  underfed sequence : val=0.5836, test=0.5720
+  full-source seq   : val=0.2822, test=0.3609
+```
+
+Comparison to Phase144A 4D Image WaveNet v1 `[12000,100,32,23]`:
+
+```text
+Action accuracy:
+  4D image WaveNet  : val=0.5628, test=0.5970
+  full-source seq   : val=0.7240, test=0.6201
+
+Top AP:
+  4D image WaveNet  : val=0.2038, test=0.2328
+  full-source seq   : val=0.3655, test=0.2709
+
+Bottom AP:
+  4D image WaveNet  : val=0.1501, test=0.2357
+  full-source seq   : val=0.3325, test=0.3336
+```
+
+Interpretation:
+
+```text
+GOOD:
+- Full-source Option A is a material improvement over the underfed 57-feature sequence run.
+- It also beats the earlier 4D Image WaveNet classification/AP metrics in this non-identical comparison.
+- selected_rate is lower and more controlled than the underfed run.
+- No NaN/Inf was reported.
+- The architecture is the intended advanced Conv1D/WaveNet adaptation of the 4D model.
+
+LIMITS:
+- Training loss kept improving while validation loss bottomed at epoch 5; overfitting after epoch 5 is visible.
+- R-head test MAE is still weak: buy_r≈0.736, sell_r≈0.735.
+- This is still a classifier/pattern report, not a trading proof.
+- No PnL, profit factor, drawdown, spread/slippage, or walk-forward trading validation is present.
+- 4D and sequence runs used different sample counts and layouts, so comparison is directional, not final proof.
+```
+
+Decision:
+
+```text
+Phase145A full-source sequence WaveNet is the strongest pivot-pattern research model so far by classification/AP diagnostics.
+It is NOT production-approved.
+Next required phase: backtest/PnL audit on sequence WaveNet predictions, followed by walk-forward if backtest is promising.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase146A sequence WaveNet PnL audit implemented — 2026-09-19
+
+Implemented the first research-only PnL audit/backtest for the Phase145A full-source sequence WaveNet.
+
+Implemented files:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+docs/Phases/Phase146.md
+docs/Report/PHASE146A_SEQUENCE_WAVENET_BACKTEST_REPORT.md
+tests/unit/ai/test_pivot_sequence_wavenet_backtest.py
+```
+
+GUI command:
+
+```text
+Backtest pivot sequence WaveNet PnL
+```
+
+Purpose:
+
+```text
+Convert action/top/bottom/buy_r/sell_r predictions into BUY/SELL candidates and run a research-only ATR TP/SL replay with spread, same-bar policy, max-hold, initial capital, and risk-per-trade.
+```
+
+Recommended first audit command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --tp-multiplier 0.75 `
+  --sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_backtest `
+  --report-title "Phase146A sequence WaveNet PnL audit"
+```
+
+Outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.html
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest_trades.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 49 passed
+```
+
+Production remains blocked until PnL/walk-forward prove edge.
+
+## Phase146A Lambda deserialization fix — 2026-09-19
+
+The owner's first Phase146A run failed while loading the trained Keras model:
+
+```text
+ValueError: Requested the deserialization of a `Lambda` layer whose `function` is a Python lambda.
+Keras disallowed it by default; use safe_mode=False or enable unsafe deserialization.
+```
+
+Root cause:
+
+```text
+The Phase145A sequence WaveNet architecture intentionally uses Keras Lambda layers for feature slicing:
+- gather_5m_features
+- gather_htf_features
+- gather_all_features
+- last_temporal_state
+```
+
+Fix implemented in:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+The Phase146A loader now explicitly trusts local project-generated research artifacts:
+
+```python
+tf.keras.models.load_model(model_path, safe_mode=False)
+```
+
+with a fallback for older tf.keras versions:
+
+```python
+tf.keras.config.enable_unsafe_deserialization()
+tf.keras.models.load_model(model_path)
+```
+
+Scope:
+
+```text
+Research-only local artifacts generated by this project.
+Do not use this loader for untrusted downloaded Keras models.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 50 passed
+```
+
+The same Phase146A PowerShell command can be rerun after replacing the project with the fixed zip.
+
+## Phase146A Lambda shape-load fallback — 2026-09-19
+
+The owner reran Phase146A after `safe_mode=False`. Keras then passed Lambda security but failed shape inference while deserializing the project-owned Lambda layers:
+
+```text
+NotImplementedError: We could not automatically infer the shape of the Lambda's output.
+Please specify the output_shape argument for this Lambda layer.
+```
+
+Fix implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/train_pivot_pattern_sequence_wavenet.py
+```
+
+Changes:
+
+```text
+1. Future Phase145A models now save Lambda layers with explicit output_shape for:
+   - gather_5m_features
+   - gather_htf_features
+   - gather_all_features
+   - last_temporal_state
+
+2. Phase146A backtest now has a fallback loader for existing saved models:
+   - first tries load_model(..., safe_mode=False, compile=False)
+   - if Lambda shape inference still fails, rebuilds the architecture from vN_training.json + meta
+   - extracts and loads weights from the .keras archive
+```
+
+This preserves the architecture while avoiding a retrain just to make the current v1 model loadable.
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+The same Phase146A PowerShell command should now load the existing v1 model through the fallback path and proceed to prediction/backtest.
+
+## Phase146A sequence WaveNet PnL audit result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json` for the first Phase146A research PnL audit of the Phase145A full-source sequence WaveNet.
+
+Backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+model_version     : 1
+tensor_shape      : [53098, 100, 140]
+selected_samples  : 24000
+eval_split        : test
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy_threshold     : 0.34
+sell_threshold    : 0.34
+min_margin        : 0
+top_threshold     : 0
+bottom_threshold  : 0
+min_buy_r         : -999
+min_sell_r        : -999
+tp_multiplier     : 0.75
+sl_multiplier     : 0.75
+hold_bars         : 48
+spread_mode/value : pct / 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Aggregate result:
+
+```text
+trades             : 135
+BUY / SELL trades  : 44 / 91
+wins / losses      : 68 / 67
+win_rate           : 50.3704%
+final_balance      : 100.8955889685
+return_percent     : +0.8955889685%
+total_cash_pnl     : +0.8955889685
+gross_profit       : 49.4868161194
+gross_loss         : 48.5912271509
+profit_factor      : 1.0184310836
+max_drawdown_cash  : 7.2327237246
+take_profit        : 36
+stop_loss          : 43
+timeout            : 56
+```
+
+Side breakdown:
+
+```text
+BUY cash PnL  : +1.7578227452
+SELL cash PnL : -0.8622337767
+```
+
+Monthly result:
+
+```text
+2026-07 : +0.6597453995 / 110 trades
+2026-08 : +0.2358435690 / 25 trades
+positive_months : 2
+negative_months : 0
+```
+
+Operational counters:
+
+```text
+skipped_by_model   : 941
+skipped_while_open : 2188
+invalid_trade      : 0
+```
+
+Interpretation:
+
+```text
+GOOD:
+- First PnL audit is positive on the purged test split.
+- Both evaluated months are positive.
+- BUY side is positive, unlike older hybrid diagnostics where BUY was the main damage source.
+- No invalid trades were produced.
+
+LIMITS:
+- Edge is very thin: PF=1.018 and return is less than +1% on $100.
+- Max drawdown (~$7.23) is much larger than net profit (~$0.90).
+- SELL side is negative despite more trades than BUY.
+- 56/135 trades are timeouts, so TP/SL/hold calibration likely matters.
+- This is a single test split, not walk-forward.
+- Loose thresholds were used; no robustness/threshold grid has been performed.
+```
+
+Decision:
+
+```text
+Phase146A first PnL audit is a weak positive research result, not a production pass.
+It is the first pivot-lane result that is both classifier-strong and PnL-positive on the purged test split, but the edge is too small and fragile for paper/live.
+Next required step: Phase146B threshold / TP-SL / side-specific grid on validation, then test confirmation; later walk-forward if robust.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase147A Option B grouped sequence WaveNet implemented — 2026-09-19
+
+The owner reminded that the agreed roadmap must proceed in this order:
+
+```text
+Step 1 — Option B بسازیم
+Step 2 — A/B benchmark منصفانه
+Step 3 — آموزش بزرگ‌تر / full dataset
+Step 4 — ذخیره کامل prediction/backtest archive
+Step 5 — فیلترسازی، ولی با قانون ضد overfit
+```
+
+Phase147A implements Step 1.
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+GUI: Train pivot sequence WaveNet Option B
+```
+
+Option B uses the existing healthy Phase145A tensor:
+
+```text
+stored X = [53098, 100, 140]
+```
+
+but feeds the model as grouped Keras inputs:
+
+```text
+m5_context_input  = [batch, 100, 35]   # generated_5m + session
+source_5m_input   = [batch, 100, 83]   # source_5m telemetry
+htf_context_input = [batch, 100, 22]   # closed 4H + closed 1D
+```
+
+Architecture:
+
+```text
+separate grouped branches
+multi-scale causal Conv1D kernels 3,5,9
+late fusion
+gated tanh-sigmoid dilated WaveNet
+residual/skip connections
+SE/channel attention
+temporal self-attention
+avg/max/last pooling
+multi-task heads
+```
+
+Command for owner:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b `
+  --report-title "Option B Pivot Sequence WaveNet training"
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest.json
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_summary.txt
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_training_log.csv
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_batch_log.jsonl
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 54 passed
+```
+
+Next after owner runs Option B training:
+
+```text
+Step 2 — A/B benchmark منصفانه
+```
+
+## Phase147A Option B training result and Step2 backtest support — 2026-09-19
+
+The owner supplied the first Phase147A Option B training result.
+
+Training input:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_5m
+version           : 1
+stored_x_shape    : [24000, 100, 140]
+inputs:
+  m5_context_input  : [batch, 100, 35]
+  source_5m_input   : [batch, 100, 83]
+  htf_context_input : [batch, 100, 22]
+nonfinite_input_values : 0
+```
+
+Final restored metrics:
+
+```text
+val_action_accuracy : 0.7273284314
+val_top_ap          : 0.4791975234
+val_bottom_ap       : 0.2816134870
+val_buy_r_mae       : 0.6719624400
+val_sell_r_mae      : 0.6719951034
+val_selected_rate   : 0.2846200980
+
+test_action_accuracy : 0.6544117647
+test_top_ap          : 0.2636572717
+test_bottom_ap       : 0.2550490406
+test_buy_r_mae       : 0.8204818964
+test_sell_r_mae      : 0.8204245567
+test_selected_rate   : 0.3134191176
+```
+
+A/B diagnostic comparison so far:
+
+```text
+Option A full-source [24000,100,140]
+  test_action_accuracy : 0.6201
+  test_top_ap          : 0.2709
+  test_bottom_ap       : 0.3336
+  test_buy/sell_r_mae  : ~0.736 / ~0.735
+  test_selected_rate   : 0.3609
+  test PnL             : +0.8956, PF=1.0184, maxDD=7.2327
+
+Option B grouped inputs [24000,100,140]
+  test_action_accuracy : 0.6544  ← better
+  test_top_ap          : 0.2637  ← slightly worse
+  test_bottom_ap       : 0.2550  ← worse
+  test_buy/sell_r_mae  : ~0.820 / ~0.820  ← worse
+  test_selected_rate   : 0.3134  ← more selective
+  test PnL             : not yet run
+```
+
+Interpretation:
+
+```text
+Option B improved action classification but weakened bottom-zone AP and R-head MAE.
+Because Phase146A showed PnL is very sensitive and weak, the next decision cannot be made from classifier metrics only.
+Step 2 now requires a fair Option B PnL audit with the same rules used for Option A.
+```
+
+Implemented Step 2 support:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+now detects Option B records and feeds grouped prediction inputs automatically. The same GUI command can be used:
+
+```text
+Backtest pivot sequence WaveNet PnL
+```
+
+Recommended Option B backtest command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --tp-multiplier 0.75 `
+  --sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_backtest `
+  --report-title "Phase147B Option B sequence WaveNet PnL audit"
+```
+
+Verification after adding Option B backtest support:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 56 passed
+```
+
+Decision:
+
+```text
+Step 1 is complete: Option B is built and trained.
+Step 2 is now active: run Option B PnL audit and compare against Option A using the same replay rules.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase147B Option B PnL audit result / Step2 A-B benchmark — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_backtest\latest.json`, completing Step 2's first fair PnL comparison between Option A and Option B under the same Phase146 replay rules.
+
+Option B backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_5m
+model_version     : 1
+tensor_shape      : [53098, 100, 140]
+selected_samples  : 24000
+eval_split        : test
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy_threshold     : 0.34
+sell_threshold    : 0.34
+min_margin        : 0
+top_threshold     : 0
+bottom_threshold  : 0
+min_buy_r         : -999
+min_sell_r        : -999
+tp_multiplier     : 0.75
+sl_multiplier     : 0.75
+hold_bars         : 48
+spread_mode/value : pct / 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Option B aggregate result:
+
+```text
+trades             : 134
+BUY / SELL trades  : 44 / 90
+wins / losses      : 65 / 69
+win_rate           : 48.5075%
+final_balance      : 101.8764768367
+return_percent     : +1.8764768367%
+total_cash_pnl     : +1.8764768367
+gross_profit       : 51.6444079174
+gross_loss         : 49.7679310808
+profit_factor      : 1.0377045378
+max_drawdown_cash  : 7.7910373699
+take_profit        : 41
+stop_loss          : 41
+timeout            : 52
+```
+
+Option B side breakdown:
+
+```text
+BUY cash PnL  : +1.9372472043
+SELL cash PnL : -0.0607703677
+```
+
+Option B monthly result:
+
+```text
+2026-07 : +4.1183724559 / 106 trades
+2026-08 : -2.2418956192 / 28 trades
+positive_months : 1
+negative_months : 1
+```
+
+Fair comparison against Option A under the same replay settings:
+
+```text
+Option A:
+  trades        : 135
+  final_balance : 100.8955889685
+  return        : +0.8956%
+  PF            : 1.0184
+  maxDD         : 7.2327
+  BUY PnL       : +1.7578
+  SELL PnL      : -0.8622
+  monthly       : Jul +0.6597, Aug +0.2358
+
+Option B:
+  trades        : 134
+  final_balance : 101.8764768367
+  return        : +1.8765%
+  PF            : 1.0377
+  maxDD         : 7.7910
+  BUY PnL       : +1.9372
+  SELL PnL      : -0.0608
+  monthly       : Jul +4.1184, Aug -2.2419
+```
+
+Interpretation:
+
+```text
+GOOD:
+- Option B improves net PnL and profit factor versus Option A.
+- Option B nearly neutralizes the SELL-side loss seen in Option A.
+- Option B has fewer timeouts and more take-profits than Option A.
+- BUY remains positive.
+
+LIMITS:
+- Option B drawdown is slightly worse than Option A.
+- Option B has one negative month: August -2.2419.
+- PF=1.0377 is still thin; this is not production-grade.
+- The result is still only one purged test split, not walk-forward.
+```
+
+Decision:
+
+```text
+Step 2 preliminary A/B benchmark: Option B is the current research winner by PnL/PF, but not by stability.
+Proceed to Step 3 with Option B first: larger/full-dataset training with max_samples=0, still using chronological train/validation/test and early stopping.
+Option A can be kept as a robustness comparison, but Option B gets priority.
+No Phase134. No paper shadow. No live trading.
+```
+
+Recommended next Step 3 command:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 160 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 12 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 25 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_full `
+  --report-title "Option B Pivot Sequence WaveNet full-dataset training"
+```
+
+## Phase148A range-aware sequence archive implemented — 2026-09-19
+
+Implemented Step 4 requested by the owner while Step 3 full Option B training is running.
+
+Implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+GUI: Backtest sequence WaveNet range-aware archive
+```
+
+Purpose:
+
+```text
+Create a full prediction/backtest archive and calculate TP/SL from range forecasts rather than fixed ATR brackets.
+```
+
+Range source modes:
+
+```text
+--range-source auto    # use flat range columns when available, otherwise range models
+--range-source flat    # use range columns from sequence flat parquet
+--range-source models  # compute forecasts from gold_range_4h / gold_range_1d
+```
+
+Supported flat columns include both raw and source-prefixed names:
+
+```text
+range_4h_high_price / src5m_range_4h_high_price
+range_4h_low_price  / src5m_range_4h_low_price
+range_1d_high_price / src5m_range_1d_high_price
+range_1d_low_price  / src5m_range_1d_low_price
+```
+
+Bracket logic:
+
+```text
+BUY : TP from range high, SL from range low
+SELL: TP from range low,  SL from range high
+```
+
+with:
+
+```text
+--range-bracket-mode range|range_capped|atr
+--use-1d-tp-cap 1
+--max-tp-atr 2.0
+--max-sl-atr 1.25
+--min-tp-distance 0.5
+--min-sl-distance 0.5
+```
+
+Full archive outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.json
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.html
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_monthly.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_side.csv
+```
+
+Recommended command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet_range.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 0 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --range-source auto `
+  --range-bracket-mode range_capped `
+  --range-fallback skip `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --range-1d-version 0 `
+  --range-4h-version 0 `
+  --use-1d-tp-cap 1 `
+  --min-range-4h-room 0 `
+  --min-range-1d-room 0 `
+  --min-tp-distance 0.5 `
+  --min-sl-distance 0.5 `
+  --max-tp-atr 2.0 `
+  --max-sl-atr 1.25 `
+  --atr-tp-multiplier 0.75 `
+  --atr-sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_range_archive `
+  --report-title "Phase148A range-aware sequence WaveNet archive"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 60 passed
+```
+
+Production remains blocked.
+
+## Phase147C Option B branch feature expansion to 180 — 2026-09-19
+
+The owner asked whether the small grouped raw input sizes could contribute to overfitting and requested each Option B branch input to support 180 useful features:
+
+```text
+m5_context_input  : [batch, 100, 180]
+source_5m_input   : [batch, 100, 180]
+htf_context_input : [batch, 100, 180]
+```
+
+Decision:
+
+```text
+We should not pad branches with arbitrary dummy columns or duplicate raw features.
+More raw columns do not automatically reduce overfitting; irrelevant columns can make it worse.
+```
+
+Implemented a controlled optional causal feature expansion for Option B:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+```
+
+New flags:
+
+```text
+--branch-target-features 180
+--feature-augmentation-mode causal
+--feature-augmentation-clip 8
+```
+
+When enabled, each branch is expanded with deterministic causal transforms of its own normalized feature stream:
+
+```text
+original values
+lag-1 delta
+lag-3 delta
+lag-6 delta
+causal rolling mean 3
+causal rolling mean 6
+causal rolling mean 12
+abs lag-1 delta
+abs lag-3 delta
+```
+
+Then the channel axis is clipped/truncated to the requested target count. For the current tensor:
+
+```text
+m5_context raw 35  → expanded 180
+source_5m raw 83   → expanded 180
+htf_context raw 22 → expanded 180
+```
+
+The expansion is causal within each 100-candle window and uses only data already inside the input window. It does not add future information beyond the endpoint.
+
+Backtest/prediction support updated:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+```
+
+The model record stores augmentation settings, and prediction loaders reproduce the same grouped 180-channel inputs.
+
+GUI update:
+
+```text
+Train pivot sequence WaveNet Option B
+  Expanded features per branch
+  Feature augmentation
+  Augmentation clip
+```
+
+Recommended command after the current full run finishes, only if owner wants the 180-channel experiment:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_180_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_180 `
+  --report-title "Option B Pivot Sequence WaveNet 180-channel training"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py -q
+→ 17 passed
+```
+
+Caution:
+
+```text
+This is an experiment. The existing overfit symptoms are not necessarily caused by too few input features. More channels may help representation, but may also overfit harder. Compare by validation/test PnL, not training accuracy.
+```
+
+## Phase147C Option B 180-channel input health audit completed — 2026-09-19
+
+Completed the owner-requested pre-training dataset/input health step for the Option B 180-channel experiment.
+
+Implemented:
+
+```text
+scripts/audit_pivot_pattern_sequence_option_b_inputs.py
+GUI: Audit pivot sequence Option B input health
+```
+
+Purpose:
+
+```text
+Before training, verify the exact training-time Option B expanded inputs:
+  m5_context_input  = [batch, 100, 180]
+  source_5m_input   = [batch, 100, 180]
+  htf_context_input = [batch, 100, 180]
+```
+
+The audit does not duplicate the dataset on disk. It:
+
+```text
+1. Loads the healthy source tensor [53098,100,140] as memmap.
+2. Rebuilds Option B groups from feature metadata.
+3. Selects the same sample universe as training.
+4. Reconstructs chronological train/validation/test split.
+5. Fits the same train-only scaler as training.
+6. Builds expanded 180-channel batches exactly like the trainer.
+7. Scans each branch for NaN/Inf and clip violations.
+8. Confirms the intended Keras input shapes.
+```
+
+Recommended health command before 180-channel training:
+
+```powershell
+python -u scripts\audit_pivot_pattern_sequence_option_b_inputs.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 0 `
+  --stream-chunk-size 512 `
+  --scan-chunk-size 256 `
+  --full-scan 1 `
+  --max-scan-samples 0 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_option_b_input_health
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_option_b_input_health\latest.json
+run_logs\pivot_pattern_sequence_option_b_input_health\latest.html
+```
+
+Only after `status=PASS` should the owner run the 180-channel training command.
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_pattern_sequence_option_b_inputs.py scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 64 passed
+```
+
+## Phase147C Option B 180-channel input health PASS — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_option_b_input_health\latest.json` after running the official Phase147C 180-channel Option B input audit.
+
+Audit input:
+
+```text
+stored_x_shape      : [53098, 100, 140]
+selected_x_shape    : [53098, 100, 140]
+branch_target       : 180
+augmentation_mode   : causal
+augmentation_clip   : 8.0
+```
+
+Chronological split rebuilt by the audit:
+
+```text
+train_rows      : 37168
+validation_rows : 7629
+test_rows       : 7629
+purge_gap       : 336
+```
+
+Raw branch counts:
+
+```text
+m5_context raw  : 35
+source_5m raw   : 83
+htf_context raw : 22
+```
+
+Expanded Keras inputs:
+
+```text
+m5_context_input  : [batch, 100, 180]
+source_5m_input   : [batch, 100, 180]
+htf_context_input : [batch, 100, 180]
+```
+
+Full expanded-input scan:
+
+```text
+m5_context_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -8.0 / 8.0 / 8.0
+  chunks          : 208
+
+source_5m_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -8.0 / 8.0 / 8.0
+  chunks          : 208
+
+htf_context_input:
+  scanned_cells   : 955,764,000
+  nonfinite_cells : 0
+  min/max/max_abs : -6.2252612114 / 8.0 / 8.0
+  chunks          : 208
+```
+
+Total scanned expanded cells:
+
+```text
+2,867,292,000
+```
+
+Targets over selected samples:
+
+```text
+SELL : 5,384
+HOLD : 43,252
+BUY  : 4,462
+```
+
+Result:
+
+```text
+status   : PASS
+warnings : []
+errors   : []
+```
+
+Decision:
+
+```text
+The actual 180-channel Option B training-time inputs are accepted as healthy.
+The owner can proceed with full-dataset 180-channel Option B training.
+This remains research-only; no production/paper/live permission.
+```
+
+## Phase147C Option B 180-channel full-dataset training result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_full\latest.json` for the full-dataset 180-channel Option B training run.
+
+Training configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_180_5m
+version           : 1
+tensor            : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy
+meta              : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+stored_x_shape    : [53098, 100, 140]
+keras inputs:
+  m5_context_input  : [batch, 100, 180]
+  source_5m_input   : [batch, 100, 180]
+  htf_context_input : [batch, 100, 180]
+samples           : 53098
+train_rows        : 37168
+validation_rows   : 7629
+test_rows         : 7629
+branch_target_features      : 180
+feature_augmentation_mode   : causal
+feature_augmentation_clip   : 8.0
+nonfinite_input_values      : 0
+```
+
+Metrics:
+
+```text
+val_action_accuracy : 0.5585266745
+val_top_ap          : 0.2717308013
+val_bottom_ap       : 0.2202253973
+val_buy_r_mae       : 0.6357029080
+val_sell_r_mae      : 0.6304646134
+val_selected_rate   : 0.4700484991
+
+test_action_accuracy : 0.5168436230
+test_top_ap          : 0.2486227103
+test_bottom_ap       : 0.2121224816
+test_buy_r_mae       : 0.7210720181
+test_sell_r_mae      : 0.7024750710
+test_selected_rate   : 0.4856468738
+```
+
+Comparison to the 24k raw-branch Option B run:
+
+```text
+Option B raw branches [24000,100,140]
+  test_action_accuracy : 0.6544
+  test_top_ap          : 0.2637
+  test_bottom_ap       : 0.2550
+  test_selected_rate   : 0.3134
+  PnL/PF               : +1.8765%, PF=1.0377
+
+Option B 180-channel full universe [53098,100,140 → grouped 180]
+  test_action_accuracy : 0.5168
+  test_top_ap          : 0.2486
+  test_bottom_ap       : 0.2121
+  test_selected_rate   : 0.4856
+  PnL/PF               : not run yet
+```
+
+Interpretation:
+
+```text
+- The 180-channel input health was PASS, so this is not a NaN/Inf problem.
+- The 180-channel causal augmentation did not improve diagnostic metrics in this full-universe run.
+- test_selected_rate rose to ~48.6%, suggesting the model became more aggressive.
+- Action accuracy and bottom AP are materially worse than the 24k raw-branch Option B run.
+- This supports the earlier caution: more channels/features do not automatically reduce overfit; they can add noisy degrees of freedom.
+```
+
+Decision:
+
+```text
+Do not promote the 180-channel full-dataset model based on current classifier/AP diagnostics.
+Keep the raw-branch Option B 24k model as the current preliminary PnL/PF winner until a better full-dataset run proves otherwise.
+If testing this 180 model further, run range-aware archive/backtest only as a diagnostic, not as a preferred candidate.
+Next recommended route: train raw-branch Option B full dataset or proceed with Step 4 archive on the current best Option B model, then Step 5 anti-overfit filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149A sequence feature impact audit implemented — 2026-09-19
+
+Implemented validation-only feature/group ablation diagnostics to answer which raw sequence features are useful, neutral, or drop candidates.
+
+Implemented:
+
+```text
+scripts/audit_pivot_sequence_feature_impact.py
+GUI: Audit pivot sequence feature impact
+```
+
+Method:
+
+```text
+- Load trained Option A or Option B sequence WaveNet.
+- Evaluate a chronological split, default validation.
+- Compute baseline metrics.
+- Zero-ablate groups/features at inference time.
+- Compute metric deltas and composite score deltas.
+- Mark features as KEEP_IMPORTANT / NEUTRAL / DROP_CANDIDATE.
+```
+
+Composite score:
+
+```text
+composite = action_accuracy + 0.5*top_ap + 0.5*bottom_ap - 0.25*buy_r_mae - 0.25*sell_r_mae
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_feature_impact\latest.json
+run_logs\pivot_sequence_feature_impact\latest.html
+run_logs\pivot_sequence_feature_impact\latest_features.csv
+run_logs\pivot_sequence_feature_impact\latest_groups.csv
+```
+
+Recommended command:
+
+```powershell
+python -u scripts\audit_pivot_sequence_feature_impact.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split validation `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 1500 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --check-groups 1 `
+  --check-features 1 `
+  --feature-group-filter all `
+  --max-features-to-check 0 `
+  --harmful-threshold 0.005 `
+  --useful-threshold 0.005 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_sequence_feature_impact `
+  --report-title "Phase149A sequence feature impact audit"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_sequence_feature_impact.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_feature_impact.py tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 68 passed
+```
+
+Anti-overfit rule:
+
+```text
+Use validation for discovery. Do not drop based on final test only.
+Retrain/confirm on test and later walk-forward before adopting filters.
+```
+
+## Phase149A feature impact result — 2026-09-19
+
+The owner supplied `run_logs\pivot_sequence_feature_impact\latest.json` for the validation-only feature/group ablation audit.
+
+Audit target/model:
+
+```text
+model_id        : gold_pivot_pattern_sequence_wavenet_option_b_180_5m
+model_version   : 1
+eval_split      : validation
+max_samples     : 24000
+max_windows     : 1500
+evaluated period: 2026-05-28 09:20:00+00:00 → 2026-06-29 10:35:00+00:00
+option_b_model  : true
+branch_target_features : 180
+augmentation    : causal, clip=8
+```
+
+Baseline validation metrics on the audit subset:
+
+```text
+action_accuracy : 0.6466666667
+top_ap          : 0.6543383331
+bottom_ap       : 0.4293868145
+buy_r_mae       : 0.5251473784
+sell_r_mae      : 0.5323911309
+selected_rate   : 0.4813333333
+composite       : 0.9241446131
+```
+
+Group ablation result:
+
+```text
+KEEP_IMPORTANT:
+- generated_5m   Δcomposite=-0.39947
+- source_5m      Δcomposite=-0.45480
+- session        Δcomposite=-0.04034
+- closed_1d      Δcomposite=-0.04649
+- m5_context     Δcomposite=-0.42006
+- htf_context    Δcomposite=-0.01588
+- all_features   Δcomposite=-1.16648
+
+DROP_CANDIDATE:
+- closed_4h      Δcomposite=+0.02278
+```
+
+Feature-level summary:
+
+```text
+feature_count       : 140
+checked_feature_count : 140
+DROP_CANDIDATE      : 26
+KEEP_IMPORTANT      : 31
+NEUTRAL             : 83
+```
+
+Strongest DROP_CANDIDATE examples from validation-only ablation:
+
+```text
+src5m_rolling_12_trades_timeout_rate_lag
+m5_pos_in_range_48
+src5m_specialist_max_prob
+src5m_rolling_12_trades_profit_factor_lag
+src5m_rolling_48_trades_profit_factor_lag
+src5m_rolling_48_trades_timeout_rate_lag
+m5_pos_in_range_96
+src5m_rolling_24_trades_avg_pnl_lag
+m5_mid_slow_dist_atr
+d1_ret3
+src5m_lagged_trade_count
+h4_ret3
+h4_rsi14
+src5m_last_closed_trade_pnl_lag
+src5m_rolling_12_trades_avg_pnl_lag
+m5_fast_mid_dist_atr
+m5_dist_low_48_atr
+src5m_range_1d_up_room_pct
+src5m_range_1d_down_room_pct
+m5_ret48
+m5_pos_in_range_24
+h4_room_down_atr
+src5m_5m_body_pct
+h4_close_mid_dist_atr
+m5_ret24
+src5m_rolling_48_trades_avg_pnl_lag
+```
+
+Strongest KEEP_IMPORTANT examples:
+
+```text
+src5m_rolling_24_trades_profit_factor_lag
+src5m_specialist_buy_minus_sell
+src5m_booster_buy_prob
+src5m_specialist_sell_minus_buy
+src5m_buy_specialist_prob
+src5m_booster_sell_prob
+session_dow_sin
+session_hour_cos
+src5m_sell_specialist_prob
+d1_mid_slow_dist_atr
+d1_room_down_atr
+m5_ema_fast
+m5_atr
+m5_dist_high_48_atr
+m5_ema_slow
+m5_volatility_24
+src5m_4h_last_closed_age_5m
+m5_dist_low_24_atr
+h4_range_pct
+d1_fast_mid_dist_atr
+d1_close_mid_dist_atr
+src5m_session_hour_cos
+m5_dist_high_96_atr
+src5m_1d_return_1
+src5m_booster_action_margin
+session_dow_cos
+m5_ret1
+m5_upper_wick_pct
+src5m_session_dow_cos
+m5_ema_mid
+src5m_1d_body_pct
+```
+
+Interpretation:
+
+```text
+- source_5m and generated_5m are strongly important as groups.
+- session/time is useful despite only four raw columns.
+- closed_1d is useful.
+- closed_4h as a group is suspicious in this 180-channel model and should become a controlled ablation candidate.
+- Individual DROP_CANDIDATE labels are not delete commands; they are validation-discovered hypotheses.
+```
+
+Anti-overfit rule:
+
+```text
+Do not delete features solely from this audit.
+Use this result to define controlled pruning experiments, then retrain and confirm on test/walk-forward.
+```
+
+Recommended controlled pruning experiments:
+
+```text
+P0 baseline: current raw-branch Option B winner
+P1 remove closed_4h group only
+P2 remove top 10 validation DROP_CANDIDATE features
+P3 remove all 26 validation DROP_CANDIDATE features
+P4 remove closed_4h + top 10 DROP_CANDIDATE features
+```
+
+## Phase149B pruned-feature training support — 2026-09-19
+
+After the Phase149A validation feature-impact result, training and prediction loaders were extended to support controlled feature-zeroing experiments.
+
+Implemented in:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+```
+
+New trainer flags:
+
+```text
+--zero-feature-names "name1,name2,..."
+--zero-feature-file configs/phase149a_option_b_180_validation_drop_candidates.txt
+--zero-feature-groups "closed_4h"
+```
+
+Tracked drop-list file:
+
+```text
+configs/phase149a_option_b_180_validation_drop_candidates.txt
+```
+
+It contains the 26 validation-discovered DROP_CANDIDATE features from Phase149A.
+
+Behavior:
+
+```text
+The original tensor is not rewritten.
+Selected features are zeroed after train-only normalization and before Option B grouping/causal augmentation.
+Model records store the feature_selection payload.
+Backtest/range archive loaders apply the same zero mask at prediction time.
+```
+
+Recommended controlled experiment command:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --branch-target-features 180 `
+  --feature-augmentation-mode causal `
+  --feature-augmentation-clip 8 `
+  --zero-feature-file configs\phase149a_option_b_180_validation_drop_candidates.txt `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 25 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned `
+  --report-title "Option B 180 pruned validation-drop-candidate training"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/audit_pivot_sequence_feature_impact.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_feature_impact.py tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_input_health.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 69 passed
+```
+
+Anti-overfit reminder:
+
+```text
+This model is a controlled experiment using validation-discovered drop candidates.
+If it improves validation, confirm with test PnL and then walk-forward before adopting.
+```
+
+## Phase149B pruned 180-channel training result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned\latest.json` and late batch/epoch logs for the controlled pruned 180-channel Option B experiment.
+
+Training configuration:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m
+version               : 1
+stored_x_shape        : [24000, 100, 140]
+keras inputs          : [batch,100,180] × 3 branches
+max_samples           : 24000
+branch_target_features: 180
+augmentation          : causal, clip=8
+zero_feature_file     : configs\phase149a_option_b_180_validation_drop_candidates.txt
+zeroed_feature_count  : 26
+epochs                : 200
+early_stopping_patience: 200
+nonfinite_input_values: 0
+```
+
+Zeroed validation-discovered DROP_CANDIDATE features included:
+
+```text
+m5_fast_mid_dist_atr
+m5_mid_slow_dist_atr
+m5_pos_in_range_24
+m5_pos_in_range_48
+m5_dist_low_48_atr
+m5_pos_in_range_96
+m5_ret24
+m5_ret48
+h4_ret3
+h4_close_mid_dist_atr
+h4_rsi14
+h4_room_down_atr
+d1_ret3
+src5m_5m_body_pct
+src5m_specialist_max_prob
+src5m_range_1d_up_room_pct
+src5m_range_1d_down_room_pct
+src5m_lagged_trade_count
+src5m_last_closed_trade_pnl_lag
+src5m_rolling_12_trades_avg_pnl_lag
+src5m_rolling_12_trades_profit_factor_lag
+src5m_rolling_12_trades_timeout_rate_lag
+src5m_rolling_24_trades_avg_pnl_lag
+src5m_rolling_48_trades_avg_pnl_lag
+src5m_rolling_48_trades_profit_factor_lag
+src5m_rolling_48_trades_timeout_rate_lag
+```
+
+Final report metrics:
+
+```text
+val_action_accuracy : 0.6875000000
+val_top_ap          : 0.3458503914
+val_bottom_ap       : 0.2774233380
+val_buy_r_mae       : 0.6454545856
+val_sell_r_mae      : 0.6455140710
+val_selected_rate   : 0.3026960784
+
+test_action_accuracy : 0.6611519608
+test_top_ap          : 0.2793102151
+test_bottom_ap       : 0.2795754914
+test_buy_r_mae       : 0.7160413861
+test_sell_r_mae      : 0.7160999179
+test_selected_rate   : 0.3060661765
+```
+
+Late training log showed strong train/validation divergence:
+
+```text
+epoch 198 train_acc≈0.9917, val_loss≈3.0868
+epoch 199 train_acc≈0.9933, val_loss≈2.7145
+epoch 200 train_acc≈0.9945, val_loss≈2.9824
+```
+
+Interpretation:
+
+```text
+- The model heavily overfit by late epochs.
+- The final report metrics are still useful only if restored/best validation weights were used; in any case, the late logs confirm that patience=200 is too large for future runs.
+- Despite overfit risk, the pruned 180-channel model improved test diagnostics versus raw Option B on this 24k benchmark.
+```
+
+Comparison to raw Option B 24k:
+
+```text
+Raw Option B:
+  test_action_accuracy : 0.6544
+  test_top_ap          : 0.2637
+  test_bottom_ap       : 0.2550
+  test_buy/sell_r_mae  : ~0.820 / ~0.820
+  test_selected_rate   : 0.3134
+  PnL/PF               : +1.8765%, PF=1.0377
+
+Pruned 180 Option B:
+  test_action_accuracy : 0.6612
+  test_top_ap          : 0.2793
+  test_bottom_ap       : 0.2796
+  test_buy/sell_r_mae  : ~0.716 / ~0.716
+  test_selected_rate   : 0.3061
+  PnL/PF               : pending
+```
+
+Decision:
+
+```text
+The pruned 180-channel model is now the strongest classifier/ranking diagnostic among the 24k sequence models.
+It must not be promoted until PnL audit and range-aware archive confirm it.
+Next action: run fair Phase146A ATR PnL audit for gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m, then Phase148A range-aware archive if promising.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149B pruned 180 PnL audit failure — 2026-09-20
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_option_b_180_pruned_backtest\latest.json` for the ATR-based PnL audit of the pruned 180-channel Option B model.
+
+Backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m
+model_version     : 1
+eval_split        : test
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy/sell threshold: 0.34 / 0.34
+min_margin        : 0
+tp/sl multiplier  : 0.75 / 0.75
+hold_bars         : 48
+spread            : pct 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Result:
+
+```text
+trades             : 120
+BUY / SELL trades  : 41 / 79
+wins / losses      : 57 / 63
+win_rate           : 47.50%
+final_balance      : 91.6591309299
+return_percent     : -8.3408690701%
+total_cash_pnl     : -8.3408690701
+gross_profit       : 36.3334344612
+gross_loss         : 44.6743035313
+profit_factor      : 0.8132960469
+max_drawdown_cash  : 10.2459750447
+take_profit        : 26
+stop_loss          : 38
+timeout            : 56
+```
+
+Side breakdown:
+
+```text
+BUY cash PnL  : +0.1146579499
+SELL cash PnL : -8.4555270200
+```
+
+Monthly result:
+
+```text
+2026-07 : -5.3828214745 / 99 trades
+2026-08 : -2.9580475956 / 21 trades
+positive_months : 0
+negative_months : 2
+```
+
+Comparison to raw Option B 24k benchmark:
+
+```text
+Raw Option B:
+  final_balance : 101.8764768367
+  return        : +1.8765%
+  PF            : 1.0377
+  maxDD         : 7.7910
+  BUY PnL       : +1.9372
+  SELL PnL      : -0.0608
+  months        : July +4.1184, August -2.2419
+
+Pruned 180 Option B:
+  final_balance : 91.6591309299
+  return        : -8.3409%
+  PF            : 0.8133
+  maxDD         : 10.2460
+  BUY PnL       : +0.1147
+  SELL PnL      : -8.4555
+  months        : July -5.3828, August -2.9580
+```
+
+Interpretation:
+
+```text
+- The pruned 180-channel model improved classifier/ranking diagnostics but failed trading replay badly.
+- The validation-discovered DROP_CANDIDATE pruning did not transfer to PnL.
+- SELL side became the dominant damage source again.
+- Both evaluated months are negative.
+- This confirms the anti-overfit warning: feature ablation improvements on validation classification metrics are not sufficient for trade profitability.
+```
+
+Decision:
+
+```text
+Reject gold_pivot_pattern_sequence_wavenet_option_b_180_pruned_5m as a trading candidate.
+Do not continue range-aware archive or full training for this pruned 180 model.
+Current best research candidate reverts to raw Option B 24k: gold_pivot_pattern_sequence_wavenet_option_b_5m.
+Next steps should focus on raw Option B range-aware archive and/or validation-based TP/SL/side-specific filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+
+
+## Latest execution result — raw Option B full-dataset rebuild failed PnL — 2026-09-20
+
+The owner retrained raw Option B on the full tensor because the earlier current-best 24k model artifact had been deleted.
+
+Dataset/feature health for this run is OK:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_full_5m
+stored_x_shape        : [53098, 100, 140]
+samples               : 53098
+train/validation/test : 37168 / 7629 / 7629
+Option B groups       : 35 / 83 / 22
+source_5m_features    : 83
+branch_target_features: 0
+augmentation          : off
+zeroed_features       : 0
+nonfinite_input_values: 0
+```
+
+Training diagnostics:
+
+```text
+val_action_accuracy  : 0.6051907196
+test_action_accuracy : 0.5586577533
+test_top_ap          : 0.2518729500
+test_bottom_ap       : 0.2330887866
+test_selected_rate   : 0.4570717001
+```
+
+ATR PnL check:
+
+```text
+evaluated period  : 2026-07-24 14:05:00+00:00 → 2026-09-02 10:25:00+00:00
+trades            : 174
+buy/sell          : 93 / 81
+wins/losses       : 86 / 88
+final_balance     : 96.1853978886
+return_percent    : -3.8146021114%
+profit_factor     : 0.9402022118
+max_drawdown_cash : 15.1989241036
+BUY PnL           : +1.0795518044
+SELL PnL          : -4.8941539158
+monthly           : 2026-07 +4.9827, 2026-08 -9.2147, 2026-09 +0.4173
+```
+
+Decision:
+
+```text
+The dataset/features are structurally healthy; this is not a NaN/Inf or tensor-shape failure.
+The full-dataset raw Option B model is rejected as a trading candidate because PnL is negative and drawdown is larger than prior 24k raw Option B.
+Current research status remains diagnostic-only. To continue Step 4 archive work, rebuild the 24k raw Option B model or run range-aware archive only as a diagnostic on the full model.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase149B/147D PowerShell empty zero-feature flag fix — 2026-09-20
+
+The owner reran raw Option B 24k rebuild with explicit empty zero-feature flags:
+
+```text
+--zero-feature-names ""
+--zero-feature-file ""
+--zero-feature-groups ""
+```
+
+PowerShell/native argv handling dropped the empty strings, so argparse saw `--zero-feature-names` without a value and failed:
+
+```text
+train_pivot_pattern_sequence_wavenet_option_b.py: error: argument --zero-feature-names: expected one argument
+```
+
+Fix implemented in:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+```
+
+The three optional zero-feature flags now use:
+
+```text
+nargs="?"
+const=""
+default=""
+```
+
+Safe forms now include both:
+
+```powershell
+# recommended for no pruning: omit these flags entirely
+
+# also accepted now if a shell drops the empty value
+--zero-feature-names
+--zero-feature-file
+--zero-feature-groups
+```
+
+Immediate operator workaround on older checkouts:
+
+```text
+Remove the three empty zero-feature lines from the raw Option B rebuild command.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py -q
+→ 4 passed
+```
+
+## Phase147E raw Option B 24k rebuild result — previous weak-positive result did not reproduce — 2026-09-20
+
+The owner rebuilt the raw Option B 24k model after the earlier historical current-best artifact had been deleted.
+
+Training configuration:
+
+```text
+model_id              : gold_pivot_pattern_sequence_wavenet_option_b_5m
+version               : 1
+max_samples           : 24000
+stored_x_shape        : [24000, 100, 140]
+keras inputs          : [batch,100,35] / [batch,100,83] / [batch,100,22]
+branch_target_features: 0
+augmentation          : off
+zeroed_feature_count  : 0
+nonfinite_input_values: 0
+```
+
+Training diagnostics:
+
+```text
+val_action_accuracy  : 0.6875000000
+val_top_ap           : 0.4298344451
+val_bottom_ap        : 0.3018743404
+val_buy_r_mae        : 0.6229432821
+val_sell_r_mae       : 0.6397787333
+val_selected_rate    : 0.3452818627
+
+test_action_accuracy : 0.6151960784
+test_top_ap          : 0.2843775626
+test_bottom_ap       : 0.3673007788
+test_buy_r_mae       : 0.6919192076
+test_sell_r_mae      : 0.6780540347
+test_selected_rate   : 0.4056372549
+```
+
+ATR PnL check:
+
+```text
+eval_split        : test
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+trades            : 135
+BUY / SELL trades : 46 / 89
+wins / losses     : 60 / 75
+win_rate          : 44.4444%
+final_balance     : 90.7052413035
+return_percent    : -9.2947586965%
+total_cash_pnl    : -9.2947586965
+profit_factor     : 0.8270058072
+max_drawdown_cash : 10.7624722054
+take_profit       : 34
+stop_loss         : 46
+timeout           : 55
+BUY PnL           : -5.3900375011
+SELL PnL          : -3.9047211954
+monthly           : 2026-07 -3.6628516601, 2026-08 -5.6319070363
+positive_months   : 0
+negative_months   : 2
+```
+
+Comparison with the deleted historical raw Option B 24k benchmark:
+
+```text
+Historical raw B 24k:
+  test_action_accuracy : 0.6544
+  test_selected_rate   : 0.3134
+  final_balance        : 101.8765
+  return               : +1.8765%
+  PF                   : 1.0377
+  maxDD                : 7.7910
+  BUY PnL              : +1.9372
+  SELL PnL             : -0.0608
+
+Rebuilt raw B 24k:
+  test_action_accuracy : 0.6152
+  test_selected_rate   : 0.4056
+  final_balance        : 90.7052
+  return               : -9.2948%
+  PF                   : 0.8270
+  maxDD                : 10.7625
+  BUY PnL              : -5.3900
+  SELL PnL             : -3.9047
+```
+
+Interpretation:
+
+```text
+The dataset/features are still healthy. This is not a tensor-shape or NaN/Inf issue.
+The old weak-positive Option B artifact was not reproducible after deletion and retraining.
+The new run selected a different local solution: lower action accuracy, higher selected_rate, and materially worse trade timing.
+Both BUY and SELL are negative, and both evaluated months are negative.
+```
+
+Important root cause / correction:
+
+```text
+The Option B trainer did not previously expose a run seed. The batch Sequence shuffle used a fixed RNG, but TensorFlow/Keras initialization, dropout, and some backend operations were not under an explicit recorded seed.
+Deleting the old model artifact made exact recovery impossible.
+```
+
+Fix implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+--random-seed 20260919
+```
+
+The trainer now calls Python/NumPy/TensorFlow seed setters before model creation and records the seed in the training record/report. The GUI command `Train pivot sequence WaveNet Option B` now has a `Random seed` field and forwards `--random-seed`.
+
+Caution:
+
+```text
+A seed improves controlled reruns but does not guarantee byte-identical output across every GPU/TF backend. It also cannot recover the deleted old artifact.
+```
+
+Decision:
+
+```text
+Reject this rebuilt raw Option B 24k model as a trading candidate.
+Do not run Phase148A range-aware archive on this rebuilt v1 as if it were the old winner.
+The previous weak-positive raw Option B result is now treated as fragile/non-reproducible until a seeded validation/test process can reproduce it.
+Next valid research step is not blind retraining; it is a controlled repeatability/seed audit selected on validation and confirmed on test.
+No Phase134. No paper shadow. No live trading.
+```
+
+Verification for reproducibility-seed support:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/handlers.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 43 passed
+```
+
+## Phase147F raw Option B 24k rebuild validation-vs-test transfer failure — 2026-09-20
+
+The owner ran the validation ATR PnL check for the rebuilt raw Option B 24k model after its test PnL failed.
+
+Validation replay configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_option_b_5m
+model_version     : 1
+eval_split        : validation
+selected_samples  : 24000
+evaluated_samples : 3264
+evaluated period  : 2026-05-28 09:20:00+00:00 → 2026-07-01 09:05:00+00:00
+buy/sell threshold: 0.34 / 0.34
+min_margin        : 0
+tp/sl multiplier  : 0.75 / 0.75
+hold_bars         : 48
+spread            : pct 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Validation result:
+
+```text
+trades             : 110
+BUY / SELL trades  : 70 / 40
+wins / losses      : 62 / 48
+win_rate           : 56.3636%
+final_balance      : 108.7914207603
+return_percent     : +8.7914207603%
+total_cash_pnl     : +8.7914207603
+gross_profit       : 43.2124907078
+gross_loss         : 34.4210699475
+profit_factor      : 1.2554081199
+max_drawdown_cash  : 5.9715931205
+take_profit        : 33
+stop_loss          : 25
+timeout            : 52
+BUY PnL            : -1.8550476298
+SELL PnL           : +10.6464683900
+monthly            : 2026-05 +1.1865238507, 2026-06 +7.6048969096
+positive_months    : 2
+negative_months    : 0
+```
+
+Same rebuilt model on test:
+
+```text
+trades             : 135
+final_balance      : 90.7052413035
+return_percent     : -9.2947586965%
+profit_factor      : 0.8270058072
+max_drawdown_cash  : 10.7624722054
+BUY PnL            : -5.3900375011
+SELL PnL           : -3.9047211954
+monthly            : 2026-07 -3.6628516601, 2026-08 -5.6319070363
+positive_months    : 0
+negative_months    : 2
+```
+
+Interpretation:
+
+```text
+This is a clear validation-to-test transfer failure.
+The model has strong validation PnL, but that edge is almost entirely SELL-side and does not survive the later test regime.
+Validation: BUY is negative, SELL is strongly positive.
+Test: both BUY and SELL are negative.
+```
+
+Decision:
+
+```text
+Do not promote the rebuilt raw Option B 24k model.
+Do not run Step 4/range-aware archive on this model as if it is the historical winner.
+The correct next phase is a controlled anti-overfit validation-to-test audit: discover only on validation, confirm on test, and later walk-forward.
+No Phase134. No paper shadow. No live trading.
+```
+
+Recommended next research phase:
+
+```text
+Phase150A — Option B validation-to-test transfer / seed-threshold audit
+```
+
+Required anti-overfit rules for Phase150A:
+
+```text
+- validation is for discovery only
+- test is confirmation only
+- no threshold/filter chosen from test
+- if validation-selected candidate fails test, reject it
+- if test passes, still require walk-forward before paper/live
+```
+
+## Phase148B range-aware archive now supports train/validation splits — 2026-09-20
+
+The owner proposed the correct next direction after the raw Option B rebuild showed validation-to-test transfer failure:
+
+```text
+Build/run a more realistic simulation backtest where TP and SL are derived from range forecasts.
+Run it fully on train and validation first.
+Then perform anti-overfit filtering/selection from those archive outputs before any test confirmation.
+```
+
+Assessment:
+
+```text
+This is the correct direction. The previous ATR-only PnL checks may be too crude for exit geometry, and test must be held back for confirmation rather than used for discovery.
+```
+
+Implementation update:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+GUI: Backtest pivot sequence WaveNet PnL
+GUI: Backtest sequence WaveNet range-aware archive
+```
+
+Both backtest scripts now support:
+
+```text
+--eval-split train
+```
+
+Previously Phase148A range-aware archive supported only:
+
+```text
+test, validation, all, tail
+```
+
+Now the realistic range-aware archive can be generated separately for:
+
+```text
+train      → in-sample anatomy / diagnostics only
+validation → discovery / filter selection
+test       → confirmation only, not tuning
+```
+
+Anti-overfit rule:
+
+```text
+Do not use test for discovery.
+Run train + validation range-aware archives first.
+Discover candidate thresholds/filters from train/validation only.
+Then run exactly one unchanged confirmation on test.
+If test fails, reject.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/handlers.py
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase148C range-aware train/validation archive result — range-model TP/SL failed badly — 2026-09-20
+
+The owner ran the Phase148B range-aware archive on the rebuilt raw Option B 24k model using range-derived TP/SL from range models.
+
+Common configuration:
+
+```text
+model_id            : gold_pivot_pattern_sequence_wavenet_option_b_5m
+model_version       : 1
+max_samples         : 24000
+range_source        : auto → models
+range_bracket_mode  : range_capped
+range_fallback      : skip
+range_1d_model_id   : gold_range_1d
+range_4h_model_id   : gold_range_4h
+use_1d_tp_cap       : 1
+max_tp_atr          : 2.0
+max_sl_atr          : 1.25
+min_tp_distance     : 0.5
+min_sl_distance     : 0.5
+hold_bars           : 48
+spread              : pct 0.06
+same_bar_policy     : stop_first
+```
+
+Train archive result:
+
+```text
+eval_split        : train
+evaluated period  : 2025-11-28 17:05:00+00:00 → 2026-05-25 19:15:00+00:00
+evaluated_samples : 16800
+trades            : 1176
+BUY / SELL        : 547 / 629
+wins / losses     : 392 / 784
+win_rate          : 33.3333%
+final_balance     : 6.5162807311
+return_percent    : -93.4837192689%
+total_cash_pnl    : -93.4837192689
+profit_factor     : 0.6073804291
+max_drawdown_cash : 93.5008911264
+take_profit       : 356
+stop_loss         : 769
+timeout           : 51
+invalid_bracket   : 1410
+BUY PnL           : -28.2722708191
+SELL PnL          : -65.2114484498
+positive_months   : 0
+negative_months   : 7
+```
+
+Train monthly summary:
+
+```text
+2025-11 :  -4.9010 / 5 trades
+2025-12 : -45.9841 / 233 trades
+2026-01 : -24.8121 / 215 trades
+2026-02 :  -2.3687 / 167 trades
+2026-03 :  -1.3067 / 176 trades
+2026-04 :  -9.3004 / 215 trades
+2026-05 :  -4.8107 / 165 trades
+```
+
+Validation archive result:
+
+```text
+eval_split        : validation
+evaluated period  : 2026-05-28 09:20:00+00:00 → 2026-07-01 09:05:00+00:00
+evaluated_samples : 3264
+trades            : 250
+BUY / SELL        : 151 / 99
+wins / losses     : 53 / 197
+win_rate          : 21.2000%
+final_balance     : 27.1922217861
+return_percent    : -72.8077782139%
+total_cash_pnl    : -72.8077782139
+profit_factor     : 0.3114226665
+max_drawdown_cash : 76.6329350539
+take_profit       : 49
+stop_loss         : 194
+timeout           : 7
+invalid_bracket   : 392
+BUY PnL           : -50.9467117142
+SELL PnL          : -21.8610664997
+positive_months   : 0
+negative_months   : 2
+```
+
+Validation monthly summary:
+
+```text
+2026-05 :  -5.5864 / 16 trades
+2026-06 : -67.2213 / 234 trades
+```
+
+Comparison to ATR validation for the same rebuilt model:
+
+```text
+ATR validation:
+  final_balance : 108.7914
+  PF            : 1.2554
+  maxDD         : 5.9716
+  BUY PnL       : -1.8550
+  SELL PnL      : +10.6465
+
+Range-aware validation:
+  final_balance : 27.1922
+  PF            : 0.3114
+  maxDD         : 76.6329
+  BUY PnL       : -50.9467
+  SELL PnL      : -21.8611
+```
+
+Interpretation:
+
+```text
+The owner’s proposed workflow was correct: build/run realistic range-aware TP/SL archive before filtering.
+The result shows the current range-model TP/SL geometry is unusable with this sequence model.
+This is not a model-entry improvement; it is a bracket failure.
+```
+
+Key failure signatures:
+
+```text
+- range_source resolved to models, not flat cached range columns.
+- Train and validation both collapse, so this is not only out-of-time overfit.
+- Stop-loss rate is extremely high: train 769/1176, validation 194/250.
+- Timeouts nearly disappear under range brackets, meaning trades are being resolved by TP/SL quickly, mostly by SL.
+- Many invalid brackets occur: train 1410, validation 392.
+- BUY and SELL are both negative under range-aware validation.
+- Many preview trades show very tight stop distances, sometimes near min_sl_distance=0.5, combined with fixed risk sizing and stop_first same-bar policy.
+```
+
+Decision:
+
+```text
+Reject current Phase148 range-model TP/SL configuration as a viable simulation rule.
+Do not use these range-aware train/validation archives for strategy filter selection yet; their base bracket geometry fails before filtering.
+Do not run test range-aware confirmation for this configuration.
+The next research should be bracket diagnostics/calibration, not signal filtering.
+No Phase134. No paper shadow. No live trading.
+```
+
+Recommended next phase:
+
+```text
+Phase150A — Range bracket geometry audit for pivot sequence archive
+```
+
+Recommended controls for Phase150A:
+
+```text
+1. ATR mode control inside the same archive script:
+   --range-bracket-mode atr
+   This should roughly reproduce the ATR baseline and proves the archive/prediction path is not the source of damage.
+
+2. Range model diagnostics:
+   distribution of tp_distance/sl_distance, min-distance hits, same-bar stop rate, invalid bracket rate, side/month breakdown.
+
+3. Validation-only bracket grid:
+   min_sl_distance: 0.5, 2, 5, 10, 15
+   min_tp_distance: 0.5, 2, 5
+   max_tp_atr/max_sl_atr alternatives
+   use_1d_tp_cap 0/1
+   range_fallback skip/atr
+   same_bar_policy stop_first/tp_first as sensitivity only
+
+4. Test remains untouched until a validation-selected bracket policy exists.
+```
+
+## Phase150A range bracket geometry audit implemented — 2026-09-20
+
+Implemented the next diagnostic phase after Phase148C showed catastrophic range-model TP/SL results on train and validation.
+
+Implemented:
+
+```text
+scripts/audit_pivot_sequence_range_bracket_geometry.py
+GUI: Audit sequence range bracket geometry
+```
+
+Purpose:
+
+```text
+Replay already-archived Phase148 predictions under alternative bracket policies without retraining and without changing model predictions.
+```
+
+This phase includes an ATR-control policy inside the same archive replay path:
+
+```text
+range_bracket_mode=atr
+```
+
+and range policies over:
+
+```text
+range_bracket_modes
+range_fallbacks
+use_1d_tp_cap
+min_tp_distance
+min_sl_distance
+max_tp_atr
+max_sl_atr
+same_bar_policy
+allowed_sides
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_range_bracket_geometry\latest.json
+run_logs\pivot_sequence_range_bracket_geometry\latest.html
+run_logs\pivot_sequence_range_bracket_geometry\latest_grid.csv
+run_logs\pivot_sequence_range_bracket_geometry\latest_best_trades.csv
+```
+
+Anti-overfit rule:
+
+```text
+Run on validation first.
+Select bracket policy only from validation.
+Test remains confirmation-only.
+No paper/live/Phase134.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_sequence_range_bracket_geometry.py scripts/backtest_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_range_bracket_geometry.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+## Phase150A range bracket geometry audit result — ATR control wins, range adds no edge — 2026-09-20
+
+The owner ran Phase150A on the validation Phase148 prediction archive.
+
+Input:
+
+```text
+predictions_path : run_logs\pivot_pattern_sequence_wavenet_range_archive_validation\latest_predictions.parquet
+flat_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet
+split_name       : validation
+evaluated_rows   : 3264
+policies         : 735
+score_metric     : drawdown_adjusted
+min_trades       : 30
+```
+
+Best policy:
+
+```text
+policy_key        : mode=atr|fallback=skip|use1d=0|min_tp=0.5|min_sl=0.5|max_tp_atr=0|max_sl_atr=0|min4h=0|min1d=0|same=stop_first
+range_bracket_mode: atr
+trades            : 110
+BUY / SELL        : 70 / 40
+wins / losses     : 62 / 48
+win_rate          : 56.3636%
+final_balance     : 108.7914207603
+return_percent    : +8.7914207603%
+total_cash_pnl    : +8.7914207603
+profit_factor     : 1.2554081199
+max_drawdown_cash : 5.9715931205
+BUY PnL           : -1.8550476298
+SELL PnL          : +10.6464683900
+positive_months   : 2
+negative_months   : 0
+pass_gate         : 1
+```
+
+Baseline ATR policy is identical to the best policy:
+
+```text
+baseline_atr_policy.rank = 1
+baseline_atr_policy.PF   = 1.2554081199
+```
+
+Top-15 policies were all ATR variants. The `min_tp_distance` / `min_sl_distance` values did not change the ATR result because actual ATR distances were already larger than those minima:
+
+```text
+avg_tp_distance    : 31.0171
+avg_sl_distance    : 31.0171
+median_tp_distance : 31.6098
+median_sl_distance : 31.6098
+min_sl_hits        : 0
+min_tp_hits        : 0
+```
+
+Best non-ATR range-enhanced policy in top list:
+
+```text
+policy_key        : mode=range_capped|fallback=atr|use1d=0|min_tp=0.5|min_sl=15|max_tp_atr=2|max_sl_atr=1.25|min4h=0|min1d=0|same=stop_first
+rank              : 16
+trades            : 124
+BUY / SELL        : 77 / 47
+wins / losses     : 66 / 58
+final_balance     : 106.7674592914
+return_percent    : +6.7674592914%
+profit_factor     : 1.1439634226
+max_drawdown_cash : 9.7927443251
+BUY PnL           : -5.2818947734
+SELL PnL          : +12.0493540648
+positive_months   : 1
+negative_months   : 1
+pass_gate         : 1
+```
+
+Interpretation:
+
+```text
+- The Phase148 prediction/archive replay path is healthy because ATR-control exactly reproduces the earlier positive validation ATR result.
+- Current range-model TP/SL does not add edge on validation; the best overall policy is pure ATR, not range.
+- A range_capped+ATR-fallback policy with min_sl=15 is less catastrophic than raw range, but it is still worse than ATR and still depends on SELL while BUY is negative.
+- Since ATR-control is the validation-selected best policy and that same ATR policy already failed test, the candidate fails validation→test confirmation.
+```
+
+Existing test confirmation for the same ATR policy:
+
+```text
+ATR test for rebuilt raw Option B 24k:
+  final_balance : 90.7052413035
+  return        : -9.2947586965%
+  PF            : 0.8270058072
+  maxDD         : 10.7624722054
+  BUY PnL       : -5.3900375011
+  SELL PnL      : -3.9047211954
+```
+
+Decision:
+
+```text
+Reject the rebuilt raw Option B 24k candidate.
+Reject current range-model TP/SL as an improvement over ATR.
+Do not run paper/live/Phase134.
+Do not proceed to signal-filtering on the failed range archive as if it were a viable base.
+```
+
+Allowed diagnostic if the owner wants to continue investigating range:
+
+```text
+Confirm the best non-ATR validation policy on test exactly once:
+mode=range_capped, fallback=atr, use1d=0, min_tp=0.5, min_sl=15, max_tp_atr=2, max_sl_atr=1.25, same=stop_first.
+This is diagnostic only because it was rank 16, not the best validation policy.
+```
+
+Recommended strategic next phase:
+
+```text
+Phase151A — Pivot sequence walk-forward / seed-repeatability validation
+```
+
+Rationale:
+
+```text
+The model shows validation-only edge and test failure. The next proof must be walk-forward/repeated-seed validation, not more test-aware tuning.
+```
+
+## Phase151A Option B seed transfer validation implemented — 2026-09-20
+
+Implemented the repeatability/transfer audit requested after Phase150A.
+
+Implemented:
+
+```text
+scripts/run_pivot_sequence_option_b_seed_transfer_validation.py
+GUI: Run Option B seed transfer validation
+```
+
+Protocol:
+
+```text
+For each seed:
+  train raw Option B with explicit --random-seed
+  run validation ATR PnL backtest
+  run test ATR PnL backtest
+  select only by validation score
+  report test confirmation/pass-fail
+```
+
+Default seeds:
+
+```text
+20260919,20260920,20260921
+```
+
+Outputs:
+
+```text
+run_logs\pivot_sequence_option_b_seed_transfer\latest.json
+run_logs\pivot_sequence_option_b_seed_transfer\latest.html
+run_logs\pivot_sequence_option_b_seed_transfer\latest.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/run_pivot_sequence_option_b_seed_transfer_validation.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_option_b_seed_transfer.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase151A trainer report bug fixed / resume existing seed models — 2026-09-20
+
+The owner started Phase151A. The first seed model (`20260919`) trained and saved its model artifacts, but the trainer crashed while building the JSON report:
+
+```text
+[X] TypeError: OptionBReport.__init__() missing 1 required positional argument: 'random_seed'
+```
+
+Root cause:
+
+```text
+Phase147E added `random_seed` to the OptionBReport dataclass, but one report construction path did not pass `random_seed=int(args.random_seed)`.
+```
+
+Important state:
+
+```text
+The model artifact was saved before the report crash:
+datasets\models\gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260919\v1_model.keras
+datasets\models\gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260919\v1_training.json
+```
+
+Fixes implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+  - OptionBReport construction now includes random_seed.
+
+scripts/run_pivot_sequence_option_b_seed_transfer_validation.py
+  - added --skip-existing-models {0,1}, default=1.
+  - If a seed model already has v*_training.json, Phase151A skips retraining that seed and runs validation/test backtests.
+```
+
+GUI update:
+
+```text
+Run Option B seed transfer validation
+  Skip existing models = 1/0
+```
+
+Recommended recovery action:
+
+```text
+Replace with the fixed zip and rerun the same Phase151A command.
+The script should detect the existing seed_20260919 model and continue without retraining it.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py scripts/run_pivot_sequence_option_b_seed_transfer_validation.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_option_b_seed_transfer.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+## Phase151A execution result — seed transfer failed — 2026-09-21
+
+The owner ran Phase151A with three explicit seeds:
+
+```text
+20260919
+20260920
+20260921
+```
+
+The validation-selected seed was:
+
+```text
+selected_seed     : 20260921
+selected_model_id : gold_pivot_pattern_sequence_wavenet_option_b_seed_audit_5m_seed_20260921
+selection_metric  : drawdown_adjusted
+```
+
+Selected seed validation result:
+
+```text
+validation_trades          : 103
+validation_final_balance   : 107.4354957611
+validation_return_percent  : +7.4354957611%
+validation_profit_factor   : 1.2310390020
+validation_max_drawdown    : 5.5600713875
+validation_total_cash_pnl  : +7.4354957611
+validation_buy_cash_pnl    : +0.1865227161
+validation_sell_cash_pnl   : +7.2489730450
+validation_positive_months : 1
+validation_negative_months : 2
+validation_pass_gate       : 1
+```
+
+Selected seed test result:
+
+```text
+test_trades          : 104
+test_final_balance   : 93.2596575995
+test_return_percent  : -6.7403424005%
+test_profit_factor   : 0.8213467893
+test_max_drawdown    : 10.0037166505
+test_total_cash_pnl  : -6.7403424005
+test_buy_cash_pnl    : -1.3009957153
+test_sell_cash_pnl   : -5.4393466852
+test_positive_months : 1
+test_negative_months : 1
+test_pass_gate       : 0
+transfer_pass_gate   : 0
+```
+
+All seed results:
+
+```text
+seed 20260921:
+  validation PF/final : 1.2310 / 107.4355
+  test PF/final       : 0.8213 / 93.2597
+  transfer_pass       : 0
+
+seed 20260920:
+  validation PF/final : 1.0051 / 100.2053
+  test PF/final       : 0.9510 / 97.7156
+  transfer_pass       : 0
+
+seed 20260919:
+  validation PF/final : 0.9919 / 99.6772
+  test PF/final       : 0.8707 / 93.9395
+  transfer_pass       : 0
+```
+
+Interpretation:
+
+```text
+Phase151A failed. The best validation seed did not transfer to test.
+The only seed with validation pass gate (20260921) failed test badly.
+No seed passed transfer_pass_gate.
+```
+
+Decision:
+
+```text
+Reject raw Option B 24k seed-repeatability route as a trading candidate.
+Do not continue with Step 4 archive/filtering for this Option B family as a production path.
+Any future pivot-sequence work needs target/label/architecture or walk-forward redesign, not more blind seed retrains.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase150A best non-ATR test confirmation failed — 2026-09-21
+
+The owner ran the optional diagnostic test confirmation for the best non-ATR validation policy from Phase150A.
+
+Policy:
+
+```text
+range_bracket_mode : range_capped
+range_fallback     : atr
+use_1d_tp_cap      : 0
+min_tp_distance    : 0.5
+min_sl_distance    : 15
+max_tp_atr         : 2.0
+max_sl_atr         : 1.25
+same_bar_policy    : stop_first
+```
+
+Validation rank-16 result was:
+
+```text
+validation_final_balance : 106.7675
+validation_PF            : 1.1440
+validation_maxDD         : 9.7927
+```
+
+Test confirmation result:
+
+```text
+eval_split        : test
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+trades            : 157
+BUY / SELL trades : 50 / 107
+wins / losses     : 74 / 83
+win_rate          : 47.1338%
+final_balance     : 88.0744190317
+return_percent    : -11.9255809683%
+total_cash_pnl    : -11.9255809683
+profit_factor     : 0.8215049757
+max_drawdown_cash : 15.8457758848
+BUY PnL           : -5.7357534232
+SELL PnL          : -6.1898275451
+monthly           : 2026-07 -8.6762935082, 2026-08 -3.2492874601
+positive_months   : 0
+negative_months   : 2
+```
+
+Comparison to ATR test for rebuilt raw Option B:
+
+```text
+ATR test:
+  final_balance : 90.7052
+  PF            : 0.8270
+  maxDD         : 10.7625
+
+Best non-ATR test:
+  final_balance : 88.0744
+  PF            : 0.8215
+  maxDD         : 15.8458
+```
+
+Interpretation:
+
+```text
+The best non-ATR validation policy failed test and was slightly worse than ATR test.
+This closes the current range-rescue attempt for the rebuilt Option B candidate.
+```
+
+Decision:
+
+```text
+Reject current range_capped + fallback=atr policy.
+Range TP/SL is not a rescue path for this candidate.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase152A pivot label/target stability audit implemented — 2026-09-21
+
+Implemented the requested Phase152A after Phase151A showed seed-transfer failure.
+
+Implemented:
+
+```text
+scripts/audit_pivot_label_target_stability.py
+GUI: Audit pivot label/target stability
+```
+
+The audit consumes the pivot sequence flat file and optional tensor meta file so it can inspect the exact sampled universe used by Option B models.
+
+It reports:
+
+```text
+- SELL/HOLD/BUY action distribution by split and month
+- top_zone and bottom_zone rates
+- future_up_r / future_down_r distribution
+- target_buy_r / target_sell_r distribution
+- PSI drift vs train
+- monthly worst drift
+- sensitivity to lookahead_bars, pivot_move_atr, pivot_zone_atr, min_direction_edge
+```
+
+Outputs:
+
+```text
+run_logs\pivot_label_target_stability\latest.json
+run_logs\pivot_label_target_stability\latest.html
+run_logs\pivot_label_target_stability\latest_splits.csv
+run_logs\pivot_label_target_stability\latest_monthly.csv
+run_logs\pivot_label_target_stability\latest_sensitivity.csv
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/audit_pivot_label_target_stability.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_label_target_stability.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ passed
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase152A result — action labels stable, payoff targets drift by regime — 2026-09-21
+
+The owner ran Phase152A on the exact Option B 24k sampled universe from `pivot_pattern_sequence_tensor_latest_meta.npz`.
+
+Input/universe:
+
+```text
+flat_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet
+meta_path        : datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz
+sampled_universe : meta_sample_indices
+flat_rows        : 53197
+sampled_rows     : 24000
+train/val/test   : 16800 / 3264 / 3264
+period           : 2025-11-28 17:05:00+00:00 → 2026-08-06 19:20:00+00:00
+```
+
+Current label config:
+
+```text
+lookahead_bars     : 48
+pivot_move_atr     : 0.75
+pivot_zone_atr     : 0.35
+recent_window_bars : 48
+min_direction_edge : 1.10
+```
+
+Current target counts:
+
+```text
+SELL : 2411
+HOLD : 19605
+BUY  : 1984
+```
+
+Action-label distribution by split:
+
+```text
+Train      SELL=10.1369%  HOLD=82.0357%  BUY=7.8274%
+Validation SELL= 9.1299%  HOLD=82.9044%  BUY=7.9657%
+Test       SELL=10.7537%  HOLD=78.6765%  BUY=10.5699%
+```
+
+Action-label drift:
+
+```text
+validation_psi_vs_train = 0.0011693337
+test_psi_vs_train       = 0.0100065951
+```
+
+Interpretation:
+
+```text
+The action labels themselves are not showing severe split-level drift. SELL/HOLD/BUY proportions are broadly stable from train to validation/test. The very high `max_monthly_psi_vs_train=2.0860` comes from 2025-11, which is only a tiny partial month at the start of the sampled window and should not be overinterpreted alone.
+```
+
+The important target drift is in the payoff targets:
+
+```text
+Top sensitivity rows show:
+train_buy_r_mean      ≈ -0.0352
+validation_buy_r_mean ≈ -0.0586
+test_buy_r_mean       ≈ +0.0167
+
+train_sell_r_mean      ≈ +0.0352
+validation_sell_r_mean ≈ +0.0586
+test_sell_r_mean       ≈ -0.0167
+```
+
+Interpretation:
+
+```text
+The market regime flips from train/validation being slightly SELL-favorable to test being slightly BUY-favorable in the continuous R targets, even though categorical label counts look stable. This explains the repeated pattern:
+validation SELL edge looks good, then test SELL edge fails.
+```
+
+Sensitivity result:
+
+```text
+Most stable label configs are dominated by lookahead_bars=24 rather than the current 48.
+The lowest drift row:
+  lookahead_bars      : 24
+  pivot_move_atr      : 0.75
+  pivot_zone_atr      : 0.25
+  min_direction_edge  : 1.0
+  train actionable    : 6.6845%
+  validation actionable: 6.8627%
+  test actionable      : 7.6593%
+  drift_score          : 0.1591275985
+
+A denser but still stable candidate:
+  lookahead_bars      : 24
+  pivot_move_atr      : 0.5
+  pivot_zone_atr      : 0.5
+  min_direction_edge  : 1.25
+  train actionable    : 23.7381%
+  validation actionable: 23.0392%
+  test actionable      : 26.8689%
+  drift_score          : 0.1592708572
+```
+
+Decision:
+
+```text
+Phase152A does not approve any strategy.
+It shows the current label counts are reasonably stable, but the payoff/R-target regime changes sign between validation and test.
+More blind training of the same target is not justified.
+```
+
+Recommended next phase:
+
+```text
+Phase153A — Pivot Target Redesign Candidate Build/Audit
+```
+
+Recommended target candidates:
+
+```text
+Candidate C1 conservative:
+  lookahead_bars     = 24
+  pivot_move_atr     = 0.75
+  pivot_zone_atr     = 0.25
+  min_direction_edge = 1.0
+  Expected: fewer but more stable actionable labels.
+
+Candidate C2 denser stable:
+  lookahead_bars     = 24
+  pivot_move_atr     = 0.5
+  pivot_zone_atr     = 0.5
+  min_direction_edge = 1.25
+  Expected: more actionable labels while keeping low drift.
+```
+
+Required anti-overfit rule:
+
+```text
+Build tensors for C1/C2, run health audits, train only as diagnostic, and evaluate validation/test transfer. Do not tune on test. No Phase134/paper/live.
+```
+
+## Latest implementation update — Phase153A pivot target redesign candidate build/audit — 2026-09-21
+
+Phase153A has been implemented as the next diagnostic step after Phase152A rejected more blind raw Option B training.
+
+New executable/GUI path:
+
+```text
+script : scripts/run_pivot_target_redesign_candidate_audit.py
+GUI    : Build/audit pivot target redesign candidates
+```
+
+Default candidates:
+
+```text
+C1 stable = C1:stable:24:0.75:0.25:1.0
+C2 dense  = C2:dense:24:0.5:0.5:1.25
+```
+
+What the command does:
+
+```text
+1. Builds full candidate sequence tensors:
+   datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_c1_stable_latest.npy
+   datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_c2_dense_latest.npy
+
+2. Runs official sequence tensor health audit for each.
+
+3. Runs label/target stability audit for each candidate flat/meta output.
+
+4. Aggregates candidate health, label PSI, actionable-rate, and payoff sign-flip diagnostics into:
+   run_logs\pivot_target_redesign_candidates\latest.json
+   run_logs\pivot_target_redesign_candidates\latest.html
+   run_logs\pivot_target_redesign_candidates\latest.csv
+```
+
+Important status:
+
+```text
+Phase153A is research/diagnostic only.
+It does not train a model and does not approve paper/live/production.
+Training C1/C2 is allowed only after candidate tensor health and stability reports are reviewed.
+```
+
+Recommended owner action:
+
+```text
+Dashboard → AI → Build/audit pivot target redesign candidates → Run
+```
+
+Equivalent CLI if needed:
+
+```powershell
+python -u scripts\run_pivot_target_redesign_candidate_audit.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --source-mode storage `
+  --candidates "C1:stable:24:0.75:0.25:1.0;C2:dense:24:0.5:0.5:1.25" `
+  --build-max-samples 0 `
+  --audit-max-samples 24000 `
+  --health-full-scan 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_target_redesign_candidates
+```
+
+Current pivot route decision:
+
+```text
+Raw Option B route is rejected for now as a trading route.
+Range TP/SL is not a rescue for this candidate.
+Current pivot target labels have stable counts but payoff/R target flips by regime.
+Next evidence needed: Phase153A C1/C2 build/audit output.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Latest execution result — Phase153A C1/C2 target candidate audit — 2026-09-21
+
+The owner ran Phase153A successfully.
+
+Result summary:
+
+```text
+completed_candidates      : 2
+label_stable_candidates   : 2
+training_ready_candidates : 0
+production_status         : BLOCKED — Phase153A research target redesign audit only
+```
+
+Both candidates built healthy tensors:
+
+```text
+C1 tensor shape : [53098, 100, 140]
+C2 tensor shape : [53098, 100, 140]
+health_status   : PASS for both
+nonfinite_cells : 0 for both
+health_max_abs  : 8.0 for both
+```
+
+Both candidates were label-stable:
+
+```text
+C1 validation/test PSI : 0.0010691657 / 0.0073619577
+C2 validation/test PSI : 0.0014521958 / 0.0071221864
+```
+
+Actionable rates:
+
+```text
+C1 train/validation/test : 6.6845% / 6.8627% / 7.6593%
+C2 train/validation/test : 23.7381% / 23.0392% / 26.8689%
+```
+
+But the critical payoff/R target sign-flip remains in both:
+
+```text
+train_buy_r_mean      = -0.0352140814
+validation_buy_r_mean = -0.0586298741
+test_buy_r_mean       = +0.0167183634
+
+train_sell_r_mean      = +0.0352140814
+validation_sell_r_mean = +0.0586298741
+test_sell_r_mean       = -0.0167183634
+```
+
+Gate result:
+
+```text
+C1 candidate_ready_for_training_gate = 0
+C2 candidate_ready_for_training_gate = 0
+```
+
+Current decision:
+
+```text
+Do not train Option B on C1/C2 now.
+C1/C2 fixed label density/stability, but did not fix payoff target regime drift.
+Next work must redesign the tradable payoff/first-hit target itself, not only pivot label thresholds.
+```
+
+Recommended next phase:
+
+```text
+Phase154A — Pivot Payoff/Trade-Outcome Target Redesign Audit
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase154A pivot payoff target redesign audit — 2026-09-21
+
+Phase154A has been implemented after Phase153A showed that C1/C2 label redesign did not fix payoff/R target sign-flip.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_payoff_target_redesign.py
+GUI: Audit pivot payoff target redesign
+```
+
+Purpose:
+
+```text
+Audit first-hit/barrier trade-outcome pivot targets before training any new model.
+```
+
+Target logic:
+
+```text
+BUY score  = +tp_atr if upside barrier hits before downside stop, otherwise -sl_atr or 0 timeout.
+SELL score = +tp_atr if downside barrier hits before upside stop, otherwise -sl_atr or 0 timeout.
+BUY label  = near bottom zone + positive BUY score + score edge.
+SELL label = near top zone + positive SELL score + score edge.
+HOLD       = everything else.
+```
+
+Default candidate grid:
+
+```text
+B1 balanced_24_rr1
+B2 conservative_24_tp1_sl075
+B3 dense_24_half_atr
+B4 asym_24_tp1_sl05
+B5 short_12_rr1
+B6 wide_36_rr1
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_payoff_target_redesign\latest.json
+run_logs\pivot_payoff_target_redesign\latest.html
+run_logs\pivot_payoff_target_redesign\latest_candidates.csv
+run_logs\pivot_payoff_target_redesign\latest_splits.csv
+run_logs\pivot_payoff_target_redesign\latest_monthly.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit pivot payoff target redesign
+Then send run_logs\pivot_payoff_target_redesign\latest.json
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest execution result — Phase154A payoff target audit — 2026-09-21
+
+The owner ran Phase154A.
+
+Top-level result:
+
+```text
+completed_candidates      : 6
+label_stable_candidates   : 6
+payoff_stable_candidates  : 2
+tensor_ready_candidates   : 2
+best_candidate_id         : B4
+```
+
+Rejected candidates due to payoff sign flip:
+
+```text
+B1 balanced_24_rr1
+B3 dense_24_half_atr
+B5 short_12_rr1
+B6 wide_36_rr1
+```
+
+Training-ready candidates:
+
+```text
+B4 asym_24_tp1_sl05:
+  lookahead_bars        : 24
+  pivot_zone_atr        : 0.35
+  tp_atr                : 1.0
+  sl_atr                : 0.5
+  min_score_edge        : 0.1
+  train/val/test actionable : 3.8333% / 4.8407% / 4.3505%
+  validation/test PSI       : 0.0060524 / 0.0125569
+  buy_score_sign_flip       : 0
+  sell_score_sign_flip      : 0
+  candidate_ready_for_tensor_gate : 1
+
+B2 conservative_24_tp1_sl075:
+  lookahead_bars        : 24
+  pivot_zone_atr        : 0.25
+  tp_atr                : 1.0
+  sl_atr                : 0.75
+  min_score_edge        : 0.1
+  train/val/test actionable : 3.1607% / 4.1973% / 3.5846%
+  validation/test PSI       : 0.0046029 / 0.0121399
+  buy_score_sign_flip       : 0
+  sell_score_sign_flip      : 0
+  candidate_ready_for_tensor_gate : 1
+```
+
+Current decision:
+
+```text
+Phase154A found two payoff-stable target candidates.
+B4 is preferred for the next diagnostic training path.
+B2 is the conservative backup.
+```
+
+Important caveat:
+
+```text
+Phase154A is only a target audit.
+It does not prove model profitability.
+The next phase must build target-compatible tensors/metadata and train/evaluate diagnostically.
+```
+
+Recommended next phase:
+
+```text
+Phase155A — Build payoff-target tensor + diagnostic Option B training for B4/B2
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase155A payoff-target Option B diagnostic — 2026-09-21
+
+Phase155A has been implemented after Phase154A found B4/B2 as payoff-stable targets.
+
+New script / GUI command:
+
+```text
+scripts/build_pivot_payoff_sequence_tensor.py
+scripts/run_pivot_payoff_option_b_diagnostic.py
+GUI: Run payoff-target Option B diagnostic
+```
+
+The command runs the full diagnostic chain:
+
+```text
+B4/B2 payoff tensor build
+→ tensor health audit
+→ raw Option B training with explicit seed
+→ validation backtest
+→ test backtest
+→ transfer report
+```
+
+Default priority:
+
+```text
+B4 first:
+  24 bars, zone=0.35 ATR, TP=1.0 ATR, SL=0.5 ATR, edge=0.1
+
+B2 backup:
+  24 bars, zone=0.25 ATR, TP=1.0 ATR, SL=0.75 ATR, edge=0.1
+```
+
+After owner run, send:
+
+```text
+run_logs\pivot_payoff_option_b_diagnostic\latest.json
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest fix — Phase155A B4 training crash after health PASS — 2026-09-21
+
+The first Phase155A run built and health-audited B4 successfully:
+
+```text
+B4 tensor shape : [53098, 100, 140]
+source5m        : 83
+targets         : SELL=1236, HOLD=51044, BUY=917
+actionable      : 4.05%
+health          : PASS, nonfinite=0, max_abs=8
+```
+
+Training crashed before epoch 1:
+
+```text
+IndexError: index 2 is out of bounds for axis 0 with size 1
+```
+
+Fix:
+
+```text
+Phase155A now defaults class_weight=off.
+GUI exposes Class weights with default off.
+Option B trainer defensively disables class_weight=auto for target_mode=first_hit_payoff.
+```
+
+Next owner action:
+
+```text
+Rerun Phase155A with --skip-existing-tensors 1 and --class-weight off.
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest fix — Phase155A scalar target metadata indexing crash — 2026-09-21
+
+The second Phase155A rerun still crashed before epoch 1 with:
+
+```text
+IndexError: index 2 is out of bounds for axis 0 with size 1
+```
+
+Actual root cause:
+
+```text
+New payoff tensors include scalar target metadata:
+target_mode = ["first_hit_payoff"]
+
+The Option B trainer tried to index all target_* keys by sample indices, including target_mode.
+```
+
+Fix:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+scoped_target_meta() now indexes only per-sample target arrays whose first axis matches tensor sample count.
+Scalar target metadata is ignored for training targets.
+```
+
+Next owner action:
+
+```text
+Replace project with latest zip and rerun Phase155A with:
+  --skip-existing-tensors 1
+  --class-weight off
+```
+
+## Latest execution result — Phase155A payoff Option B with class_weight=off — 2026-09-21
+
+The owner completed Phase155A after the metadata scoping fix.
+
+Top-level:
+
+```text
+selected_candidate_id           : B4
+selected_model_id               : gold_pivot_payoff_option_b_b4_5m
+selected_validation_profit_factor: 999.0
+selected_test_profit_factor      : 3.9898980099
+selected_test_final_balance      : 103.0198
+selected_transfer_pass_gate      : 0
+```
+
+B4:
+
+```text
+validation_trades : 1
+validation_PF     : 999.0
+validation_pnl    : +1.0000
+test_trades       : 5
+test_PF           : 3.9899
+test_pnl          : +3.0198
+transfer_pass     : 0
+```
+
+B2:
+
+```text
+validation_trades : 2
+validation_PF     : 999.0
+validation_pnl    : +0.2914
+test_trades       : 22
+test_PF           : 0.7425
+test_pnl          : -2.7912
+transfer_pass     : 0
+```
+
+Interpretation:
+
+```text
+class_weight=off caused severe under-selection.
+B4 looks positive on test but has too few validation/test trades to trust.
+B2 selected more but failed test.
+```
+
+Decision:
+
+```text
+No Phase155A pass yet.
+Re-enable class_weight=auto now that the real scalar target metadata bug is fixed.
+Rerun with --skip-existing-tensors 1 and --class-weight auto.
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase155A payoff Option B diagnostic still failed transfer — 2026-09-21
+
+The owner reran Phase155A into:
+
+```text
+run_logs\pivot_payoff_option_b_diagnostic_auto\latest.json
+```
+
+Result:
+
+```text
+selected_candidate_id       : B4
+selected_model_id           : gold_pivot_payoff_option_b_b4_5m
+selected_test_profit_factor : 3.9898980099
+selected_test_final_balance : 103.0198
+selected_transfer_pass_gate : 0
+```
+
+B4 was positive but selected too few trades:
+
+```text
+validation_trades : 1
+test_trades       : 5
+validation_pass   : 0
+test_pass         : 1
+transfer_pass     : 0
+```
+
+B2 failed test:
+
+```text
+validation_trades : 2
+test_trades       : 22
+test_PF           : 0.7425
+test_pnl          : -2.7912
+transfer_pass     : 0
+```
+
+Current decision:
+
+```text
+Phase155A has not produced a valid transfer pass.
+The model is under-selecting / HOLD-biased; action accuracy is not enough.
+```
+
+Recommended next phase:
+
+```text
+Phase156A — Payoff-target prediction/threshold calibration audit
+```
+
+This phase should inspect probability distributions and scan thresholds on validation only before any test confirmation.
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase156A payoff prediction threshold audit — 2026-09-22
+
+Phase156A has been implemented after Phase155A failed transfer due to under-selection.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_payoff_prediction_thresholds.py
+GUI: Audit payoff prediction thresholds
+```
+
+Protocol:
+
+```text
+B4/B2 models are loaded.
+Validation/test predictions are generated once.
+Threshold grid is selected on validation only.
+The selected validation policy is confirmed once on test.
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_payoff_prediction_thresholds\latest.json
+run_logs\pivot_payoff_prediction_thresholds\latest.html
+run_logs\pivot_payoff_prediction_thresholds\latest_validation_grid.csv
+run_logs\pivot_payoff_prediction_thresholds\latest_selection.csv
+run_logs\pivot_payoff_prediction_thresholds\latest_probability_summary.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit payoff prediction thresholds
+Then send run_logs\pivot_payoff_prediction_thresholds\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase156A threshold calibration confirmed HOLD collapse — 2026-09-22
+
+The owner ran Phase156A:
+
+```text
+run_logs\pivot_payoff_prediction_thresholds\latest.json
+```
+
+Top-level:
+
+```text
+selected_candidate_id       : B4
+selected_model_id           : gold_pivot_payoff_option_b_b4_5m
+selected_validation_score   : +1.0000
+selected_test_profit_factor : 3.9899
+selected_test_final_balance : 103.0198
+selected_transfer_pass_gate : 0
+```
+
+Probability summary shows strong HOLD dominance:
+
+```text
+B4 validation hold_mean : 0.9814
+B4 test hold_mean       : 0.9728
+B4 validation buy_p95   : 0.0674
+B4 validation sell_p95  : 0.0195
+B4 validation buy_margin_p95  : -0.8387
+B4 validation sell_margin_p95 : -0.8879
+
+B2 validation hold_mean : 0.9850
+B2 test hold_mean       : 0.9671
+```
+
+Threshold grid selected the lowest available thresholds:
+
+```text
+buy_threshold  = 0.05
+sell_threshold = 0.05
+min_margin     = 0
+```
+
+But still produced too few validation trades:
+
+```text
+B4 validation trades : 1
+B4 test trades       : 5
+B4 transfer_pass     : 0
+
+B2 validation trades : 2
+B2 test trades       : 22
+B2 test PF           : 0.7425
+B2 transfer_pass     : 0
+```
+
+Decision:
+
+```text
+Phase156A failed. Threshold calibration cannot rescue the current payoff Option B trained models.
+The issue is action-head HOLD collapse / under-selection, not just threshold choice.
+B4 target remains structurally promising, but the current training objective/model path is not enough.
+```
+
+Recommended next phase:
+
+```text
+Phase157A — Payoff Target Learnability / Imbalance-Control Diagnostic
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase157A payoff target learnability diagnostic — 2026-09-22
+
+Phase157A has been implemented after Phase156A confirmed HOLD collapse / under-selection.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_payoff_target_learnability.py
+GUI: Audit payoff target learnability
+```
+
+The diagnostic checks B4/B2 target learnability using simple transparent baselines:
+
+```text
+SELL/HOLD/BUY centroid baseline
+actionable-vs-HOLD centroid baseline
+candidate-only BUY-vs-SELL centroid baseline
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_payoff_target_learnability\latest.json
+run_logs\pivot_payoff_target_learnability\latest.html
+run_logs\pivot_payoff_target_learnability\latest_candidates.csv
+run_logs\pivot_payoff_target_learnability\latest_splits.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit payoff target learnability
+Then send run_logs\pivot_payoff_target_learnability\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase157A learnability diagnostic failed gates — 2026-09-22
+
+The owner ran Phase157A:
+
+```text
+run_logs\pivot_payoff_target_learnability\latest.json
+```
+
+Top-level:
+
+```text
+completed_candidates : 2
+learnable_candidates : 0
+best_candidate_id    : B2
+best_candidate_reason: no gate pass; best diagnostic score only
+```
+
+B4:
+
+```text
+train/validation/test actionable : 3.8333% / 4.8407% / 4.3505%
+always-HOLD validation/test acc  : 95.1593% / 95.6495%
+full3 validation/test acc        : 95.1593% / 95.6495%
+full3 balanced acc               : 0.3333 / 0.3333
+binary validation AP lift        : +0.1238
+binary test AP lift              : +0.0126
+binary balanced acc              : 0.5 / 0.5
+binary F1                        : 0.0 / 0.0
+side BUY AP validation/test      : 0.8667 / 0.8926
+side balanced acc                : 0.5 / 0.5
+candidate_learnability_gate      : 0
+```
+
+B2:
+
+```text
+train/validation/test actionable : 3.1607% / 4.1973% / 3.5846%
+full3 balanced acc               : 0.3333 / 0.3333
+binary validation AP lift        : +0.1500
+binary test AP lift              : +0.0119
+binary balanced acc              : 0.5 / 0.5
+side BUY AP validation/test      : 0.9236 / 0.9172
+side balanced acc                : 0.5 / 0.5
+candidate_learnability_gate      : 0
+```
+
+Decision:
+
+```text
+Phase157A failed learnability gates.
+The current full-universe SELL/HOLD/BUY payoff target is too sparse/HOLD-dominant.
+Do not train bigger Option B/WaveNet models on this exact setup.
+```
+
+Important nuance:
+
+```text
+Candidate-only side BUY-vs-SELL AP is high, so side ranking may be learnable after a valid candidate generator exists.
+The weak point is discovering actionable rows from the full universe.
+```
+
+Recommended next phase:
+
+```text
+Phase158A — Pivot Zone Candidate / Actionability Reframe Audit
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase158A pivot-zone candidate reframe audit — 2026-09-30
+
+Phase158A has been implemented after Phase157A showed full-universe actionability was the bottleneck.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_zone_candidate_reframe.py
+GUI: Audit pivot-zone candidate reframe
+```
+
+The audit reframes B4/B2 as live-known zone events:
+
+```text
+target_top_zone    → SELL candidate event
+target_bottom_zone → BUY candidate event
+```
+
+It then audits:
+
+```text
+zone-event enrichment
+validation/test event mean R stability
+event win learnability
+side preference stability
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_zone_candidate_reframe\latest.json
+run_logs\pivot_zone_candidate_reframe\latest.html
+run_logs\pivot_zone_candidate_reframe\latest_candidates.csv
+run_logs\pivot_zone_candidate_reframe\latest_splits.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit pivot-zone candidate reframe
+Then send run_logs\pivot_zone_candidate_reframe\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase158A pivot-zone candidate reframe failed — 2026-09-30
+
+The owner ran Phase158A:
+
+```text
+run_logs\pivot_zone_candidate_reframe\latest.json
+```
+
+Top-level:
+
+```text
+completed_candidates     : 2
+reframe_ready_candidates : 0
+best_candidate_id        : B2
+best_candidate_reason    : no gate pass; best diagnostic score only
+```
+
+B4:
+
+```text
+validation zone_event_rate : 90.5025%
+test zone_event_rate       : 89.0931%
+validation event_win_rate  : 5.3487%
+test event_win_rate        : 4.8831%
+validation event_mean_r    : -0.0680433
+test event_mean_r          : -0.0689477
+event_validation_ap_lift   : +0.06470
+event_test_ap_lift         : +0.00880
+event balanced accuracy    : 0.5 / 0.5
+validation best side       : SELL
+test best side             : BUY
+candidate_reframe_gate     : 0
+```
+
+B2:
+
+```text
+validation zone_event_rate : 70.2206%
+test zone_event_rate       : 69.0870%
+validation event_win_rate  : 5.9773%
+test event_win_rate        : 5.1885%
+validation event_mean_r    : -0.0272688
+test event_mean_r          : -0.0402439
+event_validation_ap_lift   : +0.05470
+event_test_ap_lift         : +0.01048
+event balanced accuracy    : 0.5 / 0.5
+validation best side       : SELL
+test best side             : BUY
+candidate_reframe_gate     : 0
+```
+
+Decision:
+
+```text
+Phase158A failed.
+Current B4/B2 pivot-zone candidate definitions are too broad and negative-expectancy.
+Do not train another model on this candidate universe.
+```
+
+Recommended next phase:
+
+```text
+Phase159A — Pivot Candidate Geometry Tightening Audit
+```
+
+Goal:
+
+```text
+Tighten live-known pivot-zone geometry before modeling:
+  smaller pivot_zone_atr
+  stricter top/bottom range position thresholds
+  exclude both-zone ambiguity
+  optional volatility/range/session filters
+```
+
+Production remains blocked:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Latest implementation update — Phase159A pivot candidate geometry tightening audit — 2026-09-30
+
+Phase159A has been implemented after Phase158A failed because current zone candidates were too broad.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_candidate_geometry_tightening.py
+GUI: Audit pivot candidate geometry tightening
+```
+
+This phase searches live-known candidate geometry before model training:
+
+```text
+recent window grid
+pivot_zone_atr grid
+position threshold grid
+exclude both-zone rows
+range width filters
+B4/B2 payoff targets
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_candidate_geometry_tightening\latest.json
+run_logs\pivot_candidate_geometry_tightening\latest.html
+run_logs\pivot_candidate_geometry_tightening\latest_grid.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit pivot candidate geometry tightening
+Then send run_logs\pivot_candidate_geometry_tightening\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase159A geometry tightening failed transfer — 2026-09-30
+
+The owner ran Phase159A:
+
+```text
+run_logs\pivot_candidate_geometry_tightening\latest.json
+```
+
+Top-level result:
+
+```text
+policies                 : 1620
+validation_pass_policies : 0
+transfer_pass_policies   : 0
+selected_policy_id       : B2|rw=48|zone=0.05|top=0.85|bottom=0.15|exclude_both=1|minw=1|maxw=0
+selected_validation_mean_r : -0.0050505050
+selected_test_mean_r       : -0.0272277221
+selected_validation_PF     : 0.9630
+selected_test_PF           : 0.7179
+selected_transfer_pass_gate: 0
+```
+
+Best policy:
+
+```text
+B2 target
+recent_window_bars  = 48
+pivot_zone_atr      = 0.05
+top_position        = 0.85
+bottom_position     = 0.15
+exclude_both_zones  = 1
+min_range_width_atr = 1.0
+```
+
+What improved:
+
+```text
+Candidate event rate dropped from ~70–90% in Phase158A to ~3%.
+Side preference became stable: validation_best_side=BUY, test_best_side=BUY.
+No mean-R sign flip.
+```
+
+What failed:
+
+```text
+validation_event_count = 99, validation_mean_r=-0.00505, PF=0.963
+test_event_count       = 101, test_mean_r=-0.02723, PF=0.718
+validation/test mean R below zero
+no validation/test/transfer pass
+```
+
+Decision:
+
+```text
+Phase159A failed as a tradable candidate geometry.
+Do not train a model on this geometry yet.
+```
+
+Recommended next phase:
+
+```text
+Phase160A — Pivot Candidate Side-Mapping / Counterfactual Direction Audit
+```
+
+Goal:
+
+```text
+Test whether tightened pivot candidates are mapped to the wrong trade direction or need entry-delay logic:
+  reversal mapping
+  breakout mapping
+  top-only / bottom-only
+  validation-selected side mapping confirmed on test
+```
+
+Production remains blocked.
+
+## Latest implementation update — Phase160A pivot candidate side-mapping audit — 2026-09-30
+
+Phase160A has been implemented after Phase159A made candidates selective but still negative expectancy.
+
+New script / GUI command:
+
+```text
+scripts/audit_pivot_candidate_side_mapping.py
+GUI: Audit pivot candidate side mapping
+```
+
+The audit consumes Phase159 grid output:
+
+```text
+run_logs\pivot_candidate_geometry_tightening\latest_grid.csv
+```
+
+It tests:
+
+```text
+reversal, breakout, top-only, bottom-only, all-buy, all-sell mappings
+entry delays 0,1,2,3
+validation-selected policy confirmed on test
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_candidate_side_mapping\latest.json
+run_logs\pivot_candidate_side_mapping\latest.html
+run_logs\pivot_candidate_side_mapping\latest_grid.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Audit pivot candidate side mapping
+Then send run_logs\pivot_candidate_side_mapping\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase160A side mapping found bottom-buy transfer pass — 2026-09-30
+
+The owner ran Phase160A:
+
+```text
+run_logs\pivot_candidate_side_mapping\latest.json
+```
+
+Top-level:
+
+```text
+geometry_policies_loaded      : 2
+evaluated_rows                : 64
+validation_pass_rows          : 14
+transfer_pass_rows            : 3
+selected_side_mapping         : bottom_buy
+selected_entry_delay_bars     : 0
+selected_validation_mean_r    : +0.0277777780
+selected_test_mean_r          : +0.0773809552
+selected_validation_PF        : 1.2
+selected_test_PF              : 5.3333
+selected_transfer_pass_gate   : 1
+```
+
+Selected policy:
+
+```text
+B2 fallback geometry:
+  recent_window_bars     = 48
+  pivot_zone_atr         = 0.05
+  top_position_threshold = 0.85
+  bottom_position        = 0.15
+  exclude_both_zones     = 1
+  min_range_width_atr    = 1.0
+
+side mapping:
+  bottom_buy only
+  entry_delay_bars = 0
+```
+
+Validation:
+
+```text
+events     : 54
+event_rate : 1.6544%
+win_rate   : 16.6667%
+mean_r     : +0.0277778
+sum_r      : +1.5
+PF         : 1.2
+```
+
+Test:
+
+```text
+events     : 42
+event_rate : 1.2868%
+win_rate   : 9.5238%
+mean_r     : +0.077381
+sum_r      : +3.25
+PF         : 5.3333
+```
+
+Decision:
+
+```text
+This is a meaningful positive diagnostic, but it is not production proof.
+Do not train a model yet and do not go live.
+Next phase should be a realistic chronological replay of the selected bottom-buy rule.
+```
+
+Recommended next phase:
+
+```text
+Phase161A — Pivot Bottom-Buy Candidate Chronological Replay
+```
+
+Production remains blocked.
+
+## Latest implementation update — Phase161A pivot bottom-buy chronological replay — 2026-09-30
+
+Phase161A has been implemented after Phase160A found a positive bottom-buy event-scoring transfer.
+
+New script / GUI command:
+
+```text
+scripts/replay_pivot_bottom_buy_candidate.py
+GUI: Replay pivot bottom-buy candidate
+```
+
+The replay uses the selected Phase160A policy:
+
+```text
+B2 bottom-buy only
+recent_window_bars=48
+pivot_zone_atr=0.05
+bottom_position<=0.15
+exclude_both_zones=1
+min_range_width_atr=1.0
+TP=1.0 ATR
+SL=0.75 ATR
+spread=pct 0.06
+same_bar_policy=stop_first
+```
+
+Outputs after owner run:
+
+```text
+run_logs\pivot_bottom_buy_chronological_replay\latest.json
+run_logs\pivot_bottom_buy_chronological_replay\latest.html
+run_logs\pivot_bottom_buy_chronological_replay\latest_summary.csv
+run_logs\pivot_bottom_buy_chronological_replay\latest_trades.csv
+```
+
+Current owner action:
+
+```text
+Run Dashboard → AI → Replay pivot bottom-buy candidate
+Then send run_logs\pivot_bottom_buy_chronological_replay\latest.json
+```
+
+Production remains blocked.
+
+## Latest execution result — Phase161A bottom-buy chronological replay failed — 2026-09-30
+
+The owner ran Phase161A:
+
+```text
+run_logs\pivot_bottom_buy_chronological_replay\latest.json
+```
+
+Selected policy replayed:
+
+```text
+B2 bottom_buy only
+recent_window_bars=48
+pivot_zone_atr=0.05
+bottom_position<=0.15
+exclude_both_zones=1
+min_range_width_atr=1.0
+TP=1.0 ATR
+SL=0.75 ATR
+spread=pct 0.06
+same_bar_policy=stop_first
+```
+
+Result:
+
+```text
+validation_pass_gate : 0
+test_pass_gate       : 0
+transfer_pass_gate   : 0
+```
+
+Validation:
+
+```text
+candidate_rows    : 54
+trades            : 30
+win_rate          : 43.3333%
+total_cash_pnl    : -3.3832
+final_balance     : 96.6168
+profit_factor     : 0.7156
+max_drawdown_cash : 5.9745
+```
+
+Test:
+
+```text
+candidate_rows    : 42
+trades            : 21
+win_rate          : 47.6190%
+total_cash_pnl    : -2.2486
+final_balance     : 97.7514
+profit_factor     : 0.6853
+max_drawdown_cash : 2.7327
+```
+
+Decision:
+
+```text
+Phase161A failed. The bottom-buy policy is not accepted as a trading candidate.
+The positive Phase160A event-scoring result did not survive realistic chronological replay.
+```
+
+Likely issue:
+
+```text
+execution gap between event scoring and replay:
+  event scoring used idealized first-hit assumptions
+  replay uses next-bar entry, spread, risk sizing and one-position constraints
+```
+
+Recommended next diagnostic, only if continuing pivot route:
+
+```text
+Phase162A — Pivot Bottom-Buy Execution Gap / Entry Timing Audit
+```
+
+Production remains blocked.

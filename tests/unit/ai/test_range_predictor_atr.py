@@ -124,6 +124,10 @@ class TestRangePredictorAtr:
         # fraction fields stay synced for legacy percent displays
         assert forecast.high_offset == pytest.approx(6.0 / 2000.0)
         assert forecast.low_offset == pytest.approx(-6.0 / 2000.0)
+        assert forecast.step_high_raw == pytest.approx((2.0, 1.0))
+        assert forecast.step_low_raw == pytest.approx((-1.0, -2.0))
+        assert forecast.band_reduction == "envelope_max_min"
+        assert forecast.to_dict()["band_reduction"] == "envelope_max_min"
 
     def test_atr_model_without_reference_is_refused(self, patched_load):
         patched_load(FakeSeq2SeqModel([2.0, -1.0, 1.0, -2.0]))
@@ -145,7 +149,23 @@ class TestRangePredictorAtr:
         assert forecast.atr_reference == 0.0
         assert forecast.predicted_high == pytest.approx(2000.0 * 1.02)
         assert forecast.predicted_low == pytest.approx(2000.0 * 0.98)
+        assert forecast.step_high_raw == pytest.approx((0.02, 0.01))
+        assert forecast.band_reduction == "envelope_max_min"
 
     def test_unknown_constructor_units_are_refused(self):
         with pytest.raises(ValidationError):
             dual_predictor.RangePredictor(target_units="pips")
+
+    def test_single_pair_is_not_labeled_as_an_envelope(self, patched_load):
+        patched_load(FakeSeq2SeqModel([0.4, -0.2]))
+        predictor = dual_predictor.RangePredictor(horizon=1, timeframe="4H", target_units="atr")
+        forecast = predictor.forecast(
+            fake_artifact(),
+            raw_window(),
+            reference_close=2000.0,
+            atr_reference=3.0,
+        )
+        assert forecast.band_reduction == "single_pair"
+        assert forecast.step_high_raw == pytest.approx((0.4,))
+        assert forecast.high_atr_mult == pytest.approx(0.4)
+        assert forecast.predicted_high == pytest.approx(2001.2)

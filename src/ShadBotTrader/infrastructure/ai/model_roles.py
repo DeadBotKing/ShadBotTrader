@@ -24,24 +24,15 @@ from ShadBotTrader.domain.common.errors import ValidationError
 #: Loss + activation per task. Regression must NOT use a bounded
 #: activation: a sigmoid output can never express a -3% low offset.
 #:
-#: Range model uses Huber loss (فاز ۵۳):
-#:   loss = Huber(delta=0.005)
-#:
-#:   target magnitude : ±0.002 (±0.2% offset, ~±5$ روی XAUUSD=2650)
-#:   val_mae achieved : 0.001754 (±4.65$)
-#:
-#:   delta=0.005 → δ/val_mae=2.85 → MSE mode برای اکثر predictions ✅
-#:   delta=0.001 (قبلی) → δ/val_mae=0.57 → MAE mode → gradient کند ❌
-#:
-#: Why Huber beats plain MAE or MSE for high/low offsets:
-#:   MSE  → predictions shrink toward mean (large low_bias)
-#:   MAE  → no smooth gradient near zero (slow convergence)
-#:   MAPE → undefined when true ≈ 0 (5% of targets near-zero)
-#:   Huber(delta=0.005) → smooth MSE zone covers most of val_mae range  ✅
+#: Range model uses Huber loss (فاز ۵۳), but the transition width is not
+#: a single number. ``range_huber_delta`` selects it from target units:
+#:   pct targets ~ ±0.002 → delta=0.005 (Phase 54, quadratic zone)
+#:   atr targets ~ 0.3–1.0 → delta=1.0
+#: delta=0.005 on ATR residuals is the linear MAE zone, not MSE mode.
 _TASK_HEADS: Dict[TargetKind, Dict[str, str]] = {
     TargetKind.PRICE_RANGE: {
         "activation": "linear",
-        "loss": "huber",  # Huber(delta=0.005): MSE zone covers ±0.005 → smooth convergence
+        "loss": "huber",  # delta comes from range_huber_delta(target_units)
         "metric": "mae",  # MAE رو به عنوان متریک نگه میداریم — قابل تفسیر
     },
     TargetKind.TRADE_SIGNAL: {
@@ -355,8 +346,11 @@ def range_model_role(
         ),
         model_id=range_model_id(timeframe),
         description=(
-            f"Predicts the highest high and lowest low over the next "
-            f"{horizon} {timeframe} candles, as offsets from the current close."
+            f"Seq2seq per-candle high/low offsets for the next {horizon} "
+            f"{timeframe} candles, measured from the current close. "
+            f"This is not the horizon envelope. RangePredictor keeps every "
+            f"pair, and reduces more than one pair to max(high)/min(low) "
+            f"only for the single trading band."
         ),
         window_size=window_size,
         # Architecture knobs — range-specific

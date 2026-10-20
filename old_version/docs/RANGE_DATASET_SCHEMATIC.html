@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ساختار دیتاست مدل رنج — gold_range_1d</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b26; --panel2:#1a2130; --line:#2a3348;
+    --txt:#dce3f2; --dim:#8b96ad; --feat:#3fa7d6; --feat2:#2b7aa8;
+    --lbl:#f0a63c; --lbl2:#c77f1e; --train:#3fbf7f; --val:#b07ef0;
+    --gap:#e05555; --hi:#ffe9c2; --accent:#5ec8e8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:Tahoma,"Segoe UI",Vazirmatn,sans-serif;font-size:14px;line-height:1.9}
+  .wrap{max-width:1060px;margin:0 auto;padding:28px 18px 60px}
+  h1{font-size:21px;margin:0 0 4px;color:#fff}
+  h1 .en{color:var(--accent);font-size:15px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:26px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+          padding:20px 22px;margin-bottom:22px}
+  h2{font-size:16px;margin:0 0 4px;color:#fff}
+  h2 .step{display:inline-block;background:var(--accent);color:#06222c;border-radius:8px;
+           padding:0 10px;margin-left:8px;font-weight:bold}
+  p.note{margin:6px 0 12px;color:var(--dim);font-size:13px}
+  code{background:#0a0e16;border:1px solid var(--line);border-radius:6px;
+       padding:1px 7px;color:#ffd98e;font-size:12.5px;direction:ltr;unicode-bidi:embed}
+  .formula{background:#0a0e16;border:1px solid var(--line);border-radius:8px;
+           padding:8px 14px;color:#ffd98e;font-size:13px;direction:ltr;text-align:center;
+           font-family:Consolas,monospace;margin:8px 0}
+  .key{border-right:4px solid var(--lbl);background:#211a10;padding:10px 14px;border-radius:8px;margin:10px 0}
+  .key b{color:var(--lbl)}
+  svg{display:block;max-width:100%;height:auto;margin:8px auto}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--dim)}
+  .legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;
+       vertical-align:-1px;margin-left:6px}
+  .lg-feat span::before{background:var(--feat)} .lg-lbl span::before{background:var(--lbl)}
+  .lg-train span::before{background:var(--train)} .lg-val span::before{background:var(--val)}
+  .lg-gap span::before{background:var(--gap)} .lg-last span::before{background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:center}
+  th{background:var(--panel2);color:var(--accent)}
+  td.g{color:var(--train)} td.p{color:var(--val)} td.r{color:var(--gap)}
+  .warn{border-right:4px solid var(--gap);background:#241417;padding:10px 14px;border-radius:8px;margin-top:10px}
+  .ok{border-right:4px solid var(--train);background:#122019;padding:10px 14px;border-radius:8px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>ساختار دیتاست مدل رنج <span class="en">gold_range_1d · 1D · window=150 · seq2seq horizon=1</span></h1>
+<div class="sub">همهٔ اعداد از اجرای واقعی خودت (2026-08-27) و کد فعلی مخزن — بعد از فیکس باگ ۴۷</div>
+
+<!-- ═══════════ مرحله ۱ ═══════════ -->
+<section>
+  <h2><span class="step">۱</span> از کندل تا ماتریس</h2>
+  <p class="note">هر کندل یک‌روزهٔ طلا یک «سطر» می‌شود؛ اندیکاتورهای non-causal حذف؛ به هر سطر ۲ ستون برچسب هم می‌چسبد.</p>
+  <svg viewBox="0 0 1000 190" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8b96ad"/>
+      </marker>
+    </defs>
+    <!-- flow boxes -->
+    <g font-family="Tahoma" font-size="13" text-anchor="middle">
+      <rect x="20"  y="55" width="150" height="70" rx="10" fill="#1a2130" stroke="#2a3348"/>
+      <text x="95"  y="85" fill="#dce3f2">۵٬۶۹۸ کندل 1D</text>
+      <text x="95"  y="107" fill="#8b96ad" font-size="11">(کل تاریخچهٔ MT5)</text>
+
+      <line x1="172" y1="90" x2="212" y2="90" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar)"/>
+
+      <rect x="216" y="55" width="160" height="70" rx="10" fill="#1a2130" stroke="#2a3348"/>
+      <text x="296" y="85" fill="#dce3f2">پیشوند آموزش ۸۰٪</text>
+      <text x="296" y="107" fill="#8b96ad" font-size="11">۴٬۵۵۸ کندل</text>
+
+      <line x1="378" y1="90" x2="418" y2="90" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar)"/>
+
+      <rect x="422" y="55" width="170" height="70" rx="10" fill="#1a2130" stroke="#2a3348"/>
+      <text x="507" y="85" fill="#dce3f2">−۷۷ گرم‌شدن اندیکاتور</text>
+      <text x="507" y="107" fill="#8b96ad" font-size="11">EMA/ATR طول‌دار…</text>
+
+      <line x1="594" y1="90" x2="634" y2="90" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar)"/>
+
+      <!-- matrix -->
+      <rect x="638" y="30" width="340" height="120" rx="10" fill="#0e2233" stroke="#3fa7d6"/>
+      <text x="808" y="56" fill="#5ec8e8" font-weight="bold">ماتریس: ۴٬۴۸۰ سطر × ۱۸۲ ستون</text>
+      <rect x="656" y="70" width="204" height="26" rx="6" fill="#3fa7d6"/>
+      <text x="758" y="88" fill="#06222c" font-size="12">۱۸۰ فیچر (۱۴ کندلی + ۱۶۸ کاتالوگ)</text>
+      <rect x="866" y="70" width="48" height="26" rx="6" fill="#f0a63c"/>
+      <rect x="918" y="70" width="48" height="26" rx="6" fill="#c77f1e"/>
+      <text x="890" y="88" fill="#241a05" font-size="11">high</text>
+      <text x="942" y="88" fill="#241a05" font-size="11">low</text>
+      <text x="808" y="122" fill="#8b96ad" font-size="11">۵۹ فیچر non-causal قبل از این‌جا حذف شده‌اند (علیت)</text>
+      <text x="808" y="140" fill="#f0a63c" font-size="11">۲ ستون آخر = برچسبِ همان سطر (پایین‌تر ↓)</text>
+    </g>
+  </svg>
+  <p class="note">حالا مهم‌ترین قسمت — <b style="color:var(--lbl)">برچسب هر سطر از کجا می‌آید؟</b> از «فردای همان سطر»:</p>
+  <div class="formula">high_off[t] = (high[t+1] − close[t]) / close[t]      low_off[t] = (low[t+1] − close[t]) / close[t]</div>
+  <div class="key"><b>ترجمه:</b> «فردا نسبت به امروزِ بسته‌شده چند درصد بالاتر اوج می‌گیرد و چند درصد پایین‌تر کف می‌زند؟»
+  دقیقاً همان چیزی که برای بستن براکت TP/SL فردا لازم است.</div>
+</section>
+
+<!-- ═══════════ مرحله ۲ ═══════════ -->
+<section>
+  <h2><span class="step">۲</span> یک نمونهٔ آموزشی — جفت (X , y)</h2>
+  <p class="note">پنجره‌ای از ۱۵۰ سطر که در سطر <code>end</code> تمام می‌شود. X ورودی است، y برچسب — و چون seq2seq است، <b>هر سطرِ X برچسبِ فردای خودش را دارد</b> (نه فقط سطر آخر).</p>
+  <svg viewBox="0 0 1000 330" xmlns="http://www.w3.org/2000/svg">
+    <g font-family="Tahoma">
+      <!-- window frame -->
+      <rect x="30" y="30" width="700" height="260" rx="12" fill="#0e2233" stroke="#3fa7d6" stroke-width="1.5"/>
+      <text x="380" y="56" fill="#5ec8e8" text-anchor="middle" font-size="13.5" font-weight="bold">X : پنجرهٔ ۱۵۰ × ۱۸۰  (minmax درون‌پنجره‌ای · ستون برچسب حذف)</text>
+      <!-- 12 rows suggesting 150 -->
+      <g>
+        <rect x="60" y="75"  width="600" height="14" rx="3" fill="#2b7aa8"/>
+        <rect x="60" y="95"  width="600" height="14" rx="3" fill="#3fa7d6"/>
+        <rect x="60" y="115" width="600" height="14" rx="3" fill="#2b7aa8"/>
+        <text x="380" y="148" fill="#8b96ad" font-size="11" text-anchor="middle">⋮  (۱۵۰ سطر پشت‌سرهم — سطرهای میانی فقط context اند)  ⋮</text>
+        <rect x="60" y="165" width="600" height="14" rx="3" fill="#3fa7d6"/>
+        <rect x="60" y="185" width="600" height="14" rx="3" fill="#2b7aa8"/>
+        <rect x="60" y="205" width="600" height="14" rx="3" fill="#3fa7d6"/>
+        <rect x="60" y="225" width="600" height="16" rx="3" fill="#5ec8e8" stroke="#fff" stroke-width="1.2"/>
+        <text x="380" y="238" fill="#06222c" font-size="11" text-anchor="middle">سطر «امروز» (end) — آخرین کندلِ بسته‌شده</text>
+      </g>
+      <!-- y column -->
+      <rect x="760" y="30" width="210" height="260" rx="12" fill="#231a0b" stroke="#f0a63c" stroke-width="1.5"/>
+      <text x="865" y="56" fill="#f0a63c" text-anchor="middle" font-size="13.5" font-weight="bold">y : ۱۵۰ × ۲</text>
+      <g>
+        <rect x="778" y="75"  width="174" height="14" rx="3" fill="#c77f1e"/>
+        <rect x="778" y="95"  width="174" height="14" rx="3" fill="#f0a63c"/>
+        <rect x="778" y="115" width="174" height="14" rx="3" fill="#c77f1e"/>
+        <text x="865" y="148" fill="#8b96ad" font-size="11" text-anchor="middle">⋮  برچسبِ فردای هر سطر  ⋮</text>
+        <rect x="778" y="165" width="174" height="14" rx="3" fill="#f0a63c"/>
+        <rect x="778" y="185" width="174" height="14" rx="3" fill="#c77f1e"/>
+        <rect x="778" y="205" width="174" height="14" rx="3" fill="#f0a63c"/>
+        <rect x="778" y="225" width="174" height="16" rx="3" fill="#ffd98e" stroke="#fff" stroke-width="1.2"/>
+        <text x="865" y="238" fill="#241a05" font-size="10.5" text-anchor="middle">فردایِ «امروز» ← inference همین</text>
+      </g>
+      <!-- arrows row k → y row k -->
+      <line x1="662" y1="102" x2="774" y2="102" stroke="#8b96ad" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#ar)"/>
+      <line x1="662" y1="233" x2="774" y2="233" stroke="#fff" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="718" y="94" fill="#8b96ad" font-size="10.5" text-anchor="middle">هر سطر</text>
+      <text x="718" y="225" fill="#fff" font-size="10.5" text-anchor="middle">آخرین سطر</text>
+      <text x="500" y="310" fill="#8b96ad" font-size="12" text-anchor="middle">باگ ۴۷ همین‌جا بود: y همهٔ نمونه‌ها از سطرهای ثابت ۳۳..۱۸۲ می‌آمد — الان از سطرهای خودِ هر پنجره ✓</text>
+    </g>
+  </svg>
+  <div class="key"><b>چرا y پهن است (۱۵۰×۲) و نه فقط ۲ عدد؟</b> seq2seq = گرادیان ۱۵۰ برابر مترکم‌تر
+  (فاز ۵۵) و مانع collapse. مدل خروجی را هم به همین شکل [150×2] می‌دهد؛
+  loss: <code>۴۰٪ کل سکانس + ۶۰٪ سطر آخر</code>. موقع ترید فقط <b>سطر آخرِ خروجی</b> خوانده می‌شود = high/low فردا.</div>
+</section>
+
+<!-- ═══════════ مرحله ۳ ═══════════ -->
+<section>
+  <h2><span class="step">۳</span> سر خوردن پنجره — ۴٬۳۳۱ نمونه</h2>
+  <p class="note">پنجره یکی‌یکی به جلو می‌لغزد (stride=1)؛ از ۴٬۴۸۰ سطر، <code>۴۴۸۰ − ۱۵۰ + ۱ = ۴٬۳۳۱</code> نمونه ساخته می‌شود. هم‌پوشانی ۱۴۹ سطری بین همسایه‌ها طبیعیِ سری زمانی است.</p>
+  <svg viewBox="0 0 1000 150" xmlns="http://www.w3.org/2000/svg">
+    <g font-family="Tahoma" font-size="12">
+      <rect x="30"  y="30" width="230" height="34" rx="6" fill="#3fa7d6"/>
+      <rect x="110" y="70" width="230" height="34" rx="6" fill="#2b7aa8"/>
+      <rect x="190" y="110" width="230" height="30" rx="6" fill="#3fa7d6"/>
+      <text x="145" y="52" fill="#06222c" text-anchor="middle">نمونهٔ ۱</text>
+      <text x="225" y="92" fill="#dce3f2" text-anchor="middle">نمونهٔ ۲</text>
+      <text x="305" y="130" fill="#06222c" text-anchor="middle">نمونهٔ ۳ …</text>
+      <text x="520" y="75" fill="#8b96ad">… تا ۴٬۳۳۱ — هر نمونه فقط یک کندل جلوتر شروع می‌شود</text>
+      <text x="520" y="100" fill="#8b96ad">و برچسب‌هایش هم یک کندل جلوتر می‌روند (فردایِ هر سطر خودش)</text>
+    </g>
+  </svg>
+</section>
+
+<!-- ═══════════ مرحله ۴ ═══════════ -->
+<section>
+  <h2><span class="step">۴</span> تقسیم آموزش/ولید — walk-forward پاک‌سازی‌شده (بدون شافل)</h2>
+  <p class="note">ولید = <b>۴۴۸ نمونه (۱۰٪ سطرها)</b> در «آیندهٔ» آموزش. بین‌شان <b style="color:var(--gap)">گاف ۱۵۰ سطری</b> (<code>window−1 + horizon</code>) تا نه ورودی مشترک بماند نه برچسبی که از ناحیهٔ امتحان سر دراز کرده باشد.</p>
+  <svg viewBox="0 0 1000 240" xmlns="http://www.w3.org/2000/svg">
+    <g font-family="Tahoma" font-size="11.5">
+      <!-- timeline labels -->
+      <text x="30" y="26" fill="#8b96ad">زمان →  (۴٬۳۳۱ نمونه — قدیم به جدید)</text>
+      <!-- fold 1 -->
+      <text x="30" y="62" fill="#dce3f2" font-size="12">fold 1</text>
+      <rect x="100" y="44" width="430" height="28" rx="5" fill="#3fbf7f"/>
+      <text x="315" y="62" fill="#05230f" text-anchor="middle">آموزش [۰ … ۲٬۴۶۴)</text>
+      <rect x="530" y="44" width="34" height="28" rx="3" fill="#e05555"/>
+      <rect x="564" y="44" width="88" height="28" rx="5" fill="#b07ef0"/>
+      <text x="608" y="62" fill="#1c0f33" text-anchor="middle">ولید ۴۴۸</text>
+      <text x="670" y="62" fill="#8b96ad" font-size="10.5">باقی دیتا (نادیده)</text>
+      <!-- fold 2 -->
+      <text x="30" y="112" fill="#dce3f2" font-size="12">fold 2</text>
+      <rect x="100" y="94" width="478" height="28" rx="5" fill="#3fbf7f"/>
+      <text x="339" y="112" fill="#05230f" text-anchor="middle">آموزش (بلندتر — expanding)</text>
+      <rect x="578" y="94" width="34" height="28" rx="3" fill="#e05555"/>
+      <rect x="612" y="94" width="88" height="28" rx="5" fill="#b07ef0"/>
+      <text x="656" y="112" fill="#1c0f33" text-anchor="middle">ولید ۴۴۸</text>
+      <!-- fold 3 -->
+      <text x="30" y="162" fill="#dce3f2" font-size="12">fold 3</text>
+      <rect x="100" y="144" width="526" height="28" rx="5" fill="#3fbf7f"/>
+      <text x="363" y="162" fill="#05230f" text-anchor="middle">آموزش (بلندتر — expanding)</text>
+      <rect x="626" y="144" width="34" height="28" rx="3" fill="#e05555"/>
+      <rect x="660" y="144" width="88" height="28" rx="5" fill="#b07ef0" stroke="#fff" stroke-width="1.2"/>
+      <text x="704" y="162" fill="#1c0f33" text-anchor="middle">ولید ۴۴۸</text>
+      <text x="760" y="162" fill="#fff" font-size="11">★ مدل ذخیره‌شده از همین</text>
+      <!-- annotations -->
+      <text x="547" y="200" fill="#e05555" text-anchor="middle" font-size="10.5">گاف ۱۵۰</text>
+      <text x="30" y="222" fill="#8b96ad" font-size="11">فولدها از آخرِ پلن برمی‌داریم (--folds 3) تا ولید همیشه جدیدترین دورهٔ دیتا باشد · هر fold مدل تازه از seed=42</text>
+    </g>
+  </svg>
+  <table>
+    <tr><th>fold</th><th>آموزش</th><th>گاف</th><th>ولید</th></tr>
+    <tr><td>۱</td><td class="g">[0 : 2,464)</td><td class="r">150</td><td class="p">[2,614 : 3,062)</td></tr>
+    <tr><td>۲</td><td class="g">[0 : …)</td><td class="r">150</td><td class="p">[3,062 : 3,510)</td></tr>
+    <tr><td>۳ ★</td><td class="g">[0 : …)</td><td class="r">150</td><td class="p">[3,510 : 3,958)</td></tr>
+  </table>
+  <p class="note">* طول آموزشِ فولدهای ۲ و ۳ بعد از پاک‌سازیِ برچسب‌ها (نمونه‌هایی که فردایشان به ناحیهٔ ولید می‌رسد) کوتاه‌تر از مرز نظری می‌شود — از لاگ قابل استخراج است.</p>
+</section>
+
+<!-- ═══════════ مرحله ۵ ═══════════ -->
+<section>
+  <h2><span class="step">۵</span> چه چیزی فیزیکاً به Keras می‌رسد</h2>
+  <svg viewBox="0 0 1000 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8b96ad"/>
+      </marker>
+    </defs>
+    <g font-family="Tahoma" font-size="12.5" text-anchor="middle">
+      <rect x="30" y="30" width="230" height="60" rx="10" fill="#0e2233" stroke="#3fa7d6"/>
+      <text x="145" y="55" fill="#5ec8e8">batch</text>
+      <text x="145" y="77" fill="#dce3f2" direction="ltr">(16, 150, 180)</text>
+      <line x1="262" y1="60" x2="302" y2="60" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar2)"/>
+      <rect x="306" y="30" width="260" height="60" rx="10" fill="#1a2130" stroke="#2a3348"/>
+      <text x="436" y="55" fill="#dce3f2">WaveNet ۴لایه×۲بلاک (RF=121)</text>
+      <text x="436" y="77" fill="#8b96ad" font-size="11">AdamW 3e-4 · wd=1e-4 · ReduceLR · EarlyStopping</text>
+      <line x1="568" y1="60" x2="608" y2="60" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar2)"/>
+      <rect x="612" y="30" width="230" height="60" rx="10" fill="#231a0b" stroke="#f0a63c"/>
+      <text x="727" y="55" fill="#f0a63c">خروجی</text>
+      <text x="727" y="77" fill="#dce3f2" direction="ltr">(16, 150, 2)</text>
+      <line x1="844" y1="60" x2="884" y2="60" stroke="#8b96ad" stroke-width="1.6" marker-end="url(#ar2)"/>
+      <rect x="888" y="30" width="88" height="60" rx="10" fill="#122019" stroke="#3fbf7f"/>
+      <text x="932" y="55" fill="#3fbf7f" font-size="11">سطر آخر</text>
+      <text x="932" y="73" fill="#dce3f2" font-size="12">high/low</text>
+    </g>
+  </svg>
+  <div class="legend">
+    <span class="lg-feat">ورودی/فیچر</span><span class="lg-lbl">برچسب</span>
+    <span class="lg-train">آموزش</span><span class="lg-val">ولید</span>
+    <span class="lg-gap">گاف پاک‌سازی</span><span class="lg-last">سطر آخر (مصرف در ترید)</span>
+  </div>
+  <div class="warn"><b>سنجهٔ سلامت اجرای بعدی (بعد از فیکس باگ ۴۷):</b>
+  <code>val_mae</code> باید واقع‌بینانه باشد — حدود <b>۰.۱ تا ۰.۳٪ (چند دلار)</b>، نه ±۰.۱۶$؛
+  و <code>val_high/low_bias</code> دیگر دقیقاً برابر MAE نباشد (اگر برابر بود یعنی هنوز collapse).</div>
+  <div class="ok"><b>تذکر نسخه:</b> آرتیفکت‌های رنج قبلی (v1–v3 تاریخی و اجرای قبل از فیکس) روی برچسب خراب آموزش دیده‌اند و باطل‌اند — فقط مدل‌های بعد از این فیکس معتبرند. مسیر سیگنال از این باگ آسیب ندید.</div>
+</section>
+
+</div>
+</body>
+</html>

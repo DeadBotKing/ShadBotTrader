@@ -39,6 +39,27 @@ from ShadBotTrader.infrastructure.ai.training_progress import (
     keras_progress_callback,
 )
 
+# Phase 54 measured percent offsets near ±0.002 and val_mae near 0.0017.
+# delta=0.005 keeps those residuals in Huber's quadratic zone.
+RANGE_HUBER_DELTA_PCT = 0.005
+# ATR multiples are about 0.3–1.0. Measured median absolute errors of
+# 0.21, 0.50 and 0.89 sit inside delta=1.0. Errors above 1 ATR stay linear.
+# This does not create ranking skill. It stops the Huber term from being
+# a second MAE. Saved models keep the delta stored in their loss config.
+RANGE_HUBER_DELTA_ATR = 1.0
+
+
+def range_huber_delta(target_units: str | None) -> float:
+    """Huber transition width in the same units as the training target."""
+    units = (target_units or "pct").strip().lower()
+    if units == "atr":
+        return RANGE_HUBER_DELTA_ATR
+    if units == "pct":
+        return RANGE_HUBER_DELTA_PCT
+    raise ValidationError(
+        f"Unknown range target units for Huber delta: {target_units!r} (use 'pct' or 'atr')"
+    )
+
 # ---------------------------------------------------------------------------
 # فاز ۷۰ — باگ ۵۱: Loss/Metric سفارشی رنج در سطح ماژول
 # ---------------------------------------------------------------------------
@@ -76,7 +97,11 @@ def _build_range_classes() -> None:
     class RangeLoss(tf.keras.losses.Loss):
         """Weighted 3*Huber + 6*MAE + 1*MSE (فاز ۵۴) + حالت seq2seq (فاز ۵۵).
 
-        seq2seq: 40% loss کل سکانس + 60% آخرین timestep (پیش‌بینی فردا).
+        seq2seq: 40% of every window row + 60% of the last row. The last
+        row is the decision candle. For horizon>1 it holds every pair
+        ``[high_1, low_1, ..., high_H, low_H]``, not tomorrow alone.
+        Splitting that row into pair-MAEs and averaging them is the same
+        number when every pair has two columns, so it is not done.
         """
 
         def __init__(
@@ -110,6 +135,7 @@ def _build_range_classes() -> None:
         def call(self, y_true: Any, y_pred: Any) -> Any:
             if self._seq2seq:
                 loss_all = self._weighted(y_true, y_pred)
+                # Last window row, not "tomorrow". See the class docstring.
                 loss_tgt = self._weighted(
                     y_true[:, -1:, :],  # type: ignore[index]
                     y_pred[:, -1:, :],  # type: ignore[index]
@@ -384,6 +410,7 @@ class WavenetTrainer(ModelTrainer):
         monitor_metric: str = "val_loss",
         input_scale_range: tuple[float, float] = DEFAULT_SCALE_RANGE,
         class_weight_mode: str = "off",
+        target_units: str = "pct",
     ) -> None:
         """Train a WaveNet with roll-forward validation.
 
@@ -447,6 +474,11 @@ class WavenetTrainer(ModelTrainer):
         self._monitor_metric = (monitor_metric or "val_loss").strip() or "val_loss"
         self._input_scale_range = input_scale_range
         self._class_weight_mode = (class_weight_mode or "off").strip().lower()
+        self._target_units = (target_units or "pct").strip().lower()
+        if self._target_units not in ("pct", "atr"):
+            raise ValidationError(
+                f"Unknown range target units: {target_units!r} (use 'pct' or 'atr')"
+            )
         self._progress: TrainingProgressReporter = progress or NullProgressReporter()
         self._max_folds = max_folds
         self._initial_epoch = max(0, int(initial_epoch))
@@ -656,6 +688,7 @@ class WavenetTrainer(ModelTrainer):
                 seq2seq=self._seq2seq,
                 horizon=self._horizon_s2s,
                 output_channels=self._output_channels,
+                target_units=self._target_units,
             )
 
             # Phase 50: resume — warm-start from a saved checkpoint.
@@ -1268,6 +1301,7 @@ def _build_compiled(
     seq2seq: bool = False,
     horizon: int = 5,
     output_channels: int | None = None,
+    target_units: str = "pct",
 ):
     """Build and compile the network for the requested task.
 
@@ -1335,7 +1369,7 @@ def _build_compiled(
                 w_huber=0.0,
                 w_mae=1.0,
                 w_mse=0.0,
-                delta=0.005,
+                delta=0.005,  # unused: w_huber=0, so this is pure MAE
                 name="mae_loss",
             )
             compiled_metrics = [_range_class("Seq2SeqMAE")()]
@@ -1343,74 +1377,18 @@ def _build_compiled(
             compiled_loss = tf.keras.losses.MeanAbsoluteError()
             compiled_metrics = [tf.keras.metrics.MeanAbsoluteError(name=metric or "mae")]
     elif loss in ("huber", "huber_loss"):
-        # فاز ۵۴: Loss سه‌گانه (ایده از legacy/TimeSeriesPrediction2.py)
-        #
-        # ایده اصلی: ترکیب Huber + MAE + MSE با وزن‌بندی
-        # legacy: loss_weights=[30, 60, 10] → 30*Huber + 60*MAE + 10*MSE
-        #
-        # چرا این ترکیب بهتره از یک loss تنها؟
-        #   Huber (وزن اصلی): outlier-robust، smooth gradient
-        #   MAE   (وزن بزرگ): انعطاف بیشتر، bias کمتر نسبت به MSE
-        #   MSE   (وزن کوچک): gradient قوی برای خطاهای بزرگ در ابتدا
-        #
-        # delta Huber:
-        #   target magnitude: +/-0.002 (+/-0.2% offset)
-        #   val_mae ~ 0.0017 → delta=0.005 → δ/val_mae=2.9 → MSE mode [OK]
-        # فاز ۵۴/۵۵: Loss سه‌گانه Huber+MAE+MSE
-        # legacy weights: [30, 60, 10] → ما [3, 6, 1] (نسبت یکسان)
-        _w_h, _w_m, _w_s = 3.0, 6.0, 1.0
-        _w_sum = _w_h + _w_m + _w_s
-        _is_seq2seq = seq2seq
-
-        _huber_fn = tf.keras.losses.Huber(delta=0.005)
-
-        def _weighted_loss(y_true_t: object, y_pred_t: object) -> object:
-            """3*Huber + 6*MAE + 1*MSE — normalize شده."""
-            h = _huber_fn(y_true_t, y_pred_t)
-            m = tf.reduce_mean(
-                tf.abs(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
-            )
-            s = tf.reduce_mean(
-                tf.square(tf.cast(y_true_t, tf.float32) - tf.cast(y_pred_t, tf.float32))
-            )
-            return (_w_h * h + _w_m * m + _w_s * s) / _w_sum
-
-        try:
-            import keras as _keras_reg
-
-            _register_loss = _keras_reg.saving.register_keras_serializable
-        except (ImportError, AttributeError):
-            _register_loss = tf.keras.utils.register_keras_serializable
-
-        @_register_loss(package="ShadBotTrader")
-        class _RangeLoss(tf.keras.losses.Loss):
-            """Weighted Huber+MAE+MSE.
-
-            seq2seq (فاز ۵۵):
-              40% loss کل sequence  +  60% loss آخرین timestep
-              -> gradient قوی + focus روی پیش‌بینی فردا
-
-            scalar (فاز ۵۴):
-              loss معمولی روی 2 عدد خروجی
-            """
-
-            def get_config(self) -> dict:
-                return super().get_config()
-
-            def call(self, y_true: object, y_pred: object) -> object:
-                if _is_seq2seq:
-                    loss_all = _weighted_loss(y_true, y_pred)
-                    # آخرین timestep: پیش‌بینی فردا
-                    loss_tgt = _weighted_loss(
-                        y_true[:, -1:, :],  # type: ignore[index]
-                        y_pred[:, -1:, :],  # type: ignore[index]
-                    )
-                    return 0.4 * loss_all + 0.6 * loss_tgt
-                return _weighted_loss(y_true, y_pred)
-
-        # فاز ۷۰ (باگ ۵۱): کلاس‌های RangeLoss/Seq2SeqMAE ماژول‌سطح‌اند تا
-        # custom_objects() بتواند آنها را ببیند و load مدل رنج کار کند.
-        compiled_loss = _range_class("RangeLoss")(seq2seq=seq2seq, delta=0.005, name="range_loss")
+        # فاز ۵۴/۵۵: 3*Huber + 6*MAE + 1*MSE, same ratio as legacy [30, 60, 10].
+        # The MAE weight stays 6. That choice is not retuned here.
+        # delta must match target units. Percent targets keep 0.005.
+        # ATR targets use 1.0. A local _RangeLoss used to hard-code 0.005
+        # and re-register a class that custom_objects() does not export.
+        # Only the module-level RangeLoss is compiled.
+        huber_delta = range_huber_delta(target_units)
+        compiled_loss = _range_class("RangeLoss")(
+            seq2seq=seq2seq,
+            delta=huber_delta,
+            name="range_loss",
+        )
         if seq2seq:
             compiled_metrics = [_range_class("Seq2SeqMAE")()]
         else:

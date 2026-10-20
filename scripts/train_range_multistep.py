@@ -165,6 +165,11 @@ def print_plan(plan: list[dict[str, object]]) -> None:
     print("[i] Phase187A range multistep training plan", flush=True)
     print("[i] architecture: existing range WaveNet seq2seq. Option B is not used.", flush=True)
     print("[i] production ids are not write targets.", flush=True)
+    print(
+        "[i] new compiles use Huber delta=1.0 for ATR targets. "
+        "Saved gold_range_* artifacts are not rewritten. Do not rerun unless the owner asks.",
+        flush=True,
+    )
     for row in plan:
         print(
             f"[i] {row['timeframe']}: model_id={row['model_id']} horizon={row['horizon']} "

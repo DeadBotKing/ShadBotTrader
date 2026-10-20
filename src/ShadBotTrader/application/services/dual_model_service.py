@@ -567,6 +567,7 @@ class DualModelService:
             # Phase 55: seq2seq head برای range model
             seq2seq=getattr(role, "seq2seq", False) if is_regression else False,
             horizon=role.horizon if is_regression else 5,
+            target_units=getattr(dataset, "target_units", "pct") if is_regression else "pct",
         )
 
     def train(

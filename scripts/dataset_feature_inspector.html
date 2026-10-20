@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dataset / Feature inspector</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #171b22;
+      --line: #2a3140;
+      --text: #e8edf7;
+      --muted: #93a0b5;
+      --up: #26a69a;
+      --down: #ef5350;
+      --accent: #f0b429;
+      --select: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      direction: rtl;
+    }
+    header, section { padding: 12px 16px; }
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
+      direction: ltr;
+      border-bottom: 1px solid var(--line);
+      background: #12161d;
+    }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+    select, input, button {
+      background: #0f131a;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+    }
+    button { cursor: pointer; }
+    button.active { border-color: var(--accent); color: var(--accent); }
+    #status { margin-right: auto; color: var(--muted); font-size: 13px; align-self: center; }
+    #chartWrap {
+      position: relative;
+      height: 620px;
+      margin: 12px 16px;
+      background: #131722;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+    #help {
+      margin: 8px 16px 0;
+      direction: ltr;
+      text-align: left;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    #candleBox {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(90px, 1fr));
+      gap: 8px;
+      margin: 0 16px 12px;
+      direction: ltr;
+    }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .metric span { display: block; color: var(--muted); font-size: 11px; }
+    .metric strong { font-variant-numeric: tabular-nums; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 12px; padding: 0 16px 24px; }
+    aside, .tableWrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    aside h2, .tableWrap h2 { margin: 0 0 8px; font-size: 16px; }
+    aside p, aside li { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: right; }
+    th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: #1c222c; }
+    tr.noncausal td { color: #fbbf24; }
+    tr.selected-family td { background: rgba(125, 211, 252, 0.05); }
+    td.num, th.num { direction: ltr; text-align: left; font-variant-numeric: tabular-nums; }
+    .scroll { max-height: 640px; overflow: auto; }
+    code { color: var(--accent); }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <label>دیتاست
+      <select id="dataset"></select>
+    </label>
+    <button id="loadBtn" type="button">نمایش</button>
+    <button type="button" data-bars="80">۸۰</button>
+    <button type="button" data-bars="300">۳۰۰</button>
+    <button type="button" data-bars="1000">۱۰۰۰</button>
+    <button type="button" data-bars="all">همه</button>
+    <button id="resetBtn" type="button">بازنشانی زوم</button>
+    <div id="status">دیتاست را انتخاب کن.</div>
+  </header>
+  <div id="help">
+    wheel on chart or time axis: zoom time, including 1000 bars.
+    wheel or drag on the price axis: zoom price.
+    left-drag the chart: pan. mouse right = newer time, mouse up = higher price.
+    click a candle: price, volume, and every feature value.
+  </div>
+  <div id="chartWrap">
+    <canvas id="chart" dir="ltr"></canvas>
+  </div>
+  <div id="candleBox"></div>
+  <div class="layout">
+    <aside>
+      <h2>پارامترهای بررسی برای مرحله بعد</h2>
+      <div id="review">بعد از بار شدن فیچرها، آمار همین دیتاست اینجا می‌آید.</div>
+    </aside>
+    <div class="tableWrap">
+      <h2>فیچرها روی کندل انتخاب‌شده</h2>
+      <div class="filters">
+        <input id="search" placeholder="جستجوی feature id">
+        <select id="family"></select>
+        <select id="causality">
+          <option value="">همه causality</option>
+          <option value="causal">causal</option>
+          <option value="non_causal">non_causal</option>
+        </select>
+        <select id="scope">
+          <option value="">همه scope</option>
+          <option value="both">both</option>
+          <option value="range">range</option>
+          <option value="signal">signal</option>
+        </select>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>feature</th><th>family</th><th>causality</th><th>scope</th><th class="num">value</th>
+            </tr>
+          </thead>
+          <tbody id="featureBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const datasetSelect = document.getElementById("dataset");
+    const statusEl = document.getElementById("status");
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+    const featureBody = document.getElementById("featureBody");
+    const view = {
+      candles: [],
+      features: [],
+      values: null,
+      start: 0,
+      count: 120,
+      priceMin: 0,
+      priceMax: 1,
+      priceManual: false,
+      selected: null,
+      hover: null,
+    };
+    let drag = null;
+
+    function setStatus(text) { statusEl.textContent = text; }
+    function fmt(value) {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      const abs = Math.abs(value);
+      if (abs !== 0 && (abs < 0.0001 || abs >= 1000000)) return value.toExponential(4);
+      return value.toLocaleString("en-US", { maximumFractionDigits: 6 });
+    }
+    function qs(params) {
+      return new URLSearchParams(params).toString();
+    }
+    async function loadDatasets() {
+      const response = await fetch("/api/datasets");
+      const payload = await response.json();
+      datasetSelect.innerHTML = "";
+      for (const item of payload.datasets) {
+        const option = document.createElement("option");
+        option.value = JSON.stringify(item);
+        option.textContent = `${item.symbol} ${item.timeframe} ${item.layer} v${item.version}`;
+        if (item.symbol === "XAUUSD" && item.timeframe === "1D") option.selected = true;
+        datasetSelect.appendChild(option);
+      }
+      if (!payload.datasets.length) setStatus("هیچ دیتاست Parquet در datasets/processed یا datasets/raw نیست.");
+    }
+    function selectedDataset() {
+      if (!datasetSelect.value) return null;
+      return JSON.parse(datasetSelect.value);
+    }
+    async function loadSelected() {
+      const item = selectedDataset();
+      if (!item) return;
+      setStatus(`در حال خواندن ${item.symbol} ${item.timeframe} و محاسبه فیچرها...`);
+      const query = qs({
+        symbol: item.symbol,
+        timeframe: item.timeframe,
+        version: item.version,
+        layer: item.layer,
+      });
+      let payload = null;
+      for (let attempt = 0; attempt < 240; attempt += 1) {
+        const response = await fetch("/api/prepare?" + query);
+        payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "load failed");
+        if (payload.status === "ready") break;
+        if (payload.status === "failed") throw new Error(payload.error || "feature compute failed");
+        setStatus(`فیچرها: ${payload.done || 0} / ${payload.total || "?"}`);
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      if (!payload || payload.status !== "ready") throw new Error("feature compute timed out");
+      view.candles = payload.candles;
+      view.features = payload.features;
+      view.selected = view.candles.length - 1;
+      showBars(Math.min(150, view.candles.length));
+      fillFeatureFilters();
+      renderReview(payload.review);
+      await selectCandle(view.selected);
+      setStatus(`${item.symbol} ${item.timeframe} v${item.version}: ${payload.rows} candles, ${payload.features.length} features`);
+    }
+    function showBars(count) {
+      view.count = Math.max(5, Math.min(count, view.candles.length));
+      view.start = Math.max(0, view.candles.length - view.count);
+      view.priceManual = false;
+      draw();
+    }
+    function fillFeatureFilters() {
+      const family = document.getElementById("family");
+      const current = family.value;
+      const names = [...new Set(view.features.map((item) => item.family))].sort();
+      family.innerHTML = `<option value="">همه family</option>` + names.map((name) => `<option>${name}</option>`).join("");
+      family.value = current;
+    }
+    function visibleRange() {
+      const first = Math.max(0, Math.floor(view.start));
+      const last = Math.min(view.candles.length - 1, Math.ceil(view.start + view.count));
+      let low = Infinity;
+      let high = -Infinity;
+      for (let index = first; index <= last; index += 1) {
+        const candle = view.candles[index];
+        if (!candle) continue;
+        low = Math.min(low, candle.low);
+        high = Math.max(high, candle.high);
+      }
+      if (!Number.isFinite(low) || high <= low) {
+        low = 0;
+        high = 1;
+      }
+      const pad = (high - low) * 0.08;
+      return { low: low - pad, high: high + pad };
+    }
+    function priceBounds() {
+      if (view.priceManual) return { low: view.priceMin, high: view.priceMax };
+      const range = visibleRange();
+      view.priceMin = range.low;
+      view.priceMax = range.high;
+      return range;
+    }
+    function layout() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      return {
+        width,
+        height,
+        priceAxis: 84,
+        timeAxis: 28,
+        volume: 78,
+        left: 8,
+        top: 12,
+        plotRight: width - 84,
+        priceBottom: height - 28 - 78,
+        volumeTop: height - 28 - 78,
+        volumeBottom: height - 28,
+      };
+    }
+    function xOf(index, box) {
+      return box.left + ((index - view.start) / view.count) * (box.plotRight - box.left);
+    }
+    function yOf(price, box, bounds) {
+      const span = bounds.high - bounds.low || 1;
+      return box.top + (bounds.high - price) / span * (box.priceBottom - box.top);
+    }
+    function indexOfX(x, box) {
+      const ratio = (x - box.left) / Math.max(1, box.plotRight - box.left);
+      return view.start + ratio * view.count;
+    }
+    function draw() {
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      canvas.width = Math.max(1, Math.floor(width * dpr));
+      canvas.height = Math.max(1, Math.floor(height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.direction = "ltr";
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#131722";
+      ctx.fillRect(0, 0, width, height);
+      if (!view.candles.length) return;
+      const box = layout();
+      const bounds = priceBounds();
+      ctx.strokeStyle = "#2a3140";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let step = 0; step <= 4; step += 1) {
+        const y = box.top + (box.priceBottom - box.top) * step / 4;
+        ctx.moveTo(box.left, y);
+        ctx.lineTo(box.plotRight, y);
+      }
+      ctx.stroke();
+      const barWidth = (box.plotRight - box.left) / view.count;
+      const bodyWidth = Math.max(1, barWidth * 0.62);
+      let volumeMax = 1;
+      const first = Math.max(0, Math.floor(view.start));
+      const last = Math.min(view.candles.length - 1, Math.ceil(view.start + view.count));
+      for (let index = first; index <= last; index += 1) {
+        volumeMax = Math.max(volumeMax, Math.sqrt(Math.max(0, view.candles[index].volume)));
+      }
+      for (let index = first; index <= last; index += 1) {
+        const candle = view.candles[index];
+        const x = xOf(index + 0.5, box);
+        const up = candle.close >= candle.open;
+        ctx.strokeStyle = up ? "#26a69a" : "#ef5350";
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.moveTo(x, yOf(candle.high, box, bounds));
+        ctx.lineTo(x, yOf(candle.low, box, bounds));
+        ctx.stroke();
+        const yOpen = yOf(candle.open, box, bounds);
+        const yClose = yOf(candle.close, box, bounds);
+        const top = Math.min(yOpen, yClose);
+        const body = Math.max(1, Math.abs(yClose - yOpen));
+        ctx.fillRect(x - bodyWidth / 2, top, bodyWidth, body);
+        const volumeHeight = (Math.sqrt(Math.max(0, candle.volume)) / volumeMax) * (box.volumeBottom - box.volumeTop - 4);
+        ctx.globalAlpha = 0.55;
+        ctx.fillRect(x - bodyWidth / 2, box.volumeBottom - volumeHeight, bodyWidth, volumeHeight);
+        ctx.globalAlpha = 1;
+        if (index === view.selected) {
+          ctx.strokeStyle = "#7dd3fc";
+          ctx.strokeRect(x - barWidth / 2 + 0.5, box.top, barWidth - 1, box.volumeBottom - box.top);
+        }
+      }
+      ctx.fillStyle = "#93a0b5";
+      ctx.font = "12px sans-serif";
+      ctx.textAlign = "left";
+      for (let step = 0; step <= 4; step += 1) {
+        const price = bounds.high - (bounds.high - bounds.low) * step / 4;
+        const y = box.top + (box.priceBottom - box.top) * step / 4;
+        ctx.fillText(fmt(price), box.plotRight + 6, y + 4);
+      }
+      ctx.textAlign = "center";
+      const labelCount = Math.min(6, Math.floor(view.count));
+      for (let step = 0; step < labelCount; step += 1) {
+        const index = Math.round(view.start + (view.count - 1) * step / Math.max(1, labelCount - 1));
+        const candle = view.candles[Math.max(0, Math.min(view.candles.length - 1, index))];
+        const labelX = xOf(index, box);
+        if (labelX > box.left + 24 && labelX < box.plotRight - 24) {
+          ctx.fillText(candle.time.slice(2, 10), labelX, height - 8);
+        }
+      }
+      ctx.textAlign = "left";
+      ctx.fillText(`${Math.round(view.count)} bars  |  volume scale sqrt`, box.left + 8, box.top + 14);
+      if (view.hover !== null) {
+        const x = xOf(view.hover + 0.5, box);
+        ctx.strokeStyle = "rgba(240, 180, 41, 0.7)";
+        ctx.beginPath();
+        ctx.moveTo(x, box.top);
+        ctx.lineTo(x, box.volumeBottom);
+        ctx.stroke();
+      }
+    }
+    function eventPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+    function zone(point) {
+      const box = layout();
+      if (point.x >= box.plotRight) return "price";
+      if (point.y >= box.volumeBottom) return "time";
+      return "plot";
+    }
+    function zoomTime(factor, anchorIndex) {
+      const next = Math.max(5, Math.min(view.candles.length, view.count * factor));
+      const fraction = (anchorIndex - view.start) / view.count;
+      view.count = next;
+      view.start = anchorIndex - fraction * view.count;
+      clampView();
+      if (!view.priceManual) priceBounds();
+      draw();
+    }
+    function zoomPrice(factor, anchorPrice) {
+      const bounds = priceBounds();
+      view.priceManual = true;
+      view.priceMin = anchorPrice - (anchorPrice - bounds.low) * factor;
+      view.priceMax = anchorPrice + (bounds.high - anchorPrice) * factor;
+      if (view.priceMax - view.priceMin < 1e-8) view.priceMax = view.priceMin + 1e-8;
+      draw();
+    }
+    function clampView() {
+      const minStart = 1 - view.count;
+      const maxStart = view.candles.length - 1;
+      if (view.start < minStart) view.start = minStart;
+      if (view.start > maxStart) view.start = maxStart;
+    }
+    function selectCandle(index) {
+      if (index < 0 || index >= view.candles.length) return Promise.resolve();
+      view.selected = index;
+      const candle = view.candles[index];
+      const item = selectedDataset();
+      const box = document.getElementById("candleBox");
+      box.innerHTML = [
+        ["time", candle.time.slice(0, 16).replace("T", " ")],
+        ["open", fmt(candle.open)],
+        ["high", fmt(candle.high)],
+        ["low", fmt(candle.low)],
+        ["close", fmt(candle.close)],
+        ["volume", fmt(candle.volume)],
+        ["range", fmt(candle.high - candle.low)],
+        ["index", String(index)],
+      ].map(([name, value]) => `<div class="metric"><span>${name}</span><strong>${value}</strong></div>`).join("");
+      draw();
+      return fetch("/api/candle?" + qs({
+        symbol: item.symbol,
+        timeframe: item.timeframe,
+        version: item.version,
+        layer: item.layer,
+        index,
+      })).then((response) => response.json()).then((payload) => {
+        view.values = Object.fromEntries(payload.features.map((feature) => [feature.id, feature.value]));
+        renderFeatures();
+      });
+    }
+    function renderFeatures() {
+      const search = document.getElementById("search").value.trim().toLowerCase();
+      const family = document.getElementById("family").value;
+      const causality = document.getElementById("causality").value;
+      const scope = document.getElementById("scope").value;
+      featureBody.innerHTML = "";
+      for (const feature of view.features) {
+        if (family && feature.family !== family) continue;
+        if (causality && feature.causality !== causality) continue;
+        if (scope && feature.scope !== scope) continue;
+        const blob = `${feature.id} ${feature.name} ${feature.family}`.toLowerCase();
+        if (search && !blob.includes(search)) continue;
+        const row = document.createElement("tr");
+        if (feature.causality !== "causal") row.className = "noncausal";
+        const value = view.values ? view.values[feature.id] : null;
+        row.title = feature.description || "";
+        row.innerHTML = `<td><code>${feature.id}</code></td><td>${feature.family}</td><td>${feature.causality}</td><td>${feature.scope}</td><td class="num">${fmt(value)}</td>`;
+        featureBody.appendChild(row);
+      }
+    }
+    function renderReview(review) {
+      const divHits = (review.divergence_hits || []).map((item) => `${item.id}: ${item.hits}`).join("<br>");
+      document.getElementById("review").innerHTML = `
+        <p>rows=${review.rows} · features=${review.feature_count}<br>
+        causal=${review.causal} · non_causal=${review.non_causal}<br>
+        range-only=${review.range_only} · signal-only=${review.signal_only}<br>
+        volume_zero_rate=${fmt(review.volume_zero_rate)}</p>
+        <p><strong>ثابت روی این دیتاست</strong><br>${(review.constant_features || []).join(", ") || "هیچ"}</p>
+        <p><strong>null در کندل آخر، ولی قبلاً مقدار داشته</strong><br>${(review.tail_null_features || []).slice(0, 18).join(", ") || "هیچ"}</p>
+        <p><strong>divergence hits</strong><br>${divHits || "هیچ"}</p>
+        <ol>
+          <li><code>divergence</code> در کاتالوگ ۱۲ تا است و با extremaی وسط‌چین order=5 ساخته می‌شود. leakage آن <code>CENTERED_FUTURE_EXTREMA</code> است. برای مرحله بعد باید نسخه causal با تأیید بعد از بسته‌شدن ۵ کندل راست سنجیده شود، نه همین سری.</li>
+          <li>جدا کردن causal و non_causal. ۵۳ فیچر non-causal هستند: wavelet، Fourier fit، PCA fit، chikou، و divergence. null بودن دم سری علامت نگاه به آینده است.</li>
+          <li>warmup و hole: lookback هر فیچر، و missing بعد از اولین مقدار معتبر.</li>
+          <li>مقیاس: فیچر دلاری مثل SMA در کنار ATR و return. <code>close_rel</code> در ماتریس مدل همیشه صفر است و دو ستون volume log تکراری‌اند.</li>
+          <li>رژیم نوسان: <code>atr_14</code>، <code>vol_of_vol</code>، عرض Donchian و Bollinger. فیچر را در atr_low / mid / high جدا ببین.</li>
+          <li>روند در برابر برگشت: <code>linreg_slope</code>، <code>linreg_r2</code>، Hurst، fractal dimension، RSI، stochastic، <code>close_location</code>.</li>
+          <li>session و hour فقط <code>model_scope=signal</code> هستند و در آموزش range استفاده نمی‌شوند. روی 4H/1D باید دید اصلاً اطلاعاتی مانده یا نه.</li>
+          <li>حجم طلا ممکن است tick volume باشد. <code>amihud_illiq</code>، <code>kyles_lambda</code> و Roll spread را با نرخ حجم صفر بسنج.</li>
+          <li>هندسه کندل: gap، wick، body، close location. این‌ها در ستون‌های کندلی مدل هم هستند، نه فقط در کاتالوگ.</li>
+          <li>ایستایی: <code>frac_diff_04</code> و return در برابر فیچرهای سطح قیمت. سطح قیمت با رفتن طلا از ۲۰۰۰ به ۴۰۰۰ جابه‌جا می‌شود.</li>
+        </ol>
+      `;
+    }
+    canvas.addEventListener("wheel", (event) => {
+      if (!view.candles.length) return;
+      event.preventDefault();
+      const point = eventPoint(event);
+      const where = zone(point);
+      const factor = event.deltaY > 0 ? 1.15 : 1 / 1.15;
+      if (where === "price") {
+        const bounds = priceBounds();
+        const box = layout();
+        const ratio = (point.y - box.top) / Math.max(1, box.priceBottom - box.top);
+        zoomPrice(factor, bounds.high - ratio * (bounds.high - bounds.low));
+      } else {
+        zoomTime(factor, indexOfX(point.x, layout()));
+      }
+    }, { passive: false });
+    canvas.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || !view.candles.length) return;
+      canvas.setPointerCapture(event.pointerId);
+      const point = eventPoint(event);
+      const bounds = priceBounds();
+      drag = {
+        x: point.x,
+        y: point.y,
+        moved: 0,
+        zone: zone(point),
+        start: view.start,
+        count: view.count,
+        priceMin: bounds.low,
+        priceMax: bounds.high,
+      };
+    });
+    canvas.addEventListener("pointermove", (event) => {
+      if (!view.candles.length) return;
+      const point = eventPoint(event);
+      const box = layout();
+      if (point.x >= box.left && point.x <= box.plotRight) {
+        view.hover = Math.round(indexOfX(point.x, box) - 0.5);
+      }
+      if (!drag) {
+        draw();
+        return;
+      }
+      const dx = point.x - drag.x;
+      const dy = point.y - drag.y;
+      drag.moved = Math.max(drag.moved, Math.hypot(dx, dy));
+      if (drag.zone === "plot") {
+        const barWidth = (box.plotRight - box.left) / view.count;
+        view.start = drag.start + dx / barWidth;
+        const bounds = { low: drag.priceMin, high: drag.priceMax };
+        if (!view.priceManual) {
+          const auto = visibleRange();
+          bounds.low = auto.low;
+          bounds.high = auto.high;
+        }
+        const shift = -dy / Math.max(1, box.priceBottom - box.top) * (bounds.high - bounds.low);
+        view.priceManual = true;
+        view.priceMin = bounds.low + shift;
+        view.priceMax = bounds.high + shift;
+        clampView();
+      } else if (drag.zone === "price") {
+        const factor = Math.exp(dy / 180);
+        const anchor = (drag.priceMin + drag.priceMax) / 2;
+        view.priceManual = true;
+        view.priceMin = anchor - (anchor - drag.priceMin) * factor;
+        view.priceMax = anchor + (drag.priceMax - anchor) * factor;
+      } else if (drag.zone === "time") {
+        const factor = Math.exp(-dx / 180);
+        const anchor = drag.start + drag.count / 2;
+        view.count = Math.max(5, Math.min(view.candles.length, drag.count * factor));
+        view.start = anchor - view.count / 2;
+        clampView();
+      }
+      draw();
+    });
+    canvas.addEventListener("pointerup", (event) => {
+      if (!drag) return;
+      const point = eventPoint(event);
+      const moved = drag.moved;
+      const where = drag.zone;
+      drag = null;
+      if (moved < 4 && where === "plot") {
+        const index = Math.round(indexOfX(point.x, layout()) - 0.5);
+        selectCandle(Math.max(0, Math.min(view.candles.length - 1, index)));
+      }
+    });
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    window.addEventListener("resize", draw);
+    document.getElementById("loadBtn").addEventListener("click", () => loadSelected().catch((error) => setStatus(error.message)));
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      view.priceManual = false;
+      showBars(Math.min(150, view.candles.length || 150));
+    });
+    document.querySelectorAll("[data-bars]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (!view.candles.length) return;
+        const value = button.dataset.bars;
+        showBars(value === "all" ? view.candles.length : Number(value));
+      });
+    });
+    ["search", "family", "causality", "scope"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", renderFeatures);
+    });
+    loadDatasets().catch((error) => setStatus(error.message));
+  </script>
+</body>
+</html>

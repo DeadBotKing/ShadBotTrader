@@ -1,0 +1,635 @@
+# Phase146 — Sequence WaveNet Backtest / PnL Audit
+
+**Status:** ✅ Phase146A implemented  
+**Type:** Research-only PnL replay for Phase145A full-source sequence WaveNet  
+**Production status:** BLOCKED — no paper/live approval
+
+---
+
+## Why this phase exists
+
+Phase145A full-source sequence WaveNet produced the strongest pivot-pattern diagnostic metrics so far:
+
+```text
+Input tensor        : [24000, 100, 140]
+val_action_accuracy : 0.7240
+test_action_accuracy: 0.6201
+test_top_ap         : 0.2709
+test_bottom_ap      : 0.3336
+test_selected_rate  : 0.3609
+```
+
+But those are classifier/ranking metrics, not a trading proof. Phase146A converts model predictions into BUY/SELL candidates and simulates a simple research-only TP/SL replay with spread/risk assumptions.
+
+---
+
+## Implemented file
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+GUI command:
+
+```text
+Backtest pivot sequence WaveNet PnL
+```
+
+Tests:
+
+```text
+tests/unit/ai/test_pivot_sequence_wavenet_backtest.py
+tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py
+tests/integration/test_gui_coverage.py
+```
+
+---
+
+## Input layout
+
+```text
+Stored X    : [samples, WindowSize, Features]
+Keras batch : [batch, WindowSize, Features]
+```
+
+Current healthy full-source tensor:
+
+```text
+[53098, 100, 140]
+```
+
+Training candidate evaluated first:
+
+```text
+[24000, 100, 140]
+```
+
+---
+
+## Backtest logic
+
+The script:
+
+```text
+1. Loads the trained Keras model and vN_training.json scaler payload.
+2. Selects the same chronological sample universe as training with --max-samples.
+3. Evaluates a split: test / validation / all / tail.
+4. Predicts action/top/bottom/buy_r/sell_r in streaming batches.
+5. Converts action probabilities into SELL/HOLD/BUY decisions.
+6. Optionally filters BUY with bottom threshold and min_buy_r.
+7. Optionally filters SELL with top threshold and min_sell_r.
+8. Simulates next-bar entry using ATR-based TP/SL.
+9. Applies spread, same-bar policy, max-hold, initial capital, and risk per trade.
+10. Writes JSON, HTML, and trades CSV.
+```
+
+This is not production-grade execution. It is a diagnostic PnL audit.
+
+---
+
+## Recommended first command
+
+Use loose gates first to match the training report's selected-rate logic:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_5m `
+  --model-version 0 `
+  --max-samples 24000 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --tp-multiplier 0.75 `
+  --sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_backtest `
+  --report-title "Phase146A sequence WaveNet PnL audit"
+```
+
+Outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest.html
+run_logs\pivot_pattern_sequence_wavenet_backtest\latest_trades.csv
+```
+
+---
+
+## Acceptance
+
+Phase implementation acceptance:
+
+```text
+script exists
+GUI command exists
+targeted tests pass
+owner map/docs updated
+```
+
+Trading acceptance requires:
+
+```text
+positive PnL
+profit_factor meaningfully above 1
+controlled drawdown
+stable BUY/SELL breakdown
+stable monthly performance
+then walk-forward validation
+```
+
+Until then:
+
+```text
+No Phase134.
+No paper shadow.
+No live trading.
+```
+
+## Phase146A Lambda deserialization fix — 2026-09-19
+
+The owner's first Phase146A run failed while loading the trained Keras model:
+
+```text
+ValueError: Requested the deserialization of a `Lambda` layer whose `function` is a Python lambda.
+Keras disallowed it by default; use safe_mode=False or enable unsafe deserialization.
+```
+
+Root cause:
+
+```text
+The Phase145A sequence WaveNet architecture intentionally uses Keras Lambda layers for feature slicing:
+- gather_5m_features
+- gather_htf_features
+- gather_all_features
+- last_temporal_state
+```
+
+Fix implemented in:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+```
+
+The Phase146A loader now explicitly trusts local project-generated research artifacts:
+
+```python
+tf.keras.models.load_model(model_path, safe_mode=False)
+```
+
+with a fallback for older tf.keras versions:
+
+```python
+tf.keras.config.enable_unsafe_deserialization()
+tf.keras.models.load_model(model_path)
+```
+
+Scope:
+
+```text
+Research-only local artifacts generated by this project.
+Do not use this loader for untrusted downloaded Keras models.
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 50 passed
+```
+
+The same Phase146A PowerShell command can be rerun after replacing the project with the fixed zip.
+
+## Phase146A Lambda shape-load fallback — 2026-09-19
+
+The owner reran Phase146A after `safe_mode=False`. Keras then passed Lambda security but failed shape inference while deserializing the project-owned Lambda layers:
+
+```text
+NotImplementedError: We could not automatically infer the shape of the Lambda's output.
+Please specify the output_shape argument for this Lambda layer.
+```
+
+Fix implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet.py
+scripts/train_pivot_pattern_sequence_wavenet.py
+```
+
+Changes:
+
+```text
+1. Future Phase145A models now save Lambda layers with explicit output_shape for:
+   - gather_5m_features
+   - gather_htf_features
+   - gather_all_features
+   - last_temporal_state
+
+2. Phase146A backtest now has a fallback loader for existing saved models:
+   - first tries load_model(..., safe_mode=False, compile=False)
+   - if Lambda shape inference still fails, rebuilds the architecture from vN_training.json + meta
+   - extracts and loads weights from the .keras archive
+```
+
+This preserves the architecture while avoiding a retrain just to make the current v1 model loadable.
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet.py scripts/backtest_pivot_pattern_sequence_wavenet.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 51 passed
+```
+
+The same Phase146A PowerShell command should now load the existing v1 model through the fallback path and proceed to prediction/backtest.
+
+## Phase146A sequence WaveNet PnL audit result — 2026-09-19
+
+The owner supplied `run_logs\pivot_pattern_sequence_wavenet_backtest\latest.json` for the first Phase146A research PnL audit of the Phase145A full-source sequence WaveNet.
+
+Backtest configuration:
+
+```text
+model_id          : gold_pivot_pattern_sequence_wavenet_5m
+model_version     : 1
+tensor_shape      : [53098, 100, 140]
+selected_samples  : 24000
+eval_split        : test
+evaluated_samples : 3264
+evaluated period  : 2026-07-03 19:35:00+00:00 → 2026-08-06 19:20:00+00:00
+buy_threshold     : 0.34
+sell_threshold    : 0.34
+min_margin        : 0
+top_threshold     : 0
+bottom_threshold  : 0
+min_buy_r         : -999
+min_sell_r        : -999
+tp_multiplier     : 0.75
+sl_multiplier     : 0.75
+hold_bars         : 48
+spread_mode/value : pct / 0.06
+same_bar_policy   : stop_first
+initial_capital   : 100
+risk_per_trade    : 0.01
+```
+
+Aggregate result:
+
+```text
+trades             : 135
+BUY / SELL trades  : 44 / 91
+wins / losses      : 68 / 67
+win_rate           : 50.3704%
+final_balance      : 100.8955889685
+return_percent     : +0.8955889685%
+total_cash_pnl     : +0.8955889685
+gross_profit       : 49.4868161194
+gross_loss         : 48.5912271509
+profit_factor      : 1.0184310836
+max_drawdown_cash  : 7.2327237246
+take_profit        : 36
+stop_loss          : 43
+timeout            : 56
+```
+
+Side breakdown:
+
+```text
+BUY cash PnL  : +1.7578227452
+SELL cash PnL : -0.8622337767
+```
+
+Monthly result:
+
+```text
+2026-07 : +0.6597453995 / 110 trades
+2026-08 : +0.2358435690 / 25 trades
+positive_months : 2
+negative_months : 0
+```
+
+Operational counters:
+
+```text
+skipped_by_model   : 941
+skipped_while_open : 2188
+invalid_trade      : 0
+```
+
+Interpretation:
+
+```text
+GOOD:
+- First PnL audit is positive on the purged test split.
+- Both evaluated months are positive.
+- BUY side is positive, unlike older hybrid diagnostics where BUY was the main damage source.
+- No invalid trades were produced.
+
+LIMITS:
+- Edge is very thin: PF=1.018 and return is less than +1% on $100.
+- Max drawdown (~$7.23) is much larger than net profit (~$0.90).
+- SELL side is negative despite more trades than BUY.
+- 56/135 trades are timeouts, so TP/SL/hold calibration likely matters.
+- This is a single test split, not walk-forward.
+- Loose thresholds were used; no robustness/threshold grid has been performed.
+```
+
+Decision:
+
+```text
+Phase146A first PnL audit is a weak positive research result, not a production pass.
+It is the first pivot-lane result that is both classifier-strong and PnL-positive on the purged test split, but the edge is too small and fragile for paper/live.
+Next required step: Phase146B threshold / TP-SL / side-specific grid on validation, then test confirmation; later walk-forward if robust.
+No Phase134. No paper shadow. No live trading.
+```
+
+## Phase147A Option B grouped sequence WaveNet implemented — 2026-09-19
+
+The owner reminded that the agreed roadmap must proceed in this order:
+
+```text
+Step 1 — Option B بسازیم
+Step 2 — A/B benchmark منصفانه
+Step 3 — آموزش بزرگ‌تر / full dataset
+Step 4 — ذخیره کامل prediction/backtest archive
+Step 5 — فیلترسازی، ولی با قانون ضد overfit
+```
+
+Phase147A implements Step 1.
+
+Implemented:
+
+```text
+scripts/train_pivot_pattern_sequence_wavenet_option_b.py
+GUI: Train pivot sequence WaveNet Option B
+```
+
+Option B uses the existing healthy Phase145A tensor:
+
+```text
+stored X = [53098, 100, 140]
+```
+
+but feeds the model as grouped Keras inputs:
+
+```text
+m5_context_input  = [batch, 100, 35]   # generated_5m + session
+source_5m_input   = [batch, 100, 83]   # source_5m telemetry
+htf_context_input = [batch, 100, 22]   # closed 4H + closed 1D
+```
+
+Architecture:
+
+```text
+separate grouped branches
+multi-scale causal Conv1D kernels 3,5,9
+late fusion
+gated tanh-sigmoid dilated WaveNet
+residual/skip connections
+SE/channel attention
+temporal self-attention
+avg/max/last pooling
+multi-task heads
+```
+
+Command for owner:
+
+```powershell
+python -u scripts\train_pivot_pattern_sequence_wavenet_option_b.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-samples 24000 `
+  --stream-chunk-size 512 `
+  --batch-size 16 `
+  --epochs 80 `
+  --learning-rate 0.0005 `
+  --branch-filters 48 `
+  --temporal-filters 96 `
+  --temporal-kernels 3,5,9 `
+  --dilations 1,2,4,8,16,32 `
+  --residual-blocks 2 `
+  --attention-heads 4 `
+  --attention-key-dim 16 `
+  --se-ratio 8 `
+  --dense-units 128 `
+  --dropout 0.25 `
+  --activation tanh `
+  --action-loss-weight 1.0 `
+  --top-loss-weight 0.5 `
+  --bottom-loss-weight 0.5 `
+  --r-loss-weight 0.5 `
+  --class-weight auto `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --early-stopping-patience 8 `
+  --checkpoint-each-epoch 1 `
+  --batch-log-every 10 `
+  --save-model 1 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_option_b `
+  --report-title "Option B Pivot Sequence WaveNet training"
+```
+
+Expected outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest.json
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_summary.txt
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_training_log.csv
+run_logs\pivot_pattern_sequence_wavenet_option_b\latest_batch_log.jsonl
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/train_pivot_pattern_sequence_wavenet_option_b.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 54 passed
+```
+
+Next after owner runs Option B training:
+
+```text
+Step 2 — A/B benchmark منصفانه
+```
+
+## Phase147A Option B backtest support cross-reference — 2026-09-19
+
+After the owner supplied the Option B training result, `scripts/backtest_pivot_pattern_sequence_wavenet.py` was extended to detect Option B records and feed grouped prediction inputs automatically. This allows the existing GUI command `Backtest pivot sequence WaveNet PnL` to run the fair Step 2 PnL audit for `gold_pivot_pattern_sequence_wavenet_option_b_5m`.
+
+## Phase147B Option B PnL benchmark cross-reference — 2026-09-19
+
+Option B was backtested with the same Phase146A replay settings. It improved net PnL and PF versus Option A:
+
+```text
+Option A: +0.8956, PF=1.0184, maxDD=7.2327, July/August both positive
+Option B: +1.8765, PF=1.0377, maxDD=7.7910, July positive and August negative
+```
+
+Decision: Option B is the preliminary PnL/PF winner but not stable enough for production. Step 3 should train Option B on the full sample universe with chronological split and early stopping.
+
+## Phase148A range-aware sequence archive implemented — 2026-09-19
+
+Implemented Step 4 requested by the owner while Step 3 full Option B training is running.
+
+Implemented:
+
+```text
+scripts/backtest_pivot_pattern_sequence_wavenet_range.py
+GUI: Backtest sequence WaveNet range-aware archive
+```
+
+Purpose:
+
+```text
+Create a full prediction/backtest archive and calculate TP/SL from range forecasts rather than fixed ATR brackets.
+```
+
+Range source modes:
+
+```text
+--range-source auto    # use flat range columns when available, otherwise range models
+--range-source flat    # use range columns from sequence flat parquet
+--range-source models  # compute forecasts from gold_range_4h / gold_range_1d
+```
+
+Supported flat columns include both raw and source-prefixed names:
+
+```text
+range_4h_high_price / src5m_range_4h_high_price
+range_4h_low_price  / src5m_range_4h_low_price
+range_1d_high_price / src5m_range_1d_high_price
+range_1d_low_price  / src5m_range_1d_low_price
+```
+
+Bracket logic:
+
+```text
+BUY : TP from range high, SL from range low
+SELL: TP from range low,  SL from range high
+```
+
+with:
+
+```text
+--range-bracket-mode range|range_capped|atr
+--use-1d-tp-cap 1
+--max-tp-atr 2.0
+--max-sl-atr 1.25
+--min-tp-distance 0.5
+--min-sl-distance 0.5
+```
+
+Full archive outputs:
+
+```text
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.json
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest.html
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_predictions.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.parquet
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_trades.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_monthly.csv
+run_logs\pivot_pattern_sequence_wavenet_range_archive\latest_side.csv
+```
+
+Recommended command:
+
+```powershell
+python -u scripts\backtest_pivot_pattern_sequence_wavenet_range.py `
+  --symbol XAUUSD `
+  --timeframe 5M `
+  --tensor-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest.npy `
+  --meta-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_tensor_latest_meta.npz `
+  --flat-path datasets\processed\XAUUSD\5M\pivot_pattern_sequence_flat_latest.parquet `
+  --model-id gold_pivot_pattern_sequence_wavenet_option_b_5m `
+  --model-version 0 `
+  --max-samples 0 `
+  --eval-split test `
+  --train-frac 0.70 `
+  --val-frac 0.15 `
+  --purge-gap 336 `
+  --max-windows 0 `
+  --batch-size 128 `
+  --buy-threshold 0.34 `
+  --sell-threshold 0.34 `
+  --min-margin 0 `
+  --top-threshold 0 `
+  --bottom-threshold 0 `
+  --min-buy-r -999 `
+  --min-sell-r -999 `
+  --range-source auto `
+  --range-bracket-mode range_capped `
+  --range-fallback skip `
+  --range-1d-model-id gold_range_1d `
+  --range-4h-model-id gold_range_4h `
+  --range-1d-version 0 `
+  --range-4h-version 0 `
+  --use-1d-tp-cap 1 `
+  --min-range-4h-room 0 `
+  --min-range-1d-room 0 `
+  --min-tp-distance 0.5 `
+  --min-sl-distance 0.5 `
+  --max-tp-atr 2.0 `
+  --max-sl-atr 1.25 `
+  --atr-tp-multiplier 0.75 `
+  --atr-sl-multiplier 0.75 `
+  --hold-bars 48 `
+  --spread-mode pct `
+  --spread-value 0.06 `
+  --same-bar-policy stop_first `
+  --initial-capital 100 `
+  --risk-per-trade 0.01 `
+  --storage-root datasets `
+  --output-dir run_logs\pivot_pattern_sequence_wavenet_range_archive `
+  --report-title "Phase148A range-aware sequence WaveNet archive"
+```
+
+Verification:
+
+```text
+python -m py_compile scripts/backtest_pivot_pattern_sequence_wavenet_range.py src/ShadBotTrader/presentation/commands/commands.py src/ShadBotTrader/presentation/commands/handlers.py
+→ passed
+
+python -m pytest tests/unit/ai/test_pivot_sequence_tensor.py tests/unit/ai/test_pivot_sequence_tensor_health.py tests/unit/ai/test_pivot_sequence_wavenet_helpers.py tests/unit/ai/test_pivot_sequence_wavenet_backtest.py tests/unit/ai/test_pivot_sequence_wavenet_option_b.py tests/unit/ai/test_pivot_sequence_range_archive.py tests/unit/presentation/test_phase145_pivot_sequence_wavenet_gui.py tests/integration/test_gui_coverage.py -q
+→ 60 passed
+```
+
+Production remains blocked.

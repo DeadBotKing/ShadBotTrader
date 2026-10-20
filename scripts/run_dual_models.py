@@ -619,6 +619,16 @@ def train_one(service, args, role, timeframe: str, learning_rate: float | None =
     class_weight_mode = effective_class_weight_mode(args, role)
     print(f"  learning rate: {learning_rate:.2e}")
     print(f"  objective: {loss_name}")
+    if role.name == "range" and loss_name in ("huber", "huber_loss"):
+        from ShadBotTrader.infrastructure.ai.wavenet.wavenet_trainer import (
+            range_huber_delta,
+        )
+
+        print(
+            "  huber delta: set from dataset target_units at compile "
+            f"(pct={range_huber_delta('pct')}, atr={range_huber_delta('atr')}). "
+            "Saved models keep their serialized delta. This does not authorize a rerun."
+        )
     monitor_action = "maximize" if metric_monitor_mode(monitor_metric) == "max" else "minimize"
     print(f"  monitor  : {monitor_metric} ({monitor_action})")
     if class_weight_mode != "off":

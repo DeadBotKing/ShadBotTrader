@@ -1,0 +1,17 @@
+# Optional booster backends for Phase 120/121 trend_signal branches.
+# Install only when you want to run scripts/train_trend_signal_boosters.py
+# or the Dashboard command "Train trend-signal booster".
+#
+# Windows note: if CatBoost has no wheel for your exact Python version,
+# install LightGBM or XGBoost first; the script can use any one backend.
+
+-r requirements.txt
+
+lightgbm>=4.0
+xgboost>=2.0
+catboost>=1.2
+
+# Phase141A pivot pattern-recognition default learner.
+# The script falls back to a dependency-free centroid model if unavailable,
+# but install this package to reproduce the recorded sklearn_hgb run.
+scikit-learn>=1.4

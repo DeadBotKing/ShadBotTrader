@@ -160,6 +160,12 @@ class RangeForecast:
     atr_reference: float = 0.0
     high_atr_mult: float = 0.0
     low_atr_mult: float = 0.0
+    #: Raw model outputs for each emitted candle, in target units.
+    #: Empty on forecasts built before the pairs were preserved.
+    step_high_raw: tuple[float, ...] = ()
+    step_low_raw: tuple[float, ...] = ()
+    #: ``single_pair`` or ``envelope_max_min``. Empty means unspecified.
+    band_reduction: str = ""
 
     def __post_init__(self) -> None:
         if self.reference_close <= 0:
@@ -172,6 +178,22 @@ class RangeForecast:
             raise ValidationError(
                 "An ATR-unit forecast needs a positive atr_reference; without "
                 "it the ATR multiples cannot be turned into prices"
+            )
+        if self.band_reduction not in ("", "single_pair", "envelope_max_min"):
+            raise ValidationError(
+                f"Unknown range band reduction: {self.band_reduction!r}"
+            )
+        if len(self.step_high_raw) != len(self.step_low_raw):
+            raise ValidationError("step_high_raw and step_low_raw must have the same length")
+        if (
+            self.band_reduction == "single_pair"
+            and self.step_high_raw
+            and len(self.step_high_raw) != 1
+        ):
+            raise ValidationError("single_pair reduction requires exactly one high/low pair")
+        if self.band_reduction == "envelope_max_min" and len(self.step_high_raw) < 2:
+            raise ValidationError(
+                "envelope_max_min reduction requires at least two high/low pairs"
             )
 
     @property
@@ -227,6 +249,9 @@ class RangeForecast:
             "atr_reference": self.atr_reference,
             "high_atr_mult": self.high_atr_mult,
             "low_atr_mult": self.low_atr_mult,
+            "step_high_raw": list(self.step_high_raw),
+            "step_low_raw": list(self.step_low_raw),
+            "band_reduction": self.band_reduction,
         }
 
 

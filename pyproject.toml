@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ShadBotTrader"
 version = "0.1.0"
-description = "ShadBotTrader - Enterprise AI Trading Platform"
+description = "ShadBotTrader active path: MetaTrader data, dataset, features, and the range model"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -37,18 +37,8 @@ mt5 = [
 ]
 
 [project.scripts]
-shadbot = "ShadBotTrader.main:main"
 shadbot-data = "ShadBotTrader.data_cli:main"
 shadbot-feature = "ShadBotTrader.feature_cli:main"
-shadbot-ai = "ShadBotTrader.ai_cli:main"
-shadbot-trading = "ShadBotTrader.trading_cli:main"
-shadbot-exec = "ShadBotTrader.execution_cli:main"
-shadbot-backtest = "ShadBotTrader.backtest_cli:main"
-shadbot-learn = "ShadBotTrader.learning_cli:main"
-shadbot-db = "ShadBotTrader.db_cli:main"
-shadbot-dashboard = "ShadBotTrader.dashboard_cli:main"
-shadbot-deploy = "ShadBotTrader.deploy_cli:main"
-shadbot-pip = "ShadBotTrader.intelligence:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -56,7 +46,7 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["legacy"]
+extend-exclude = ["legacy", "old_version"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B"]
@@ -68,7 +58,7 @@ known-first-party = ["ShadBotTrader"]
 [tool.black]
 line-length = 100
 target-version = ["py310"]
-extend-exclude = "legacy"
+extend-exclude = "legacy|old_version"
 
 [tool.mypy]
 python_version = "3.10"
@@ -81,3 +71,4 @@ check_untyped_defs = true
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 addopts = "-q"
+norecursedirs = ["legacy", "old_version", "datasets"]

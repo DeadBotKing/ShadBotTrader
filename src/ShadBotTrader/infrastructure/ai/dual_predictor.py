@@ -57,8 +57,40 @@ def _load(artifact: ModelArtifact) -> Any:
     return _deserialize_model(artifact.payload)
 
 
+def split_range_pairs(vector: Sequence[float]) -> list[tuple[float, float]]:
+    """Split ``[high_1, low_1, ..., high_H, low_H]`` into pairs.
+
+    An odd width is a contract error. It is not a one-value forecast.
+    """
+    width = len(vector)
+    if width < 2 or width % 2 != 0:
+        raise ValidationError(
+            f"Range output width {width} is not an even "
+            "[high_1, low_1, ..., high_H, low_H] layout"
+        )
+    pair_count = width // 2
+    return [(float(vector[k * 2]), float(vector[k * 2 + 1])) for k in range(pair_count)]
+
+
+def reduce_range_band(pairs: Sequence[tuple[float, float]]) -> tuple[float, float, str]:
+    """Return the single trading band and the name of the reduction.
+
+    One pair is that pair. More than one pair is the envelope
+    ``max(high), min(low)``. The envelope is not candle ``t+1``.
+    """
+    if len(pairs) < 1:
+        raise ValidationError("Range output has no high/low pair")
+    if len(pairs) == 1:
+        return pairs[0][0], pairs[0][1], "single_pair"
+    return (
+        max(pair[0] for pair in pairs),
+        min(pair[1] for pair in pairs),
+        "envelope_max_min",
+    )
+
+
 class RangePredictor:
-    """Predicts the future high/low offsets of the next N candles.
+    """Predicts high/low offsets and keeps every emitted candle pair.
 
     ``target_units`` must match how the model was trained (فاز ۹۵):
 
@@ -139,31 +171,19 @@ class RangePredictor:
         raw = raw_out[0]
         if raw.ndim == 2 and raw.shape[-1] >= 2 and raw.shape[0] > 2:
             # seq2seq: shape=[window, horizon*2]
-            # آخرین timestep = پیش‌بینی برای آخرین کندل window
+            # Last row = forecast for the decision candle.
             # layout: [high_1, low_1, high_2, low_2, ..., high_H, low_H]
-            last_step = raw[-1]  # [horizon*2]
-            n_pairs = len(last_step) // 2
-
-            if n_pairs == 1:
-                # horizon=1: دقیقاً high و low فردا
-                best_high = float(last_step[0])
-                best_low = float(last_step[1])
-            else:
-                # horizon>1: worst-case high/low در کل افق
-                highs = [float(last_step[k * 2]) for k in range(n_pairs)]
-                lows = [float(last_step[k * 2 + 1]) for k in range(n_pairs)]
-                best_high = max(highs)
-                best_low = min(lows)
+            pairs = split_range_pairs(raw[-1])
         elif raw.ndim == 1 and len(raw) >= 2:
-            # scalar output (قدیمی)
-            best_high = float(raw[0])
-            best_low = float(raw[1])
-        elif raw.ndim == 2 and raw.shape[0] == 1:
-            # [1, 2] شکل قدیمی batch=1
-            best_high = float(raw[0, 0])
-            best_low = float(raw[0, 1])
+            pairs = split_range_pairs(raw)
+        elif raw.ndim == 2 and raw.shape[0] == 1 and raw.shape[1] >= 2:
+            pairs = split_range_pairs(raw[0])
         else:
             raise ValidationError(f"Unexpected range model output shape: {raw.shape}")
+
+        best_high, best_low, band_reduction = reduce_range_band(pairs)
+        step_high_raw = tuple(pair[0] for pair in pairs)
+        step_low_raw = tuple(pair[1] for pair in pairs)
 
         # فاز ۹۵: خروجی مدل در units تارگتِ آموزش است. برای مدل ATR،
         # دلار = close + mult × ATR؛ معادل کسریِ close هم ذخیره میشه تا
@@ -186,6 +206,9 @@ class RangePredictor:
             atr_reference=atr_value if self._target_units == "atr" else 0.0,
             high_atr_mult=best_high if self._target_units == "atr" else 0.0,
             low_atr_mult=best_low if self._target_units == "atr" else 0.0,
+            step_high_raw=step_high_raw,
+            step_low_raw=step_low_raw,
+            band_reduction=band_reduction,
         )
 
 

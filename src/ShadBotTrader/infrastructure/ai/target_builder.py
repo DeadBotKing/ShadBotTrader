@@ -208,11 +208,16 @@ def build_range_labels(
     units: str = "atr",
     atr_period: int = 14,
 ) -> RangeLabels:
-    """Label the highest high and lowest low of the next N bars.
+    """Label the horizon envelope, not candle ``t+k``.
 
-    ``units="atr"`` (فاز ۹۵): offsets are ATR multiples,
-    ``(high[t+k] − close[t]) / ATR_period[t]``. ``units="pct"`` keeps the
-    legacy fraction-of-close target for comparisons and old models.
+    For each candle ``t`` the two numbers are:
+
+    ``high = (max(high[t+1 .. t+horizon]) − close[t]) / scale[t]``
+    ``low  = (min(low[t+1 .. t+horizon]) − close[t]) / scale[t]``
+
+    ``scale`` is ``ATR_period[t]`` when ``units="atr"`` and ``close[t]``
+    when ``units="pct"``. This is not ``(high[t+k] − close[t]) / ATR``.
+    That per-candle target is :func:`build_range_labels_seq2seq`.
     """
     _validate(candles, horizon)
     if units not in ("pct", "atr"):
@@ -283,7 +288,8 @@ def build_range_labels_seq2seq(
     horizon=N (عمومی):
       high_seq[t, k] برای k=1..N
 
-    Loss فقط روی آخرین horizon timestep seq اعمال میشه (با وزن بیشتر).
+    The trainer weights the last window row more than earlier rows. That
+    row holds every ``k=1..horizon`` pair, not tomorrow alone.
     """
     _validate(candles, horizon)
     if units not in ("pct", "atr"):
